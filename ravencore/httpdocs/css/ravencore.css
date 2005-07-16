@@ -1,0 +1,43 @@
+/***********************************************
+*  Cascading Styles Sheet for RavenCore        *
+***********************************************/
+
+/* Colors:
+   Dark Brown:  #EA9537
+   Light Brown: #F5E2BC
+   Red Dirt:    #E08038
+   Faint Green: #D8EED5
+*/
+
+/***********************************************
+* Specials                                     *
+***********************************************
+a:link{
+	color: #006699;
+	text-decoration: none;
+}
+
+a:visited{
+	color: #006699;
+	text-decoration: none;
+} 
+
+a:hover {
+	text-decoration: nounderline;
+}
+*/
+/***********************************************
+* Main Tag Defs                                *
+***********************************************/
+
+body {
+  background-color: #FFFFFF;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 14px;
+}
+
+.fileman {
+  font-family: "Courier New";
+}
+
+

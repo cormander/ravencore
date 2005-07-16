@@ -1,0 +1,284 @@
+-- MySQL dump 8.23
+--
+-- Host: localhost    Database: ravencore
+---------------------------------------------------------
+-- Server version	3.23.58
+
+--
+-- Table structure for table `data_base_users`
+--
+
+DROP TABLE IF EXISTS data_base_users;
+CREATE TABLE data_base_users (
+  id int(10) unsigned NOT NULL auto_increment,
+  login varchar(15) default NULL,
+  passwd varchar(15) default NULL,
+  db_id int(10) unsigned NOT NULL default '0',
+  PRIMARY KEY  (id)
+) TYPE=MyISAM;
+
+/*!40000 ALTER TABLE `data_base_users` DISABLE KEYS */;
+
+--
+-- Table structure for table `data_bases`
+--
+
+DROP TABLE IF EXISTS data_bases;
+CREATE TABLE data_bases (
+  id int(10) unsigned NOT NULL auto_increment,
+  did int(10) unsigned NOT NULL default '0',
+  name varchar(20) default NULL,
+  PRIMARY KEY  (id)
+) TYPE=MyISAM;
+
+/*!40000 ALTER TABLE `data_bases` DISABLE KEYS */;
+
+--
+-- Table structure for table `dns_def`
+--
+
+DROP TABLE IF EXISTS dns_def;
+CREATE TABLE dns_def (
+  id int(10) unsigned NOT NULL auto_increment,
+  name varchar(255) NOT NULL default '',
+  type varchar(255) NOT NULL default '',
+  target varchar(255) NOT NULL default '',
+  PRIMARY KEY  (id)
+) TYPE=MyISAM;
+
+/*!40000 ALTER TABLE `dns_def` DISABLE KEYS */;
+
+--
+-- Table structure for table `dns_rec`
+--
+
+DROP TABLE IF EXISTS dns_rec;
+CREATE TABLE dns_rec (
+  id int(10) unsigned NOT NULL auto_increment,
+  did int(10) unsigned NOT NULL default '0',
+  name varchar(255) NOT NULL default '',
+  type varchar(255) NOT NULL default '',
+  target varchar(255) NOT NULL default '',
+  PRIMARY KEY  (id)
+) TYPE=MyISAM;
+
+/*!40000 ALTER TABLE `dns_rec` DISABLE KEYS */;
+
+--
+-- Table structure for table `domain_space`
+--
+
+DROP TABLE IF EXISTS domain_space;
+CREATE TABLE domain_space (
+  id int(10) unsigned NOT NULL auto_increment,
+  did int(10) unsigned NOT NULL default '0',
+  type enum('web','database','mail') NOT NULL default 'web',
+  bytes int(10) unsigned NOT NULL default '0',
+  date datetime NOT NULL default '0000-00-00 00:00:00',
+  PRIMARY KEY  (id)
+) TYPE=MyISAM;
+
+/*!40000 ALTER TABLE `domain_space` DISABLE KEYS */;
+
+--
+-- Table structure for table `domain_traffic`
+--
+
+DROP TABLE IF EXISTS domain_traffic;
+CREATE TABLE domain_traffic (
+  id int(10) unsigned NOT NULL auto_increment,
+  did int(10) unsigned NOT NULL default '0',
+  type enum('ftp','web','mail') NOT NULL default 'ftp',
+  bytes int(10) unsigned NOT NULL default '0',
+  date datetime NOT NULL default '0000-00-00 00:00:00',
+  PRIMARY KEY  (id)
+) TYPE=MyISAM;
+
+/*!40000 ALTER TABLE `domain_traffic` DISABLE KEYS */;
+
+--
+-- Table structure for table `domains`
+--
+
+DROP TABLE IF EXISTS domains;
+CREATE TABLE domains (
+  id int(10) unsigned NOT NULL auto_increment,
+  created date NOT NULL default '0000-00-00',
+  name varchar(80) default NULL,
+  subdomain int(10) unsigned default NULL,
+  uid int(10) unsigned NOT NULL default '0',
+  host_type varchar(255) NOT NULL default 'none',
+  hosting enum('on','off') NOT NULL default 'on',
+  redirect_url varchar(255) default NULL,
+  catchall enum('true','false','alis') NOT NULL default 'false',
+  catchall_addr varchar(120) default NULL,
+  bounce_message varchar(255) NOT NULL default 'No mail goes to this address',
+  alis_addr varchar(80) default NULL,
+  www enum('true','false') NOT NULL default 'false',
+  host_php enum('true','false') NOT NULL default 'false',
+  host_cgi enum('true','false') NOT NULL default 'false',
+  host_ssl enum('true','false') NOT NULL default 'false',
+  host_dir enum('true','false') NOT NULL default 'false',
+  soa varchar(255) default NULL,
+  ttl int(10) unsigned NOT NULL default '300',
+  mail enum('on','off') NOT NULL default 'on',
+  logrotate enum('on','off') NOT NULL default 'off',
+  log_rotate_num int(10) unsigned NOT NULL default '4',
+  log_mail_addr varchar(120) NOT NULL default '',
+  log_when_rotate enum('daily','weekly','monthly','') NOT NULL default '',
+  log_rotate_size int(10) unsigned default NULL,
+  log_compress enum('yes','no') NOT NULL default 'no',
+  log_rotate_size_ext enum('k','M','') NOT NULL default '',
+  suid int(10) unsigned NOT NULL default '0',
+  PRIMARY KEY  (id)
+) TYPE=MyISAM;
+
+/*!40000 ALTER TABLE `domains` DISABLE KEYS */;
+
+--
+-- Table structure for table `error_docs`
+--
+
+DROP TABLE IF EXISTS error_docs;
+CREATE TABLE error_docs (
+  id int(10) unsigned NOT NULL auto_increment,
+  did int(10) unsigned NOT NULL default '0',
+  code int(3) default NULL,
+  file varchar(255) default NULL,
+  PRIMARY KEY  (id)
+) TYPE=MyISAM;
+
+/*!40000 ALTER TABLE `error_docs` DISABLE KEYS */;
+
+--
+-- Table structure for table `login_failure`
+--
+
+DROP TABLE IF EXISTS login_failure;
+CREATE TABLE login_failure (
+  id int(10) unsigned NOT NULL auto_increment,
+  login varchar(15) NOT NULL default '',
+  date datetime NOT NULL default '0000-00-00 00:00:00',
+  PRIMARY KEY  (id)
+) TYPE=MyISAM;
+
+/*!40000 ALTER TABLE `login_failure` DISABLE KEYS */;
+
+--
+-- Table structure for table `mail_users`
+--
+
+DROP TABLE IF EXISTS mail_users;
+CREATE TABLE mail_users (
+  id int(10) unsigned NOT NULL auto_increment,
+  did int(10) unsigned NOT NULL default '0',
+  mail_name varchar(20) default NULL,
+  passwd varchar(15) default NULL,
+  spamassassin enum('true','false') default 'false',
+  mailbox enum('true','false') default 'false',
+  redirect enum('true','false') default 'false',
+  redirect_addr varchar(120) default NULL,
+  PRIMARY KEY  (id)
+) TYPE=MyISAM;
+
+/*!40000 ALTER TABLE `mail_users` DISABLE KEYS */;
+
+--
+-- Table structure for table `parameters`
+--
+
+DROP TABLE IF EXISTS parameters;
+CREATE TABLE parameters (
+  id int(10) unsigned NOT NULL auto_increment,
+  type_id int(10) unsigned NOT NULL default '0',
+  param varchar(255) NOT NULL default '',
+  value varchar(255) NOT NULL default '',
+  PRIMARY KEY  (id),
+  KEY param (param)
+) TYPE=MyISAM;
+
+/*!40000 ALTER TABLE `parameters` DISABLE KEYS */;
+
+--
+-- Table structure for table `sessions`
+--
+
+DROP TABLE IF EXISTS sessions;
+CREATE TABLE sessions (
+  id int(10) unsigned NOT NULL auto_increment,
+  session_id varchar(255) NOT NULL default '',
+  login varchar(255) NOT NULL default '',
+  location varchar(255) default NULL,
+  created datetime default NULL,
+  idle datetime default NULL,
+  PRIMARY KEY  (id)
+) TYPE=MyISAM;
+
+/*!40000 ALTER TABLE `sessions` DISABLE KEYS */;
+
+--
+-- Table structure for table `settings`
+--
+
+DROP TABLE IF EXISTS settings;
+CREATE TABLE settings (
+  id int(10) unsigned NOT NULL auto_increment,
+  setting varchar(255) NOT NULL default '',
+  value varchar(255) NOT NULL default '',
+  PRIMARY KEY  (id)
+) TYPE=MyISAM;
+
+/*!40000 ALTER TABLE `settings` DISABLE KEYS */;
+
+--
+-- Table structure for table `sys_users`
+--
+
+DROP TABLE IF EXISTS sys_users;
+CREATE TABLE sys_users (
+  id int(10) unsigned NOT NULL auto_increment,
+  login varchar(15) default NULL,
+  passwd varchar(15) default NULL,
+  shell varchar(15) NOT NULL default '/sbin/nologin',
+  home_dir varchar(255) NOT NULL default '',
+  PRIMARY KEY  (id)
+) TYPE=MyISAM;
+
+/*!40000 ALTER TABLE `sys_users` DISABLE KEYS */;
+
+--
+-- Table structure for table `user_permissions`
+--
+
+DROP TABLE IF EXISTS user_permissions;
+CREATE TABLE user_permissions (
+  id int(10) unsigned NOT NULL auto_increment,
+  uid int(10) unsigned NOT NULL default '0',
+  perm varchar(255) NOT NULL default '',
+  val enum('yes','no') NOT NULL default 'no',
+  lim int(11) NOT NULL default '0',
+  PRIMARY KEY  (id)
+) TYPE=MyISAM;
+
+/*!40000 ALTER TABLE `user_permissions` DISABLE KEYS */;
+
+--
+-- Table structure for table `users`
+--
+
+DROP TABLE IF EXISTS users;
+CREATE TABLE users (
+  id int(10) unsigned NOT NULL auto_increment,
+  created date NOT NULL default '0000-00-00',
+  company varchar(80) default NULL,
+  name varchar(80) default NULL,
+  login varchar(15) default NULL,
+  passwd varchar(15) default NULL,
+  email varchar(120) default NULL,
+  space_limit int(11) NOT NULL default '0',
+  traffic_limit int(11) NOT NULL default '0',
+  PRIMARY KEY  (id)
+) TYPE=MyISAM;
+
+/*!40000 ALTER TABLE `users` DISABLE KEYS */;
+

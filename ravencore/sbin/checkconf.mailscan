@@ -1,0 +1,42 @@
+#!/bin/bash
+
+. /etc/ravencore.conf || exit 1
+
+postfix_reload=0
+spamassassin_reload=0
+
+# check against or master.cf file, to make sure it has the required entry to run
+# the ravencore-mailscan perl script
+
+diff $VMAIL_CONF_DIR/master.cf $RC_ROOT/etc/postfix.master.cf.in &> /dev/null
+
+if [ $? -ne 0 ]; then
+
+    rm -f $VMAIL_CONF_DIR/master.cf
+
+    cp $RC_ROOT/etc/postfix.master.cf.in $VMAIL_CONF_DIR/master.cf
+
+    /usr/sbin/postfix check
+    
+    if [ $? -eq 0 ]; then
+	
+        /usr/sbin/postfix reload &> /dev/null
+	
+    fi
+    
+fi
+
+# make sure that the spamassassin daemon has the correct runtime options
+
+diff /etc/sysconfig/spamassassin $RC_ROOT/etc/sysconfig.spamassassin.in &> /dev/null
+
+if [ $? -ne 0 ]; then
+
+    rm -f /etc/sysconfig/spamassassin
+
+    cp $RC_ROOT/etc/sysconfig.spamassassin.in /etc/sysconfig/spamassassin
+
+    /sbin/service spamassassin restart &> /dev/null
+
+fi
+

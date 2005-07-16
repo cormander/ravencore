@@ -1,0 +1,66 @@
+#!/bin/bash
+
+. /etc/ravencore.conf || exit 1
+
+# set our reload variable to zero
+
+postfix_reload=0
+
+# check our sasl conf file, to make sure smtp authentication will work
+
+diff /usr/lib/sasl2/smtpd.conf $RC_ROOT/etc/sasl2.smtpd.conf.in &> /dev/null
+
+if [ $? -ne 0 ]; then
+
+    rm -f /usr/lib/sasl2/smtpd.conf
+
+    cp $RC_ROOT/etc/sasl2.smtpd.conf.in /usr/lib/sasl2/smtpd.conf
+
+    postfix_reload=1
+
+fi
+
+# check or main.cf file, to make sure it has all our required parameters
+
+diff $VMAIL_CONF_DIR/main.cf $RC_ROOT/etc/postfix.main.cf.in &> /dev/null
+
+if [ $? -ne 0 ]; then
+
+    rm -f $VMAIL_CONF_DIR/main.cf
+
+    cp $RC_ROOT/etc/postfix.main.cf.in $VMAIL_CONF_DIR/main.cf
+
+    postfix_reload=1
+
+fi
+
+# do the same for dovecot
+
+diff /etc/dovecot.conf $RC_ROOT/etc/dovecot.conf.in &> /dev/null
+
+if [ $? -ne 0 ]; then
+
+    rm -f /etc/dovecot.conf
+
+    cp $RC_ROOT/etc/dovecot.conf.in /etc/dovecot.conf
+
+    /sbin/service dovecot restart &> /dev/null
+
+fi
+
+# only reload postfix if we changed a configuration file
+
+if [ $postfix_reload -eq 1 ]; then
+
+# but first, make sure we won't kill postfix by restarting it
+
+    /usr/sbin/postfix check
+
+    if [ $? -eq 0 ]; then
+
+        /usr/sbin/postfix reload &> /dev/null
+
+    fi
+
+fi
+

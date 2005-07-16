@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# Grab the configuration file
+
+. /etc/ravencore.conf || exit 1
+
+# Our incoming argument is the ftp user which we need to delete
+
+ftp_user=$1
+
+/usr/sbin/userdel $ftp_user

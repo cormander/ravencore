@@ -1,0 +1,24 @@
+virtual_mailbox_base = /var/spool/virtual
+virtual_mailbox_maps = hash:/etc/postfix/vmailbox
+virtual_mailbox_domains = hash:/etc/postfix/vmaildomains
+virtual_alias_maps = hash:/etc/postfix/valiasmap
+
+smtpd_sender_login_maps = hash:/etc/postfix/login_maps
+#smtpd_sender_restrictions = reject_sender_login_mismatch
+
+virtual_uid_maps = static:148
+virtual_gid_maps = static:148
+
+virtual_mailbox_lock = dotlock
+virtual_minimum_uid = 148
+
+#BEGIN SASL config for SMTP AUTH
+smtpd_sasl_auth_enable = yes
+#######smtp_sasl_password_maps = hash:/etc/postfix/sasl_password
+smtpd_sasl_security_options = noanonymous
+broken_sasl_auth_clients = yes
+# leave the next line's value blank
+smtpd_sasl_local_domain =
+smtpd_recipient_restrictions = permit_sasl_authenticated, permit_mynetworks, reject_unauth_destination
+#END SASL config for SMTP AUTH
+

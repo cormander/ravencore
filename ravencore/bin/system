@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# our incoming value should either be reboot or shutdown
+
+case $1 in
+    reboot)cmd="-r";;
+    shutdown)cmd="-h";;
+    *)
+	echo "Usage: system {reboot, shutdown}"
+	exit
+	;;
+esac
+
+/sbin/shutdown $cmd now

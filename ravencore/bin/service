@@ -1,0 +1,31 @@
+#!/bin/bash
+
+export GOT_CONF=1
+
+. /etc/ravencore.conf || exit 1
+
+# check to see if this service is in our allowed services to mess with
+
+cat $RC_ROOT/etc/services.* | grep $1 &> /dev/null
+
+if [ $? -ne 0 ]; then
+
+# not in list, exit with error
+    echo "Service $1 not in list of services"; exit 1;
+
+    exit 1
+
+fi
+
+# call the system service
+
+service $1 $2 &> /dev/null
+
+# check to see if we suceeded. If we try to stop a stopped service, we're going to fail, so
+# we explicity ignore failures on the stop command
+
+if [ $? -ne 0 ] && [ $2 != "stop" ]; then
+
+    echo "Service $1 failed to $2"
+
+fi

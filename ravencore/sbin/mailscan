@@ -1,0 +1,51 @@
+#!/usr/bin/perl
+
+$sender = $ARGV[0];
+$recipient = $ARGV[1];
+
+($user, $domain) = split /@/, $recipient;
+
+# get the email source on standard input
+
+@mail = <STDIN>;
+
+# open up the clamdscan client, and quietly scan the message on the stream.
+
+if(defined(open(CLAMD,'|-', '/usr/bin/clamdscan', '--quiet', '-'))) {
+
+    print CLAMD @mail;
+
+    close(CLAMD);
+
+# clamdscan exits with 1 if it finds a virus, and logs what virus it was to /var/log/clamav/clamd.log
+
+    if( ( $? / 256 ) == 1 ) {
+
+# virus was found. Exit cleanly, so we won't cause the email to bounce, and we won't deliver the message
+
+        exit(0);
+
+    }
+
+}
+
+# we get what our next action is from the postfix master.cf file ( run spamc ), do it here.
+
+if( -d "/var/spool/virtual/$domain/$user" ) {
+
+# only open up per-user spamassassin settings if the user exists, otherwise we'd have a directory in 
+# our VMAIL_ROOT for each remote email address we have ever redirected mail to
+
+    open(SPAMC,"|/usr/bin/spamc -u $recipient -f -e /usr/sbin/sendmail.postfix -oi -f $sender $recipient");
+
+} else {
+
+# use normal server default spam settings on email redirects
+
+    #open(SPAMC,"|/usr/bin/spamc -f -e /usr/sbin/sendmail -oi -f $sender $recipient");
+    open(SPAMC,"|/usr/sbin/sendmail.postfix -oi -f $sender $recipient");
+
+}
+
+print SPAMC @mail;
+

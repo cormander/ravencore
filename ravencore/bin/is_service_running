@@ -1,0 +1,17 @@
+#!/bin/bash
+
+#
+
+service $1 status &> /dev/null
+
+# exit status 0 means running OK
+
+if [ $? -eq 0 ]; then
+  
+    echo Yes
+  
+else
+    
+    echo No
+
+fi

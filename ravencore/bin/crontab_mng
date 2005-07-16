@@ -1,0 +1,70 @@
+#!/bin/bash
+
+. /etc/ravencore.conf || exit 1
+
+# Our incoming argument is the user to change the crontab for
+
+user=$1
+
+# Simple sanity check
+
+if [ ! $user ]; then
+
+    exit 1
+
+fi
+
+# Simple function to write a single crontab entry
+
+cron_entry() {
+
+    minute=$($MYSQL_STR -e "select minute from crontab where id = '$1'" | sed '1d')
+
+    hour=$($MYSQL_STR -e "select hour from crontab where id = '$1'" | sed '1d')
+
+    dayofm=$($MYSQL_STR -e "select dayofm from crontab where id = '$1'" | sed '1d')
+
+    month=$($MYSQL_STR -e "select month from crontab where id = '$1'" | sed '1d')
+
+    dayofw=$($MYSQL_STR -e "select dayofw from crontab where id = '$1'" | sed '1d')
+
+    cmd=$($MYSQL_STR -e "select cmd from crontab where id = '$1'" | sed '1d')
+
+# Write this to a temp file
+
+    echo -e "$minute\t$hour\t$dayofm\t$month\t$dayofw\t$cmd" >> /tmp/cron_$user.$$
+
+}
+
+# Get all crontab entries for this user
+
+for i in `$MYSQL_STR -e "select id from crontab where user = '$user'" | sed '1d'`; do
+
+    cron_entry $i
+    
+done
+
+# Remove the previous crontab
+
+crontab -u $user -r &> /dev/null
+
+# If we have atleast one crontab entry
+
+if [ -f /tmp/cron_$user.$$ ]; then
+
+# Add the new crontab
+
+    crontab -u $user /tmp/cron_$user.$$
+
+# Remove the temp file
+    
+    rm -f /tmp/cron_$user.$$
+
+fi
+
+
+#minute         0-59
+#hour           0-23
+#day of month   1-31
+#month          1-12 (or names, see below)
+#day of week    0-7 (0 or 7 is Sun, or use names)

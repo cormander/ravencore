@@ -1,0 +1,41 @@
+#!/bin/bash
+
+RC_ROOT=$(grep "RC_ROOT=" /etc/ravencore.conf | sed 's/=/ /' | awk '{print $2}')
+
+if [ -z "$RC_ROOT" ]; then
+
+    echo "Unable to get the RC_ROOT variable, exiting"
+
+    exit 1
+
+fi
+
+echo "Enter the hostname of a server with ravencore-database installed: "
+read host
+
+echo "Enter the database for ravencore on $host: "
+read database
+
+echo "Enter the username of the $database database on $host: "
+read user
+
+echo "Enter the password for $user at $host: "
+read pass
+
+mysql -h $host -u $user -p$pass -e "use $database" &> /dev/null
+
+if [ $? -eq 0 ]; then
+    
+    cat << EOF > $RC_ROOT/database.cfg
+MYSQL_ADMIN_USER="$user"
+MYSQL_ADMIN_HOST="$host"
+MYSQL_ADMIN_DB="$database"
+EOF
+
+    echo $pass > $RC_ROOT/.shadow
+
+else
+
+    echo "Unable to make a database connection with given info. Please try again"
+
+fi

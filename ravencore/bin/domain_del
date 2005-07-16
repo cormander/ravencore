@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# Grab the configuration file
+
+. /etc/ravencore.conf || exit 1
+
+# Our incoming arugment is the domain name to delete
+
+domain_name=$1
+
+# Make sure we actually have input before we remove anything
+
+if [ $domain_name ]; then
+
+    rm -rf $VHOST_ROOT/$domain_name
+    rm -f /etc/awstats/awstats.$domain_name.conf
+    rm -rf $QMAIL_ROOT/mailnames/$domain_name
+    
+# Run the rehash scripts
+
+    $RC_ROOT/bin/rehash_httpd --all
+    
+    $RC_ROOT/bin/rehash_mail --all
+    
+fi

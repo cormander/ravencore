@@ -1,0 +1,41 @@
+#!/usr/bin/perl
+
+# set our real uid and such to root
+$< = $>;
+$( = $) = 0;
+
+# destroy the enviroment path variable
+$ENV{PATH} = '/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin';
+
+$data = "@ARGV";
+
+if ($data =~ /^([-\@\w. ]+)$/) {
+    $data = $1;                     # $data now untainted
+} else {
+    die "Bad data in $data";        # log this somewhere
+}
+
+$RC_ROOT = `grep '^RC_ROOT=' /etc/ravencore.conf | sed 's/.*=//'`;
+
+if ($RC_ROOT =~ /^([\/-\w.]+)$/) {
+    $RC_ROOT = $1;
+} else {
+    die "Bad RC_ROOT: $RC_ROOT";
+}
+
+# the control panel begins each page with a call to test if suidperl works
+# print OK with no whitespace and no return characters, and exit cleanly
+
+if( $ARGV[0] eq "testsuid" ) {
+
+    print 'OK';
+    exit 0;
+
+}
+
+# exit out with error if the command to run isn't in the ravencore bin
+
+if( ! -x $RC_ROOT . "/bin/" . $ARGV[0] ) { print "Command doesn't exist\n";exit 1; }
+
+exec $RC_ROOT . "/bin/" . $data;
+

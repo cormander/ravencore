@@ -1,0 +1,61 @@
+#!/bin/bash
+
+# Grab the configuration file
+
+. /etc/ravencore.conf || exit 1
+
+# This script's usage output
+
+usage() {
+
+    echo "Usage: rehash_ftp paramater"
+    echo -e "\t--all      Rebuild all ftp users on the server"
+    echo -e "\tftpuser    Add/Modify this ftp user"
+    exit 1
+
+}
+
+# We must have one argument to run
+
+if [ $# -eq 0 ] || [ $# -gt 1 ]; then
+
+    usage
+
+fi
+
+case $1 in
+# Run mysql query to get a list of all ftp users
+    "--all") user_list=$($MYSQL_STR -e "select lcase(login) from sys_users" | sed '1d');;
+# This is the ftp user we're going to add/modify
+        *) user_list=$1;;
+esac
+
+# Loop through the user_list
+
+for sys_user in $user_list; do
+
+    tmp=$($MYSQL_STR -e "select concat(lcase(name), ':', passwd, ':', shell) from domains d, sys_users u where d.suid = u.id and login = '$sys_user'" | sed '1d')
+    domain_name=$(echo $tmp | sed 's/:/ /g' | awk '{print $1}')
+    passwd=$(echo $tmp | sed 's/:/ /g' | awk '{print $2}')
+    login_shell=$(echo $tmp | sed 's/:/ /g' | awk '{print $3}')
+
+# Just in case we didn't get a shell value, use the default. We need the quotes
+
+    if [ ! "$login_shell" ]; then
+
+	login_shell=$DEFAULT_LOGIN_SHELL
+
+    fi
+
+# update the user
+
+    /usr/sbin/usermod -s $login_shell -g $WEB_SERVER_GROUP -d $VHOST_ROOT/$domain_name -p $(perl -e "print crypt('$passwd','Sa');") $sys_user &> /dev/null
+
+# if we got bad exit status, the user doesn't exists, so add it
+
+    if [ $? -ne 0 ]; then
+
+	/usr/sbin/useradd -s $login_shell -g $WEB_SERVER_GROUP -d $VHOST_ROOT/$domain_name -p $(perl -e "print crypt('$passwd','Sa');") $sys_user	
+    fi
+    
+done

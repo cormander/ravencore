@@ -1,0 +1,160 @@
+
+# Set global variables for bash scripts
+
+verbose=0
+
+# make sure the $RC_ROOT directory exists
+
+if [ ! -d $RC_ROOT ]; then
+
+	logger "RavenCore root directory $RC_ROOT doesn't exist"
+
+	exit 1
+
+fi
+
+# make sure paths and variables are correctly set
+
+for tmp in httpd:HTTPD init.d:INITD; do
+
+# each value is ext:var
+
+    ext=$(echo $tmp | sed 's/:.*//')
+    var=$(echo $tmp | sed 's/.*://')
+
+# set the variable
+
+    eval $var=$(cat $RC_ROOT/var/run/$ext.path 2> /dev/null)
+
+# check to make sure the variable exists
+
+    if [ ! -f "$(eval echo \$$var)" ] || [ ! -d "$(eval echo \$$var)" ]; then
+
+        for i in $(cat $RC_ROOT/etc/paths.$ext); do
+
+# the values in tis loop are either files or directories. If we get to the point where we need  to
+# have a difference, we'll just create two loops, one with a -f and the other with a -d
+
+            if [ -f $i ] || [ -d $i ]; then
+
+                eval $var=$i
+
+                echo $i > $RC_ROOT/var/run/$ext.path
+
+                break
+
+            fi
+
+        done
+
+    fi
+
+# if we get here and the value of $var is not set as a variable, die with an error
+
+    if [ -z $(eval "if [ -n \"\$$var\" ]; then echo hello; fi") ]; then
+
+        echo "System variable $var is unset, unable to determine path"
+
+        exit 1
+
+    fi
+
+done
+
+# awstats isn't such a life threatening thing to not have, so simply just try to set it,
+# and not check to see if it actually exists. We export it so it will become part of the
+# ravencore.httpd enviroment, and will only change when the control panel is restarted.
+
+export AWSTATS_ROOT=$(cat $RC_ROOT/var/run/awstats_root.path 2> /dev/null)
+
+# load the database config file
+
+. $RC_ROOT/database.cfg
+
+# The password should be contained on a single line in a file readable only by rcadmin
+MYSQL_ADMIN_PASS=$(cat $RC_ROOT/.shadow)
+
+# This is the string which is used to connect to the database
+MYSQL_STR="mysql -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS $MYSQL_ADMIN_DB"
+
+# find the real name of the service script to start mysqld
+
+mysql_service=$(basename /etc/init.d/mysql*)
+
+# function to die on mysql connect error, and log it to the system logger
+
+mysql_die() {
+
+    logger -t ravencore "Unable to connect to database"
+    
+    exit 1
+
+}
+
+# we export all our variables, so any subshells ran will have them. We only need to do this once
+
+# check for our GOT_CONF variable, if it exists, we can assume our conf variables are already set
+
+if [ -z "$GOT_CONF" ]; then
+
+# This tests the database connection with the defined information
+    $MYSQL_STR -e "select now()" &> /dev/null || mysql_die 
+
+# get settings variables from database, and export them
+    
+    for i in `$MYSQL_STR -e "select concat(setting,'=',value) from settings" | sed '1d'`; do
+	
+	export $i
+	
+    done
+    
+# set our error num to zero for our conf check
+    
+    conf_err=0
+    
+# get required conf variables, and check for their existance
+    
+    for i in `cat $RC_ROOT/conf.d/* | grep -v "^#" | sed 's/=.*//g'`; do
+	
+	export | sed 's/=/ /g' | awk '{print $3}' | grep $i &> /dev/null
+
+	if [ $? -ne 0 ]; then
+	    
+	    logger -t ravencore "non existant variable: $i"
+	    
+	    conf_err=1
+	    
+	fi
+	
+    done
+    
+# if conf_err is 1, we don't have all our required varieables. exit out w/ error
+    
+    if [ $conf_err -eq 1 ]; then
+	
+	logger -t ravencore "Unable to load all required settings from database, exiting."
+	
+        exit 1
+	
+    else 
+	
+# export our GOT_CONF variable so we don't need to do this agian
+	
+	export GOT_CONF=1
+	
+    fi
+    
+fi
+
+# A function to echo the given input, if verbose is set to 1
+
+v_echo() {
+
+    if [ $verbose -eq 1 ]; then
+
+        echo $1
+
+    fi
+
+}
+

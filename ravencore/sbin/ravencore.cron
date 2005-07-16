@@ -1,0 +1,30 @@
+#!/bin/bash
+
+. /etc/ravencore.conf
+
+# make sure this script is being called via /etc/cron.x
+
+echo $0 | grep '^/etc/cron\.' &> /dev/null
+
+if [ $? -ne 0 ]; then
+
+    echo "This script must be called from an /etc/cron.x directory"
+
+    exit
+
+fi
+
+# loop through the scripts in the sbin that end with .cron.x , if any
+
+for i in `ls $RC_ROOT/sbin/*$(echo $0 | sed 's|/etc/||' | sed 's|/.*||' 2> /dev/null)`; do
+
+    if [ -x $i ]; then
+
+# execute the cron script
+
+	$i
+
+    fi
+
+done
+

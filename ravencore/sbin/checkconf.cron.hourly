@@ -1,0 +1,18 @@
+#!/bin/bash
+
+. /etc/ravencore.conf || exit 1
+
+# loop through all the installed packages, by looking in the conf.d directory
+
+for i in $(ls $RC_ROOT/conf.d | sed 's/\.conf$//g'); do
+    
+# if we have a checkconf script for this package, and it's executable, run it
+
+    if [ -f $RC_ROOT/conf.d/$i.conf ] && [ -x $RC_ROOT/sbin/checkconf.$i ]; then
+	
+	$RC_ROOT/sbin/checkconf.$i
+	
+    fi
+    
+done
+

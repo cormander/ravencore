@@ -1,0 +1,67 @@
+#!/bin/bash
+
+. /etc/ravencore.conf || exit 1
+
+# Process the proftpd log
+
+mv -f $FTP_LOG $FTP_LOG.1
+touch $FTP_LOG
+
+for i in `awk '{print $8 ":" $9}' $FTP_LOG.1 | sed 's|/home/httpd/vhosts/||' | sed 's|/.*||'`; do
+    
+    bytes=$(echo $i | sed 's/:.*//')
+    domain_name=$(echo $i | sed 's/.*://')
+    
+    did=$($MYSQL_STR -e "select id from domains where name = '$domain_name'" | sed '1d')
+    
+    $MYSQL_STR -e "insert into domain_traffic set type = 'ftp', date = now(), did = '$did', bytes = '$bytes'"
+    
+done
+
+cat $FTP_LOG.1 >> $FTP_LOG.processed
+
+rm -f $FTP_LOG.1
+
+# If we run in inet mode, we don't have to restart the ftp server
+
+# Calculate disk usage
+
+cd $VHOST_ROOT
+
+for domain_name in `ls -1`; do
+    
+    tmp=$(du -s $domain_name)
+# Convert kbytes to bytes, healingamongnations ftp 858
+    bytes=$(expr $(echo $tmp | awk '{print $1}') "*" 1024)
+ 
+    did=$($MYSQL_STR -e "select id from domains where name = '$domain_name'" | sed '1d')
+    
+    $MYSQL_STR -e "insert into domain_space set type = 'web', date = now(), did = '$did', bytes = '$bytes'"
+    
+done
+
+cd $VMAIL_ROOT/mailnames
+
+for domain_name in `ls -1`; do
+    
+    tmp=$(du -s $domain_name)
+    bytes=$(expr $(echo $tmp | awk '{print $1}') "*" 1024)
+    
+    did=$($MYSQL_STR -e "select id from domains where name = '$domain_name'" | sed '1d')
+    
+    $MYSQL_STR -e "insert into domain_space set type = 'mail', date = now(), did = '$did', bytes = '$bytes'"
+    
+done
+
+cd $MYSQL_ROOT_DIR
+
+for db_name in `ls -1`; do
+    
+    tmp=$(du -s $db_name)
+    bytes=$(expr $(echo $tmp | awk '{print $1}') "*" 1024)
+    
+    did=$($MYSQL_STR -e "select did from data_bases where name = '$db_name'" | sed '1d')
+    
+    $MYSQL_STR -e "insert into domain_space set type = 'database', date = now(), did = '$did', bytes = '$bytes'"
+    
+done

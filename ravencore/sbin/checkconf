@@ -1,0 +1,82 @@
+#!/bin/bash
+
+# we don't want to require a database connection, so say we already have one
+# so bash_functions doesn't attempt to read the database configuration
+
+export GOT_CONF=1
+
+. /etc/ravencore.conf || exit 1
+
+reload_ravencore=0
+
+# make sure the path to these directories are correct
+
+for dir in httpd_modules awstats_root; do
+
+    if [ ! -d "$(cat $RC_ROOT/var/run/$dir.path 2> /dev/null)" ]; then
+	
+	for path in `cat $RC_ROOT/etc/paths.$dir`; do
+	    
+	    if [ -d $path ]; then
+		
+		echo $path > $RC_ROOT/var/run/$dir.path
+		
+		reload_ravencore=1
+		
+		break;
+		
+	    fi
+	    
+	done
+	
+    fi
+
+done
+
+# check to make sure the session.save_path for php is correct, in case the $RC_ROOT variable changes
+
+echo "php_admin_value session.save_path $RC_ROOT/var/tmp" | diff $RC_ROOT/var/run/session.include - &> /dev/null
+
+if [ $? -ne 0 ]; then
+
+    echo "php_admin_value session.save_path $RC_ROOT/var/tmp" > $RC_ROOT/var/run/session.include
+
+    reload_ravencore=1
+
+fi
+
+# make sure the system httpd binary matches what we have running ravencore
+
+diff $HTTPD $RC_ROOT/sbin/ravencore.httpd &> /dev/null
+
+if [ $? -ne 0 ]; then
+
+    rm -f $RC_ROOT/sbin/ravencore.httpd
+
+    cp -rp $HTTPD $RC_ROOT/sbin/ravencore.httpd
+
+    reload_ravencore=1
+
+fi
+
+# check to see if we need to restart ravencore
+
+if [ $reload_ravencore -ne 0 ]; then
+
+# only call a restart if we are not being run by the init script itself
+
+    if [ -z "$INIT_RUNNING" ]; then
+
+	/sbin/service ravencore status &> /dev/null
+
+# only restart if ravencore is running
+	
+	if [ $? -eq 0 ]; then
+
+	    /sbin/service ravencore restart &> /dev/null
+
+	fi
+
+    fi
+
+fi

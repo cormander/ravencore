@@ -1,0 +1,36 @@
+#!/bin/bash
+
+runlevel=$1
+runlevel=3
+
+echo "<h2>Services set to start on boot ( runlevel 3 )</h2>"
+
+echo "<table cellpadding=0 cellspacing=0 border=0><tr>"
+
+for i in `chkconfig --list | grep '^[[:alpha:]]' | grep -v 'based services' | awk '{print $1}' | sort`; do
+
+    echo "<tr><td>$i</td>"
+
+    e=$(chkconfig --list $i | sed "s/$i//" | awk "{print \$$(expr $runlevel "+" 1)}")
+    echo 
+    status=$(echo $e | sed 's/.*://')
+    
+    case $status in
+	on)
+	    new_status=off
+	    ;;
+	off)
+	    new_status=on
+	    ;;
+	*)
+	    new_status=reset
+	    ;;
+    esac
+
+    echo "<td>&nbsp; &nbsp; $status <a href=\"chkconfig.php?service=$i&status=$new_status\">*</a></td>"
+
+    echo "</tr>"
+
+done
+
+echo "</table>"
