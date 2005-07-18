@@ -104,12 +104,12 @@ mk_vrt() {
 
 # Substattue out the "true" if it exists. If it is false, it won't match the follow case statement
 
-	arg=$(echo $arg | sed 's/:true//')
+        arg=$(echo $arg | sed 's/:true//')
 
 # Set our values appropriatly
 
 	case $arg in
-	    host_www) www=1
+	    www) www=1
 		v_echo "$domain_name has server alias www.$domain_name";;
 	    host_php) php=1
 		v_echo "$domain_name is setup for php";;
