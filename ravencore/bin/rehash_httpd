@@ -207,7 +207,12 @@ mk_vrt() {
 	echo_e "\tSSLEngine on"
         echo_e "\tSSLVerifyClient none"
 #	echo_e "\tSSLCertificateFile /usr/local/ravencore/certificates/default"
-	echo_e "\tSSLCertificateFile /etc/httpd/conf/ssl.crt/server.crt"
+	ssl_cert=$($MYSQL_STR -e "select value from parameters p inner join domains d on p.type_id = d.id where param = 'ssl_cert' and d.name = '$domain_name'" | sed '1d')
+	if [ -n "$ssl_cert" ]; then
+	    echo_e "\tSSLCertificateFile $ssl_cert"
+	else
+	    echo_e "\tSSLCertificateFile /etc/httpd/conf/ssl.crt/server.crt"
+	fi
 
     else
 
