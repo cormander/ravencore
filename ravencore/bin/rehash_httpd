@@ -154,17 +154,17 @@ mk_vrt() {
 
     if [ $ssl ]; then
 
-	touch -a $VHOST_ROOT/$domain_name/logs/ssl_access_log
-	echo_e "\tCustomLog  "$VHOST_ROOT"/"$domain_name"/logs/ssl_access_log combined"
-	touch -a $VHOST_ROOT/$domain_name/logs/ssl_error_log
-	echo_e "\tErrorLog   "$VHOST_ROOT"/"$domain_name"/logs/ssl_error_log"
+	touch -a $VHOST_ROOT/$domain_name/var/log/ssl_access_log
+	echo_e "\tCustomLog  "$VHOST_ROOT"/"$domain_name"/var/log/ssl_access_log combined"
+	touch -a $VHOST_ROOT/$domain_name/var/log/ssl_error_log
+	echo_e "\tErrorLog   "$VHOST_ROOT"/"$domain_name"/var/log/ssl_error_log"
 	
     else
 	
-	touch -a $VHOST_ROOT/$domain_name/logs/access_log
-	echo_e "\tCustomLog  "$VHOST_ROOT"/"$domain_name"/logs/access_log combined"
-	touch -a $VHOST_ROOT/$domain_name/logs/error_log
-	echo_e "\tErrorLog   "$VHOST_ROOT"/"$domain_name"/logs/error_log"
+	touch -a $VHOST_ROOT/$domain_name/var/log/access_log
+	echo_e "\tCustomLog  "$VHOST_ROOT"/"$domain_name"/var/log/access_log combined"
+	touch -a $VHOST_ROOT/$domain_name/var/log/error_log
+	echo_e "\tErrorLog   "$VHOST_ROOT"/"$domain_name"/var/log/error_log"
 	
     fi
 
@@ -189,15 +189,16 @@ mk_vrt() {
 	
 # Copy the model conf file as this domains conf file
 	
-	cp -f /etc/awstats/awstats.model.conf $VHOST_ROOT/$domain_name/conf/awstats.$domain_name.conf
+	cp -f $RC_ROOT/etc/awstats.model.conf.in $VHOST_ROOT/$domain_name/conf/awstats.$domain_name.conf
 	
 # Run the needed perl pie statements to edit the config file appropriatly
 	
-	perl -p -i -e "s/LogFile=\"\/var\/log\/httpd\/access_log\"/LogFile=\"$SLASHED_VHOST_ROOT\/$domain_name\/logs\/access_log.1\"/" $VHOST_ROOT/$domain_name/conf/awstats.$domain_name.conf
-	perl -p -i -e "s/SiteDomain=\"localhost.localdomain\"/SiteDomain=\"$domain_name\"/" $VHOST_ROOT/$domain_name/conf/awstats.$domain_name.conf
+	perl -p -i -e "s|LogFile=\".*\"|LogFile=\"$VHOST_ROOT/$domain_name/var/log/access_log.1\"|" $VHOST_ROOT/$domain_name/conf/awstats.$domain_name.conf
+
+	perl -p -i -e "s|SiteDomain=\".*\"|SiteDomain=\"$domain_name\"|" $VHOST_ROOT/$domain_name/conf/awstats.$domain_name.conf
 
 # do we want to do this this?    HostAliases="localhost 127.0.0.1"
-	perl -p -i -e "s/DirData=\"\/var\/lib\/awstats\"/DirData=\"$SLASHED_VHOST_ROOT\/$domain_name\/webstats\"/" $VHOST_ROOT/$domain_name/conf/awstats.$domain_name.conf
+	perl -p -i -e "s|DirData=\".*\"|DirData=\"$VHOST_ROOT/$domain_name/var/awstats\"|" $VHOST_ROOT/$domain_name/conf/awstats.$domain_name.conf
 	
     fi
 
@@ -377,7 +378,8 @@ for i in $domain_list; do
 # Make sure the proper directories exist and that they are set to the correct permissions
 
     mkdir -p $VHOST_ROOT/$domain_name/conf
-    mkdir -p $VHOST_ROOT/$domain_name/logs
+    mkdir -p $VHOST_ROOT/$domain_name/var/log
+    mkdir -p $VHOST_ROOT/$domain_name/var/awstats
     mkdir -p $VHOST_ROOT/$domain_name/httpdocs
 
 # We probably want to check for error here, but that is for a later release
