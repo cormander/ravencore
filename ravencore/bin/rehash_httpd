@@ -245,20 +245,6 @@ mk_vrt() {
 	echo_e "\t<IfModule sapi_apache2.c>"
 	echo_e "\t\tphp_admin_flag engine on"
 	echo_e "\t\tphp_admin_value open_basedir \""$VHOST_ROOT"/"$domain_name"/httpdocs:/tmp\""
-
-# Add custom php flags and values if any
-
-#	for i in `$MYSQL_STR -e "select concat(type, ':', value) from php_dom_settings where did = '$did'" | sed '1d'`; do
-
-#	    type=$(echo $i | sed 's/:.*//')
-#	    value=$(echo $i | sed 's/.*://')
-
-#	    echo_e "\t\t$type $value"
-
-#	    v_echo "$domain_name has custom php setting: $type $value"
-
-#	done
-
 	echo_e "\t</IfModule>"
 	
     else
