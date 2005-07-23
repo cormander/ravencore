@@ -63,14 +63,15 @@ if($did) {
 <input type=hidden name=mail value="off">
 </form>
 <p>';
-    /*
+
 print '<form method=POST>
-Mail to email accounts not set up for this domain:
+Mail sent to email accounts not set up for this domain ( catchall address ):
 <br>
-<input type=radio name=catchall value=true';
+<input type=checkbox name=catchall value=true';
       if($row[catchall] == "true") print ' checked';
-      print '> Send to: <input type=text name=catchall_addr value="' . $row[catchall_addr] . '"> <br>
-<input type=radio name=catchall value=false';
+      print '> Send to: <input type=text name=catchall_addr value="' . $row[catchall_addr] . '"> ';
+      /*
+print '<br> <input type=radio name=catchall value=false';
       if($row[catchall] == "false") print ' checked';
       print '> Bounce with: <input type=text name=bounce_message value="' . $row[bounce_message] . '"> <br>';
 

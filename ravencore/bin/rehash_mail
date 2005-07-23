@@ -16,6 +16,19 @@ touch vmailbox.$$
 touch login_maps.$$
 touch dovecot-passwd.$$
 
+# catchall accounts
+
+for i in $($MYSQL_STR -e "select concat(catchall_addr,':',name) from domains where mail = 'on' and catchall = 'true' order by name" | sed '1d'); do
+
+    catchall_addr=$(echo $i | sed 's/:.*//')
+    domain_name=$(echo $i | sed 's/.*://')
+
+    echo -e "@$domain_name\t\t$catchall_addr" >> valiasmap.$$    
+
+done
+
+# individual mail addresses
+
 for i in $($MYSQL_STR -e "select concat(m.id, ':', lcase(mail_name), ':', lcase(name), ':', mailbox, ':', m.passwd) from domains d, mail_users m where did = d.id and d.mail = 'on' order by name" | sed '1d'); do
 
 # separate the string into a temp variable so we don't have to make several calls to to the sed command
