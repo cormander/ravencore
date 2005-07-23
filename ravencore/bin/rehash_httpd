@@ -385,13 +385,13 @@ for i in $domain_list; do
 
 # Build the virtual host tag
 
-    case $($MYSQL_STR -e "select host_ssl from domains where name = '$domain_name'" | sed '1d') in
+    case $($MYSQL_STR -e "select host_ssl from domains where id = '$did'" | sed '1d') in
 	true)
 # use the mk_vrt function twice, one with ssl and one without
 	    mk_vrt 1
 	    mk_vrt
 	    ;;
-	false)
+	*)
 # we have not ssl, use the mk_vrt function once
 	    mk_vrt
 	    ;;
@@ -434,7 +434,7 @@ for i in `$MYSQL_STR -e "select concat(lcase(name), ':::', redirect_url) from do
 
 # Does this domain support www alias
 
-    case $($MYSQL_STR -e "select www from domains where name = '$domain_name'" | sed '1d') in
+    case $($MYSQL_STR -e "select www from domains where id = '$did'" | sed '1d') in
 	true) www=1;;
     esac
     
