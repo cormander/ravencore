@@ -45,6 +45,16 @@ if [ $? -ne 0 ]; then
 
 fi
 
+# make sure $HTTPD exists. If not, apache ( httpd ) is not installed
+
+if [ ! -f $HTTPD ]; then
+
+    echo "Fatal error, apache not installed. Unable to start control panel"
+
+    exit 1
+
+fi
+
 # make sure the system httpd binary matches what we have running ravencore
 
 diff $HTTPD $RC_ROOT/sbin/ravencore.httpd &> /dev/null
@@ -53,7 +63,7 @@ if [ $? -ne 0 ]; then
 
     rm -f $RC_ROOT/sbin/ravencore.httpd
 
-    cp -rp $HTTPD $RC_ROOT/sbin/ravencore.httpd
+    cp -p $HTTPD $RC_ROOT/sbin/ravencore.httpd
 
     reload_ravencore=1
 
