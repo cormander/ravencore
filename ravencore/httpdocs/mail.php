@@ -122,13 +122,28 @@ print '<br> <input type=radio name=catchall value=false';
       $num = mysql_num_rows($result);
       
       if($num == 0) print 'No mail for this domain.<p>';
-      else print '<table><tr><th colspan=3>Mail for this domain:</th></tr>';
+      else print '<table><tr><th colspan="100%">Mail for this domain:</th></tr>';
       
       print "";
       
       while( $row_email = mysql_fetch_array($result) ) {
 	
-	print '<tr><td><a href="edit_mail.php?did=' . $row_email[did] . '&mid=' . $row_email[id] . '" onmouseover="show_help(\'Edit ' . $row_email[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();">edit</a></td><td>' . $row_email[mail_name] . '@' . $row[name] . '</td><td><a href=mail.php?did=' . $row[id] . '&mid=' . $row_email[id] . '&action=delete onmouseover="show_help(\'Delete ' . $row_email[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();" onclick="';
+	print '<tr>
+<td><a href="edit_mail.php?did=' . $row_email[did] . '&mid=' . $row_email[id] . '" onmouseover="show_help(\'Edit ' . $row_email[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();">edit</a></td>
+<td>' . $row_email[mail_name] . '@' . $row[name] . '</td>
+<td>';
+
+        if( @fsockopen("localhost", 143) ) print '<form method=POST action="webmail/src/redirect.php" name="webmail_' . $row_email[id] . '" target="_blank">
+<input type=hidden name="login_username" value="' . $row_email[mail_name] . '@' . $row[name] . '" />
+<input type=hidden name="secretkey" value="' . $row_email[passwd] . '" />
+<input type=hidden name="js_autodetect_results" value="0" />
+<input type=hidden name="just_logged_in" value="1" />
+<a href="javascript:document.webmail_' . $row_email[id] . ' .submit();">Webmail</a>
+</form>';
+	else print '<a href="#" onclick="alert(\'Webmail is currently offline\')" onmouseover="show_help(\'Webmail is currently offline\');" onmouseout="help_rst();">Webmail ( offline )</a>';
+
+print '</td>
+<td><a href=mail.php?did=' . $row[id] . '&mid=' . $row_email[id] . '&action=delete onmouseover="show_help(\'Delete ' . $row_email[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();" onclick="';
 	
 	if(!user_can_add($uid,"email") and !is_admin()) print 'return confirm(\'If you delete this email, you may not be able to add it again.\rAre you sure you wish to do this?\');';
 	else print 'return confirm(\'Are you sure you wish to delete this email?\');';

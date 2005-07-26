@@ -18,7 +18,7 @@ if($action == "add") {
   if($row[count] != 0) $error = "User $_POST[login] already exists";
   else {
 
-    if(preg_match('/^'.REGEX_PASSWORD.'$/',$_POST[passwd])) {
+    if(preg_match('/^'.REGEX_PASSWORD.'$/',$_POST[passwd]) and valid_passwd($_POST[passwd])) {
 
       $sql = "select * from data_bases where id = '$db'";
       $result = mysql_query($sql);
@@ -38,7 +38,7 @@ if($action == "add") {
 
     } else {
 
-      alert("Invalid password. Must only contain letters and numbers.");
+      alert("Invalid password. Must only contain letters and numbers, must be atleast 5 characters, and not a dictionary word");
       $_POST[passwd] = "";
 
     }

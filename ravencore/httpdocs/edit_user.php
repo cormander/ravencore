@@ -28,6 +28,21 @@ if($action) {
     $_POST[confirm_passwd] = "";
     $select = "passwd";
 
+    /*
+  } else if($_POST[passwd] != $row_user[passwd]) {
+
+    alert("Incorrect password. Information not updated.");
+    $_POST[passwd] = "";
+    $_POST[confirm_passwd] = "";
+    $select = "passwd";
+    */
+  } else if(!valid_passwd($_POST[passwd])) {
+
+    alert("Your password must be atleast 5 characters long, and not a dictionary word.");
+    $_POST[passwd] = "";
+    $_POST[confirm_passwd] = "";
+    $select = "passwd";
+
   } else if(!$_POST[email] or !preg_match('/^'.REGEX_MAIL_NAME.'@'.REGEX_DOMAIN_NAME.'$/',$_POST[email])) {
 
     alert("The email address entered is invalid");
@@ -132,8 +147,8 @@ print ($uid ? 'Edit' : 'Add') . ' info';
 <tr><td>*Full Name:</td><td><input type="text" name="name" value="<?php if($_POST[name]) print $_POST[name]; else print $row_u[name]; ?>"></td></tr>
 <tr><td>*Email Address:</td><td><input type="text" name="email" value="<?php if($_POST[email]) print $_POST[email]; else print $row_u[email]; ?>"></td></tr>
 <tr><td>*Login:</td><td><input type="text" name="login" value="<?php if($_POST[login]) print $_POST[login]; else print $row_u[login]; ?>"></td></tr>
-<tr><td>*Password:</td><td><input type="password" name="passwd" value="<?php if($_POST[passwd]) print $_POST[passwd]; else print $row_u[passwd]; ?>"></td></tr>
-<tr><td>*Confirm:</td><td><input type="password" name="confirm_passwd" value="<?php if($_POST[confirm_passwd]) $_POST[passwd]; else if(is_admin()) print $row_u[passwd]; ?>"></td></tr>
+<tr><td>*Password:</td><td><input type="password" name="passwd" value="<?php if($_POST[passwd]) print $_POST[passwd]; else /*if(is_admin())*/ print $row_u[passwd]; ?>"></td></tr>
+<tr><td>*Confirm:</td><td><input type="password" name="confirm_passwd" value="<?php if($_POST[confirm_passwd]) $_POST[passwd]; else /*if(is_admin())*/ print $row_u[passwd]; ?>"></td></tr>
 <tr><td colspan="2" align="right"><input type="hidden" name="action" value="<?php if(!$uid) print 'add'; else print 'edit'; ?>">
 <input type="submit" value="<?php if(!$uid) print 'Add User'; else print 'Edit Info'; ?>">
 <?php if(!$uid and is_admin()) print '<br /><input type=checkbox name=permissions value=true checked> Proceed to Permissions Setup'; ?>
