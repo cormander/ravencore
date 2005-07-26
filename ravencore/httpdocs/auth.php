@@ -203,14 +203,12 @@ if($action == "login") {
     
   }
 
-  $outdated = 1;
-
   // look in our misc table to see if we should lock the control panel to users if our version is outdated
   // only bother checking if the configuration is complete
-  if($outdated == 1 and !$conf_not_complete) {
+  if($CONF[LOCK_IF_OUTDATED] == 1 and !$conf_not_complete) {
 
-    // set the timeout for the tcp connection
-    $timeout = 10;
+    // set the timeout for the tcp connection, lucky 7
+    $timeout = 7;
 
     if ($fsock = @fsockopen('www.ravencore.com', 80, $errno, $errstr, $timeout))
       {
@@ -236,15 +234,18 @@ if($action == "login") {
 
 	//echo "$general_version -- $current_version -- $CONF[VERSION]";
 	
-	if($current_version != $CONF[VERSION]) {
+	list($x,$y,$current_version) = explode('.',$current_version);
+	list($x,$y,$conf_version) = explode('.',$CONF[VERSION]);
 
-	  if(is_admin()) {
+	if($current_version > $conf_version) {
+
+	  if($_POST[user] == $CONF[MYSQL_ADMIN_USER]) {
 
 	    alert('Control panel is locked for users, because your lock if outdated setting is active, and we appear to be outdated.');
 
 	  } else {
 
-	    $login_error = "Login locked because control panel is outdated.";
+	    $login_error = $lang['locked_outdated'];
 
 	    syslog(LOG_WARNING, "Control panel outdated");
 
