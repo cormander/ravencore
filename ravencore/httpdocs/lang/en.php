@@ -5,6 +5,11 @@ $lang = array();
 //auth.php page
 $lang['welcome_and_thank_you'] = 'Welcome, and thank you for using RavenCore!';
 $lang['please_upgrade_config'] = 'You installed and/or upgraded some packages that require new configuration settings. Please take a moment to review these settings. We recomend that you keep the default values, but if you know what you are doing, you may adjust them to your liking.';
+$lang['test_suid_error'] = 'Your system is unable to suid on perl scripts. This is required for ravencore to function. Please install the perl-suidperl package or recompile perl with suid support';
+$lang['no_php_mysql'] = 'Unable to call the mysql_connect function. Please install the php-mysql package or recompile PHP with mysql support, and restart the control panel';
+$lang['locked_outdated'] = "Login locked because control panel is outdated.";
+$lang['api_cmd_failed'] = 'API command failed. This server is configured as a master server.';
+$lang['locked_upgrading'] = "Control Panel is being upgraded. Login Locked.";
 
 //users.php page
 $lang['search'] = 'Search';

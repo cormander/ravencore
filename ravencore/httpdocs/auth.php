@@ -16,6 +16,19 @@ $js_alerts = array();
 $CONF = array();
 $conf_not_complete = false;
 
+//Start the php session. Since the function always returns true, the only time we will
+//fail is when we dont have the function. If so, die
+
+session_start() or die("The server doesn't have PHP session functions available.<p>Please recompile PHP with sessions enabled."); 
+
+//Get the ID of this session
+
+$session_id = session_id();
+
+// get our lang based on our session. default to en
+// language support not done. so for now, just include lang/en.php
+include("lang/en.php");
+
 //A list of variables that are allowed to use the GET and POST methods
 $reg_glob_vars = array('uid','did','mid','action','db','dbu','page_type');
 
@@ -56,7 +69,7 @@ Please run the following script as root:
 
 if(shell_exec("../sbin/wrapper testsuid") != "OK") {
 
-  print 'Your system is unable to suid on perl scripts. This is required for ravencore to function. Please install the perl-suidperl package or recompile perl with suid support';
+  print $lang['test_suid_error'];
 
   exit;
 
@@ -66,7 +79,7 @@ if(shell_exec("../sbin/wrapper testsuid") != "OK") {
 
 if(!function_exists("mysql_connect")) {
 
-  print 'Unable to call the mysql_connect function. Please install the php-mysql package or recompile PHP with mysql support, and restart the control panel';
+  print $lang['no_php_mysql'];
 
   exit;
 
@@ -96,19 +109,6 @@ read_conf();
 
 // set our some of our php_admin_values that we can't define in the ravencore.httpd.conf
 error_reporting(E_ALL ^ E_NOTICE);
-
-//Start the php session. Since the function always returns true, the only time we will
-//fail is when we dont have the function. If so, die
-
-session_start() or die("The server doesn't have PHP session functions available.<p>Please recompile PHP with sessions enabled."); 
-
-//Get the ID of this session
-
-$session_id = session_id();
-
-// get our lang based on our session. default to en
-// for now, just include lang/en.php
-include("lang/en.php");
 
 //If we're trying to login, run the authentication
 
@@ -274,7 +274,7 @@ if($action == "login") {
 
     } else {
 
-      print 'API command failed. This server is configured as a master server.';
+      print $lang['api_cmd_failed'];
 
       syslog(LOG_INFO, "API command attempted on master server from $_SERVER[REMOTE_ADDR]");
 
@@ -572,7 +572,7 @@ if($conf_not_complete and $_SERVER[PHP_SELF] != "/change_password.php" and $_SER
 
   } else {
 
-    $login_error = "Control Panel is being upgraded. Login Locked.";
+    $login_error = $lang['locked_upgrading'];
 
     include "login.php";
 
