@@ -192,7 +192,7 @@ if(!$did) {
 	
 	// the file manager make a connection to port 21 and uses FTP to manage files. If the ftp server is
 	// offline, then we want to say that here.
-	$ftp_working = fsockopen("localhost", 21);
+	$ftp_working = @fsockopen("localhost", 21);
 
 	if($ftp_working) print '<a href="filemanager.php?did=' . $did . '" target="_blank" onmouseover="show_help(\'Go to the File Manager for this domain\');" onmouseout="help_rst();">';
 	else print '<a href="#" onclick="alert(\'The file manager is currently offline\')" onmouseover="show_help(\'The file manager is currently offline\');" onmouseout="help_rst();">';
@@ -265,7 +265,7 @@ if(!$did) {
 
     }
 
-    if(have_service("web") and $_ENV[AWSTATS_ROOT]) print '<a href="webstats.php?config=' . $row[name] . '" target=_blank onmouseover="show_help(\'View Webstats for this domain\');" onmouseout="help_rst();">Webstats</a>';
+    if(have_service("web") and $_ENV[AWSTATS_ROOT]) print '<a href="webstats.php?did=' . $row[id] . '" target=_blank onmouseover="show_help(\'View Webstats for this domain\');" onmouseout="help_rst();">Webstats</a>';
 
     print '</td></tr></table>';
 

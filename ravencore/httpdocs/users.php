@@ -202,6 +202,8 @@ mainmenu.style.visibility=\'visible\'
       
       if(have_service("dns")) print '<a href="#" onmouseover="show_help(\'Add/Edit DNS records\');" onmouseout="help_rst();" onclick="sel_toggle(\'dns.php\');">Add/Edit DNS</a><p>';
 
+      if(have_service("web")) print '<a href="#" onmouseover="show_help(\'View Webstats\');" onmouseout="help_rst();" onclick="sel_toggle(\'webstats.php\');">View Webstats</a><p>';
+
       //the admin user can see the uid here
       print '<a href="domains.php';
       if(is_admin()) print '?uid=' . $uid;

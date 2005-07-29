@@ -11,7 +11,7 @@ cat $RC_ROOT/etc/services.* | grep $1 &> /dev/null
 if [ $? -ne 0 ]; then
 
 # not in list, exit with error
-    echo "Service $1 not in list of services"; exit 1;
+    echo "Service $1 not in list of services"
 
     exit 1
 
