@@ -104,18 +104,23 @@ if(!$db and $did) {
   $num = mysql_num_rows($result);
 
   if($num == 0) print "No users for this database<p>";
+  else print '<table><tr><th>User</th><th>&nbsp;</th><th>Delete</th></tr>';
 
   while( $row = mysql_fetch_array($result) ) {
 
-    print $row[login] . ' - <a href="phpmyadmin.php?did=' . $did . '&dbu=' . $row[id] . '&db=' . $db . '" target=_blank>phpMyAdmin</a> - <a href="databases.php?action=userdel&dbu=' . $row[id] . '&did=' . $did . '&db=' . $db . '" onclick="return confirm(\'Are you sure you wish to delete this database user?\');">delete</a><p>';
+    print '<tr><td>' . $row[login] . '</td>
+<td><a href="phpmyadmin.php?did=' . $did . '&dbu=' . $row[id] . '&db=' . $db . '" target=_blank>phpMyAdmin</a></td>
+<td><a href="databases.php?action=userdel&dbu=' . $row[id] . '&did=' . $did . '&db=' . $db . '" onclick="return confirm(\'Are you sure you wish to delete this database user?\');">delete</a></td></tr>';
     
   }
+
+  if($num != 0) print '</table>';
 
   print "Note: You may only manage one database user at a time with the phpmyadmin";
     
 } else {
 
-  //list add databases
+  //list all databases
 
   req_admin();
   
@@ -128,21 +133,25 @@ if(!$db and $did) {
   
   print '</form><p>';
   
-  $sql = "select * from data_bases";
-  if($_GET[search]) $sql .= " where name like '%$_GET[search]%'";
-  $sql .= " order by name";
+  $sql = "select d.name as domain_name, b.name as db_name, b.id, b.did from data_bases b inner join domains d on d.id = b.did";
+  if($_GET[search]) $sql .= " where b.name like '%$_GET[search]%'";
+  $sql .= " order by d.name, b.name";
   $result = mysql_query($sql);
   
   $num = mysql_num_rows($result);
 
-  if($num == 0 and !$_GET[search]) print "There are no databases setup";
+  if($num == 0 and !$_GET[search]) print 'There are no databases setup';
   else if($_GET[search]) print 'Your search returned <i><b>' . $num . '</b></i> results<p>';
+
+  if($num != 0) print '<table><tr><th>Domain</th><th>Database</th></tr>';
 
   while( $row = mysql_fetch_array($result) ) {
 
-    print '<a href="databases.php?db=' . $row[id] . '&did=' . $row[did] . '">' . $row[name] . '</a><br>';
+    print '<tr><td>' . $row[domain_name] . '</td><td><a href="databases.php?db=' . $row[id] . '&did=' . $row[did] . '">' . $row[db_name] . '</a></td></tr>';
 
   }
+
+  if($num != 0) print '</table>';
 
 }
 

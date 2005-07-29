@@ -72,6 +72,10 @@ print '<a href="change_password.php" onmouseover="show_help(\'Change the admin p
 
 </td><td valign=top>
 
+<p>
+<a href="phpmyadmin_admin.php" target=_blank onmouseover="show_help('Load phpMyAdmin for all with MySQL admin user');" onmouseout="help_rst();">Admin MySQL Databases</a>
+</p>
+
 <a href="sysinfo" target=_blank onmouseover="show_help('View general system information');" onmouseout="help_rst();">System Info</a>
 
 <p>
