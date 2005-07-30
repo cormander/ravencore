@@ -50,23 +50,14 @@ if($action) {
 	    
 	    if(preg_match('/^'.REGEX_PASSWORD.'$/',$_POST[passwd])) {
 	      
-	      $sql = "select count(*) as count from mail_users where mail_name = '$_POST[name]' and passwd = '$_POST[passwd]'";
-	      $result = mysql_query($sql);
-	      $row = mysql_fetch_array($result);
-	      
-	      if($row[count] != 0 and $page_type == "add") alert("Invalid mailname / password combination");
-	      else {
-		
 	      if($page_type == "add") $sql = "insert into mail_users set mail_name = '$_POST[name]', did = '$did', passwd = '$_POST[passwd]', spamassassin = '$_POST[spamassassin]', mailbox = '$_POST[mailbox]', redirect = '$_POST[redirect]', redirect_addr = '$_POST[redirect_addr]'";
 	      else $sql = "update mail_users set passwd = '$_POST[passwd]', mailbox = '$_POST[mailbox]', spamassassin = '$_POST[spamassassin]', redirect = '$_POST[redirect]', redirect_addr = '$_POST[redirect_addr]' where id = '$mid'";
-
+	      
 	      mysql_query($sql);
 	      
 	      socket_cmd("rehash_mail --all");
 	      
 	      goto("mail.php?did=$did");
-	      
-	      }
 	      
 	    } else {
 	      
@@ -148,7 +139,9 @@ if($page_type == "edit") {
 
 print ($mid ? 'Edit' : 'Add');
 
-?> mail</th></tr>
+?> mail</th><th><?php
+
+?></th></tr>
 
 <tr><td>Mail Name:</td><td><?php
 
