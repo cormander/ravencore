@@ -109,12 +109,12 @@ print '<br> <input type=radio name=catchall value=false';
 	print '</select>';
 
       } else print '<input type=radio disabled> You need at least two domains in the account with mail turned on to be able to alias mail';
-
-      print '<p>
+      print '<p>';
+      */
+      print '
 <input type=submit value="Update"> <input type=hidden name=did value="' . $row[id] . '"> <input type=hidden name=action value=update>
 </form>
 <p>';
-    */
       
       $sql = "select * from mail_users where did = '$row[id]' order by mail_name";
       $result = mysql_query($sql);

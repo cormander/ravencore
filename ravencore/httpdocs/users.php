@@ -25,7 +25,7 @@ nav_top();
 if(!$uid) {
 
 print '<form method="get" name=search>
-' . $lang['search'] . ': <input type=text name=search value="' . $_GET[search] . '">
+' . $lang['search'] . ': <input class="textfield" type=text name=search value="' . $_GET[search] . '">
 <input type=submit value="' . $lang['go'] . '" onclick="if(!document.search.search.value) { alert(\'' . $lang['please_enter_search_val2'] . '\'); return
 false; }">';
 

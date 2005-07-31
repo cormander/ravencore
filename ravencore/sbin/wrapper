@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+use Net::FTP;
+
 # set our real uid and such to root
 $< = $>;
 $( = $) = 0;

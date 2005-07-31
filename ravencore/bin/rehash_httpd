@@ -269,7 +269,7 @@ mk_vrt() {
 	echo_e "\t\tallow from all"
 	echo_e "\t\tPerlSendHeader On"
 	echo_e "\t</Files>"
-	echo_e "\t</IfModule>"
+	echo_e "\t</IfModule>"	
 	
     fi
     

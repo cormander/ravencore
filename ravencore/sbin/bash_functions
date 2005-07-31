@@ -32,7 +32,7 @@ for tmp in httpd:HTTPD init.d:INITD; do
 
         for i in $(cat $RC_ROOT/etc/paths.$ext); do
 
-# the values in tis loop are either files or directories. If we get to the point where we need  to
+# the values in tis loop are either files or directories. If we get to the point where we need to
 # have a difference, we'll just create two loops, one with a -f and the other with a -d
 
             if [ -f $i ] || [ -d $i ]; then
