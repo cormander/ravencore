@@ -906,9 +906,9 @@ function delete_domain($did) {
 
 function delete_email($email) {
 
-  if(!have_mail("mail")) return;
+  if(!have_service("mail")) return;
 
-  $sql = "select * from mail_users m, domains d where did = d.id and m.id = '$email'";
+  $sql = "select d.name, m.mail_name from mail_users m, domains d where did = d.id and m.id = '$email'";
   $result = mysql_query($sql);
 
   $num = mysql_num_rows($result);
@@ -920,7 +920,9 @@ function delete_email($email) {
     $sql = "delete from mail_users where id = '$email'";
     mysql_query($sql);
 
-    socket_cmd("mail_del $row[mail_name]@$row[name]");
+    socket_cmd("mail_del $row[name] $row[mail_name]");
+
+    socket_cmd("rehash_mail --all");
 
   }
 

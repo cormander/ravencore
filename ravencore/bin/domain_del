@@ -13,8 +13,7 @@ domain_name=$1
 if [ $domain_name ]; then
 
     rm -rf $VHOST_ROOT/$domain_name
-    rm -f /etc/awstats/awstats.$domain_name.conf
-    rm -rf $QMAIL_ROOT/mailnames/$domain_name
+    rm -rf $VMAIL_ROOT/$domain_name
     
 # Run the rehash scripts
 
