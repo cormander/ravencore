@@ -6,9 +6,9 @@
 
 for i in $(ls $RC_ROOT/conf.d | sed 's/\.conf$//g'); do
     
-# if we have a checkconf script for this package, and it's executable, run it
+# if this package is installed, and we have a checkconf script for it, and it's executable, run it
 
-    if [ -f $RC_ROOT/conf.d/$i.conf ] && [ -x $RC_ROOT/sbin/checkconf.$i ]; then
+    if [ -x $RC_ROOT/conf.d/$i.conf ] && [ -x $RC_ROOT/sbin/checkconf.$i ]; then
 	
 	$RC_ROOT/sbin/checkconf.$i
 	

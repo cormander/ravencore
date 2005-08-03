@@ -61,11 +61,8 @@ for tmp in httpd:HTTPD init.d:INITD; do
 
 done
 
-# awstats isn't such a life threatening thing to not have, so simply just try to set it,
-# and not check to see if it actually exists. We export it so it will become part of the
-# ravencore.httpd enviroment, and will only change when the control panel is restarted.
-
-export AWSTATS_ROOT=$(cat $RC_ROOT/var/run/awstats_root.path 2> /dev/null)
+# make sure database.cfg and .shadow exist
+touch $RC_ROOT/database.cfg $RC_ROOT/.shadow
 
 # load the database config file
 
@@ -114,7 +111,7 @@ if [ -z "$GOT_CONF" ]; then
     
 # get required conf variables, and check for their existance
     
-    for i in `cat $RC_ROOT/conf.d/* | grep -v "^#" | sed 's/=.*//g'`; do
+    for i in `cat $(for e in $(ls $RC_ROOT/conf.d); do if [ -x $RC_ROOT/conf.d/$e ]; then echo $RC_ROOT/conf.d/$e; fi; done) | grep -v "^#" | sed 's/=.*//g'`; do
 	
 	export | sed 's/=/ /g' | awk '{print $3}' | grep $i &> /dev/null
 
@@ -145,6 +142,18 @@ if [ -z "$GOT_CONF" ]; then
     fi
     
 fi
+
+
+# some defined variables that we can't change
+
+WEB_SERVER_GROUP=servgrp
+
+# The system user mail will run as
+VMAIL_USER=vmail
+
+# The system uid and gid of the mail user
+VMAIL_UID=148
+VMAIL_GID=148
 
 # A function to echo the given input, if verbose is set to 1
 

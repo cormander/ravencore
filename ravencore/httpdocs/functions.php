@@ -96,7 +96,7 @@ function have_service($service) {
 
   global $CONF;
 
-  if(file_exists("$CONF[RC_ROOT]/conf.d/$service.conf")) return true;
+  if(is_executable("$CONF[RC_ROOT]/conf.d/$service.conf")) return true;
   else return false;
 
 }
@@ -1188,7 +1188,7 @@ function read_conf() {
   // The php is the only place in which the server_type.conf is read, because the php is the
   // only place where the value matters.
   
-  $handle = popen("cat {../conf.d/*,../etc/server_type.conf}","r");
+  $handle = popen("cat \$(for i in `ls ../conf.d/`; do if [ -x ../conf.d/\$i ]; then echo ../conf.d/\$i; fi; done | tr '\n' ' ') ../etc/server_type.conf}","r");
 
   while( !feof($handle) ) $conf_data .= fread($handle, 1024);
   

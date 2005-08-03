@@ -9,9 +9,172 @@ export GOT_CONF=1
 
 reload_ravencore=0
 
+# check to see if our db_install script ran
+
+if [ ! -f $RC_ROOT/var/run/db_install ]; then
+
+# install the ravencore database
+    $RC_ROOT/sbin/db_install
+
+# check to see if it exited cleanly
+
+    if [ $? -ne 0 ]; then
+
+	exit 1
+
+    fi
+
+# tell us that we ran the db_install script
+    touch $RC_ROOT/var/run/db_install
+
+fi
+
+# make sure that ravencore is a listed service
+
+if [ -x /sbin/chkconfig ]; then
+
+    /sbin/chkconfig --list ravencore &> /dev/null
+
+    if [ $? -ne 0 ]; then
+
+# not listed as a service, add it
+        /sbin/chkconfig --add ravencore
+# set ravencore to startup on boot. Some distrobutions complain about setting more than one
+# runlevel with a single chkconfig command, so we'll run 3 of them instead
+        /sbin/chkconfig --level 3 ravencore
+        /sbin/chkconfig --level 4 ravencore
+        /sbin/chkconfig --level 5 ravencore
+
+    fi
+
+fi
+
+# make sure $HTTPD exists. If not, apache ( httpd ) is not installed
+
+if [ ! -f $HTTPD ]; then
+
+    echo "Fatal error, apache not installed."
+
+    exit 1
+
+fi
+
+# make sure the servgrp exists
+
+groupmod -g 149 servgrp 2> /dev/null
+
+if [ $? -ne 0 ]; then
+
+    groupadd -g 149 servgrp
+
+# we need to figure out what user this system is configured to run apache as, so we can add it to servgrp
+
+# if apache is running, see what users it is running as
+    
+    httpd_user=$(for i in `pidof $HTTPD`; do ls -dal /proc/$i; done | awk '!/root/{print $3}' | head -n 1)
+
+# we won't have $httpd_user set if apache isn't running. Try to figure out the user from the conf file
+
+    if [ -z "$httpd_user" ]; then
+
+# get the compiled in server root and server config file
+	httpd_server_root=$($HTTPD -V | grep HTTPD_ROOT | sed 's/=/ /' | awk '{print $3}' | sed 's/"//g')
+	httpd_config_file=$($HTTPD -V | grep SERVER_CONFIG_FILE | sed 's/=/ /' | awk '{print $3}' | sed 's/"//g')
+
+# look for the path to the apache conf file
+	
+	if [ -f $httpd_server_root/$httpd_config_file ]; then
+	    
+	    httpd_config_file="$httpd_server_root/$httpd_config_file"
+	    
+	elif [ ! -f $httpd_config_file ]; then
+
+# if there is no file existing in $httpd_server_root/$httpd_config_file or $httpd_config_file , then
+# we can't look up what user apache will run as
+	    
+	    echo "Unable to find apache's compiled in configuration file"
+	    echo "HTTPD_ROOT=$httpd_server_root"
+	    echo "SERVER_CONFIG_FILE=$httpd_config_file"
+	    
+	    exit 1
+	    
+	fi
+	
+# find the user from the httpd conf file
+	httpd_user=$(grep "^User" $httpd_config_file | awk '{print $2}')
+
+# if the user is not found, we can't add it to the servgrp, and vhosts won't work
+
+	if [ -z "$httpd_user" ]; then
+	
+	    echo "Unable to find the user apache runs as from its configuration file $httpd_config_file"
+	    
+	    exit 1
+
+	fi
+
+
+    fi
+
+    users_in_httpd_group=$(grep "^$httpd_user" /etc/group | sed 's/:/ /g' | awk '{print $4}')
+
+# if there are users, be sure to use a comma
+    if [ -n "$users_in_httpd_group" ]; then
+
+	usermod -G $users_in_httpd_group,servgrp $httpd_user
+
+    else
+
+	usermod -G servgrp $httpd_user
+
+    fi
+
+fi
+
+# make sure we have the rcadmin user / group
+# check the group first, because in order to add the user, we need a valid existing gid
+
+groupmod -g 147 rcadmin 2> /dev/null
+
+if [ $? -ne 0 ]; then
+
+    groupadd -g 147 rcadmin
+
+fi
+
+usermod -u 147 -G servgrp rcadmin 2> /dev/null
+
+if [ $? -ne 0 ]; then
+
+    useradd -M -u 147 -g 147 -G servgrp -d $RC_ROOT -s /bin/false rcadmin
+
+fi
+
+# Set correct ownership and permissions so that the panel can read the .shadow file
+chown rcadmin:rcadmin $RC_ROOT/.shadow $RC_ROOT/database.cfg
+chmod 600 $RC_ROOT/.shadow $RC_ROOT/database.cfg
+# make sure all the directories are readable
+# TODO: figure out what could be tightened up with 750 permissions or something
+chmod 755 $RC_ROOT/{.,bin,sbin,conf.d,httpdocs,etc,var}
+chown root:root $RC_ROOT/{.,bin,sbin,conf.d,httpdocs,etc,var}
+# make sure all the appropriate tmp directories are owned by root:rcadmin and set to 770
+chown root:rcadmin $RC_ROOT/var/{tmp,run} $RC_ROOT/httpdocs/{webmail/data,filemanager/tmp}
+chmod 770 $RC_ROOT/var/{tmp,run} $RC_ROOT/httpdocs/{webmail/data,filemanager/tmp}
+# make sure the wrapper has correct ownership / permissions
+chown root:rcadmin $RC_ROOT/sbin/wrapper
+chmod 4150 $RC_ROOT/sbin/wrapper
+
+# Check if we don't have something in the server-id.conf file
+
+SERVER_ID=$(cat $RC_ROOT/etc/server-id 2> /dev/null)
+if [ -z "$SERVER_ID" ]; then
+# 16 item long string with randomly generated letters ( from A to Z )
+    perl -e 'for($i=0;$i<16;$i++) {print pack("C",int(rand(26))+65)}; print "\n"' > $RC_ROOT/etc/server-id
+fi
+
 # make sure the path to these directories are correct
 
-for dir in httpd_modules awstats_root; do
+for dir in httpd_modules; do
 
     if [ ! -d "$(cat $RC_ROOT/var/run/$dir.path 2> /dev/null)" ]; then
 	
@@ -45,16 +208,6 @@ if [ $? -ne 0 ]; then
 
 fi
 
-# make sure $HTTPD exists. If not, apache ( httpd ) is not installed
-
-if [ ! -f $HTTPD ]; then
-
-    echo "Fatal error, apache not installed. Unable to start control panel"
-
-    exit 1
-
-fi
-
 # make sure the system httpd binary matches what we have running ravencore
 
 diff $HTTPD $RC_ROOT/sbin/ravencore.httpd &> /dev/null
@@ -69,6 +222,23 @@ if [ $? -ne 0 ]; then
 
 fi
 
+# check to make sure the vsftpd.conf file is correct
+
+if [ -f /etc/vsftpd/vsftpd.conf ]; then
+
+    diff /etc/vsftpd/vsftpd.conf $RC_ROOT/etc/vsftpd.conf.in &> /dev/null
+
+    if [ $? -ne 0 ]; then
+
+	rm -f /etc/vsftpd/vsftpd.conf
+	cp $RC_ROOT/etc/vsftpd.conf.in /etc/vsftpd/vsftpd.conf
+
+	$INITD/vsftpd restart &> /dev/null
+
+    fi
+
+fi
+
 # check to see if we need to restart ravencore
 
 if [ $reload_ravencore -ne 0 ]; then
@@ -77,16 +247,62 @@ if [ $reload_ravencore -ne 0 ]; then
 
     if [ -z "$INIT_RUNNING" ]; then
 
-	/sbin/service ravencore status &> /dev/null
+	$INITD/ravencore status &> /dev/null
 
 # only restart if ravencore is running
 	
 	if [ $? -eq 0 ]; then
 
-	    /sbin/service ravencore restart &> /dev/null
+	    $INITD/ravencore restart &> /dev/null
 
 	fi
 
     fi
+
+fi
+
+# here, figure out what "services" are installed, and set the "x" bit on the conf.d file accordingly
+
+# we are base :) always set with +x
+
+chmod +x $RC_ROOT/conf.d/base.conf
+
+# for now, web and mysql are always here also
+
+chmod +x $RC_ROOT/conf.d/{web,mysql}.conf
+
+# is postfix installed?
+
+if [ -f /usr/sbin/postfix ]; then
+
+    chmod +x $RC_ROOT/conf.d/mail.conf
+
+else
+
+    chmod -x $RC_ROOT/conf.d/mail.conf
+
+fi
+
+# is spamassassin installed?
+
+if [ -f /usr/bin/spamc ]; then
+
+    chmod +x $RC_ROOT/conf.d/mailscan.conf
+
+else
+
+    chmod -x $RC_ROOT/conf.d/mailscan.conf
+
+fi
+
+# is bind installed?
+
+if [ -f /usr/sbin/named ]; then
+
+    chmod +x $RC_ROOT/conf.d/dns.conf
+
+else
+
+    chmod -x $RC_ROOT/conf.d/dns.conf
 
 fi

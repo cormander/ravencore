@@ -6,6 +6,25 @@
 
 postfix_reload=0
 
+# make sure we have the the vmail user / group
+# check the group first, because in order to add the user, we need a valid existing gid
+
+groupmod -g 148 vmail 2> /dev/null
+
+if [ $? -ne 0 ]; then
+
+    groupadd -g 148 vmail
+
+fi
+
+usermod -u 148 vmail 2> /dev/null
+
+if [ $? -ne 0 ]; then
+
+    useradd -u 148 -g 148 -d $VMAIL_ROOT -s /bin/false vmail
+
+fi
+
 # check our sasl conf file, to make sure smtp authentication will work
 
 diff /usr/lib/sasl2/smtpd.conf $RC_ROOT/etc/sasl2.smtpd.conf.in &> /dev/null
