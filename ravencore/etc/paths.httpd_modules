@@ -1,3 +1,4 @@
 /usr/lib/httpd/modules
+/usr/lib/apache2/modules
 /usr/lib/apache
 /etc/httpd/modules

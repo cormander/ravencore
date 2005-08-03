@@ -18,7 +18,7 @@ if [ -f $log_file.1 ]; then
 # update AWStats on the access_log.1
 
     case $log_file in
-	"access_log") $AWSTATS_ROOT/tools/awstats_updateall.pl now -awstatsprog=$AWSTATS_ROOT/wwwroot/cgi-bin/awstats.pl -configdir=$VHOST_ROOT/$domain_name/conf/ &> /dev/null;;
+	"access_log") $RC_ROOT/var/awstats/tools/awstats_updateall.pl now -awstatsprog=$RC_ROOT/var/awstats/wwwroot/cgi-bin/awstats.pl -configdir=$VHOST_ROOT/$domain_name/conf/ &> /dev/null;;
     esac
 
 # the processed log probably already exists, so append log.1 to it. If it doesn't

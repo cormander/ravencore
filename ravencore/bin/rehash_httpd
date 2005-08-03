@@ -409,6 +409,9 @@ fi
 
 # Rebuild the httpd-include.conf file
 
+echo "NameVirtualHost *:80" >> $APACHE_CONF_D/httpd-include.conf
+echo "NameVirtualHost *:443" >> $APACHE_CONF_D/httpd-include.conf
+
 v_echo "Rebuilding the httpd-include.conf file"
 
 for i in `$MYSQL_STR -e "select lcase(name) from domains d, sys_users u where d.suid = u.id and host_type = 'physical' and hosting = 'on'" | sed '1d'`; do

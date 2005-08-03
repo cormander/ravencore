@@ -265,7 +265,7 @@ if(!$did) {
 
     }
 
-    if(have_service("web") and $_ENV[AWSTATS_ROOT]) print '<a href="webstats.php?did=' . $row[id] . '" target=_blank onmouseover="show_help(\'View Webstats for this domain\');" onmouseout="help_rst();">Webstats</a>';
+    if(have_service("web")) print '<a href="webstats.php?did=' . $row[id] . '" target=_blank onmouseover="show_help(\'View Webstats for this domain\');" onmouseout="help_rst();">Webstats</a>';
 
     print '</td></tr></table>';
 
