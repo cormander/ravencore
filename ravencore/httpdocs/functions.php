@@ -18,22 +18,29 @@ function get_all_services() {
   array_pop($modules);
   
   foreach($modules as $module) {
-    
-    $data = '';
-    $tmp = array();
-    
-    $h = fopen($module, "r");
-    
-    while(!feof($h)) $data .= fread($h, 1024);
-    
-    pclose($h);
 
-    $tmp = explode("\n", $data);
-    // get rid of the last line which is blank
-    array_pop($tmp);
+    // figure out the service name
+    $service = preg_replace('|\.\./etc/services\.|','',$module);
+    // only show if the +x bit is set on the conf.d file
+    if(is_executable("../conf.d/$service.conf")) {
+      
+      $data = '';
+      $tmp = array();
+      
+      $h = fopen($module, "r");
+      
+      while(!feof($h)) $data .= fread($h, 1024);
+      
+      pclose($h);
+      
+      $tmp = explode("\n", $data);
+      // get rid of the last line which is blank
+      array_pop($tmp);
+      
+      foreach($tmp as $service) array_push($services, $service);
+      
+    }
     
-    foreach($tmp as $service) array_push($services, $service);
-				
   }
   
   return $services;
@@ -56,11 +63,15 @@ function update_parameter($type_id, $param, $value) {
 
 function valid_passwd($passwd) {
 
-  // we use the english dictionary
-  $d = pspell_new("en");
-  
-  // if the string is a word, it isn't a safe password
-  if(pspell_check($d, $passwd)) return false;
+  if(function_exists("pspell_new")) {
+
+    // we use the english dictionary
+    $d = pspell_new("en");
+    
+    // if the string is a word, it isn't a safe password
+    if(pspell_check($d, $passwd)) return false;
+    
+  }
 
   // if the string is less than 5 characters long, it isn't a safe password
   if(strlen($passwd) < 5) return false;
