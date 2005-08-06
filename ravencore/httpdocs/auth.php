@@ -67,9 +67,13 @@ Please run the following script as root:
 
 // make sure that perl-suidperl works. If it doesn't, it won't run, and "OK" won't be printed.
 
-if(shell_exec("../sbin/wrapper testsuid") != "OK") {
+if(trim(shell_exec("../sbin/wrapper testsuid")) != "root") {
+
+  nav_top();
 
   print $lang['test_suid_error'];
+
+  nav_bottom();
 
   exit;
 
@@ -79,7 +83,11 @@ if(shell_exec("../sbin/wrapper testsuid") != "OK") {
 
 if(!function_exists("mysql_connect")) {
 
+  nav_top();
+
   print $lang['no_php_mysql'];
+
+  nav_bottom();
 
   exit;
 
@@ -93,7 +101,11 @@ if(!$link) {
 
   //Print message here
 
+  nav_top();
+
   print 'Unable to get a database connection.';
+
+  nav_bottom();
 
   exit;
 
@@ -274,7 +286,11 @@ if($action == "login") {
 
     } else {
 
+      nav_top();
+
       print $lang['api_cmd_failed'];
+
+      nav_bottom();
 
       syslog(LOG_INFO, "API command attempted on master server from $_SERVER[REMOTE_ADDR]");
 
@@ -470,7 +486,7 @@ if($conf_not_complete and $_SERVER[PHP_SELF] != "/change_password.php" and $_SER
     
     $data = "";
 
-    $handle = popen("ls -1 ../conf.d","r");
+    $handle = popen("for i in `ls ../conf.d/`; do if [ -x ../conf.d/\$i ]; then echo \$i; fi; done","r");
 
     while( !feof($handle) ) $data .= fread($handle, 1024);
 
