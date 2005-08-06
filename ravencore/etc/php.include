@@ -6,7 +6,7 @@ php_admin_flag safe_mode Off
 php_admin_flag log_errors On
 php_admin_flag track_vars On
 php_admin_flag expose_php Off
-php_admin_flag file_uploads Off
+php_admin_flag file_uploads On
 php_admin_flag display_errors Off
 php_admin_flag allow_url_fopen Off
 php_admin_flag magic_quotes_gpc On

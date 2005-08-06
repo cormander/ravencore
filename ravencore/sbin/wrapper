@@ -26,11 +26,11 @@ if ($RC_ROOT =~ /^([\/-\w.]+)$/) {
 }
 
 # the control panel begins each page with a call to test if suidperl works
-# print OK with no whitespace and no return characters, and exit cleanly
+# print the result of "whoami", and exit cleanly
 
 if( $ARGV[0] eq "testsuid" ) {
 
-    print 'OK';
+    print `whoami`;
     exit 0;
 
 }
