@@ -208,14 +208,14 @@ print '</td>
   if(is_admin()) {
 
     //admins get to see all domains
-    $sql = "select m.id as mid, d.id as did, m.mail_name, d.name from mail_users m, domains d where did = d.id";
+    $sql = "select m.id as mid, d.id as did, m.mail_name, d.name, m.passwd from mail_users m, domains d where did = d.id";
     if($_GET[search]) $sql .= " and ( m.mail_name like '%$_GET[search]%' or d.name like '%$_GET[search]%' or concat(m.mail_name, '@', d.name) like '%$_GET[search]%' )";
     $sql .= " order by mail_name";
 
   } else {
 
     //users only get to look at their own, so we look in the users table as well
-    $sql = "select m.id as mid, d.id as did, m.mail_name, d.name from mail_users m, domains d, users u where did = d.id and d.uid = u.id and m.did = d.id and u.id = '$uid'";
+    $sql = "select m.id as mid, d.id as did, m.mail_name, d.name, m.passwd from mail_users m, domains d, users u where did = d.id and d.uid = u.id and m.did = d.id and u.id = '$uid'";
     if($_GET[search]) $sql .= " and ( m.mail_name like '%$_GET[search]%' or d.name like '%$_GET[search]%' or concat(m.mail_name, '@', d.name) like '%$_GET[search]%' )";
     $sql .= " order by mail_name";
 
@@ -228,17 +228,35 @@ print '</td>
   if($num == 0 and !$_GET[search]) print "There are no mail users setup";
   else if($_GET[search]) print 'Your search returned <i><b>' . $num . '</b></i> results<p>';
 
-  if($num != 0) print '<table width="45%"><tr><th>Email Addresses</th></tr>';
+  if($num != 0) print '<table width="45%"><tr><th colspan="100%">Email Addresses</th></tr>';
 
   while( $row = mysql_fetch_array($result) ) {
 
-    print '<tr><td><a href="edit_mail.php?did=' . $row[did] . '&mid=' . $row[mid] . '" onmouseover="show_help(\'Edit ' . $row[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();">' . $row[mail_name] . '@' . $row[name] . '</td></tr>';
-
+    print '<tr><td><a href="edit_mail.php?did=' . $row[did] . '&mid=' . $row[mid] . '" onmouseover="show_help(\'Edit ' . $row[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();">' . $row[mail_name] . '@' . $row[name] . '</td><td>';
+    
+    if( @fsockopen("localhost", 143) ) print '<form method=POST action="webmail/src/redirect.php" name="webmail_' . $row[mid] . '" target="_blank">
+<input type=hidden name="login_username" value="' . $row[mail_name] . '@' . $row[name] . '" />
+<input type=hidden name="secretkey" value="' . $row[passwd] . '" />
+<input type=hidden name="js_autodetect_results" value="0" />
+<input type=hidden name="just_logged_in" value="1" />
+<a href="javascript:document.webmail_' . $row[mid] . ' .submit();">Webmail</a>
+</form>';
+    else print '<a href="#" onclick="alert(\'Webmail is currently offline\')" onmouseover="show_help(\'Webmail is current\
+ly offline\');" onmouseout="help_rst();">Webmail ( offline )</a>';
+    
+    print '</td>
+<td><a href=mail.php?did=' . $row[did] . '&mid=' . $row[mid] . '&action=delete onmouseover="show_help(\'Delete ' . $row[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();" onclick="';
+    
+    if(!user_can_add($uid,"email") and !is_admin()) print 'return confirm(\'If you delete this email, you may not be able to add it again.\rAre you sure you wish to do this?\');';
+    else print 'return confirm(\'Are you sure you wish to delete this email?\');';
+    print '">delete</a></td></tr>';
+    
   }
-
-  if($num != 0) print '</table>';
-
+  
+  
 }
+
+if($num != 0) print '</table>';
 
   
 nav_bottom();
