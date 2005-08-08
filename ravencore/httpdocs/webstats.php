@@ -40,6 +40,6 @@ $_SERVER[QUERY_STRING] .= "&config=" . $domain_name;
 // run awstats in a simulated CGI enviroment, and output the results to the web
 // fix the links too, by changeing references to "awstats.pl" to "webstats.php"
 
-print shell_exec("export GATEWAY_INTERFACE=\"CGI/1.1\" QUERY_STRING=\"" . $_SERVER[QUERY_STRING] . "\"; " . $_ENV[AWSTATS_ROOT] . "/wwwroot/cgi-bin/awstats.pl | sed 's/awstats.pl/webstats.php/g' | sed '1d' | sed '1d' | sed '1d' | sed '1d'");
+print shell_exec("export GATEWAY_INTERFACE=\"CGI/1.1\" QUERY_STRING=\"" . $_SERVER[QUERY_STRING] . "\"; " . $CONF[RC_ROOT] . "/var/awstats/wwwroot/cgi-bin/awstats.pl | sed 's/awstats.pl/webstats.php/g' | sed '1d' | sed '1d' | sed '1d' | sed '1d'");
 
 ?>

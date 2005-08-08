@@ -29,6 +29,18 @@ if(defined(open(CLAMD,'|-', '/usr/bin/clamdscan', '--quiet', '-'))) {
 
 }
 
+# figure out our path to sendmail... just look in two places. The .postfix has priority
+
+if( -f "/usr/sbin/sendmail.postfix" ) { $sendmail = "/usr/sbin/sendmail.postfix"; }
+elsif( -f "/usr/sbin/sendmail" ) { $sendmail = "/usr/sbin/sendmail"; }
+else {
+
+# can't find it
+
+    die "Fatal error: unable to find sendmail binary";
+
+}
+
 # we get what our next action is from the postfix master.cf file ( run spamc ), do it here.
 
 if( -d "/var/spool/virtual/$domain/$user" ) {
@@ -36,14 +48,14 @@ if( -d "/var/spool/virtual/$domain/$user" ) {
 # only open up per-user spamassassin settings if the user exists, otherwise we'd have a directory in 
 # our VMAIL_ROOT for each remote email address we have ever redirected mail to
 
-    open(SPAMC,"|/usr/bin/spamc -u $recipient -f -e /usr/sbin/sendmail.postfix -oi -f $sender $recipient");
+    open(SPAMC,"|/usr/bin/spamc -u $recipient -f -e $sendmail -oi -f $sender $recipient");
 
 } else {
 
 # use normal server default spam settings on email redirects
 
     #open(SPAMC,"|/usr/bin/spamc -f -e /usr/sbin/sendmail -oi -f $sender $recipient");
-    open(SPAMC,"|/usr/sbin/sendmail.postfix -oi -f $sender $recipient");
+    open(SPAMC,"|$sendmail -oi -f $sender $recipient");
 
 }
 
