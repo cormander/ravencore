@@ -1,0 +1,33 @@
+DROP TABLE IF EXISTS domains;
+CREATE TABLE domains (
+  id int(10) unsigned NOT NULL auto_increment,
+  created date NOT NULL default '0000-00-00',
+  name varchar(80) default NULL,
+  subdomain int(10) unsigned default NULL,
+  uid int(10) unsigned NOT NULL default '0',
+  host_type varchar(255) NOT NULL default 'none',
+  hosting enum('on','off') NOT NULL default 'on',
+  redirect_url varchar(255) default NULL,
+  catchall enum('true','false','alis') NOT NULL default 'false',
+  catchall_addr varchar(120) default NULL,
+  bounce_message varchar(255) NOT NULL default 'No mail goes to this address',
+  alis_addr varchar(80) default NULL,
+  www enum('true','false') NOT NULL default 'false',
+  host_php enum('true','false') NOT NULL default 'false',
+  host_cgi enum('true','false') NOT NULL default 'false',
+  host_ssl enum('true','false') NOT NULL default 'false',
+  host_dir enum('true','false') NOT NULL default 'false',
+  soa varchar(255) default NULL,
+  ttl int(10) unsigned NOT NULL default '300',
+  mail enum('on','off') NOT NULL default 'on',
+  logrotate enum('on','off') NOT NULL default 'off',
+  log_rotate_num int(10) unsigned NOT NULL default '4',
+  log_mail_addr varchar(120) NOT NULL default '',
+  log_when_rotate enum('daily','weekly','monthly','') NOT NULL default '',
+  log_rotate_size int(10) unsigned default NULL,
+  log_compress enum('yes','no') NOT NULL default 'no',
+  log_rotate_size_ext enum('k','M','') NOT NULL default '',
+  suid int(10) unsigned NOT NULL default '0',
+  PRIMARY KEY  (id)
+) TYPE=MyISAM;
+/*!40000 ALTER TABLE domains DISABLE KEYS */;
