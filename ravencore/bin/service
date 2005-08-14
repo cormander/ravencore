@@ -37,7 +37,7 @@ fi
 
 # call the system service
 
-service $1 $2 &> /dev/null
+$INITD/$1 $2 &> /dev/null
 
 # check to see if we suceeded. If we try to stop a stopped service, we're going to fail, so
 # we explicity ignore failures on the stop command

@@ -459,29 +459,34 @@ for i in `$MYSQL_STR -e "select concat(lcase(name), ':::', redirect_url) from do
 	true) www=1;;
     esac
     
-    echo "<VirtualHost *:80>" >> $APACHE_CONF_D/httpd-include.conf
-    echo -e "\tServerName\t"$domain_name >> $APACHE_CONF_D/httpd-include.conf
+    echo "<VirtualHost *:80>" >> $vhosts
+    echo -e "\tServerName\t"$domain_name >> $vhosts
     if [ $www ]; then
-	echo -e "\tServerAlias  www."$domain_name":"$port >> $APACHE_CONF_D/httpd-include.conf
+	echo -e "\tServerAlias  www."$domain_name":"$port >> $vhosts
     fi
     
     server_alias
 
-    echo -e "\tRedirectPermanent / \""$redirect_url"\"" >> $APACHE_CONF_D/httpd-include.conf
-    echo "</VirtualHost>" >> $APACHE_CONF_D/httpd-include.conf
+    echo -e "\tRedirectPermanent / \""$redirect_url"\"" >> $vhosts
+    echo "</VirtualHost>" >> $vhosts
 
-    echo "" >> $APACHE_CONF_D/httpd-include.conf
+    echo "" >> $vhosts
 
 done
 
-# Test to be sure we can restart apache
+# remove legacy file
+rm -f /etc/httpd/conf.d/httpd-include.conf
 
-$INITD/httpd configtest 2> http_tmp.$$
+# Test to be sure we can restart apache. Save the results to http_tmp
+
+$HTTPD -t &> http_tmp.$$
 
 if [ $? -ne 0 ]; then
 
+# cat out what the error was
     cat http_tmp.$$
     echo "Not restarting apache"
+# remove the tmp file
     rm -f http_tmp.$$
     
     exit 1
@@ -490,4 +495,19 @@ fi
 
 rm -f http_tmp.$$
 
-$INITD/httpd reload &> /dev/null
+pidof $HTTPD &> /dev/null
+
+# if we are running, reload
+
+if [ $? -eq 0 ]; then
+
+    $INITD/$HTTPD_INIT reload &> /dev/null
+
+else
+
+# otherwse, start apache
+
+    $INITD/$HTTPD_INIT start &> /dev/null
+
+fi
+

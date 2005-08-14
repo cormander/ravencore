@@ -242,17 +242,27 @@ fi
 
 # check to make sure the vsftpd.conf file is correct
 
-if [ -f /etc/vsftpd/vsftpd.conf ]; then
+[ -f /etc/vsftpd.conf ] && vsftpd_conf=/etc/vsftpd.conf
+[ -f /etc/vsftpd/vsftpd.conf ] && vsftpd_conf=/etc/vsftpd/vsftpd.conf
 
-    diff /etc/vsftpd/vsftpd.conf $RC_ROOT/etc/vsftpd.conf.in &> /dev/null
+if [ -n "$vsftpd_conf" ]; then
 
+# set the vsftpd.conf file to be tested against. the local file will be used if it exists
+
+    vsftpd_conf_in=$RC_ROOT/etc/vsftpd.conf.in
+    [ -f $vsftpd_conf_in.local ] && vsftpd_conf_in=$vsftpd_conf_in.local
+
+# only proceed if we actually got the $vsftpd_conf_in set
+
+    diff $vsftpd_conf $vsftpd_conf_in &> /dev/null
+    
     if [ $? -ne 0 ]; then
-
-	rm -f /etc/vsftpd/vsftpd.conf
-	cp $RC_ROOT/etc/vsftpd.conf.in /etc/vsftpd/vsftpd.conf
-
+	
+	rm -f $vsftpd_conf
+	cp $vsftpd_conf_in $vsftpd_conf
+	    
 	$INITD/vsftpd restart &> /dev/null
-
+	
     fi
 
 fi

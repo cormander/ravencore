@@ -41,7 +41,19 @@ if [ $? -eq 0 ]; then
     echo Yes
   
 else
+
+# try it again with a pidof... just in case
     
-    echo No
+    pidof $1 &> /dev/null
+
+    if [ $? -eq 0 ]; then
+
+	echo Yes
+	
+    else
+
+	echo No
+
+    fi
 
 fi
