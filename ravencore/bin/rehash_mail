@@ -115,7 +115,28 @@ for i in $($MYSQL_STR -e "select concat(m.id, ':', lcase(mail_name), ':', lcase(
 
 # smtp SASL authentication
 
-    echo $mail_pass | /usr/sbin/saslpasswd2 -c -p -u $domain_name $mail_name
+# check to see if users exists
+
+    /usr/sbin/sasldblistusers2 | grep "$mail_name@$domain_name" &> /dev/null
+
+    if [ $? -ne 0 ]; then
+	
+# user does not exist, create it with -c
+	
+	sasl_action="-c"
+
+    else
+
+# make sure we unset it, so a previous -c won't carry over
+
+	sasl_action=""
+	
+    fi
+
+# set sasl passwd for users with a mailbox
+    case $mailbox in
+        true) echo $mail_pass | /usr/sbin/saslpasswd2 $sasl_action -p -u $domain_name $mail_name;;
+    esac
 
 # build a random 2 letter "salt" string for use in the perl crypt fucntion in the docevat passwd-file below
 

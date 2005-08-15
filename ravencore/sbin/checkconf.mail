@@ -43,46 +43,67 @@ if [ $? -ne 0 ]; then
 
 fi
 
+# make sure the /etc/sasldb2 exists and is owned by postfix
+
+touch /etc/sasldb2
+chown postfix:postfix /etc/sasldb2
+chmod 600 /etc/sasldb2
+
 # check our sasl conf file, to make sure smtp authentication will work
 
-diff /usr/lib/sasl2/smtpd.conf $RC_ROOT/etc/sasl2.smtpd.conf.in &> /dev/null
+sasl2_smtpd_in=$RC_ROOT/etc/sasl2.smtpd.conf.in
+[ -f $sasl2_smtpd_in.local ] && sasl2_smtpd_in=$sasl2_smtpd_in.local
+
+diff /usr/lib/sasl2/smtpd.conf $sasl2_smtpd_in &> /dev/null
 
 if [ $? -ne 0 ]; then
-
+    
     rm -f /usr/lib/sasl2/smtpd.conf
-
-    cp $RC_ROOT/etc/sasl2.smtpd.conf.in /usr/lib/sasl2/smtpd.conf
-
+	
+    cp $sasl2_smtpd_in /usr/lib/sasl2/smtpd.conf
+    
     postfix_reload=1
-
+    
 fi
 
 # check or main.cf file, to make sure it has all our required parameters
 
-diff $VMAIL_CONF_DIR/main.cf $RC_ROOT/etc/postfix.main.cf.in &> /dev/null
+postfix_main_in=$RC_ROOT/etc/postfix.main.cf.in
+[ -f $postfix_main_in.local ] && postfix_main_in=$postfix_main_in.local
+
+diff $VMAIL_CONF_DIR/main.cf $postfix_main_in &> /dev/null
 
 if [ $? -ne 0 ]; then
-
+    
     rm -f $VMAIL_CONF_DIR/main.cf
-
-    cp $RC_ROOT/etc/postfix.main.cf.in $VMAIL_CONF_DIR/main.cf
-
+	
+    cp $postfix_main_in $VMAIL_CONF_DIR/main.cf
+    
     postfix_reload=1
-
+    
 fi
 
 # do the same for dovecot
 
-diff /etc/dovecot.conf $RC_ROOT/etc/dovecot.conf.in &> /dev/null
+# find out which conf file to use
 
-if [ $? -ne 0 ]; then
+[ -f /etc/dovecot.conf ] && dovecot_conf=/etc/dovecot.conf
+[ -f /etc/dovecot/dovecot.conf ] && dovecot_conf=/etc/dovecot/dovecot.conf
 
-    rm -f /etc/dovecot.conf
+# which .in file to use
+dovecot_conf_in=$RC_ROOT/etc/dovecot.conf.in
+[ -f $dovecot_conf_in.local ] && dovecot_conf_in=$dovecot_conf_in.local
 
-    cp $RC_ROOT/etc/dovecot.conf.in /etc/dovecot.conf
+diff $dovecot_conf $dovecot_conf_in &> /dev/null
 
-    /sbin/service dovecot restart &> /dev/null
-
+if [ $? -ne 0 ] && [ -f $dovecot_conf ]; then
+    
+    rm -f $dovecot_conf
+    
+    cp $dovecot_conf_in $dovecot_conf
+    
+	$INITD/dovecot restart &> /dev/null
+	
 fi
 
 # only reload postfix if we changed a configuration file
@@ -101,3 +122,10 @@ if [ $postfix_reload -eq 1 ]; then
 
 fi
 
+# check for a local script to run, and run it if it is executeable
+
+[ -x $RC_ROOT/sbin/checkconf.mail.local ] && $RC_ROOT/sbin/checkconf.mail.local
+
+# exit cleanly
+
+exit 0

@@ -33,4 +33,11 @@ if [ -z "$domain_name" ] || [ -z "$mail_name" ]; then
 
 fi
 
+# remove the user and its files from the filesystem
+
 rm -rf $VMAIL_ROOT/$domain_name/$mail_name
+
+# remove the user from the sasl database
+
+/usr/sbin/saslpasswd2 -d -p -u $domain_name $mail_name
+
