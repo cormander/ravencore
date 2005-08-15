@@ -1,2 +1,8 @@
+
 # Options to spamd
 SPAMDOPTIONS="-d -c -m5 -H -u vmail -x --virtual-config-dir=/var/spool/virtual/%d/%l/.mailscan"
+
+# Options to work with debian
+ENABLED=1
+PIDFILE="/var/run/spamd.pid"
+OPTIONS=$SPAMDOPTIONS

@@ -26,13 +26,16 @@ spamassassin_reload=0
 # check against or master.cf file, to make sure it has the required entry to run
 # the ravencore-mailscan perl script
 
-diff $VMAIL_CONF_DIR/master.cf $RC_ROOT/etc/postfix.master.cf.in &> /dev/null
+postfix_master_in=$RC_ROOT/etc/postfix.master.cf.in
+[ -f $postfix_master_in.local ] && postfix_master_in=$postfix_master_in.local
+
+diff $VMAIL_CONF_DIR/master.cf $postfix_master_in &> /dev/null
 
 if [ $? -ne 0 ]; then
 
     rm -f $VMAIL_CONF_DIR/master.cf
 
-    cp $RC_ROOT/etc/postfix.master.cf.in $VMAIL_CONF_DIR/master.cf
+    cp $postfix_master_in $VMAIL_CONF_DIR/master.cf
 
     /usr/sbin/postfix check
     
@@ -45,16 +48,36 @@ if [ $? -ne 0 ]; then
 fi
 
 # make sure that the spamassassin daemon has the correct runtime options
+# find the system's spamassassin daemon config file
 
-diff /etc/sysconfig/spamassassin $RC_ROOT/etc/sysconfig.spamassassin.in &> /dev/null
+[ -f /etc/sysconfig/spamassassin ] && spamassassin_config=/etc/sysconfig/spamassassin
+[ -f /etc/default/spamassassin ] && spamassassin_config=/etc/default/spamassassin
 
-if [ $? -ne 0 ]; then
+# if we found it
 
-    rm -f /etc/sysconfig/spamassassin
+if [ -f $spamassassin_config ]; then
 
-    cp $RC_ROOT/etc/sysconfig.spamassassin.in /etc/sysconfig/spamassassin
-
-    /sbin/service spamassassin restart &> /dev/null
-
+    spamassassin_in=$RC_ROOT/etc/sysconfig.spamassassin.in
+    [ -f $spamassassin_in.local ] && spamassassin_in=$spamassassin_in.local
+    
+    diff $spamassassin_config $spamassassin_in &> /dev/null
+    
+    if [ $? -ne 0 ]; then
+	
+	rm -f $spamassassin_config
+	
+	cp $spamassassin_in $spamassassin_config
+	
+	$INITD/spamassassin restart &> /dev/null
+	
+    fi
+    
 fi
 
+# check for a local script to run, and run it if it is executeable
+
+[ -x $RC_ROOT/sbin/checkconf.mailscan.local ] && $RC_ROOT/sbin/checkconf.mailscan.local
+
+# exit cleanly
+
+exit 0
