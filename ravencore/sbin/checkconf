@@ -214,6 +214,16 @@ for dir in httpd_modules; do
 
 done
 
+# check to make sure /bin/false is listed in /etc/shells
+
+if [ -f /etc/shells ]; then
+    
+    grep "/bin/false" /etc/shells &> /dev/null
+    
+    [ $? -ne 0 ] && echo "/bin/false" >> /etc/shells
+    
+fi
+    
 # check to make sure the session.save_path for php is correct, in case the $RC_ROOT variable changes
 
 echo "php_admin_value session.save_path $RC_ROOT/var/tmp" | diff $RC_ROOT/var/run/session.include - &> /dev/null

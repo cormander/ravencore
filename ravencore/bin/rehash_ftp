@@ -59,21 +59,25 @@ for sys_user in $user_list; do
 
 # Just in case we didn't get a shell value, use the default. We need the quotes
 
-    if [ ! "$login_shell" ]; then
+    if [ -z "$login_shell" ]; then
 
 	login_shell=$DEFAULT_LOGIN_SHELL
 
     fi
 
+# build a random 2 letter "salt" string for use in the perl crypt fucntion in the docevat passwd-file below
+
+    salt_str=$(perl -e 'for($i=0;$i<2;$i++){print pack("C",int(rand(26))+65);}')
+
 # update the user
 
-    /usr/sbin/usermod -s $login_shell -g $WEB_SERVER_GROUP -d $VHOST_ROOT/$domain_name -p $(perl -e "print crypt('$passwd','Sa');") $sys_user &> /dev/null
+    /usr/sbin/usermod -s $login_shell -g servgrp -d $VHOST_ROOT/$domain_name -p $(perl -e "print crypt('$passwd','$salt_str');") $sys_user &> /dev/null
 
 # if we got bad exit status, the user doesn't exists, so add it
 
     if [ $? -ne 0 ]; then
 
-	/usr/sbin/useradd -s $login_shell -g $WEB_SERVER_GROUP -d $VHOST_ROOT/$domain_name -p $(perl -e "print crypt('$passwd','Sa');") $sys_user	
+	/usr/sbin/useradd -M -s $login_shell -g servgrp -d $VHOST_ROOT/$domain_name -p $(perl -e "print crypt('$passwd','$salt_str');") $sys_user	
     fi
     
 done
