@@ -161,9 +161,10 @@ mk_vrt() {
 
     server_alias
 
-# Add the Suexec module for this vhost
+# Add the Suexec module for this vhost. Disabled for now, until we find a good way to detect
+# if the module for this is loaded
     
-    echo_e "\tSuexecUserGroup\t"$ftp_user" "$WEB_SERVER_GROUP
+#    echo_e "\tSuexecUserGroup\t"$ftp_user" servgrp"
     
 # Define the directory's document root
 
@@ -196,7 +197,7 @@ mk_vrt() {
     if [ $cgi ]; then
 	mkdir -p $VHOST_ROOT/$domain_name/cgi-bin
 	chmod 750 $VHOST_ROOT/$domain_name/cgi-bin
-	chown $ftp_user:$WEB_SERVER_GROUP $VHOST_ROOT/$domain_name/cgi-bin &> /dev/null
+	chown $ftp_user:servgrp $VHOST_ROOT/$domain_name/cgi-bin &> /dev/null
 	echo_e "\tScriptAlias  /cgi-bin/ "$VHOST_ROOT"/"$domain_name"/cgi-bin/"
     else
 	rm -rf $VHOST_ROOT/$domain_name/cgi-bin
@@ -350,7 +351,7 @@ for i in `echo $VHOST_ROOT | sed 's|/| |g'`; do
 done
 
 chmod 750 $VHOST_ROOT
-chown root:$WEB_SERVER_GROUP $VHOST_ROOT
+chown root:servgrp $VHOST_ROOT
 
 # Loop through the domain list
 
@@ -401,10 +402,10 @@ for i in $domain_list; do
     mkdir -p $VHOST_ROOT/$domain_name/httpdocs
 
 # We probably want to check for error here, but that is for a later release
-    chown $ftp_user:$WEB_SERVER_GROUP $VHOST_ROOT/$domain_name/httpdocs &> /dev/null
+    chown $ftp_user:servgrp $VHOST_ROOT/$domain_name/httpdocs &> /dev/null
     chmod 750 $VHOST_ROOT/$domain_name/httpdocs
     chmod 750 $VHOST_ROOT/$domain_name
-    chown root:$WEB_SERVER_GROUP $VHOST_ROOT/$domain_name
+    chown root:servgrp $VHOST_ROOT/$domain_name
 
 # Get the old include file out of the way
     

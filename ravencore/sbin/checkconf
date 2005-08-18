@@ -82,11 +82,11 @@ fi
 groupmod -g 149 servgrp 2> /dev/null
 
 if [ $? -ne 0 ]; then
-
+    
     groupadd -g 149 servgrp
-
+    
 # we need to figure out what user this system is configured to run apache as, so we can add it to servgrp
-
+    
 # if apache is running, see what users it is running as
     
     httpd_user=$(for i in `pidof $HTTPD`; do ls -dal /proc/$i; done | awk '!/root/{print $3}' | head -n 1)
@@ -124,7 +124,7 @@ if [ $? -ne 0 ]; then
 # if the user is not found, we can't add it to the servgrp, and vhosts won't work
 
 	if [ -z "$httpd_user" ]; then
-	
+	    
 	    echo "Unable to find the user apache runs as from its configuration file $httpd_config_file"
 	    
 	    exit 1
@@ -138,11 +138,11 @@ if [ $? -ne 0 ]; then
 
 # if there are users, be sure to use a comma
     if [ -n "$users_in_httpd_group" ]; then
-
+	
 	usermod -G $users_in_httpd_group,servgrp $httpd_user
-
+	
     else
-
+	
 	usermod -G servgrp $httpd_user
 
     fi
@@ -154,19 +154,13 @@ fi
 
 groupmod -g 147 rcadmin 2> /dev/null
 
-if [ $? -ne 0 ]; then
+[ $? -ne 0 ] && groupadd -g 147 rcadmin
 
-    groupadd -g 147 rcadmin
+# 
 
-fi
+usermod -u 147 -G servgrp rcadmin &> /dev/null
 
-usermod -u 147 -G servgrp rcadmin 2> /dev/null
-
-if [ $? -ne 0 ]; then
-
-    useradd -M -u 147 -g 147 -G servgrp -d $RC_ROOT -s /bin/false rcadmin
-
-fi
+[ $? -ne 0 ] && useradd -M -u 147 -g 147 -G servgrp -d $RC_ROOT -s /bin/false rcadmin
 
 # Set correct ownership and permissions so that the panel can read the .shadow file
 chown rcadmin:rcadmin $RC_ROOT/.shadow $RC_ROOT/database.cfg
