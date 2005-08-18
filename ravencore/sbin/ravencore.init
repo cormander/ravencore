@@ -189,12 +189,43 @@ echo "DocumentRoot $RC_ROOT/httpdocs" > $RC_ROOT/etc/docroot.conf
 
     fi
 
+# check to see if the php and ssl apache modules lives in a strange place
+# this will, in some cases, pick up the real file in the expected place.. but that's ok, linking a file
+# to itself won't cause anything bad to happen, and we just force the error'd output to /dev/null
+
+    for so in php ssl; do
+
+        lib_so=$(ls "$HTTPD_MODULES"*/*$so*.so 2> /dev/null)
+	
+# if so, link it to our httpd_modules
+	
+        if [ -n "$lib_so" ]; then
+	    
+# force error output to /dev/null , because in some cases we're trying to link the file to itself
+            ln -s $lib_so $RC_ROOT/etc/httpd_modules 2> /dev/null
+	    
+        fi
+	
+    done
+    
 # only load PHP if we have it installed. If it isn't installed, our no_php.html will show up as the
 # default index page of the control panel
+    
+# first check to see if we have a funky name for the php module, mod_php ( it's normally libphp )
+# we look through 4 and 5 because those are the supported versions
+
+    for num in 4 5; do
+
+# basically, if mod_php4.so exist but there isn't a libphp4.so, create a symlink
+	if [ -f $RC_ROOT/etc/httpd_modules/mod_php$num.so ] && [ ! -f $RC_ROOT/etc/httpd_modules/libphp$num.so ]; then
+	    ln -s $RC_ROOT/etc/httpd_modules/mod_php$num.so $RC_ROOT/etc/httpd_modules/libphp$num.so
+	fi
+
+    done
 
 # php5 listed first, because on a test system with both php5 and php4 libs installed, mysql only worked with
 # php5 loaded
-    
+
     if [ -f $RC_ROOT/etc/httpd_modules/libphp5.so ]; then
 	
 	OPTIONS="$OPTIONS -DPHP5"
@@ -211,11 +242,11 @@ echo "DocumentRoot $RC_ROOT/httpdocs" > $RC_ROOT/etc/docroot.conf
 	
     fi
     
-# figure out what our ssl shared object file is
+# figure out what our ssl shared object file is ( usually mod_ssl.so or libssl.so )
     ssl_file=$(ls $RC_ROOT/etc/httpd_modules/*ssl.so 2> /dev/null | head -n 1)
     
 # if we have ssl installed, enable it when we start the control panel
-    if [ -x "$ssl_file" ]; then
+    if [ -f "$ssl_file" ]; then
 # the user has the option to disable the ssl on the command line, or in $RC_ROOT/var/run/httpd.nossl
 	case $ssl_opt in
 	    "nossl") echo -n " (no ssl)";;

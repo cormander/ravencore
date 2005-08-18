@@ -344,3 +344,57 @@ else
     chmod -x $RC_ROOT/conf.d/dns.conf
 
 fi
+
+
+#generate ssl cert for panel
+
+if [ -x /usr/bin/openssl ]; then
+
+    umask 077
+
+# generate the key if non-existant
+    
+    if [ ! -f $RC_ROOT/etc/server.key ]; then
+    
+	echo -n "Creating control panel SSL key file...."
+
+	/usr/bin/openssl genrsa -rand /proc/apm:/proc/cpuinfo:/proc/dma:/proc/filesystems:/proc/interrupts:/proc/ioports:/proc/pci:/proc/rtc:/proc/uptime 1024 > $RC_ROOT/etc/server.key 2> /dev/null
+	
+	echo "done"
+
+    fi
+    
+# generate the cert if non-existant
+
+    if [ ! -f $RC_ROOT/etc/server.crt ]; then
+
+	echo -n "Creating control panel SSL cert file...."
+
+	FQDN=`hostname`
+	if [ "x${FQDN}" = "x" ]; then
+	    FQDN=localhost.localdomain
+	fi
+	
+	cat << EOF | /usr/bin/openssl req -new -key $RC_ROOT/etc/server.key -x509 -days 365 -out $RC_ROOT/etc/server.crt 2>/dev/null
+--
+SomeState
+SomeCity
+SomeOrganization
+SomeOrganizationalUnit
+${FQDN}
+root@${FQDN}
+EOF
+	
+	echo "done"
+
+    fi
+    
+fi
+
+# check for a local script to run, and run it if it is executeable
+
+[ -x $RC_ROOT/sbin/checkconf.local ] && $RC_ROOT/sbin/checkconf.local
+
+# exit cleanly... $? is set to 1 if the above didn't happen 
+
+exit 0

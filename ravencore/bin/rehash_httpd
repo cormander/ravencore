@@ -145,6 +145,7 @@ mk_vrt() {
     if [ $ssl ]; then
 	port=443
 	v_echo "$domain_name is setup for ssl"
+	echo_e "<IfModule mod_ssl.c>"
     else
 	port=80
     fi
@@ -224,12 +225,15 @@ mk_vrt() {
 
 	echo_e "\tSSLEngine on"
         echo_e "\tSSLVerifyClient none"
-#	echo_e "\tSSLCertificateFile /usr/local/ravencore/certificates/default"
+
 	ssl_cert=$($MYSQL_STR -e "select value from parameters p inner join domains d on p.type_id = d.id where param = 'ssl_cert' and d.name = '$domain_name'" | sed '1d')
-	if [ -n "$ssl_cert" ]; then
+
+	if [ -f "$ssl_cert" ]; then
 	    echo_e "\tSSLCertificateFile $ssl_cert"
+	    echo_e "\tSSLCertificateKeyFile $ssl_cert.key"
 	else
 	    echo_e "\tSSLCertificateFile /etc/httpd/conf/ssl.crt/server.crt"
+	    echo_e "\tSSLCertificateKeyFile /etc/httpd/conf/ssl.key/server.key"
 	fi
 
     else
@@ -323,6 +327,11 @@ mk_vrt() {
     echo_e "</VirtualHost>"    
     echo_e ""
 
+    if [ $ssl ]; then
+
+	echo_e "</IfModule>"
+
+    fi
     
 }
 
