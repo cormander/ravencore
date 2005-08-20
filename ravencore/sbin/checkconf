@@ -170,8 +170,33 @@ chmod 600 $RC_ROOT/.shadow $RC_ROOT/database.cfg
 chmod 755 $RC_ROOT/{.,bin,sbin,conf.d,httpdocs,etc,var}
 chown root:root $RC_ROOT/{.,bin,sbin,conf.d,httpdocs,etc,var}
 # make sure all the appropriate tmp directories are owned by root:rcadmin and set to 770
-chown root:rcadmin $RC_ROOT/var/{tmp,run} $RC_ROOT/httpdocs/{webmail/data,filemanager/tmp}
-chmod 770 $RC_ROOT/var/{tmp,run} $RC_ROOT/httpdocs/{webmail/data,filemanager/tmp}
+chown root:rcadmin $RC_ROOT/var/{tmp,run} $RC_ROOT/httpdocs/{webmail/{data,data/default_pref},filemanager/tmp}
+chmod 770 $RC_ROOT/var/{tmp,run} $RC_ROOT/httpdocs/{webmail/{data,data/default_pref},filemanager/tmp}
+
+# check to see if the wrapper was installed
+
+if [ ! -x $RC_ROOT/sbin/wrapper ]; then
+
+# attempt to compile the wrapper code
+
+    gcc -o $RC_ROOT/sbin/wrapper $RC_ROOT/sbin/wrapper.c &> /dev/null
+
+# if we failed, 
+
+    if [ $? -ne 0 ]; then
+
+# use the perl wrapper code instead
+
+# we can test to see if perl has suid enabled the exit status of doing: perl -V | grep suid &> /dev/null
+# but for now, leave the control panel interface to handling this error
+
+	rm -f $RC_ROOT/sbin/wrapper
+	cp $RC_ROOT/sbin/wrapper.pl $RC_ROOT/sbin/wrapper
+	
+    fi
+    
+fi
+
 # make sure the wrapper has correct ownership / permissions
 chown root:rcadmin $RC_ROOT/sbin/wrapper
 chmod 4150 $RC_ROOT/sbin/wrapper
