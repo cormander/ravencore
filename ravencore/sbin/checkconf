@@ -27,30 +27,66 @@ export GOT_CONF=1
 
 reload_ravencore=0
 
+# make sure $HTTPD exists. This variable was set by bash_functions. If not set, we can't find the path
+# to the apache server binary
+
+if [ ! -f $HTTPD ]; then
+
+    echo "Fatal error: unable to find apache binary. If apache is already installed, then"
+    echo "   we can't find it. Please add the full path to the apache binary to this file: "
+    echo "   $RC_ROOT/etc/paths.httpd.local"
+    echo
+
+# create the file for them so they don't get confused about it not existing
+
+    touch $RC_ROOT/etc/paths.httpd.local
+
+    exit 1
+
+fi
+
+# check to see what version we are now, vs what version we were when we ran last time
+
+cat $RC_ROOT/var/run/version 2> /dev/null | diff $RC_ROOT/etc/version - &> /dev/null
+
+if [ $? -ne 0 ]; then
+    
+# we are a different version of ravencore. Remove everything in the var/run/ directory
+    
+# only say our version number changed if we actually had a previous version
+    
+    [ -f $RC_ROOT/var/run/version ] && echo "Version number changed since we last ran, running upgrade steps"
+    
+# remove the db_install so that we'll run that script
+# remove the gpl_check so they can agree to the license, just incase the GPL version number changes
+# remove the version so we can copy the new one there
+# remove the wrapper, it'll be added back later in this script, from the newer version's code
+
+    rm -f $RC_ROOT/var/run/{db_install,gpl_check,version} $RC_ROOT/sbin/wrapper
+
+# copy the new version to the run cache
+
+    cp $RC_ROOT/etc/version $RC_ROOT/var/run/version
+
+fi
+
 # check to see if our db_install script ran
 
 if [ ! -f $RC_ROOT/var/run/db_install ]; then
 
 # install the ravencore database
     $RC_ROOT/sbin/db_install
-
+    
 # check to see if it exited cleanly
-
-    if [ $? -ne 0 ]; then
-
-	exit 1
-
-    fi
-
-# tell us that we ran the db_install script
-    touch $RC_ROOT/var/run/db_install
-
+    
+    [ $? -ne 0 ] && exit 1
+    
 fi
 
 # make sure that ravencore is a listed service
 
 if [ -x /sbin/chkconfig ]; then
-
+    
     /sbin/chkconfig --list ravencore &> /dev/null
 
     if [ $? -ne 0 ]; then
@@ -215,9 +251,29 @@ for dir in httpd_modules; do
 
     if [ ! -d "$(cat $RC_ROOT/var/run/$dir.path 2> /dev/null)" ]; then
 	
-	for path in `cat $RC_ROOT/etc/paths.$dir`; do
+	for path in `cat $RC_ROOT/etc/paths.$dir.local $RC_ROOT/etc/paths.$dir 2> /dev/null`; do
 	    
-	    if [ -d $path ]; then
+# check to see if this directory is in /usr/lib
+	    if_lib_dir=$(echo $path | sed 's|/usr/lib/.*|/usr/lib|')
+	    
+# if so, if_lib_dir will equil "/usr/lib"
+
+	    if [ $if_lib_dir = "/usr/lib" ]; then
+		
+# set the possible equiv of this $path if we are x86_64
+
+		path_64=$(echo $path | sed 's|/usr/lib/|/usr/lib64/|')
+		
+		if [ -d $path_64 ]; then
+		    echo $path_64 > $RC_ROOT/var/run/$dir.path
+		    
+		    reload_ravencore=1
+    
+		fi
+		
+	    fi
+	    
+	    if [ -d $path ] && [ ! -d $path_64 ]; then
 		
 		echo $path > $RC_ROOT/var/run/$dir.path
 		

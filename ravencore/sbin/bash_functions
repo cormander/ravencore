@@ -33,7 +33,7 @@ fi
 
 # make sure paths and variables are correctly set
 
-for tmp in httpd:HTTPD init.d:INITD; do
+for tmp in httpd:HTTPD init.d:INITD httpd_modules:HTTPD_MODULES; do
 
 # each value is ext:var
 
@@ -48,7 +48,7 @@ for tmp in httpd:HTTPD init.d:INITD; do
 
     if [ ! -f "$(eval echo \$$var)" ] || [ ! -d "$(eval echo \$$var)" ]; then
 
-        for i in $(cat $RC_ROOT/etc/paths.$ext); do
+        for i in $(cat $RC_ROOT/etc/paths.$ext.local $RC_ROOT/etc/paths.$ext 2> /dev/null); do
 
 # the values in tis loop are either files or directories. If we get to the point where we need to
 # have a difference, we'll just create two loops, one with a -f and the other with a -d
@@ -78,6 +78,11 @@ for tmp in httpd:HTTPD init.d:INITD; do
     fi
 
 done
+
+# set the name of the system init script for apache. for now, assume it's the basename
+# of the $HTTPD path
+
+HTTPD_INIT=$(basename $HTTPD)
 
 # make sure database.cfg and .shadow exist
 touch $RC_ROOT/database.cfg $RC_ROOT/.shadow
