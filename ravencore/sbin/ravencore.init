@@ -127,11 +127,11 @@ start() {
 
 # check httpd version series. The result of this command will look like: 1.3 , 2.0 , etc
     httpd_v=$($httpd -v | sed '2d' | awk '{print $3}' | sed 's|.*/||' | sed 's/\./ /g' | awk '{print $1"."$2}')
-
+    
 # check to make sure the conf file exists for this version of apache
-
+    
     if [ ! -f $RC_ROOT/etc/ravencore.httpd-$httpd_v.conf ]; then
-
+	
 	echo "Unable to load ravencore's httpd conf file: $RC_ROOT/etc/ravencore.httpd-$httpd_v.conf"
 	failure
 	echo
@@ -141,6 +141,14 @@ start() {
 
 # make sure the docroot.conf file is populated
 echo "DocumentRoot $RC_ROOT/httpdocs" > $RC_ROOT/etc/docroot.conf
+
+# make sure the port.conf file exists. if not, create it
+
+if [ ! -f $RC_ROOT/etc/port.conf ]; then
+
+    echo "Listen 8000" > $RC_ROOT/etc/port.conf
+
+fi
 
 # set our runtime options
 # conf file is different depending on the httpd version

@@ -95,22 +95,12 @@ if [ -x /sbin/chkconfig ]; then
         /sbin/chkconfig --add ravencore
 # set ravencore to startup on boot. Some distrobutions complain about setting more than one
 # runlevel with a single chkconfig command, so we'll run 3 of them instead
-        /sbin/chkconfig --level 3 ravencore
-        /sbin/chkconfig --level 4 ravencore
-        /sbin/chkconfig --level 5 ravencore
-
+        for runlevel in 3 4 5; do
+	    /sbin/chkconfig --level $runlevel ravencore on
+	done
+	
     fi
-
-fi
-
-# make sure $HTTPD exists. If not, apache ( httpd ) is not installed
-
-if [ ! -f $HTTPD ]; then
-
-    echo "Fatal error, apache not installed."
-
-    exit 1
-
+    
 fi
 
 # make sure the servgrp exists

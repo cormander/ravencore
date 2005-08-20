@@ -427,26 +427,66 @@ for i in $domain_list; do
 
 done
 
-# Get rid of the old httpd-include file, if it exists
+# set the vhosts file
 
-if [ -f $APACHE_CONF_D/httpd-include.conf ]; then
+vhosts=$RC_ROOT/etc/vhosts.conf
 
-    mv -f $APACHE_CONF_D/httpd-include.conf $APACHE_CONF_D/httpd-include.conf.old
+# Get rid of the vhost file, if it exists
+
+if [ -f $vhosts ]; then
+
+    mv -f $vhosts $vhosts.old
+    touch $vhosts
 
 fi
 
-# Rebuild the httpd-include.conf file
+# get the compiled in server root and server config file
+httpd_server_root=$($HTTPD -V | grep HTTPD_ROOT | sed 's/=/ /' | awk '{print $3}' | sed 's/"//g')
+httpd_config_file=$($HTTPD -V | grep SERVER_CONFIG_FILE | sed 's/=/ /' | awk '{print $3}' | sed 's/"//g')
 
-echo "NameVirtualHost *:80" >> $APACHE_CONF_D/httpd-include.conf
-echo "NameVirtualHost *:443" >> $APACHE_CONF_D/httpd-include.conf
+# look for the path to the apache conf file
 
-v_echo "Rebuilding the httpd-include.conf file"
+if [ -f $httpd_server_root/$httpd_config_file ]; then
+    
+    httpd_config_file="$httpd_server_root/$httpd_config_file"
+    
+elif [ ! -f $httpd_config_file ]; then
+    
+# if there is no file existing in $httpd_server_root/$httpd_config_file or $httpd_config_file , then
+# we can't look up what user apache will run as
+    
+    echo "Unable to find apache's compiled in configuration file"
+    echo "HTTPD_ROOT=$httpd_server_root"
+    echo "SERVER_CONFIG_FILE=$httpd_config_file"
+    
+    exit 1
+    
+fi
+
+# check to make sure we're included in the apache conf file
+
+grep "Include $vhosts" $httpd_config_file &> /dev/null
+
+if [ $? -ne 0 ]; then
+
+# if not, append to it
+
+    echo "Include $vhosts" >> $httpd_config_file
+
+fi
+
+# Rebuild the vhosts.conf file
+
+echo "NameVirtualHost *:80" >> $vhosts
+echo "NameVirtualHost *:443" >> $vhosts
+
+v_echo "Rebuilding the vhosts.conf file"
 
 for i in `$MYSQL_STR -e "select lcase(name) from domains d, sys_users u where d.suid = u.id and host_type = 'physical' and hosting = 'on'" | sed '1d'`; do
     
-# Add this domain's include file to the master httpd-include.conf
+# Add this domain's include file to the master vhosts.conf
     
-    echo "Include "$VHOST_ROOT"/"$i"/conf/httpd.include" >> $APACHE_CONF_D/httpd-include.conf
+    echo "Include "$VHOST_ROOT"/"$i"/conf/httpd.include" >> $vhosts
     
 done
 

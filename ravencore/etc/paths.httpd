@@ -2,3 +2,4 @@
 /usr/sbin/apache2
 /usr/sbin/httpd
 /usr/sbin/apache
+/usr/apache/bin/httpd
