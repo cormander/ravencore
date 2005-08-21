@@ -44,7 +44,10 @@ if($action == "delete") {
 
 } else if($action == "change") {
 
-  $sql = "update domains set uid = '$uid' where id = '$did'";
+  // only an admin can do this
+  if(!is_admin()) goto("users.php");
+
+  $sql = "update domains set uid = '$_POST[uid]' where id = '$did'";
   mysql_query($sql);
 
   goto("domains.php?did=$did");

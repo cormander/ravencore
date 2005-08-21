@@ -87,7 +87,10 @@ if($action == "add") {
 	    
 	    $sql = "insert into parameters set type_id = '$did', param = 'soa', value = '$row[target]'";
 	    mysql_query($sql);
-	    
+
+	    $sql = "update domains set soa = '$row[target]' where id = '$did'";
+	    mysql_query($sql);
+
 	  }
 	  
 	  // Get all other DNS records to setup
@@ -102,6 +105,8 @@ if($action == "add") {
 	    
 	  }
 	  
+	  socket_cmd("rehash_named --rebuild-conf --all");
+ 
 	}
 	
 	// If we have the hosting variable, send us to hosting setup, because most of the time

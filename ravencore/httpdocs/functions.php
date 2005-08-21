@@ -1216,9 +1216,9 @@ function read_conf() {
   // of the files, for simplicity.
 
   // The php is the only place in which the server_type.conf is read, because the php is the
-  // only place where the value matters.
+  // only place where the value matters at this point.
   
-  $handle = popen("cat \$(for i in `ls ../conf.d/`; do if [ -x ../conf.d/\$i ]; then echo ../conf.d/\$i; fi; done | tr '\n' ' ') ../etc/server_type.conf}","r");
+  $handle = popen("cat \$(for i in `ls ../conf.d/`; do if [ -x ../conf.d/\$i ]; then echo ../conf.d/\$i; fi; done | tr '\n' ' ') ../etc/server_type.conf} 2> /dev/null","r");
 
   while( !feof($handle) ) $conf_data .= fread($handle, 1024);
   

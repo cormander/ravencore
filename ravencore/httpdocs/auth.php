@@ -35,10 +35,26 @@ $js_alerts = array();
 $CONF = array();
 $conf_not_complete = false;
 
-//Start the php session. Since the function always returns true, the only time we will
-//fail is when we dont have the function. If so, die
+// Include our function file
 
-session_start() or die("The server doesn't have PHP session functions available.<p>Please recompile PHP with sessions enabled."); 
+include "functions.php";
+
+//make sure PHP was compiled with sessions enabled
+
+if(!function_exists("session_start")) {
+
+  nav_top();
+
+  print 'The server doesn\'t have PHP session functions available.<p>Please recompile PHP with sessions enabled';
+
+  nav_bottom();
+
+  exit;
+
+}
+
+//start our session
+session_start();
 
 //Get the ID of this session
 
@@ -62,10 +78,6 @@ foreach($reg_glob_vars as $val) {
   }
 
 }
-
-// Include our function file
-
-include "functions.php";
 
 //Get our conf vars
 
