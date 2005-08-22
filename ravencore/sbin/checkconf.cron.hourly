@@ -26,11 +26,7 @@ for i in $(ls $RC_ROOT/conf.d | sed 's/\.conf$//g'); do
     
 # if this package is installed, and we have a checkconf script for it, and it's executable, run it
 
-    if [ -x $RC_ROOT/conf.d/$i.conf ] && [ -x $RC_ROOT/sbin/checkconf.$i ]; then
-	
-	$RC_ROOT/sbin/checkconf.$i
-	
-    fi
+    [ -x $RC_ROOT/conf.d/$i.conf ] && [ -x $RC_ROOT/sbin/checkconf.$i ] && $RC_ROOT/sbin/checkconf.$i
     
 done
 
