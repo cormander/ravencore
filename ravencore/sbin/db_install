@@ -204,7 +204,7 @@ if [ $CONNECT -eq 0 ]; then
     
 # tell the server to set the root password to something we know.
 
-# different mysql versions can have different privelege columns. This loop fill figure them out and
+# different mysql versions can have different privelege columns. This loop will figure them out and
 # build our insert statement to generate a user with full mysqld access
 	for priv in $(mysql mysql -e "desc user" | sed '1d' | awk "/enum\('N','Y'\)/ {print \$1}"); do
 
@@ -378,13 +378,16 @@ else
 
 # check the database integrety by matching all the tables
 
-    echo "checking database integrity...."
+    echo "checking database integrity"
 
 # cache our table info
 
     table_info=$($MYSQL_STR $MYSQL_ADMIN_DB -e "show tables" | sed '1d')
 
     for table in `ls $RC_ROOT/etc/sql_tables | sed 's/\.sql$//'`; do
+
+# reset our variable of whether to show a dot
+	show_dot=1
 
 # check to see if we have this table by looping through $table_info and checking each one
 
@@ -395,16 +398,20 @@ else
 	if [ $? -ne 0 ]; then
 
 # load the new table
-	    
+
 	    echo -n "found new table \"$table\". loading it into the database...."
 
 	    $MYSQL_STR $MYSQL_ADMIN_DB < $RC_ROOT/etc/sql_tables/$table.sql
 
 	    echo "ok"
+	    
+	    show_dot=0
 
 	else
 
 # check to see if the table differs from what we have in the database
+# the table .sql files were dumped with command:
+# mysqldump -d --opt -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS $MYSQL_ADMIN_DB $table | grep ' ' | grep -v '^--'
 
 	    mysqldump -d --opt -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS $MYSQL_ADMIN_DB $table | grep '^ ' | sed 's/`//g' > $RC_ROOT/var/tmp/diff.$$
 
@@ -416,6 +423,8 @@ else
 	    if [ -n "$new_columns" ]; then
 		
 		echo -n "found new column data in table $table, saving table row information...."
+
+		show_dow=0
 
 # dump the table data
 		
@@ -506,8 +515,11 @@ else
 	    
 	fi # end if, did we find this $table
 
-    done
+	[ $show_dot -eq 1 ] && echo -n "."
 
+    done
+    
+    echo
     echo "database integrity check complete"
 
 fi
@@ -523,6 +535,10 @@ MYSQL_ADMIN_DB="$MYSQL_ADMIN_DB"
 EOF
 
 echo $MYSQL_ADMIN_PASS > $RC_ROOT/.shadow
+
+chown rcadmin:root $RC_ROOT/.shadow $RC_ROOT/database.cfg
+chmod 600 $RC_ROOT/.shadow
+chmod 400 $RC_ROOT/database.cfg
 
 echo "Success!!"
 
