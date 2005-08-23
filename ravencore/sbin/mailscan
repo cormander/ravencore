@@ -62,29 +62,25 @@ else {
 
 #
 
-foreach $recipient (@recipients) {
-    
-    ($user, $domain) = split /@/, $recipient;
+($user, $domain) = split /@/, $recipients[0];
     
 # we get what our next action is from the postfix master.cf file ( run spamc ), do it here.
+
+if( -d "/var/spool/virtual/$domain/$user" ) {
     
-    if( -d "/var/spool/virtual/$domain/$user" ) {
-	
 # only open up per-user spamassassin settings if the user exists, otherwise we'd have a directory in
 # our VMAIL_ROOT for each remote email address we have ever redirected mail to
-	
-	open(SPAMC,"|/usr/bin/spamc -u $recipient -f -e $sendmail -oi -f $sender $recipient");
-	
-    } else {
+    
+    open(SPAMC,"|/usr/bin/spamc -u $recipient -f -e $sendmail -oi -f $sender @recipients");
+    
+} else {
 	
 # use normal server default spam settings on email redirects
 	
-	open(SPAMC,"|$sendmail -oi -f $sender $recipient");
+    open(SPAMC,"|$sendmail -oi -f $sender @recipients");
 
-    }
-    
-    print SPAMC @mail;
-    
-    close SPAMC;
-    
 }
+
+print SPAMC @mail;
+
+close SPAMC;
