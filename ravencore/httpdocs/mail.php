@@ -23,10 +23,10 @@ include "auth.php";
 
 if($action == "update") {
 
-  if($_POST[catchall] == "true" and !preg_match('/^'.REGEX_MAIL_NAME.'@'.REGEX_DOMAIN_NAME.'$/',$_POST[catchall_addr])) alert("Invalid email address for catchall");
+  if($_POST[catchall] == "send_to" and !preg_match('/^'.REGEX_MAIL_NAME.'@'.REGEX_DOMAIN_NAME.'$/',$_POST[catchall_addr])) alert("Invalid email address for catchall");
   else {
     
-    $sql = "update domains set catchall = '$_POST[catchall]', catchall_addr = '$_POST[catchall_addr]', bounce_message = '$_POST[bounce_message]', alis_addr = '$_POST[alis_addr]' where id = '$did'";
+    $sql = "update domains set catchall = '$_POST[catchall]', catchall_addr = '$_POST[catchall_addr]', bounce_message = '$_POST[bounce_message]', alias_addr = '$_POST[alias_addr]' where id = '$did'";
     
     mysql_query($sql);
     
@@ -86,13 +86,16 @@ if($did) {
 print '<form method=POST>
 Mail sent to email accounts not set up for this domain ( catchall address ):
 <br>
-<input type=checkbox name=catchall value=true';
-      if($row[catchall] == "true") print ' checked';
+<input type=radio name=catchall value=send_to';
+      if($row[catchall] == "send_to") print ' checked';
       print '> Send to: <input type=text name=catchall_addr value="' . $row[catchall_addr] . '"> ';
-      /*
-print '<br> <input type=radio name=catchall value=false';
-      if($row[catchall] == "false") print ' checked';
-      print '> Bounce with: <input type=text name=bounce_message value="' . $row[bounce_message] . '"> <br>';
+      
+print '<br> <input type=radio name=catchall value=bounce';
+      if($row[catchall] == "bounce") print ' checked';
+      print '> Bounce with: <input type=text name=bounce_message value="' . $row[bounce_message] . '"> <br>
+<input type=radio name="catchall" value="delete_it"';
+      if($row[catchall] == "delete_it") print ' checked';
+      print '> Delete it <br>';
 
       $sql = "select count(*) as count from domains where uid = '$uid'";
       $result_count = mysql_query($sql);
@@ -102,25 +105,25 @@ print '<br> <input type=radio name=catchall value=false';
       //for domains with no user
       if($row_c[count] == 0) {
 
-	print '<input type=radio name=catchall value=alis';
-	if($row[catchall] == "alis") print ' checked';
-	print '> Forwoard to that user @ <input type=text name=alis_addr value="' . $row[alis_addr] . '">';
+	print '<input type=radio name=catchall value=alias_to';
+	if($row[catchall] == "alias_to") print ' checked';
+	print '> Forwoard to that user @ <input type=text name=alias_addr value="' . $row[alias_addr] . '">';
 	
       //for users with more then one domain setup
       } else if($row_c[count] > 1) {
 
-	print '<input type=radio name=catchall value=alis';
-        if($row[catchall] == "alis") print ' checked';
-	print '> Forwoard to that user @ <select name=alis_addr>';
+	print '<input type=radio name=catchall value=alias_to';
+        if($row[catchall] == "alias_to") print ' checked';
+	print '> Forwoard to that user @ <select name=alias_addr>';
 	
 	//all other domains for this user ( with mail turned on )
 	$sql = "select name from domains where uid = '$uid' and id != '$did' and mail = 'on'";
-	$result_alis = mysql_query($sql);
+	$result_alias = mysql_query($sql);
 
-	while( $row_a = mysql_fetch_array($result_alis) ) {
+	while( $row_a = mysql_fetch_array($result_alias) ) {
 
 	  print '<option value="' . $row_a[name] . '"';
-	  if($row[alis_addr] == $row_a[name]) print ' selected';
+	  if($row[alias_addr] == $row_a[name]) print ' selected';
 	  print '>' . $row_a[name] . '</option>';
 
 	}
@@ -129,7 +132,7 @@ print '<br> <input type=radio name=catchall value=false';
 
       } else print '<input type=radio disabled> You need at least two domains in the account with mail turned on to be able to alias mail';
       print '<p>';
-      */
+      
       print '
 <input type=submit value="Update"> <input type=hidden name=did value="' . $row[id] . '"> <input type=hidden name=action value=update>
 </form>

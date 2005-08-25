@@ -20,6 +20,14 @@
 
 . /etc/ravencore.conf || exit 1
 
+if [ ! -x $RC_ROOT/conf.d/mail.conf ]; then
+
+    echo "Not a mail server, exiting"
+    exit 1
+
+fi
+
+
 if [ ! -d $VMAIL_ROOT ]; then
 
     mkdir -p $VMAIL_ROOT
@@ -31,19 +39,9 @@ cd $VMAIL_ROOT
 touch vmaildomains.$$
 touch valiasmap.$$
 touch vmailbox.$$
+touch vtransportmap.$$
 touch login_maps.$$
 touch dovecot-passwd.$$
-
-# catchall accounts
-
-for i in $($MYSQL_STR -e "select concat(catchall_addr,':',name) from domains where mail = 'on' and catchall = 'true' order by name" | sed '1d'); do
-
-    catchall_addr=$(echo $i | sed 's/:.*//')
-    domain_name=$(echo $i | sed 's/.*://')
-
-    echo -e "@$domain_name\t\t$catchall_addr" >> valiasmap.$$    
-
-done
 
 # individual mail addresses
 
@@ -67,9 +65,10 @@ for i in $($MYSQL_STR -e "select concat(m.id, ':', lcase(mail_name), ':', lcase(
     chown $VMAIL_UID:$VMAIL_GID $domain_name
     chown $VMAIL_UID:$VMAIL_GID $domain_name/$mail_name
 
-# put this email in the virtual mailbox table
+# put this email in the virtual mailbox and transport tables
 
     echo -e "$email_addr\t\t$domain_name/$mail_name/" >> vmailbox.$$
+    echo -e "$email_addr\t\tvirtual:" >> vtransportmap.$$
 
 # check to see if this email should have any redirects
 
@@ -117,7 +116,7 @@ for i in $($MYSQL_STR -e "select concat(m.id, ':', lcase(mail_name), ':', lcase(
 
 # check to see if users exists
 
-    /usr/sbin/sasldblistusers2 | grep "$mail_name@$domain_name" &> /dev/null
+    sasldblistusers2 | grep "$mail_name@$domain_name" &> /dev/null
 
     if [ $? -ne 0 ]; then
 	
@@ -135,7 +134,9 @@ for i in $($MYSQL_STR -e "select concat(m.id, ':', lcase(mail_name), ':', lcase(
 
 # set sasl passwd for users with a mailbox
     case $mailbox in
-        true) echo $mail_pass | /usr/sbin/saslpasswd2 $sasl_action -p -u $domain_name $mail_name;;
+        true)
+	    echo $mail_pass | saslpasswd2 $sasl_action -p -u $domain_name $mail_name
+	    ;;
     esac
 
 # build a random 2 letter "salt" string for use in the perl crypt fucntion in the docevat passwd-file below
@@ -145,6 +146,44 @@ for i in $($MYSQL_STR -e "select concat(m.id, ':', lcase(mail_name), ':', lcase(
 # dovecot passwd-file authentication
 
     echo $email_addr:$(perl -e "print crypt('$mail_pass','$salt_str');"):$VMAIL_UID:$VMAIL_GID::$VMAIL_ROOT/$domain_name/$mail_name:/bin/false >> dovecot-passwd.$$
+
+done
+
+# handle catchalls
+
+for i in $($MYSQL_STR -e "select concat(name,':',catchall,':',catchall_addr) from domains where mail = 'on' order by name" | sed '1d'); do
+
+    domain_name=$(echo $i | sed 's/:/ /g' | awk '{print $1}')
+    catchall=$(echo $i | sed 's/:/ /g' | awk '{print $2}')
+    catchall_addr=$(echo $i | sed 's/:/ /g' | awk '{print $3}')
+
+    case $catchall in
+	"send_to")
+	    echo -e "@$domain_name\t\t$catchall_addr" >> valiasmap.$$
+	    echo -e "$domain_name\t\tvirtual:" >> vtransportmap.$$
+	    ;;
+# for legacy support
+	"true")
+            echo -e "@$domain_name\t\t$catchall_addr" >> valiasmap.$$
+            echo -e "$domain_name\t\tvirtual:" >> vtransportmap.$$
+            ;;
+	"bounce")
+# find their bounce message
+	    bounce_message=$($MYSQL_STR -e "select bounce_message from domains where name = '$domain_name'" | sed '1d')
+	    echo -e "$domain_name\t\terror:$bounce_message" >> vtransportmap.$$
+	    ;;
+	"delete_it")
+            echo -e "@$domain_name\t\tdevnull" >> valiasmap.$$
+            echo -e "$domain_name\t\tvirtual:" >> vtransportmap.$$
+	    ;;
+	"alias_to")
+	    alias_addr=$($MYSQL_STR -e "select alias_addr from domains where name = '$domain_name'" | sed '1d')
+	    echo -e "@$domain_name\t\t@$alias_addr" >> valiasmap.$$
+            echo -e "$domain_name\t\tvirtual:" >> vtransportmap.$$
+	    ;;
+# we don't want to do anything with the default, *)
+
+    esac
 
 done
 
@@ -158,17 +197,19 @@ done
 
 mv -f vmaildomains.$$ $VMAIL_CONF_DIR/vmaildomains
 mv -f vmailbox.$$ $VMAIL_CONF_DIR/vmailbox
+mv -f vtransportmap.$$ $VMAIL_CONF_DIR/vtransportmap
 mv -f login_maps.$$ $VMAIL_CONF_DIR/login_maps
 mv -f valiasmap.$$ $VMAIL_CONF_DIR/valiasmap
-mv -f dovecot-passwd.$$ /etc/dovecot-passwd
 
+mv -f dovecot-passwd.$$ /etc/dovecot-passwd
 chown dovecot:dovecot /etc/dovecot-passwd
 chmod 400 /etc/dovecot-passwd
 
-/usr/sbin/postmap $VMAIL_CONF_DIR/login_maps
-/usr/sbin/postmap $VMAIL_CONF_DIR/vmaildomains
-/usr/sbin/postmap $VMAIL_CONF_DIR/vmailbox
-/usr/sbin/postmap $VMAIL_CONF_DIR/valiasmap
+postmap $VMAIL_CONF_DIR/vmaildomains
+postmap $VMAIL_CONF_DIR/vmailbox
+postmap $VMAIL_CONF_DIR/vtransportmap
+postmap $VMAIL_CONF_DIR/login_maps
+postmap $VMAIL_CONF_DIR/valiasmap
 
 # make sure our conf files are correctly set
 
