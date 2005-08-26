@@ -14,9 +14,9 @@ php_admin_flag register_globals Off
 php_admin_flag magic_quotes_sybase Off
 php_admin_flag magic_quotes_runtime Off
 php_admin_flag session.cookie_secure Off
-<IfDefine SSL>
-php_admin_flag session.cookie_secure On
-</IfDefine>
+#<IfDefine SSL>
+#php_admin_flag session.cookie_secure On
+#</IfDefine>
 php_admin_flag display_startup_errors Off
 php_admin_value session.auto_start 0
 
