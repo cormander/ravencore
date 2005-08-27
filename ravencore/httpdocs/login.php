@@ -65,6 +65,11 @@ if($login_error) print "<br><b><font color=red>" . $login_error . "</font></b>";
 -->
 <tr>
 <td colspan="2" align="right">
+<div style="float: left"><font size="2">
+<?php
+if($_ENV['RUN_SSL']) echo ($_SERVER['HTTPS'] ? 'Your login is secure' : '<a href="https://' . $_SERVER['SERVER_NAME'] . ':8080">Go to Secure Login</a>');
+?>
+</font></div>
 <input type="hidden" name="action" value="login">
 <input type="submit" name="submit" value="Login">
 </td>
