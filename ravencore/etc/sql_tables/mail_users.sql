@@ -7,7 +7,7 @@ CREATE TABLE mail_users (
   spamassassin enum('true','false') default 'false',
   mailbox enum('true','false') default 'false',
   redirect enum('true','false') default 'false',
-  redirect_addr varchar(120) default NULL,
+  redirect_addr blob,
   PRIMARY KEY  (id)
 ) TYPE=MyISAM;
 /*!40000 ALTER TABLE mail_users DISABLE KEYS */;
