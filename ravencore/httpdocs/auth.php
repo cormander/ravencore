@@ -248,7 +248,7 @@ if($action == "login") {
 
   // look in our misc table to see if we should lock the control panel to users if our version is outdated
   // only bother checking if the configuration is complete
-  if($CONF[LOCK_IF_OUTDATED] == 1 and !$conf_not_complete) {
+  if($CONF[LOCK_IF_OUTDATED] == 1 and !$conf_not_complete and $CONF[SERVER_TYPE] != "slave") {
 
     // set the timeout for the tcp connection, lucky 7
     $timeout = 7;
@@ -280,11 +280,11 @@ if($action == "login") {
 	list($x,$y,$current_version) = explode('.',$current_version);
 	list($x,$y,$conf_version) = explode('.',$CONF[VERSION]);
 
-	if($current_version > $conf_version) {
+	if($current_version > $conf_version) { //real
 
 	  if($_POST[user] == $CONF[MYSQL_ADMIN_USER]) {
 
-	    alert('Control panel is locked for users, because your lock if outdated setting is active, and we appear to be outdated.');
+	    $_SESSION['status_mesg'] = 'Control panel is locked for users, because your lock if outdated setting is active, and we appear to be outdated.';
 
 	  } else {
 
@@ -309,7 +309,7 @@ if($action == "login") {
 
     if($CONF[SERVER_TYPE] == "slave") {
 
-      socket_cmd(urldecode($_POST[socket_cmd]));
+      socket_cmd(trim(urldecode($_POST[socket_cmd])));
       
       syslog(LOG_INFO, "Posted command '$_POST[socket_cmd]' from $_SERVER[REMOTE_ADDR]");
       
@@ -629,9 +629,26 @@ if($conf_not_complete and $_SERVER[PHP_SELF] != "/change_password.php" and $_SER
 
 }
 
-
-
 //NOTE! Anything beyond this point is considered a logged in user
+
+// check for var/run/install_complete
+// if it doesn't exist, run all rehash scripts and create the file
+// this step is VERY IMPORTANT for upgrading systems.
+
+if(!file_exists('../var/run/install_complete')) {
+
+  if( have_service("web") ) {
+    socket_cmd("rehash_ftp --all");
+    socket_cmd("rehash_httpd --all");
+  }
+
+  if( have_service("mail") ) socket_cmd("rehash_mail --all");
+
+  if( have_service("dns") ) socket_cmd("rehash_named --all --rebuild-conf");
+
+  shell_exec('touch ../var/run/install_complete');
+
+}
 
 //If we have a $did and no $uid, we're an admin looking at a user's domain page. Get the $uid
 

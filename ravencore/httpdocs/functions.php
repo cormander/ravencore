@@ -812,21 +812,44 @@ function socket_cmd($cmd) {
   //all the eregs are @'d out because we get some warnings sometimes that will make us unable to redirect the page
   if(@ereg("\.\.",$cmd) or @ereg("^/",$cmd) or @ereg("\;",$cmd) or @ereg("|",$cmd) or @ereg(">",$cmd) or @ereg("<",$cmd)) die("Fatal error, unsafe command: $cmd");
 
+  /* This code is the start of controlling slave servers. socket_cmd will accept a new argument, which
+     will be the server in which to target with the command to run. Commented out for now, because it
+     is not fully implemented yet.
+
+    $query = "user=$CONF[MYSQL_ADMIN_USER]&pass=$CONF[MYSQL_ADMIN_PASS]&action=login&socket_cmd=$cmd\r\n";
+    
+$ch = curl_init("https://192.168.47.105:8000/");
+
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
+curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
+curl_setopt($ch, CURLOPT_HEADER, 0);
+curl_setopt($ch, CURLOPT_POST, 1);
+curl_setopt($ch, CURLOPT_POSTFIELDS, $query);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+$shell_output = curl_exec($ch);
+
+curl_close($ch);
+
+  */
+   
   $shell_output = shell_exec("../sbin/wrapper $cmd");
 
   if($shell_output) {
 
-    if($CONF[SERVER_TYPE] == "master") {
+    //if($CONF[SERVER_TYPE] == "master") {
       
-      nav_top();
-      
-      print '<pre>' . $shell_output . '</pre>';
-      
-      nav_bottom();
-      
-    } else print $shell_output;
+    $_SESSION['status_mesg'] = nl2br(rtrim($shell_output));
 
-    exit;
+    /*  
+    } else {
+      
+      print $shell_output;
+      
+      exit;
+
+    }
+    */
 
   }
 
@@ -1254,8 +1277,8 @@ function read_conf() {
 
 	$conf_not_complete = true;
 
-      } else if($var_name = "SERVER_TYPE") $CONF[$var_name] = $var_value;
-      
+      } else if($var_name == "SERVER_TYPE") $CONF[$var_name] = $var_value;
+
     }
     
   }
