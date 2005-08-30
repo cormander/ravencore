@@ -52,10 +52,6 @@ if [ -f $log_file.1 ]; then
 
     touch $log_file
 
-# reload apache
-
-    $INITD/$HTTPD_INIT reload
-
 fi
 
 # check to see if we have custom log rotation setup for this domain by checking both

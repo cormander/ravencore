@@ -20,6 +20,13 @@
 
 . /etc/ravencore.conf || exit 1
 
+if [ ! -x $RC_ROOT/conf.d/dns.conf ]; then
+
+    echo "Not a dns server, exiting"
+    exit 1
+
+fi
+
 # This script's usage output
 
 usage() {

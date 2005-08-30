@@ -55,6 +55,6 @@ else
 
 # Restart apache
 
-    $RC_ROOT/bin/httpd graceful &> /dev/null
-
+    $HTTPD -k graceful
+    
 fi

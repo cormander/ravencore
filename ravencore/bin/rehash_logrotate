@@ -46,7 +46,6 @@ $i {
     nomail
     postrotate
         $RC_ROOT/sbin/process_logs $log_file $domain_name
-        $INITD/$HTTPD_INIT reload &> /dev/null
     endscript
 
 }

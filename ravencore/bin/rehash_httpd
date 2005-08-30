@@ -25,12 +25,22 @@
 
 . /etc/ravencore.conf || exit 1
 
+# check to make sure that this server is a webserver
+
+if [ ! -x $RC_ROOT/conf.d/web.conf ]; then
+
+    echo "Not a webserver, exiting"
+    exit 1
+
+fi
+
 # This script's usage output
 
 usage() {
 
     echo "Usage: rehash_httpd [options] domain_list"
-    echo -e "\t--all      Rebuild httpd.conf for all domains on the server"
+    echo -e "\t--all      Rebuild httpd.include for all domains on the server"
+    echo -e "\t--restart  Do a full restart of apache instead of just a reload"
     echo -e "\t-v         Be verbose"
     echo -e "\n\t           domain_list is one or more domains, seperated by spaces"
     exit 1
@@ -50,6 +60,8 @@ while [ "$1" ]; do
     case $1 in
 # Run mysql query to get a list of all domains with physical hosting
 	"--all") domain_list=$($MYSQL_STR -e "select lcase(name) from domains d, sys_users u where d.suid = u.id" | sed '1d');;
+# Do a full restart of apache, assuming its already running
+	"--restart") restart_httpd=1;;
 # Turn on verbose output
 	"-v") verbose=1;;
 # This argument is one of the domains, add it to the domain_list
@@ -440,6 +452,15 @@ if [ -f $vhosts ]; then
 
 fi
 
+# make sure that no other apache configuration denies access to the domains
+
+cat <<EOF > $vhosts
+<Directory $VHOST_ROOT>
+Order allow,deny
+Allow from all
+</Directory>
+EOF
+
 # get the compiled in server root and server config file
 httpd_server_root=$($HTTPD -V | grep HTTPD_ROOT | sed 's/=/ /' | awk '{print $3}' | sed 's/"//g')
 httpd_config_file=$($HTTPD -V | grep SERVER_CONFIG_FILE | sed 's/=/ /' | awk '{print $3}' | sed 's/"//g')
@@ -547,11 +568,14 @@ rm -f http_tmp.$$
 
 pidof $HTTPD &> /dev/null
 
-# if we are running, reload
+# if we are running, reload or restart
 
 if [ $? -eq 0 ]; then
 
-    $INITD/$HTTPD_INIT reload &> /dev/null
+    [ -n "$restart_httpd" ] && cmd=restart
+    [ -z "$restart_httpd" ] && cmd=reload
+
+    $INITD/$HTTPD_INIT $cmd &> /dev/null
 
 else
 
