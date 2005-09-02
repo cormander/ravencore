@@ -21,6 +21,9 @@
 
 verbose=0
 
+# when ran from the wrapper we don't have a path. export it here
+export PATH="/sbin:/bin:/usr/sbin:/usr/bin"
+
 # make sure the $RC_ROOT directory exists
 
 if [ ! -d $RC_ROOT ]; then
@@ -95,7 +98,7 @@ touch $RC_ROOT/database.cfg $RC_ROOT/.shadow
 MYSQL_ADMIN_PASS=$(cat $RC_ROOT/.shadow)
 
 # This is the string which is used to connect to the database
-MYSQL_STR="mysql -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS $MYSQL_ADMIN_DB"
+MYSQL_STR="mysql -h $MYSQL_ADMIN_HOST -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS $MYSQL_ADMIN_DB"
 
 # find the real name of the service script to start mysqld
 
@@ -190,3 +193,65 @@ v_echo() {
 
 }
 
+# A function to do just what it says... rebuild a conf file
+
+rebuild_conf_file() {
+
+    conf=$1
+    service=$2
+    seperator=$3
+
+    conf_basename=$(basename $conf)
+
+    if [ -f $conf ] && [ -d $RC_ROOT/etc/$service/$conf_basename ]; then
+	
+	for i in `ls -1 $RC_ROOT/etc/$service/$conf_basename | grep -v '\.local$'`; do
+	    
+	    param_name="$RC_ROOT/etc/$service/$conf_basename/$i"
+	    [ -f $param_name.local ] && param_name=$param_name.local
+	    
+	    case `cat $param_name` in
+		"")
+		    echo -e "$i$seperator"
+		    ;;
+		
+		*)
+		    cat $param_name | while read -r param_value; do
+			
+			echo -e "$i$seperator$param_value"
+			
+		    done
+		    ;;
+	    esac
+
+	done > $RC_ROOT/var/tmp/$conf_basename.$$
+	
+	diff $conf $RC_ROOT/var/tmp/$conf_basename.$$ &> /dev/null
+	
+	if [ $? -ne 0 ]; then
+
+# if the sys_orig file for the conf file doesn't exist,
+	    if [ ! -f $conf.sys_orig ]; then
+
+# then save the conf file as the sys_orig. This will preserve the system's origonal configuration
+# so when we uninstall ravencore, they will be moved back
+		mv $conf $conf.sys_orig
+
+# tell ravencore that this sys_orig file was made by appending it to our sys_orig list
+		echo "$service:$conf" >> $RC_ROOT/var/run/sys_orig_conf_files
+	    
+	    fi
+
+	    rm -f $conf
+	    
+	    cp $RC_ROOT/var/tmp/$conf_basename.$$ $conf
+	    
+	    $INITD/$service restart &> /dev/null
+
+	fi
+	
+	rm -f $RC_ROOT/var/tmp/$conf_basename.$$
+
+    fi
+
+}

@@ -1,0 +1,1 @@
+unix  -       n       n       -       -       pipe flags=Fq. user=foo argv=/usr/local/sbin/bsmtp -f $sender $nexthop $recipient

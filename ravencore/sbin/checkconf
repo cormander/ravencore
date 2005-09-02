@@ -21,7 +21,7 @@
 # we don't want to require a database connection, so say we already have one
 # so bash_functions doesn't attempt to read the database configuration
 
-export GOT_CONF=1
+#export GOT_CONF=1
 
 . /etc/ravencore.conf || exit 1
 
@@ -51,52 +51,66 @@ cat $RC_ROOT/var/run/version 2> /dev/null | diff $RC_ROOT/etc/version - &> /dev/
 
 if [ $? -ne 0 ]; then
     
-# we are a different version of ravencore. Remove everything in the var/run/ directory
+# we are a different version of ravencore. Remove some things from the var/run/ directory
     
 # only say our version number changed if we actually had a previous version
     
     [ -f $RC_ROOT/var/run/version ] && echo "Version number changed since we last ran, running upgrade steps"
     
+# remove the install_complete so our interface will know to run all the rehash scripts when the conf is complete
 # remove the db_install so that we'll run that script
 # remove the gpl_check so they can agree to the license, just incase the GPL version number changes
 # remove the version so we can copy the new one there
 # remove the wrapper, it'll be added back later in this script, from the newer version's code
 
-    rm -f $RC_ROOT/var/run/{db_install,gpl_check,version} $RC_ROOT/sbin/wrapper
+    rm -f $RC_ROOT/var/run/{install_complete,db_install,gpl_check,version} $RC_ROOT/sbin/wrapper
 
 # copy the new version to the run cache
 
     cp $RC_ROOT/etc/version $RC_ROOT/var/run/version
 
-fi
+# change the runlevel of all the services listed in etc, if they exist
 
-# check to see if our db_install script ran
+    echo -n "Setting service runlevels...."
 
-if [ ! -f $RC_ROOT/var/run/db_install ]; then
+    if [ -x /sbin/chkconfig ]; then
+	
+	for i in `cat $RC_ROOT/etc/services.*`; do
 
-# install the ravencore database
-    $RC_ROOT/sbin/db_install
-    
-# check to see if it exited cleanly
-    
-    [ $? -ne 0 ] && exit 1
-    
+	    chkconfig --list $i &> /dev/null
+
+# if this service exists in chkconfig
+	    if [ $? -eq 0 ]; then
+		
+# runlevel with a single chkconfig command, so we'll run 3 of them instead
+		for runlevel in 3 4 5; do
+		    chkconfig --level $runlevel $i on &> /dev/null
+		done
+
+	    fi
+		
+	done
+
+    fi
+
+    echo "done"
+
 fi
 
 # make sure that ravencore is a listed service
 
 if [ -x /sbin/chkconfig ]; then
     
-    /sbin/chkconfig --list ravencore &> /dev/null
+    chkconfig --list ravencore &> /dev/null
 
     if [ $? -ne 0 ]; then
 
 # not listed as a service, add it
-        /sbin/chkconfig --add ravencore
+        chkconfig --add ravencore
 # set ravencore to startup on boot. Some distrobutions complain about setting more than one
 # runlevel with a single chkconfig command, so we'll run 3 of them instead
         for runlevel in 3 4 5; do
-	    /sbin/chkconfig --level $runlevel ravencore on
+	    chkconfig --level $runlevel ravencore on
 	done
 	
     fi
@@ -145,22 +159,37 @@ if [ $? -ne 0 ]; then
 	fi
 	
 # find the user from the httpd conf file
-	httpd_user=$(grep "^User" $httpd_config_file | awk '{print $2}')
+        httpd_user=$(grep "^User" $httpd_config_file | awk '{print $2}')
 
-# if the user is not found, we can't add it to the servgrp, and vhosts won't work
+# if not found, search the conf files it includes ( ex: SuSE looks in uid.conf )
 
-	if [ -z "$httpd_user" ]; then
-	    
-	    echo "Unable to find the user apache runs as from its configuration file $httpd_config_file"
-	    
-	    exit 1
+        if [ -z "$httpd_user" ]; then
 
-	fi
+            for inc in `grep '^Include' $httpd_config_file 2> /dev/null`; do
 
+                httpd_user=$(grep "^User" $inc | awk '{print $2}' 2> /dev/null)
+
+# if we found the user, break out of the loop
+
+                if [ -n "$httpd_user" ]; then break; fi
+
+            done
+
+        fi
+
+# if we still don't have the user, we can't add it to the servgrp, and vhosts won't work
+
+        if [ -z "$httpd_user" ]; then
+
+            echo "Unable to find the user apache runs as from its configuration file $httpd_config_file"
+
+            exit 1
+
+        fi
 
     fi
 
-    users_in_httpd_group=$(grep "^$httpd_user" /etc/group | sed 's/:/ /g' | awk '{print $4}')
+    users_in_httpd_group=$(grep "^$httpd_user:" /etc/group | sed 's/:/ /g' | awk '{print $4}')
 
 # if there are users, be sure to use a comma
     if [ -n "$users_in_httpd_group" ]; then
@@ -188,44 +217,18 @@ usermod -u 147 -G servgrp rcadmin &> /dev/null
 
 [ $? -ne 0 ] && useradd -M -u 147 -g 147 -G servgrp -d $RC_ROOT -s /bin/false rcadmin
 
-# Set correct ownership and permissions so that the panel can read the .shadow file
-chown rcadmin:rcadmin $RC_ROOT/.shadow $RC_ROOT/database.cfg
-chmod 600 $RC_ROOT/.shadow $RC_ROOT/database.cfg
-# make sure all the directories are readable
-# TODO: figure out what could be tightened up with 750 permissions or something
-chmod 755 $RC_ROOT/{.,bin,sbin,conf.d,httpdocs,etc,var}
-chown root:root $RC_ROOT/{.,bin,sbin,conf.d,httpdocs,etc,var}
-# make sure all the appropriate tmp directories are owned by root:rcadmin and set to 770
-chown root:rcadmin $RC_ROOT/var/{tmp,run} $RC_ROOT/httpdocs/{webmail/{data,data/default_pref},filemanager/tmp}
-chmod 770 $RC_ROOT/var/{tmp,run} $RC_ROOT/httpdocs/{webmail/{data,data/default_pref},filemanager/tmp}
+# check to see if our db_install script ran
 
-# check to see if the wrapper was installed
+if [ ! -f $RC_ROOT/var/run/db_install ]; then
 
-if [ ! -x $RC_ROOT/sbin/wrapper ]; then
-
-# attempt to compile the wrapper code
-
-    gcc -o $RC_ROOT/sbin/wrapper $RC_ROOT/sbin/wrapper.c &> /dev/null
-
-# if we failed, 
-
-    if [ $? -ne 0 ]; then
-
-# use the perl wrapper code instead
-
-# we can test to see if perl has suid enabled the exit status of doing: perl -V | grep suid &> /dev/null
-# but for now, leave the control panel interface to handling this error
-
-	rm -f $RC_ROOT/sbin/wrapper
-	cp $RC_ROOT/sbin/wrapper.pl $RC_ROOT/sbin/wrapper
-	
-    fi
+# install the ravencore database
+    $RC_ROOT/sbin/db_install
+    
+# check to see if it exited cleanly
+    
+    [ $? -ne 0 ] && exit 1
     
 fi
-
-# make sure the wrapper has correct ownership / permissions
-chown root:rcadmin $RC_ROOT/sbin/wrapper
-chmod 4150 $RC_ROOT/sbin/wrapper
 
 # Check if we don't have something in the server-id.conf file
 
@@ -320,49 +323,87 @@ fi
 [ -f /etc/vsftpd.conf ] && vsftpd_conf=/etc/vsftpd.conf
 [ -f /etc/vsftpd/vsftpd.conf ] && vsftpd_conf=/etc/vsftpd/vsftpd.conf
 
-if [ -n "$vsftpd_conf" ]; then
+[ -n "$vsftpd_conf" ] && rebuild_conf_file $vsftpd_conf "vsftpd" "="
 
-# set the vsftpd.conf file to be tested against. the local file will be used if it exists
+# set permissions and ownship of files in the ravencore root
 
-    vsftpd_conf_in=$RC_ROOT/etc/vsftpd.conf.in
-    [ -f $vsftpd_conf_in.local ] && vsftpd_conf_in=$vsftpd_conf_in.local
+# start by giving everything root:rcadmin
+chown -R root:rcadmin $RC_ROOT
+# sbin files should not be in the rcadmin group
+chown root:root $RC_ROOT/sbin/*
 
-# only proceed if we actually got the $vsftpd_conf_in set
+# shadow files, webmail files, and tmp files should be owned by rcadmin
+chown -R rcadmin:rcadmin $RC_ROOT/{.shadow,database.cfg,httpdocs/{webmail/data,filemanager/tmp},var/tmp}
+# but their directories should not be
+chown root:rcadmin $RC_ROOT/{httpdocs/{webmail/data,filemanager/tmp},var/tmp}
 
-    diff $vsftpd_conf $vsftpd_conf_in &> /dev/null
-    
+# directory permissions.. start by issuing everything 750
+chmod 750 $(find $RC_ROOT -type d)
+
+# files in sbin, etc, and httpdocs/webmail need to allow files that are readable to everyone, to be read
+chmod 751 $RC_ROOT/{.,sbin,etc,httpdocs/{.,webmail}}
+
+# set sbin files to 500, with the exception of mailscan
+chmod 500 $RC_ROOT/{bin,sbin}/*
+chmod 555 $RC_ROOT/sbin/mailscan
+
+# spamassassin reads the .spam preferences in here
+chmod 771 $RC_ROOT/httpdocs/webmail/data
+chmod 770 $RC_ROOT/var/{tmp,run} $RC_ROOT/httpdocs/{webmail/data/default_pref,filemanager/tmp}
+
+# make php files not world readable
+chmod 640 $RC_ROOT/httpdocs/*php
+
+# make sure our database connect info stays safe
+chmod 600 $RC_ROOT/.shadow
+chmod 400 $RC_ROOT/database.cfg
+
+# make sure that the vhosts.conf file exists and is readable by rcadmin and apache, but no one else
+touch $RC_ROOT/etc/vhosts.conf
+chgrp servgrp $RC_ROOT/etc/vhosts.conf
+chmod 440 $RC_ROOT/etc/vhosts.conf
+
+# check to see if the wrapper works correctly
+
+# check with sudo to see if the wrapper works as rcadmin ( some systems don't have sudo, they skip this step )
+
+if [ -x /usr/bin/sudo ] && [ -x $RC_ROOT/sbin/wrapper ]; then
+
+# run the wrapper as rcadmin, forcing error to /dev/null . We'll know from stdout if we are working or not
+    case $(sudo -u rcadmin $RC_ROOT/sbin/wrapper testsuid 2> /dev/null) in
+# if it returns root, then we're good to go. leave well enough alone
+	"root");;
+# if we didn't get root, then remove the wrapper ( the next step will add it back )
+	*)rm -f $RC_ROOT/sbin/wrapper;;
+    esac
+
+fi
+
+# if the wrapper is not executable, or is missing, attempt to install it
+
+if [ ! -x $RC_ROOT/sbin/wrapper ]; then
+
+# attempt to compile the wrapper code
+
+    gcc -o $RC_ROOT/sbin/wrapper $RC_ROOT/sbin/wrapper.c &> /dev/null
+
+# if we failed for whatever reason, use the perl wrapper code instead
+
     if [ $? -ne 0 ]; then
-	
-	rm -f $vsftpd_conf
-	cp $vsftpd_conf_in $vsftpd_conf
-	    
-	$INITD/vsftpd restart &> /dev/null
+
+# we can test to see if perl has suid enabled the exit status of doing: perl -V | grep suid &> /dev/null
+# but for now, leave the control panel interface to handling this error
+
+	rm -f $RC_ROOT/sbin/wrapper
+	cp $RC_ROOT/sbin/wrapper.pl $RC_ROOT/sbin/wrapper
 	
     fi
-
+    
 fi
 
-# check to see if we need to restart ravencore
-
-if [ $reload_ravencore -ne 0 ]; then
-
-# only call a restart if we are not being run by the init script itself
-
-    if [ -z "$INIT_RUNNING" ]; then
-
-	$INITD/ravencore status &> /dev/null
-
-# only restart if ravencore is running
-	
-	if [ $? -eq 0 ]; then
-
-	    $INITD/ravencore restart &> /dev/null
-
-	fi
-
-    fi
-
-fi
+# make sure the wrapper has correct ownership / permissions
+chown root:rcadmin $RC_ROOT/sbin/wrapper
+chmod 4150 $RC_ROOT/sbin/wrapper
 
 # here, figure out what "services" are installed, and set the "x" bit on the conf.d file accordingly
 
@@ -410,8 +451,11 @@ else
 
 fi
 
+# save our current umask state
 
-#generate ssl cert for panel
+old_umask=$(umask)
+
+# generate ssl cert for panel
 
 if [ -x /usr/bin/openssl ]; then
 
@@ -454,6 +498,36 @@ EOF
 
     fi
     
+fi
+
+# reload our old umask state
+
+umask $old_umask
+
+# run other checkconf scripts
+
+$RC_ROOT/sbin/checkconf.cron.hourly
+
+# check to see if we need to restart ravencore
+
+if [ $reload_ravencore -ne 0 ]; then
+
+# only call a restart if we are not being run by the init script itself
+
+    if [ -z "$INIT_RUNNING" ]; then
+
+	$INITD/ravencore status &> /dev/null
+
+# only restart if ravencore is running
+	
+	if [ $? -eq 0 ]; then
+
+	    $INITD/ravencore restart &> /dev/null
+
+	fi
+
+    fi
+
 fi
 
 # check for a local script to run, and run it if it is executeable

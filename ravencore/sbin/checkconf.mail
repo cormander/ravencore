@@ -20,9 +20,19 @@
 
 . /etc/ravencore.conf || exit 1
 
-# set our reload variable to zero
+# we kind of really need $VMAIL_ROOT to be set to function, so we exit if we don't have it
+# set. But don't exit with an error code, because when we are a fresh install, that will kill
+# us :)
 
-postfix_reload=0
+[ -z "$VMAIL_ROOT" ] && exit 0;
+
+# if /usr/libexec doesn't exit, create it ( so postfix will work on SuSE )
+
+if [ ! -d /usr/libexec ]; then
+
+    ln -s /usr/lib /usr/libexec
+
+fi
 
 # make sure we have the the vmail user / group
 # check the group first, because in order to add the user, we need a valid existing gid
@@ -49,76 +59,31 @@ touch /etc/sasldb2
 chown postfix:postfix /etc/sasldb2
 chmod 600 /etc/sasldb2
 
-# check our sasl conf file, to make sure smtp authentication will work
+# rebuild configuration files
 
-sasl2_smtpd_in=$RC_ROOT/etc/sasl2.smtpd.conf.in
-[ -f $sasl2_smtpd_in.local ] && sasl2_smtpd_in=$sasl2_smtpd_in.local
+rebuild_conf_file "/etc/dovecot.conf" dovecot ' = '
+rebuild_conf_file "$VMAIL_CONF_DIR/main.cf" postfix ' = '
+rebuild_conf_file "$VMAIL_CONF_DIR/master.cf" postfix '\t'
+rebuild_conf_file "/usr/lib/sasl2/smtpd.conf" postfix ': '
 
-diff /usr/lib/sasl2/smtpd.conf $sasl2_smtpd_in &> /dev/null
+# make sure "devnull" exists in the aliases file
 
-if [ $? -ne 0 ]; then
-    
-    rm -f /usr/lib/sasl2/smtpd.conf
-	
-    cp $sasl2_smtpd_in /usr/lib/sasl2/smtpd.conf
-    
-    postfix_reload=1
-    
-fi
+# figure out the alias database file. It is normally /etc/aliases, but sometimes it is 
+# something else. We "could" define it in our main.cf, but since we are not generating
+# this file completly, just use what the system already has there
 
-# check or main.cf file, to make sure it has all our required parameters
+alias_database=$(postconf | grep alias_database | sed 's/:/ /' | awk '{print $4}')
 
-postfix_main_in=$RC_ROOT/etc/postfix.main.cf.in
-[ -f $postfix_main_in.local ] && postfix_main_in=$postfix_main_in.local
-
-diff $VMAIL_CONF_DIR/main.cf $postfix_main_in &> /dev/null
+grep "^devnull:" $alias_database &> /dev/null
 
 if [ $? -ne 0 ]; then
     
-    rm -f $VMAIL_CONF_DIR/main.cf
-	
-    cp $postfix_main_in $VMAIL_CONF_DIR/main.cf
+    echo -e "devnull:\t/dev/null" >> $alias_database
     
-    postfix_reload=1
-    
-fi
+# run newaliases so postfix sees the new user
+# some systems report info on stdout when ran, force it to /dev/null
 
-# do the same for dovecot
-
-# find out which conf file to use
-
-[ -f /etc/dovecot.conf ] && dovecot_conf=/etc/dovecot.conf
-[ -f /etc/dovecot/dovecot.conf ] && dovecot_conf=/etc/dovecot/dovecot.conf
-
-# which .in file to use
-dovecot_conf_in=$RC_ROOT/etc/dovecot.conf.in
-[ -f $dovecot_conf_in.local ] && dovecot_conf_in=$dovecot_conf_in.local
-
-diff $dovecot_conf $dovecot_conf_in &> /dev/null
-
-if [ $? -ne 0 ] && [ -f $dovecot_conf ]; then
-    
-    rm -f $dovecot_conf
-    
-    cp $dovecot_conf_in $dovecot_conf
-    
-	$INITD/dovecot restart &> /dev/null
-	
-fi
-
-# only reload postfix if we changed a configuration file
-
-if [ $postfix_reload -eq 1 ]; then
-
-# but first, make sure we won't kill postfix by restarting it
-
-    /usr/sbin/postfix check
-
-    if [ $? -eq 0 ]; then
-
-        /usr/sbin/postfix reload &> /dev/null
-
-    fi
+    newaliases 1> /dev/null
 
 fi
 
