@@ -348,27 +348,17 @@ if [ $? -ne 0 ]; then
 	
     fi
     
-# now we attempt to load the sql file 
+# now we attempt to load the sql tables
     
-    echo "attempting to load the data structure...."
+    echo -n "attempting to load the data structure...."
 
-    if [ ! -f $RC_ROOT/etc/ravencore.sql.in ]; then
-	
-	echo "Could not find the sql infile, it is supposed to be located at $RC_ROOT/etc/ravencore.sql.in"
-	
-	exit 1
-	
-    fi
-    
-    $MYSQL_STR $MYSQL_ADMIN_DB < $RC_ROOT/etc/ravencore.sql.in
+    for table in `ls $RC_ROOT/etc/sql_tables | sed 's/\.sql$//'`; do
 
-    if [ $? -ne 0 ]; then
-	
-	echo "Something went wrong when loading the sql infile. Please file a bug report"
-	
-	exit 1
-	
-    fi
+	$MYSQL_STR $MYSQL_ADMIN_DB < $RC_ROOT/etc/sql_tables/$table.sql
+
+    done
+
+    echo "done"
 
 else
 
