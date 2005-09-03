@@ -45,7 +45,7 @@ if(!function_exists("session_start")) {
 
   nav_top();
 
-  print 'The server doesn\'t have PHP session functions available.<p>Please recompile PHP with sessions enabled';
+  print $lang['no_php_session'];
 
   nav_bottom();
 
@@ -86,11 +86,11 @@ read_db_conf();
 // Check to see if the database conf file exists
 if(!file_exists("$CONF[RC_ROOT]/database.cfg")) {
 
-  print 'You are missing the database configuration file: ' . $CONF[RC_ROOT] . '/database.cfg
-<p>
-Please run the following script as root:
-<p>
-' . $CONF[RC_ROOT] . '/sbin/database_reconfig';
+  nav_top();
+
+  print $lang['no_database_cfg'];
+
+  nav_bottom();
 
   exit;
 
@@ -134,7 +134,7 @@ if(!$link) {
 
   nav_top();
 
-  print 'Unable to get a database connection.';
+  print $lang['no_database_connect'];
 
   nav_bottom();
 
@@ -471,19 +471,19 @@ if(!file_exists("../var/run/gpl_check") and is_admin() and $_SERVER[PHP_SELF] !=
 
     nav_top();
     
-    if($action == "gpl_agree") print '<b><font color="red">You must agree to the GPL License to use RavenCore</font></b><p>';
-    
-    print 'Please read the GPL License and select the "I agree" checkbox below<hr><pre>';
+    if($action == "gpl_agree") print '<b><font color="red">' . $lang['must_agree_gpl'] . '</font></b><p>';
+
+    print $lang['please_agree_gpl'] . '<hr><pre>';
 
     $h = fopen("../LICENSE","r");
     
     fpassthru($h);
     
-    print 'The GPL License should appear in the frame below:</pre>
+    print $lang['gpl_appear_below'] . '</pre>
 <iframe src="GPL" width=675 height=250>
 </iframe>
 <p>
-<form method=post> <input type=checkbox name=gpl_agree value=yes> I agree to these terms and conditions
+<form method=post> <input type=checkbox name=gpl_agree value=yes> ' . $lang['i_agree_gpl'] . '
 
 <p>
 <input type=submit value=Submit> <input type=hidden name=action value=gpl_agree></form>';
