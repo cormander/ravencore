@@ -24,7 +24,7 @@
 # description: A Free Hosting Control Panel
 # processname: ravencore.httpd
 # config: /usr/local/ravencore/etc/ravencore.httpd.conf
-# pidfile: /var/run/ravencore.httpd.pid
+# pidfile: /usr/local/ravencore/var/run/ravencore.httpd.pid
 
 # we don't want to require a database connection, so say we already have one
 # so bash_functions doesn't attempt to read the database configuration
@@ -36,6 +36,9 @@ export GOT_CONF=1
 # tell our checkconf scripts that the init script is running, so services
 # don't need to be restarted by them.
 export INIT_RUNNING=1
+
+# so our services.php page knows where init scripts are
+export INITD=$INITD
 
 # tells us if we found source function library for init scripts. Initilize it to zero
 
@@ -71,7 +74,7 @@ fi
 INITLOG_ARGS=""
 
 httpd=$RC_ROOT/sbin/ravencore.httpd
-pidfile=${PIDFILE-/var/run/ravencore.httpd.pid}
+pidfile=${PIDFILE-$RC_ROOT/var/run/ravencore.httpd.pid}
 lockfile=${LOCKFILE-/var/lock/subsys/ravencore.httpd}
 RETVAL=0
 
@@ -159,7 +162,7 @@ fi
 # get the list from the apache binary
     compiled_modules=`$httpd -l`
 
-    for module in log_config setenvif mime autoindex negotiation dir actions alias include; do
+    for module in log_config setenvif mime negotiation dir actions alias include; do
 
 	if [ -z "$(echo $compiled_modules | grep $module)" ]; then
 
@@ -197,7 +200,7 @@ fi
 
     fi
 
-# check to see if the php and ssl apache modules lives in a strange place
+# check to see if the php and ssl apache modules lives in a strange place.
 # this will, in some cases, pick up the real file in the expected place.. but that's ok, linking a file
 # to itself won't cause anything bad to happen, and we just force the error'd output to /dev/null
 
@@ -274,13 +277,14 @@ fi
 			if [ $? -ne 0 ]; then
 			    
 			    echo
-			    echo "Warning: Unable to verify the server.crt file. Starting with no ssl"
+			    echo "Warning: Unable to verify the server.crt file. Starting without ssl"
 
 			else
 			    
 # the server.crt file appears to be OK. Start with SSL
 
 			    OPTIONS="$OPTIONS -DSSL"
+			    export RUN_SSL=1
 
 			fi
 			
@@ -289,6 +293,7 @@ fi
 # we get here if we don't have the openssl command. Assume that the server.crt file will work
 
 			OPTIONS="$OPTIONS -DSSL"
+			export RUN_SSL=1
 
 		    fi
 
@@ -308,29 +313,29 @@ fi
     
 # start the control panel daemon
 
-if [ $found_init_func -eq 1 ]; then
-
-    daemon $httpd $OPTIONS
-    RETVAL=$?
-    echo
-    [ $RETVAL = 0 ] && touch ${lockfile}
-
-else
-
-    $httpd $OPTIONS
-    RETVAL=$?
-
-    if [ $RETVAL -eq 0 ]; then
-
-	echo "[ OK ]"
-
+    if [ $found_init_func -eq 1 ]; then
+	
+	daemon $httpd $OPTIONS
+	RETVAL=$?
+	echo
+	[ $RETVAL = 0 ] && touch ${lockfile}
+	
     else
-
-	echo "[ FAILED ]"
-
+	
+	$httpd $OPTIONS
+	RETVAL=$?
+	
+	if [ $RETVAL -eq 0 ]; then
+	    
+	    echo "[ OK ]"
+	    
+	else
+	    
+	    echo "[ FAILED ]"
+	    
+	fi
+	
     fi
-
-fi
     
     return $RETVAL
     
@@ -374,9 +379,9 @@ startall() {
 	conf=$tmp.conf
 	for service in $(cat $RC_ROOT/etc/services.$tmp); do
 	    
-	    if [ -f $RC_ROOT/conf.d/$conf ]; then
+	    if [ -f $RC_ROOT/conf.d/$conf ] && [ -x $INITD/$service ]; then
 		
-		$INITD/$service status &> /dev/null
+		$RC_ROOT/bin/is_service_running $service &> /dev/null
 	    
 		if [ $? -ne 0 ]; then
 		    
@@ -390,9 +395,9 @@ startall() {
 
     done
 
-# start ravencore, too
+# start ravencore, too, if we're not running
 
-    start
+    [ -z "$(pidof ravencore.httpd)" ] && start
 
 }
 
@@ -405,9 +410,9 @@ stopall() {
 	conf=$tmp.conf
 	for service in $(cat $RC_ROOT/etc/services.$tmp); do
 	    
-	    if [ -f $RC_ROOT/conf.d/$conf ]; then
+	    if [ -f $RC_ROOT/conf.d/$conf ] && [ -x $INITD/$service ]; then
 		
-		$INITD/$service status &> /dev/null
+		$RC_ROOT/bin/is_service_running $service &> /dev/null
 		
 		if [ $? -eq 0 ]; then
 		    
@@ -440,7 +445,7 @@ statusall() {
 	conf=$tmp.conf
 	for service in $(cat $RC_ROOT/etc/services.$tmp); do
 	    
-	    if [ -f $RC_ROOT/conf.d/$conf ]; then
+	    if [ -f $RC_ROOT/conf.d/$conf ] && [ -x $INITD/$service ]; then
 		
 		$INITD/$service status
 

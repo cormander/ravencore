@@ -18,6 +18,12 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
+# This script tries to determine if a service is running. It works just fine
+# on most systems, but still has trouble on some distributions which do not
+# set correct or expected exit codes when they run.
+
+# we don't need our database conf
+
 GOT_CONF=1
 
 . /etc/ravencore.conf || exit 1
@@ -32,27 +38,55 @@ if [ ! -f $INITD/$1 ]; then
 
 fi
 
-$INITD/$1 status &> /dev/null
+status_output=$($INITD/$1 status)
 
-# exit status 0 means running OK
+# save the exit status of the init script
 
-if [ $? -eq 0 ]; then
+ret=$?
+
+# check to see if the init script said we're stopped
+# this must be done before our "status" check
+
+is_stopped=$(echo $status_output | grep 'stopped')
+
+# check to make sure the status command was recognized
+
+case $(echo $status_output | grep "Usage: ") in
+# we're OK
+    "") ;;
+# we can't do a "status" on this init script. set $is_stopped to bypass our "Yes", our
+# pidof check should see it running if it really is
+    *) is_stopped="stopped"
+	;;
+esac
+
+# exit status of 0 means running OK ( if the $is_stopped is blank ). Some systems fail to
+# set correct exit codes with init scripts, and this is a measure to try to hack around that
+
+if [ $ret -eq 0 ] && [ -z "$is_stopped" ]; then
   
     echo Yes
+
+    exit 0
   
 else
 
-# try it again with a pidof... just in case
+# try it again with a pidof... just in case this system doesn't support the "status" command
+# for init scripts
     
     pidof $1 &> /dev/null
 
     if [ $? -eq 0 ]; then
 
 	echo Yes
+
+	exit 0
 	
     else
 
 	echo No
+
+	exit 1
 
     fi
 

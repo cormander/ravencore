@@ -56,7 +56,8 @@ function get_all_services() {
       // get rid of the last line which is blank
       array_pop($tmp);
       
-      foreach($tmp as $service) array_push($services, $service);
+      // only add services to the array we return if an init script exists for it
+      foreach($tmp as $service) if(file_exists($_ENV['INITD'].'/'.$service)) array_push($services, $service);
       
     }
     
