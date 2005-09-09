@@ -52,7 +52,7 @@ esac
 
 for sys_user in $user_list; do
 
-    tmp=$($MYSQL_STR -e "select concat(lcase(name), ':', passwd, ':', shell) from domains d, sys_users u where d.suid = u.id and login = '$sys_user'" | sed '1d')
+    tmp=$($MYSQL_STR -e "select concat(lcase(name), ':', passwd, ':', shell) from domains d, sys_users u where d.suid = u.id and login = '$sys_user' and home_dir is null" | sed '1d')
     domain_name=$(echo $tmp | sed 's/:/ /g' | awk '{print $1}')
     passwd=$(echo $tmp | sed 's/:/ /g' | awk '{print $2}')
     login_shell=$(echo $tmp | sed 's/:/ /g' | awk '{print $3}')
@@ -78,6 +78,42 @@ for sys_user in $user_list; do
     if [ $? -ne 0 ]; then
 
 	/usr/sbin/useradd -M -s $login_shell -g servgrp -d $VHOST_ROOT/$domain_name -p $(perl -e "print crypt('$passwd','$salt_str');") $sys_user	
+    fi
+    
+done
+
+
+
+# for rmyer137.... "extra" ftp users
+
+for sys_user in $($MYSQL_STR -e "select lcase(login) from sys_users where home_dir is not null" | sed '1d'); do
+
+    tmp=$($MYSQL_STR -e "select concat(passwd, ':', shell, ':', home_dir) from sys_users where login = '$sys_user'" | sed '1d')
+    passwd=$(echo $tmp | sed 's/:/ /g' | awk '{print $1}')
+    login_shell=$(echo $tmp | sed 's/:/ /g' | awk '{print $2}')
+    home_dir=$(echo $tmp | sed 's/:/ /g' | awk '{print $3}')
+
+# Just in case we didn't get a shell value, use the default. We need the quotes
+
+    if [ -z "$login_shell" ]; then
+
+	login_shell=$DEFAULT_LOGIN_SHELL
+
+    fi
+
+# build a random 2 letter "salt" string for use in the perl crypt fucntion in the docevat passwd-file below
+
+    salt_str=$(perl -e 'for($i=0;$i<2;$i++){print pack("C",int(rand(26))+65);}')
+
+# update the user
+    
+    /usr/sbin/usermod -s $login_shell -g servgrp -d $home_dir -p $(perl -e "print crypt('$passwd','$salt_str');") $sys_user &> /dev/null
+
+# if we got bad exit status, the user doesn't exists, so add it
+
+    if [ $? -ne 0 ]; then
+
+	/usr/sbin/useradd -M -s $login_shell -g servgrp -d $home_dir -p $(perl -e "print crypt('$passwd','$salt_str');") $sys_user	
     fi
     
 done
