@@ -173,7 +173,7 @@ FTP Password: <input type=password name=passwd>';
 
       //We cant edit the the FTP username w/o deleting hosting for the domain
 
-      $sql = "select login, passwd from sys_users u, domains d where u.id = d.suid and d.id = '$did'";
+      $sql = "select login, passwd, shell from sys_users u, domains d where u.id = d.suid and d.id = '$did'";
       $result_ftp = mysql_query($sql);
       
       $row_ftp = mysql_fetch_array($result_ftp);
@@ -200,7 +200,6 @@ FTP Password: <input type=password name=passwd>';
 
     print '</select></p>';
 
-    print "<input type=hidden name=login_shell value=\"/bin/false\"><input type=hidden name=dir value=false>";
     print "<p>SSL Support: <input type=radio name=ssl value=true";
     if($row[host_ssl] == "true") print " checked";
     if(!user_can_add($uid, "host_ssl") and !is_admin()) print " disabled";

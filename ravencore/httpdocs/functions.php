@@ -234,12 +234,14 @@ function domain_traffic_usage($did, $month, $year) {
   //$prog = "awk '/^BEGIN_DOMAIN/ { getline; print $4 }' " . $CONF[RC_ROOT] . "/var/lib/awstats/awstats" . $month . $year . "." . $domain_name . ".txt";
   //$prog = "awk '/^BEGIN_DOMAIN/ { while(1) { getline; if($1 == \"END_DOMAIN\") exit; print $4 } }' " . $CONF[RC_ROOT] . "/var/lib/awstats/awstats" . $month . $year . "." . $domain_name . ".txt";
 
-  if(file_exists($CONF[RC_ROOT] . '/var/awstats/' . $month . $year . '.' . $domain_name . '.txt')) {
-
-    $prog = 'total=0; for i in `awk \'/^BEGIN_DOMAIN/ { while(1) { getline; if($1 == "END_DOMAIN") break; else print $4; } }\' ' . $CONF[RC_ROOT] . '/var/awstats/' . $month . $year . '.' . $domain_name . '.txt`; do total=$(expr $i "+" $total); done; for i in `awk \'/^BEGIN_ROBOT/ { while(1) { getline; if($1 == "END_ROBOT") break; else print $3; } }\' ' . $CONF[RC_ROOT] . '/var/awstats/' . $month . $year . '.' . $domain_name . '.txt`; do total=$(expr $i "+" $total); done; for i in `awk \'/^BEGIN_ERRORS/ { while(1) { getline; if($1 == "END_ERRORS") break; else print $3; } }\' ' . $CONF[RC_ROOT] . '/var/awstats/' . $month . $year . '.' . $domain_name . '.txt`; do total=$(expr $i "+" $total); done; echo $total';
+  $dir = $CONF[VHOST_ROOT] . '/' . $domain_name . '/var/awstats/awstats' . $month . $year . '.' . $domain_name . '.txt';
   
-    $handle = popen($prog, "r") or die("Unable to popen $prog");
+  if(file_exists($dir)) {
     
+    $prog = 'total=0; for i in `awk \'/^BEGIN_DOMAIN/ { while(1) { getline; if($1 == "END_DOMAIN") break; else print $4; } }\' ' . $dir . '`; do total=$(expr $i "+" $total); done; for i in `awk \'/^BEGIN_ROBOT/ { while(1) { getline; if($1 == "END_ROBOT") break; else print $3; } }\' ' . $dir . '`; do total=$(expr $i "+" $total); done; for i in `awk \'/^BEGIN_ERRORS/ { while(1) { getline; if($1 == "END_ERRORS") break; else print $3; } }\' ' . $dir . '`; do total=$(expr $i "+" $total); done; echo $total';
+    
+    $handle = popen($prog,'r');
+
     while( !feof($handle) ) $prog_data .= fread($handle, 1024);
     
     pclose($handle);
@@ -528,6 +530,10 @@ function alert($message) {
 // goes to the browser. This function is used just about everywhere.
 
 function goto($url) {
+
+  // session variables may not be saved before the browser changes to the new page, so we need to
+  // save them here
+  session_write_close();
 
   header("Location: $url");
 
@@ -988,6 +994,13 @@ function nav_top() {
 
   global $js_alerts, $page_title, $sock_error, $shell_output, $row_user, $row_session;
 
+  if($_SESSION['status_mesg']) {
+    
+    $status_mesg = $_SESSION['status_mesg'];
+    $_SESSION['status_mesg'] = '';
+
+  }
+
   print '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"><html><head>';
 
   // Print page title if there is one. Otherwise, print a generic title
@@ -1132,7 +1145,7 @@ print '
    print '<li class="menu right"><a href="logout.php" onmouseover="show_help(\'Logout\');" onmouseout="help_rst();" onclick="return confirm(\'Are you sure you wish to logout?\');">Logout</a></li></ul>
 <hr style="visibility: hidden;">';
    
-   if(is_admin() and $sock_error) print '<b><font color=red>' . $sock_error . '</font></b><br />';
+   print '<div><font size="2" color=red><b>' . $status_mesg . '&nbsp;</b></font></div>';
    
  }
 

@@ -65,8 +65,25 @@ if($action) {
 	  
 	} else {
 	  
-	  if(!$_POST[redirect_addr] or preg_match('/^'.REGEX_MAIL_NAME.'@'.REGEX_DOMAIN_NAME.'$/',$_POST[redirect_addr])) {
-	    
+	  $_POST[redirect_addr] = trim(ereg_replace(' ','',$_POST[redirect_addr]));
+
+	  $redir_error = 0;
+
+	  if($_POST[redirect_addr]) {
+
+	    $addrs = explode(',',$_POST[redirect_addr]);
+
+	    foreach( $addrs as $email ) {
+
+	      if(!preg_match('/^'.REGEX_MAIL_NAME.'@'.REGEX_DOMAIN_NAME.'$/',$email)) $redir_error = 1;
+	  
+	    }
+
+
+	  }
+
+	  if($redir_error == 0) {
+  
 	    if(preg_match('/^'.REGEX_PASSWORD.'$/',$_POST[passwd])) {
 	      
 	      if($page_type == "add") $sql = "insert into mail_users set mail_name = '$_POST[name]', did = '$did', passwd = '$_POST[passwd]', spamassassin = '$_POST[spamassassin]', mailbox = '$_POST[mailbox]', redirect = '$_POST[redirect]', redirect_addr = '$_POST[redirect_addr]'";
@@ -88,7 +105,7 @@ if($action) {
 	    
 	  } else {
 	    
-	    alert("Redirect email address is invalid.");
+	    alert("The redirect list contains an invalid email address.");
 	    $_POST[redirect_addr] = "";
 	    $select = "redirect_addr";
 	    
@@ -247,7 +264,9 @@ if($page_type == "add") {
 }
 
 ?> onclick="if(!this.checked) return confirm('Are you sure you don\'t want spam filtering?');"></td></tr>-->
-<tr><td>Redirect:</td><td><input type="checkbox" name=redirect value="true"<?php
+<tr><td valign="top">Redirect:</td><td valign="top">
+<table style="border: 0px; margin: 0px;"><tr>
+<td valign="top" align="left"><input type="checkbox" name=redirect value="true"<?php
 
 if($page_type == "add") {
 
@@ -259,7 +278,7 @@ if($page_type == "add") {
 
 }
 
-?> onclick="if(this.checked) { document.main.redirect_addr.disabled=false; if(tmp) document.main.redirect_addr.value=tmp; document.main.redirect_addr.focus(); } else { document.main.redirect_addr.disabled=true; tmp = document.main.redirect_addr.value; document.main.redirect_addr.value=''}"> - Address: <input<?php
+?> onclick="if(this.checked) { document.main.redirect_addr.disabled=false; if(tmp) document.main.redirect_addr.value=tmp; document.main.redirect_addr.focus(); } else { document.main.redirect_addr.disabled=true; tmp = document.main.redirect_addr.value; document.main.redirect_addr.value=''}"></td><td><font size="1">List email addresses here, seperate each with a comma and a space</font><br /><textarea nowrap rows="5" cols="40"<?php
 
 if($page_type == "add") {
 
@@ -271,19 +290,20 @@ if($page_type == "add") {
 
 }
 
-?> type="text" name=redirect_addr<?php
+?> name=redirect_addr><?php
 
 if($page_type == "add") {
 
-  if($_POST[redirect_addr]) print ' value="' . $_POST[redirect_addr] . '"';
+  if($_POST[redirect_addr]) print ereg_replace(',',', ',$_POST[redirect_addr]);
 
 } else {
 
-  if($row_mail[redirect_addr]) print ' value="' . $row_mail[redirect_addr]. '"';
+  if($row_mail[redirect_addr]) print ereg_replace(',',', ',$row_mail[redirect_addr]);
 
 }
 
-?>></td></tr>
+?></textarea></td></tr></table>
+</td></tr>
 <tr><td colspan=2><input type="hidden" name="action" value="add">
 <?php if($page_type == "add") print '<input type="hidden" name="page_type" value="' . $page_type . '">'; ?>
 <input type="submit" value="<?php 

@@ -3,7 +3,7 @@ CREATE TABLE sys_users (
   id int(10) unsigned NOT NULL auto_increment,
   login varchar(15) default NULL,
   passwd varchar(15) default NULL,
-  shell varchar(15) NOT NULL default '/sbin/nologin',
+  shell varchar(15) NOT NULL default '/bin/false',
   home_dir varchar(255) NOT NULL default '',
   PRIMARY KEY  (id)
 ) TYPE=MyISAM;
