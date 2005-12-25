@@ -48,7 +48,7 @@ $result = mysql_query($sql);
 
 $row = mysql_fetch_array($result);
 
-print 'Adding a database for ' . $row[name] . '<p>
+print '' . $lang['add_db_adding_a_database_for'] . ' ' . $row[name] . '<p>
 
 <form method="post">
 
@@ -56,7 +56,7 @@ Name: <input type="text" name=name>
 
 <p>
 
-<input type="submit" value="Add Database">
+<input type="submit" value="' . $lang['add_db_add_database'] . '">
 <input type="hidden" name=action value="add">
 <input type="hidden" name=did value="' . $did . '">
 

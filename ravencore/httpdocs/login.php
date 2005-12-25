@@ -47,18 +47,19 @@ if($login_error) print "<br><b><font color=red>" . $login_error . "</font></b>";
 </div>
 <div align=center>
       <table>
-<tr><th colspan="2">Please Login</th></tr>
+<tr><th colspan="2"><?php echo $lang['login_please_login']; ?></th></tr>
 <tr>
-<td>Username:</td>
+<td><?php echo $lang['login_username']; ?>:</td>
 <td><input name="user" size="15" value="<?php print $_POST[user]; ?>"></td>
 </tr><tr>
-<td>Password:</td>
+<td><?php echo $lang['login_password']; ?>:</td>
 <td><input name="pass" TYPE="PASSWORD" size="15" value=""></td>
 </tr>
 <!-- language support is not done
 <tr>
-<td>Language:</font></td>
-<td><select name="lang"><option value="default">Default</option>
+<td><?php echo $lang['login_language']; ?>:</font></td>
+<td><select name="lang">
+<option value="default"><?php echo $lang['login_option_default']; ?></option>
 </select>
 </td>
 </tr>
@@ -67,11 +68,11 @@ if($login_error) print "<br><b><font color=red>" . $login_error . "</font></b>";
 <td colspan="2" align="right">
 <div style="float: left"><font size="2">
 <?php
-if($_ENV['RUN_SSL']) echo ($_SERVER['HTTPS'] ? 'Your login is secure' : '<a href="https://' . $_SERVER['SERVER_NAME'] . ':8080">Go to Secure Login</a>');
+if($_ENV['RUN_SSL']) echo ($_SERVER['HTTPS'] ? $lang['login_your_login_is_secure'] : '<a href="https://' . $_SERVER['SERVER_NAME'] . ':8080"> ' . $lang['login_go_to_secure_login'] . '</a>');
 ?>
 </font></div>
 <input type="hidden" name="action" value="login">
-<input type="submit" name="submit" value="Login">
+<input type="submit" name="submit" value="<?php echo $lang['login_login']; ?>">
 </td>
 </tr>
 </table>

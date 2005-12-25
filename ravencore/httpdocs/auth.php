@@ -45,7 +45,7 @@ if(!function_exists("session_start")) {
 
   nav_top();
 
-  print $lang['no_php_session'];
+  print $lang['auth_no_php_session'];
 
   nav_bottom();
 
@@ -62,7 +62,7 @@ $session_id = session_id();
 
 // get our lang based on our session. default to en
 // language support not done. so for now, just include lang/en.php
-include("lang/en.php");
+ include("lang/en.php");
 
 //A list of variables that are allowed to use the GET and POST methods
 $reg_glob_vars = array('uid','did','mid','action','db','dbu','page_type');
@@ -88,7 +88,7 @@ if(!file_exists("$CONF[RC_ROOT]/database.cfg")) {
 
   nav_top();
 
-  print $lang['no_database_cfg'];
+  print $lang['auth_no_database_cfg'];
 
   nav_bottom();
 
@@ -102,7 +102,7 @@ if(trim(shell_exec("../sbin/wrapper testsuid")) != "root") {
 
   nav_top();
 
-  print $lang['test_suid_error'];
+  print $lang['auth_test_suid_error'];
 
   nav_bottom();
 
@@ -116,7 +116,7 @@ if(!function_exists("mysql_connect")) {
 
   nav_top();
 
-  print $lang['no_php_mysql'];
+  print $lang['auth_no_php_mysql'];
 
   nav_bottom();
 
@@ -134,7 +134,7 @@ if(!$link) {
 
   nav_top();
 
-  print $lang['no_database_connect'];
+  print $lang['auth_no_database_connect'];
 
   nav_bottom();
 
@@ -167,7 +167,7 @@ if($action == "login") {
   //if we have the same or more as the lockout count, lock the login
   if($row_lock[count] >= $CONF[LOCKOUT_COUNT] and $CONF[LOCKOUT_COUNT]) {
 
-      $login_error = "Login locked";
+      $login_error = $lang['auth_login_locked'];
       
       syslog(LOG_WARNING, "Login attempted for user $_POST[user], but was denied by auto-lock from $_SERVER[REMOTE_ADDR]");
 
@@ -188,7 +188,7 @@ if($action == "login") {
       $sql = "insert into login_failure set date = now(), login = '$_POST[user]'";
       mysql_query($sql);
 
-      $login_error = "Login failure";
+      $login_error = $lang['auth_login_failure'];
       
       syslog(LOG_WARNING, "Login failure for user $_POST[user] from $_SERVER[REMOTE_ADDR]");
 
@@ -229,7 +229,7 @@ if($action == "login") {
 	$sql = "insert into login_failure set date = now(), login = '$_POST[user]'";
 	mysql_query($sql);
 	
-	$login_error = "Login failure";
+	$login_error = $lang['auth_login_failure'];
 	
 	syslog(LOG_WARNING, "Login failure for user $_POST[user] from $_SERVER[REMOTE_ADDR]");
 
@@ -284,11 +284,11 @@ if($action == "login") {
 
 	  if($_POST[user] == $CONF[MYSQL_ADMIN_USER]) {
 
-	    $_SESSION['status_mesg'] = 'Control panel is locked for users, because your lock if outdated setting is active, and we appear to be outdated.';
+	    $_SESSION['status_mesg'] = $lang['auth_cp_userlock_outdated_settings'];
 
 	  } else {
 
-	    $login_error = $lang['locked_outdated'];
+	    $login_error = $lang['auth_locked_outdated'];
 
 	    syslog(LOG_WARNING, "Control panel outdated");
 
@@ -319,7 +319,7 @@ if($action == "login") {
 
       nav_top();
 
-      print $lang['api_cmd_failed'];
+      print $lang['auth_api_cmd_failed'];
 
       nav_bottom();
 
@@ -471,7 +471,7 @@ if(!file_exists("../var/run/gpl_check") and is_admin() and $_SERVER[PHP_SELF] !=
 
     nav_top();
     
-    if($action == "gpl_agree") print '<b><font color="red">' . $lang['must_agree_gpl'] . '</font></b><p>';
+    if($action == "gpl_agree") print '<b><font color="red">' . $lang['auth_must_agree_gpl'] . '</font></b><p>';
 
     print $lang['please_agree_gpl'] . '<hr><pre>';
 
@@ -479,11 +479,11 @@ if(!file_exists("../var/run/gpl_check") and is_admin() and $_SERVER[PHP_SELF] !=
     
     fpassthru($h);
     
-    print $lang['gpl_appear_below'] . '</pre>
+    print $lang['auth_gpl_appear_below'] . '</pre>
 <iframe src="GPL" width=675 height=250>
 </iframe>
 <p>
-<form method=post> <input type=checkbox name=gpl_agree value=yes> ' . $lang['i_agree_gpl'] . '
+<form method=post> <input type=checkbox name=gpl_agree value=yes> ' . $lang['auth_i_agree_gpl'] . '
 
 <p>
 <input type=submit value=Submit> <input type=hidden name=action value=gpl_agree></form>';
@@ -507,9 +507,9 @@ if($conf_not_complete and $_SERVER[PHP_SELF] != "/change_password.php" and $_SER
 
     // if we have $action, that means we're being posted to. Don't print anything
 
-    if($action != "update_conf") print '<div align=center>' . $lang['welcome_and_thank_you'] . '</div>
+    if($action != "update_conf") print '<div align=center>' . $lang['auth_welcome_and_thank_you'] . '</div>
 <p>
-' . $lang['please_upgrade_config'] . '
+' . $lang['auth_please_upgrade_config'] . '
 <div align=center>
 <form method=post>
 <input type=hidden name=action value="update_conf">
@@ -575,7 +575,7 @@ if($conf_not_complete and $_SERVER[PHP_SELF] != "/change_password.php" and $_SER
 
 	    if($action != "update_conf" and !$printed_header) {
 	      
-	      print '<tr><th colspan=2 align=center>' . ereg_replace('\.conf$',"",$conf_file) . ' configuration</th></tr>';
+	      print '<tr><th colspan=2 align=center>' . ereg_replace('\.conf$',"",$conf_file) . ' ' . $lang['auth_conf_file_configuration'] . '</th></tr>';
 
 	      $printed_header = true;
 
@@ -619,7 +619,7 @@ if($conf_not_complete and $_SERVER[PHP_SELF] != "/change_password.php" and $_SER
 
   } else {
 
-    $login_error = $lang['locked_upgrading'];
+    $login_error = $lang['auth_locked_upgrading'];
 
     include "login.php";
 

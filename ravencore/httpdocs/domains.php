@@ -66,7 +66,7 @@ if(!$did) {
 
     $row_u = mysql_fetch_array($result);
 
-    print 'Domains for ' . $row_u[name] . '<p>';
+    print '' . $lang['domains_domains_for'] . ' ' . $row_u[name] . '<p>';
 
   }
 
@@ -80,24 +80,31 @@ if(!$did) {
   
   $num_domains = mysql_num_rows($result);
   
-  if($num_domains == 0 and !$_GET[search]) print "There are no domains setup";
-  else {
+  if($num_domains == 0 and !$_GET[search]) {
+   
+    print $lang['domains_there_are_no_domains_setup'] . '.';
 
-    print '<p><form method=get name=search>Search: <input type=text name=search value="' . $_GET[search] . '">
-<input type=submit value=Go onclick="if(!document.search.search.value) { alert(\'Please enter in a search value!\'); return false; }">';
+    // give an "add a domain" link if the user has permission to add one more
+    if(is_admin() or user_have_permission($uid,"domain")) print ' <a href="edit_domain.php">Add a Domain</a>';
+
+
+  } else {
+
+    print '<form method=get name=search>' . $lang['global_search'] . ': <input type=text name=search value="' . $_GET[search] . '">
+<input type=submit value=' . $lang['global_go'] . ' onclick="if(!document.search.search.value) { alert(\'' . $lang['global_please_enter_search_value'] . '\'); return false; }">';
     
-    if($_GET[search]) print ' <input type=button value="Show All" onclick="self.location=\'domains.php\'">';
+    if($_GET[search]) print ' <input type=button value="' . $lang['global_show_all'] . '" onclick="self.location=\'domains.php\'">';
     
-    print '</form></p>';
+    print '</form><p>';
   
   }
   
-  if($_GET[search]) print 'Your search returned <i><b>' . $num_domains . '</b></i> results<p>';
+  if($_GET[search]) print '' . $lang['global_your_search_returned'] . ' <i><b>' . $num_domains . '</b></i> ' . $lang['global_results'] . '<p>';
   
   if($num_domains != 0) {
     
-    print '<table><tr><th>Name</th><th>Space usage</th><th>Traffic Usage</th></tr>';
-    
+    print '<table><tr><th>' . $lang['global_name'] . '</th><th>' . $lang['global_disc_space_usage'] . '</th><th>' . $lang['global_traffic_usage'] . '</th></tr>';
+
     //set our totals to zero
     $total_space = 0;
     $total_traffic = 0;
@@ -111,15 +118,15 @@ if(!$did) {
       $total_space += $space;
       $total_traffic += $traffic;
       
-      print '<tr><td><a href="domains.php?did=' . $row[id] . '" onmouseover="show_help(\'View setup information for ' . $row[name] . '\');" onmouseout="help_rst();">' . $row[name] . '</a></td><td align=right>' . $space . ' MB</td><td align=right>' . $traffic . ' MB</td></tr>';
+      print '<tr><td><a href="domains.php?did=' . $row[id] . '" onmouseover="show_help(\'' . $lang['domains_view_setup_information_for'] . ' ' . $row[name] . '\');" onmouseout="help_rst();">' . $row[name] . '</a></td><td align=right>' . $space . ' MB</td><td align=right>' . $traffic . ' MB</td></tr>';
       
     }
     
     print '<tr><td>Totals</td><td align=right>' . $total_space . ' MB</td><td align=right>' . $total_traffic . ' MB</td></tr></table><p>';
     
     //print the link to add a domain if the user has permissions to
-    if(!user_can_add($uid, "domain") and !is_admin()) print 'You are at your limit for the number of domains you can have<p>';
-    else print '<a href="edit_domain.php" onmouseover="show_help(\'Add a domain to the server\');" onmouseout="help_rst();">Add a Domain</a><p>';
+    if(!user_can_add($uid, "domain") and !is_admin()) print '' . $lang['domains_you_are_at_domain_limit'] . '<p>';
+    else print '<a href="edit_domain.php" onmouseover="show_help(\'' . $lang['domains_add_a_domain_to_server'] . '\');" onmouseout="help_rst();">' . $lang['domains_add_a_domain'] . '</a><p>';
     
   }
   
@@ -133,7 +140,7 @@ if(!$did) {
 
   $num = mysql_num_rows($result);
 
-  if($num == 0) print "Domain does not exist";
+  if($num == 0) print $lang['domains_domain_no_exist'];
   else {
 
     $row = mysql_fetch_array($result);
@@ -142,14 +149,14 @@ if(!$did) {
 
       $uid = $row[uid];
       
-      print '<form method="post">This domain belongs to: <select name=uid>';
+      print '<form method="post">' . $lang['domains_domain_belongs_to'] . ': <select name=uid>';
 
       $sql = "select * from users";
       $result = mysql_query($sql);
       
       $num = mysql_num_rows($result);
       
-      print "<option value=0>No One</option>";
+      print '<option value=0>' . $lang['domains_no_one'] . '</option>';
 
       while( $row_u = mysql_fetch_array($result) ) {
 	
@@ -161,7 +168,7 @@ if(!$did) {
 	
       }
 
-      print '</select> <input type=submit value="Change">
+      print '</select> <input type=submit value="' . $lang['domains_change'] . '">
 <input type=hidden name=action value=change>
 <input type=hidden name=did value="' . $did . '">
 </form>';
@@ -170,16 +177,16 @@ if(!$did) {
 
     print '<table width="45%" style="float: left">
 <tr><th colspan="2">Info for ' . $row[name] . '</th></tr>
-<tr><td>Name:</td><td>' . $row[name] . ' - <a href="domains.php?action=delete&did=' . $row[id] . '" onmouseover="show_help(\'Delete this domain off the server\');" onmouseout="help_rst();" onclick="return confirm(\'Are you sure you wish to delete this domain?\');">delete</a></td></tr>';
+<tr><td>' . $lang['domains_name'] . ':</td><td>' . $row[name] . ' - <a href="domains.php?action=delete&did=' . $row[id] . '" onmouseover="show_help(\'' . $lang['domains_deletes_this_domain'] . '\');" onmouseout="help_rst();" onclick="return confirm(\'' . $lang['domains_sure_you_want_to_delete'] . '?\');">' . $lang['domains_delete'] . '</a></td></tr>';
     
-    print '<tr><td>Created:</td><td>' . $row[created] . '</td></tr>';
+    print '<tr><td>' . $lang['domains_created'] . ':</td><td>' . $row[created] . '</td></tr>';
 
     if(have_service("web")) {
       
-      print '<tr><td><form method="post" name=status>Status:</td><td>';
+      print '<tr><td><form method="post" name=status>' . $lang['domains_status'] . ':</td><td>';
       
-      if($row[hosting] == "on") print 'ON <a href="javascript:document.status.submit();" onclick="return confirm(\'Are you sure you wish to turn off hosting for this domain?\');" onmouseover="show_help(\'Turn OFF hosting for this domain\');" onmouseout="help_rst();">*</a><input type=hidden name=hosting value="off">';
-      else print 'OFF <a href="javascript:document.status.submit();" onmouseover="show_help(\'Turn ON hosting for this domain\');" onmouseout="help_rst();">*</a><input type=hidden name=hosting value="on">';
+      if($row[hosting] == "on") print '' . $lang['domains_on'] . ' <a href="javascript:document.status.submit();" onclick="return confirm(\'' . $lang['domains_sure_turn_off_hosting'] . '?\');" onmouseover="show_help(\'' . $lang['domains_turn_off_hosting'] . '\');" onmouseout="help_rst();">*</a><input type=hidden name=hosting value="off">';
+      else print '' . $lang['domains_off'] . ' <a href="javascript:document.status.submit();" onmouseover="show_help(\'' . $lang['domains_turn_on_hosting'] . '\');" onmouseout="help_rst();">*</a><input type=hidden name=hosting value="on">';
       
       print '<input type=hidden name=did value=' . $did . '>
 <input type=hidden name=action value=hosting>
@@ -189,16 +196,16 @@ if(!$did) {
       switch($row[host_type]) {
 	
       case "physical":
-	print 'Physical Hosting:</td><td><a href="hosting.php?did=' . $row[id] . '" onmouseover="show_help(\'View/Edit Physical hosting for this domain\');" onmouseout="help_rst();">edit</a>';
+	print '' . $lang['domains_physical'] . ':</td><td><a href="hosting.php?did=' . $row[id] . '" onmouseover="show_help(\'' . $lang['domains_view_edit_physical'] . '\');" onmouseout="help_rst();">' . $lang['domains_edit'] . '</a>';
 	break;
       case "redirect":
-	print 'Redirect:</td><td><a href="hosting.php?did=' . $row[id] . '" onmouseover="show_help(\'View/Edit where this domain redirects to\');" onmouseout="help_rst();">edit</a>';
+	print '' . $lang['domains_redirect'] . ':</td><td><a href="hosting.php?did=' . $row[id] . '" onmouseover="show_help(\'' . $lang['domains_view_edit_redirect'] . '\');" onmouseout="help_rst();">' . $lang['domains_edit'] . '</a>';
 	break;
       case "alias":
-	print 'Alias of ' . $row[redirect_url] . '</td><td> <a href="hosting.php?did=' . $row[id] . '" onmouseover="show_help(\'View/Edit what this domain is a server alias of\');" onmouseout="help_rst();">edit</a>';
+	print '' . $lang['domains_alias'] . ' ' . $row[redirect_url] . '</td><td> <a href="hosting.php?did=' . $row[id] . '" onmouseover="show_help(\'' . $lang['domains_view_edit_alias'] . '\');" onmouseout="help_rst();">' . $lang['domains_edit'] . '</a>';
 	break;
       default:
-	print 'No Hosting:</td><td><a href="hosting.php?did=' . $row[id] . '" onmouseover="show_help(\'Setup hosting for this domain\');" onmouseout="help_rst();">setup</a>';
+	print '' . $lang['domains_no_hosting'] . ':</td><td><a href="hosting.php?did=' . $row[id] . '" onmouseover="show_help(\'' . $lang['domains_setup_hosting'] . '\');" onmouseout="help_rst();">' . $lang['domains_setup'] . '</a>';
 	break;
 	
       }
@@ -216,21 +223,21 @@ if(!$did) {
 	// offline, then we want to say that here.
 	$ftp_working = @fsockopen("localhost", 21);
 
-	if($ftp_working) print '<a href="filemanager.php?did=' . $did . '" target="_blank" onmouseover="show_help(\'Go to the File Manager for this domain\');" onmouseout="help_rst();">';
-	else print '<a href="#" onclick="alert(\'The file manager is currently offline\')" onmouseover="show_help(\'The file manager is currently offline\');" onmouseout="help_rst();">';
+	if($ftp_working) print '<a href="filemanager.php?did=' . $did . '" target="_blank" onmouseover="show_help(\'' . $lang['domains_go_to_filemanager'] . '\');" onmouseout="help_rst();">';
+	else print '<a href="#" onclick="alert(\'' . $lang['domians_offline_filemanager'] . '\')" onmouseover="show_help(\'' . $lang['domains_filemanager_currently_offline'] . '\');" onmouseout="help_rst();">';
 
-	print 'File Manager';
+	print $lang['domains_filemanager'];
 
-	if(!$ftp_working) print ' (offline)';
+	if(!$ftp_working) print $lang['domains_filemanager_offline'];
 
 	print '</a>';
 
 	// log manager currently disabled, it broke somewhere along the line :)
-	//print '<p><a href="log_manager.php?did=' . $did . '" onmouseover="show_help(\'Go to the Log Manager for this domain\');" onmouseout="help_rst();">Log Manager</a><p>';
+	//print '<p><a href="log_manager.php?did=' . $did . '" onmouseover="show_help(\'' . $lang['domains_go_to_log_manager'] . '\');" onmouseout="help_rst();">' . $lang['domains_log_manager'] . '</a><p>';
 	
       }
       
-      if($row[host_type] == "physical") print '<p><a href="error_docs.php?did=' . $did . '" onmouseover="show_help(\'View/Edit Custom Error Documents for this domain\');" onmouseout="help_rst();">Error Documents</a></p>';
+      if($row[host_type] == "physical") print '<p><a href="error_docs.php?did=' . $did . '" onmouseover="show_help(\'' . $lang['domains_view_edit_ced'] . '\');" onmouseout="help_rst();">' . $lang['domains_error_docs'] . '</a></p>';
       else {
 	
 	$sql = "delete from error_docs where did = '$did'";
@@ -242,7 +249,7 @@ if(!$did) {
 
     if(have_service("mail")) {
 
-      print '<p><a href="mail.php?did=' . $row[id] . '" onmouseover="show_help(\'View/Edit Mail for this domain\');" onmouseout="help_rst();">Mail</a>';
+      print '<p><a href="mail.php?did=' . $row[id] . '" onmouseover="show_help(\'' . $lang['domains_view_edit_mail'] . '\');" onmouseout="help_rst();">' . $lang['domains_mail'] . '</a>';
 
     if($row[mail] == "on") {
       
@@ -253,13 +260,13 @@ if(!$did) {
       
       print ' (' . $row_count[count] . ')';
 
-    } else print ' ( off )';
+    } else print $lang['domains_mail_off'];
 
     print '</p>';
 
     }
 
-    print '<a href="databases.php?did=' . $row[id] . '" onmouseover="show_help(\'View/Edit databases for this domain\');" onmouseout="help_rst();">Databases</a>';
+    print '<a href="databases.php?did=' . $row[id] . '" onmouseover="show_help(\'' . $lang['domains_view_edit_domain_databases'] . '\');" onmouseout="help_rst();">' . $lang['domains_databases'] . '</a>';
 
     $sql = "select count(*) as count from data_bases where did = '$row[id]'";
     $result = mysql_query($sql);
@@ -270,7 +277,7 @@ if(!$did) {
 
     if(have_service("dns")) {
 
-      print '<a href="dns.php?did=' . $did . '" onmouseover="show_help(\'Manage DNS for this domain\');" onmouseout="help_rst();">DNS Records</a>';
+      print '<a href="dns.php?did=' . $did . '" onmouseover="show_help(\'' . $lang['domains_manage_dns'] . '\');" onmouseout="help_rst();">' . $lang['domains_dns_records'] . '</a>';
 
       if($row[soa]) {
 
@@ -281,13 +288,13 @@ if(!$did) {
 	
 	print ' (' . $row_count[count] . ')';
 	
-      } else print ' ( off )';
+      } else print $lang['domains_dns_off'];
 
       print '<p>';
 
     }
 
-    if(have_service("web")) print '<a href="webstats.php?did=' . $row[id] . '" target=_blank onmouseover="show_help(\'View Webstats for this domain\');" onmouseout="help_rst();">Webstats</a>';
+    if(have_service("web")) print '<a href="webstats.php?did=' . $row[id] . '" target=_blank onmouseover="show_help(\'' . $lang['domains_view_webstats'] . '\');" onmouseout="help_rst();">' . $lang['domains_webstats'] . '</a>';
 
     print '</td></tr></table>';
 

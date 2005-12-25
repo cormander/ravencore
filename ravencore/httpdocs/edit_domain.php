@@ -148,24 +148,29 @@ nav_top();
 
 if(is_admin()) {
 
-?>
+  $sql = "select count(*) as count from users";
+  $result = mysql_query($sql);
 
-Control Panel User: <select name="uid"><option value="">Select One</option><?php
+  $row = mysql_fetch_array($result);
 
-$sql = "select * from users";
-$result = mysql_query($sql);
+  if($row[count] != 0 ) {
 
-while( $row = mysql_fetch_array($result) ) {
+    print 'Control Panel User: <select name="uid"><option value="">Select One</option>';
+    
+    $sql = "select * from users";
+    $result = mysql_query($sql);
 
-  print "<option value=\"$row[id]\"";
-  if($uid == $row[id]) print " selected";
-  print ">$row[name] - $row[login]</option>";
+    while( $row = mysql_fetch_array($result) ) {
+      
+      print "<option value=\"$row[id]\"";
+      if($uid == $row[id]) print " selected";
+      print ">$row[name] - $row[login]</option>";
+      
+    }
+    
+    print '</select><p>';
 
-}
-
-?></select><p>
-
-<?php
+  }
 
 }
 

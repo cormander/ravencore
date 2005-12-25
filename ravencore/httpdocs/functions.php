@@ -814,10 +814,10 @@ function is_admin() {
 function socket_cmd($cmd) {
   
   global $CONF, $session_id;
-  
+
   //make sure the command is safe to run
   //all the eregs are @'d out because we get some warnings sometimes that will make us unable to redirect the page
-  if(@ereg("\.\.",$cmd) or @ereg("^/",$cmd) or @ereg("\;",$cmd) or @ereg("|",$cmd) or @ereg(">",$cmd) or @ereg("<",$cmd)) die("Fatal error, unsafe command: $cmd");
+  if(@ereg("\.\.",$cmd) or @ereg("^/",$cmd) or @ereg("\;",$cmd) or @ereg('\|',$cmd) or @ereg(">",$cmd) or @ereg("<",$cmd)) die("Fatal error, unsafe command: $cmd");
 
   /* This code is the start of controlling slave servers. socket_cmd will accept a new argument, which
      will be the server in which to target with the command to run. Commented out for now, because it
@@ -1163,7 +1163,7 @@ print '
 
 <div id="footer">
 
-www.ravencore.com
+<a href="http://www.ravencore.com/">RavenCore Hosting Control Panel</a>
 </div>
 
 
