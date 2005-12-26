@@ -101,6 +101,12 @@ print '<a href="change_password.php" onmouseover="show_help(\'Change the admin p
 
 <a href="phpinfo.php" target=_blank onmouseover="show_help('View output from the phpinfo() function');" onmouseout="help_rst();">PHP Info</a>
 
+<p>
+
+<hr>
+
+<a href="mail_queue.php">View Mail Queue</a>
+
 </td>
 </tr></table>
 
