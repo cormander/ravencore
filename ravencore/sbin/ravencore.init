@@ -33,10 +33,6 @@ export GOT_CONF=1
 
 . /etc/ravencore.conf || exit 1
 
-# tell our checkconf scripts that the init script is running, so services
-# don't need to be restarted by them.
-export INIT_RUNNING=1
-
 # so our services.php page knows where init scripts are
 export INITD=$INITD
 
@@ -56,13 +52,13 @@ else
 
     success() {
 
-	echo "[ OK ]"
+	$_echo "[ OK ]"
 	
     }
 
     failure() {
 
-	echo "[ FAILED ]"
+	$_echo "[ FAILED ]"
 	
     }
 
@@ -96,7 +92,7 @@ start() {
 
 # check to see that mysqld is running....
 
-    if [ -z "$(pidof mysqld)" ]; then
+    if [ -z "$($_pidof mysqld)" ]; then
 	
 # mysqld isn't running.. attempt to start it
 # don't run this command if the script doesn't exist... to supress the error message
@@ -105,6 +101,11 @@ start() {
 	fi
 
     fi
+
+# tell our checkconf script that the init script is running, so we don't try to restart
+# ravencore and go into an infinate loop
+
+    export INIT_RUNNING=1
 
 # check to make sure the ravencore.httpd binary is the same as /usr/sbin/httpd
 # among other things
@@ -117,39 +118,39 @@ start() {
 
     if [ $RETVAL -ne 0 ]; then
 
-	echo "Unable to start control panel. checkconf script exited with non-zero status"
+	$_echo "Unable to start control panel. checkconf script exited with non-zero status"
 	failure
-	echo
+	$_echo
 	exit $RETVAL
 
     fi
 
 # say we're starting up...
 
-    echo -n $"Starting control panel: "
+    $_echo -n $"Starting control panel: "
 
 # check httpd version series. The result of this command will look like: 1.3 , 2.0 , etc
-    httpd_v=$($httpd -v | sed '2d' | awk '{print $3}' | sed 's|.*/||' | sed 's/\./ /g' | awk '{print $1"."$2}')
+    httpd_v=$($httpd -v | $_sed '2d' | $_awk '{print $3}' | $_sed 's|.*/||' | $_sed 's/\./ /g' | $_awk '{print $1"."$2}')
     
 # check to make sure the conf file exists for this version of apache
     
     if [ ! -f $RC_ROOT/etc/ravencore.httpd-$httpd_v.conf ]; then
 	
-	echo "Unable to load ravencore's httpd conf file: $RC_ROOT/etc/ravencore.httpd-$httpd_v.conf"
+	$_echo "Unable to load ravencore's httpd conf file: $RC_ROOT/etc/ravencore.httpd-$httpd_v.conf"
 	failure
-	echo
+	$_echo
 	exit 1
 
     fi
 
 # make sure the docroot.conf file is populated
-echo "DocumentRoot $RC_ROOT/httpdocs" > $RC_ROOT/etc/docroot.conf
+$_echo "DocumentRoot $RC_ROOT/httpdocs" > $RC_ROOT/etc/docroot.conf
 
 # make sure the port.conf file exists. if not, create it
 
 if [ ! -f $RC_ROOT/etc/port.conf ]; then
 
-    echo "Listen 8000" > $RC_ROOT/etc/port.conf
+    $_echo "Listen 8000" > $RC_ROOT/etc/port.conf
 
 fi
 
@@ -164,7 +165,7 @@ fi
 
     for module in log_config setenvif mime negotiation dir actions alias include; do
 
-	if [ -z "$(echo $compiled_modules | grep $module)" ]; then
+	if [ -z "$($_echo $compiled_modules | $_grep $module)" ]; then
 
 	    OPTIONS="$OPTIONS -D$module"
 
@@ -178,22 +179,22 @@ fi
 
 # make sure that the httpd_modules.path directory exists
 	
-	httpd_modules=$(cat $RC_ROOT/var/run/httpd_modules.path 2> /dev/null)
+	httpd_modules=$($_cat $RC_ROOT/var/run/httpd_modules.path 2> /dev/null)
 
 	if [ -d $httpd_modules ]; then
 
 # re-create the symlink
 	    
-	    rm -f $RC_ROOT/etc/httpd_modules
-	    ln -s $httpd_modules $RC_ROOT/etc/httpd_modules
+	    $_rm -f $RC_ROOT/etc/httpd_modules
+	    $_ln -s $httpd_modules $RC_ROOT/etc/httpd_modules
 
 	else
 
 # can't find the httpd modules directory. exit with error
 
-	    echo "Unable to determine the path to the httpd modules"
+	    $_echo "Unable to determine the path to the httpd modules"
 	    failure
-	    echo
+	    $_echo
 	    exit 1
 
 	fi
@@ -206,14 +207,14 @@ fi
 
     for so in php ssl; do
 
-        lib_so=$(ls "$HTTPD_MODULES"*/*$so*.so 2> /dev/null)
+        lib_so=$($_ls "$HTTPD_MODULES"*/*$so*.so 2> /dev/null)
 	
 # if so, link it to our httpd_modules
 	
         if [ -n "$lib_so" ]; then
 	    
 # force error output to /dev/null , because in some cases we're trying to link the file to itself
-            ln -s $lib_so $RC_ROOT/etc/httpd_modules 2> /dev/null
+            $_ln -s $lib_so $RC_ROOT/etc/httpd_modules 2> /dev/null
 	    
         fi
 	
@@ -229,7 +230,7 @@ fi
 
 # basically, if mod_php4.so exist but there isn't a libphp4.so, create a symlink
 	if [ -f $RC_ROOT/etc/httpd_modules/mod_php$num.so ] && [ ! -f $RC_ROOT/etc/httpd_modules/libphp$num.so ]; then
-	    ln -s $RC_ROOT/etc/httpd_modules/mod_php$num.so $RC_ROOT/etc/httpd_modules/libphp$num.so
+	    $_ln -s $RC_ROOT/etc/httpd_modules/mod_php$num.so $RC_ROOT/etc/httpd_modules/libphp$num.so
 	fi
 
     done
@@ -249,35 +250,35 @@ fi
 
 # couldn't find php. Obviously a bad thing :)
 
-	echo -n " (no php)"
+	$_echo -n " (no php)"
 	
     fi
     
 # figure out what our ssl shared object file is ( usually mod_ssl.so or libssl.so )
-    ssl_file=$(ls $RC_ROOT/etc/httpd_modules/*ssl.so 2> /dev/null | head -n 1)
+    ssl_file=$($_ls $RC_ROOT/etc/httpd_modules/*ssl.so 2> /dev/null | $_head -n 1)
     
 # if we have ssl installed, enable it when we start the control panel
     if [ -f "$ssl_file" ]; then
 # the user has the option to disable the ssl on the command line, or in $RC_ROOT/var/run/httpd.nossl
 	case $ssl_opt in
-	    "nossl") echo -n " (no ssl)";;
+	    "nossl") $_echo -n " (no ssl)";;
 	    *) 
 # if we are missing a cert or key file, don't attempt to start with ssl
 		if [ ! -f $RC_ROOT/etc/server.crt ] || [ ! -f $RC_ROOT/etc/server.key ]; then
-		    echo
-		    echo "Warning: ssl cert and/or key file missing. Starting with no ssl"
+		    $_echo
+		    $_echo "Warning: ssl cert and/or key file missing. Starting with no ssl"
 		else
 # if we have the openssl command, verify that the .crt file is OK
-		    if [ -x /usr/bin/openssl ]; then
+		    if [ -x $_openssl ]; then
 			
-			/usr/bin/openssl verify $RC_ROOT/etc/server.crt &> /dev/stdout | grep OK &> /dev/null
+			$_openssl verify $RC_ROOT/etc/server.crt 2> /dev/stdout | $_grep OK &> /dev/null
 
 # exit status of grep will be non-zero if we didn't find an OK, which means the cert won't work
 
 			if [ $? -ne 0 ]; then
 			    
-			    echo
-			    echo "Warning: Unable to verify the server.crt file. Starting without ssl"
+			    $_echo
+			    $_echo "Warning: Unable to verify the server.crt file. Starting without ssl"
 
 			else
 			    
@@ -304,7 +305,7 @@ fi
 	
     else
 # notify us that we are not useing ssl, b/c it's not installed
-	echo -n " (no ssl)"
+	$_echo -n " (no ssl)"
     fi
 
 # unset these enviroment variables so they don't get set in the apache enviroment
@@ -317,8 +318,8 @@ fi
 	
 	daemon $httpd $OPTIONS
 	RETVAL=$?
-	echo
-	[ $RETVAL = 0 ] && touch ${lockfile}
+	$_echo
+	[ $RETVAL = 0 ] && $_touch ${lockfile}
 	
     else
 	
@@ -327,11 +328,11 @@ fi
 	
 	if [ $RETVAL -eq 0 ]; then
 	    
-	    echo "[ OK ]"
+            success
 	    
 	else
 	    
-	    echo "[ FAILED ]"
+	    failure
 	    
 	fi
 	
@@ -343,18 +344,18 @@ fi
 
 stop() {
 
-    echo -n $"Stopping control panel: "
+    $_echo -n $"Stopping control panel: "
 
     if [ $found_init_func -eq 1 ]; then
 
 	killproc $httpd
 	RETVAL=$?
-	echo
-	[ $RETVAL = 0 ] && rm -f ${lockfile} ${pidfile}
+	$_echo
+	[ $RETVAL = 0 ] && $_rm -f ${lockfile} ${pidfile}
 
     else
 
-	killall -9 $httpd &> /dev/null
+	$_killall -9 $httpd &> /dev/null
 	RETVAL=$?
 
 	if [ $RETVAL -eq 0 ]; then
@@ -372,12 +373,12 @@ stop() {
 }
 startall() {
 
-    for i in `ls $RC_ROOT/etc/services.*`; do
+    for i in `$_ls $RC_ROOT/etc/services.*`; do
 
-	tmp=$(basename $i | sed 's/services\.//')
+	tmp=$($_basename $i | $_sed 's/services\.//')
 
 	conf=$tmp.conf
-	for service in $(cat $RC_ROOT/etc/services.$tmp); do
+	for service in $($_cat $RC_ROOT/etc/services.$tmp); do
 	    
 	    if [ -f $RC_ROOT/conf.d/$conf ] && [ -x $INITD/$service ]; then
 		
@@ -397,18 +398,18 @@ startall() {
 
 # start ravencore, too, if we're not running
 
-    [ -z "$(pidof ravencore.httpd)" ] && start
+    [ -z "$($_pidof ravencore.httpd)" ] && start
 
 }
 
 stopall() {
 
-    for i in `ls $RC_ROOT/etc/services.*`; do
+    for i in `$_ls $RC_ROOT/etc/services.*`; do
 
-	tmp=$(basename $i | sed 's/services\.//')
+	tmp=$($_basename $i | $_sed 's/services\.//')
 
 	conf=$tmp.conf
-	for service in $(cat $RC_ROOT/etc/services.$tmp); do
+	for service in $($_cat $RC_ROOT/etc/services.$tmp); do
 	    
 	    if [ -f $RC_ROOT/conf.d/$conf ] && [ -x $INITD/$service ]; then
 		
@@ -438,12 +439,12 @@ stopall() {
 
 statusall() {
 
-    for i in `ls $RC_ROOT/etc/services.*`; do
+    for i in `$_ls $RC_ROOT/etc/services.*`; do
 
-	tmp=$(basename $i | sed 's/services\.//')
+	tmp=$($_basename $i | $_sed 's/services\.//')
 
 	conf=$tmp.conf
-	for service in $(cat $RC_ROOT/etc/services.$tmp); do
+	for service in $($_cat $RC_ROOT/etc/services.$tmp); do
 	    
 	    if [ -f $RC_ROOT/conf.d/$conf ] && [ -x $INITD/$service ]; then
 		
@@ -458,6 +459,24 @@ statusall() {
 # status of ravencore, too
 
     $INITD/ravencore status
+
+}
+
+checkconf() {
+
+# unset this because we really do need a db connection
+
+    export GOT_CONF=
+
+    $_echo -n "Checking Configuration: "
+
+    $RC_ROOT/sbin/checkconf
+
+    RETVAL=$?
+    
+    [ $RETVAL -eq 0 ] && success || failure
+    
+    $_echo
 
 }
 
@@ -490,8 +509,11 @@ case "$1" in
     statusall)
 	statusall
 	;;
+    checkconf)
+	checkconf
+	;;
   *)
-	echo $"Usage: $prog {start|stop|restart|status|stopall|startall|restartall}statusall}"
+	$_echo $"Usage: $prog {start|stop|restart|status|stopall|startall|restartall|statusall|checkconf}"
 	exit 1
 esac
 

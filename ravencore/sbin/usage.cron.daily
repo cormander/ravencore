@@ -22,23 +22,23 @@
 
 # Process the proftpd log
 
-mv -f $FTP_LOG $FTP_LOG.1
-touch $FTP_LOG
+$_mv -f $FTP_LOG $FTP_LOG.1
+$_touch $FTP_LOG
 
-for i in `awk '{print $8 ":" $9}' $FTP_LOG.1 | sed "s|$VHOST_ROOT||" | sed 's|/.*||'`; do
+for i in `$_awk '{print $8 ":" $9}' $FTP_LOG.1 | $_sed "s|$VHOST_ROOT||" | $_sed 's|/.*||'`; do
     
-    bytes=$(echo $i | sed 's/:.*//')
-    domain_name=$(echo $i | sed 's/.*://')
+    bytes=$($_echo $i | $_sed 's/:.*//')
+    domain_name=$($_echo $i | $_sed 's/.*://')
     
-    did=$($MYSQL_STR -e "select id from domains where name = '$domain_name'" | sed '1d')
+    did=$($MYSQL_STR -e "select id from domains where name = '$domain_name'" | $_sed '1d')
     
     $MYSQL_STR -e "insert into domain_traffic set type = 'ftp', date = now(), did = '$did', bytes = '$bytes'"
     
 done
 
-cat $FTP_LOG.1 >> $FTP_LOG.processed
+$_cat $FTP_LOG.1 >> $FTP_LOG.processed
 
-rm -f $FTP_LOG.1
+$_rm -f $FTP_LOG.1
 
 # Calculate disk usage
 
@@ -46,13 +46,13 @@ if [ -d $VHOST_ROOT ]; then
 
     cd $VHOST_ROOT
     
-    for domain_name in `ls -1`; do
+    for domain_name in `$_ls -1`; do
 	
-	tmp=$(du -s $domain_name)
+	tmp=$($_du -s $domain_name)
 # Convert kbytes to bytes, healingamongnations ftp 858
-	bytes=$(expr $(echo $tmp | awk '{print $1}') "*" 1024)
+	bytes=$($_expr $($_echo $tmp | $_awk '{print $1}') "*" 1024)
 	
-	did=$($MYSQL_STR -e "select id from domains where name = '$domain_name'" | sed '1d')
+	did=$($MYSQL_STR -e "select id from domains where name = '$domain_name'" | $_sed '1d')
 	
 	$MYSQL_STR -e "insert into domain_space set type = 'web', date = now(), did = '$did', bytes = '$bytes'"
 	
@@ -64,12 +64,12 @@ if [ -d $VMAIL_ROOT ]; then
 
     cd $VMAIL_ROOT
     
-    for domain_name in `ls -1`; do
+    for domain_name in `$_ls -1`; do
 	
-	tmp=$(du -s $domain_name)
-	bytes=$(expr $(echo $tmp | awk '{print $1}') "*" 1024)
+	tmp=$($_du -s $domain_name)
+	bytes=$($_expr $($_echo $tmp | $_awk '{print $1}') "*" 1024)
 	
-	did=$($MYSQL_STR -e "select id from domains where name = '$domain_name'" | sed '1d')
+	did=$($MYSQL_STR -e "select id from domains where name = '$domain_name'" | $_sed '1d')
 	
 	$MYSQL_STR -e "insert into domain_space set type = 'mail', date = now(), did = '$did', bytes = '$bytes'"
 	
@@ -81,12 +81,12 @@ if [ -d $MYSQL_DATA_DIR ]; then
 	
     cd $MYSQL_DATA_DIR
     
-    for db_name in `ls -1`; do
+    for db_name in `$_ls -1`; do
 	
-	tmp=$(du -s $db_name)
-	bytes=$(expr $(echo $tmp | awk '{print $1}') "*" 1024)
+	tmp=$($_du -s $db_name)
+	bytes=$($_expr $($_echo $tmp | $_awk '{print $1}') "*" 1024)
 	
-	did=$($MYSQL_STR -e "select did from data_bases where name = '$db_name'" | sed '1d')
+	did=$($MYSQL_STR -e "select did from data_bases where name = '$db_name'" | $_sed '1d')
 	
 	$MYSQL_STR -e "insert into domain_space set type = 'database', date = now(), did = '$did', bytes = '$bytes'"
 	

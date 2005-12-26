@@ -18,6 +18,8 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
+export GOT_CONF=1
+
 . /etc/ravencore.conf || exit 1
 
-/sbin/chkconfig $1 $2 $3 $4
+$_chkconfig $1 $2 $3 $4

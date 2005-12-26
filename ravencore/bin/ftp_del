@@ -18,6 +18,8 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
+export GOT_CONF=1
+
 # Grab the configuration file
 
 . /etc/ravencore.conf || exit 1
@@ -26,4 +28,4 @@
 
 ftp_user=$1
 
-/usr/sbin/userdel $ftp_user
+$_userdel $ftp_user

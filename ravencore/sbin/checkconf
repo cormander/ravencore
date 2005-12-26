@@ -32,14 +32,14 @@ reload_ravencore=0
 
 if [ ! -f $HTTPD ]; then
 
-    echo "Fatal error: unable to find apache binary. If apache is already installed, then"
-    echo "   we can't find it. Please add the full path to the apache binary to this file: "
-    echo "   $RC_ROOT/etc/paths.httpd.local"
-    echo
+    $_echo "Fatal error: unable to find apache binary. If apache is already installed, then"
+    $_echo "   we can't find it. Please add the full path to the apache binary to this file: "
+    $_echo "   $RC_ROOT/etc/paths.httpd.local"
+    $_echo
 
 # create the file for them so they don't get confused about it not existing
 
-    touch $RC_ROOT/etc/paths.httpd.local
+    $_touch $RC_ROOT/etc/paths.httpd.local
 
     exit 1
 
@@ -47,44 +47,119 @@ fi
 
 # check to see what version we are now, vs what version we were when we ran last time
 
-cat $RC_ROOT/var/run/version 2> /dev/null | diff $RC_ROOT/etc/version - &> /dev/null
+$_cat $RC_ROOT/var/run/version 2> /dev/null | $_diff $RC_ROOT/etc/version - &> /dev/null
 
-if [ $? -ne 0 ]; then
+[ $? -ne 0 ] && first_time_run=1
+
+# first thing we want to do is check our module dependencies and mark them enabled or not
+
+for conf in $($_ls $RC_ROOT/conf.d); do
+    
+# parse our conf name out
+
+    conf=$($_echo $conf | $_sed 's/\.conf$//')
+    
+# unset our dep_check flag
+
+    dep_check_failed=0
+
+# loop thru the dependencies of this module
+# if the dependency file doesn't exist, this loop won't happen, and we assume that it's OK that this
+# module be enabled
+
+    for dep in $($_cat $RC_ROOT/etc/dependencies.$conf 2> /dev/null); do
+	
+# look for the actual command name of this dependency
+
+	cmd=$($_basename $($_grep "_$dep=" $RC_ROOT/etc/cmd_maps.$conf | $_sed 's/.*=//'))
+
+# walk down our $PATH to see if it exists somewhere. If so, break out of the loop
+	
+	for dir in `$_echo $PATH | $_sed 's/:/ /g'`; do [ -x $dir/$cmd ] && break; done
+
+# if it isn't found anywhere in $PATH, we'll have $? set to non-zero
+	
+	if [ $? -ne 0 ]; then
+
+	    dep_check_failed=1
+
+	    [ -n "$first_time_run" ] && $_echo "WARNING: dependancy '$dep' not found for $conf module. Search path is $PATH"
+	
+	fi
+
+    done
+
+# toggle our conf file with the executable bit, based on if the module has all its dependencies
+
+    [ $dep_check_failed -eq 1 ] && chmod -x $RC_ROOT/conf.d/$conf.conf || chmod +x $RC_ROOT/conf.d/$conf.conf
+    
+done
+
+
+# check to see if we're running the first time after a fresh install or upgrade
+
+if [ -n "$first_time_run" ]; then
     
 # we are a different version of ravencore. Remove some things from the var/run/ directory
     
 # only say our version number changed if we actually had a previous version
     
-    [ -f $RC_ROOT/var/run/version ] && echo "Version number changed since we last ran, running upgrade steps"
-    
+    [ -f $RC_ROOT/var/run/version ] && $_echo "Version number changed since we last ran, running upgrade steps"
+
+# do dependency check
+
+    $_echo "Running dependency check...."
+
+    for i in $($_ls $RC_ROOT/conf.d); do
+
+	conf=$($_echo $i | $_sed 's/\.conf$//')
+
+	$_echo -n "checking $conf...."
+
+	if [ -x $RC_ROOT/conf.d/$conf.conf ]; then
+
+	    $_echo "ok"
+
+	else
+	    
+	    $_echo "failed"
+
+# a failed base configuration check is a fatal error
+
+	    [ $conf = "base" ] && $_echo "base configuration is missing dependencies... see above warnings for details. exiting installer!" && exit 1
+
+	fi
+
+    done
+
 # remove the install_complete so our interface will know to run all the rehash scripts when the conf is complete
 # remove the db_install so that we'll run that script
 # remove the gpl_check so they can agree to the license, just incase the GPL version number changes
 # remove the version so we can copy the new one there
 # remove the wrapper, it'll be added back later in this script, from the newer version's code
 
-    rm -f $RC_ROOT/var/run/{install_complete,db_install,gpl_check,version} $RC_ROOT/sbin/wrapper
+    $_rm -f $RC_ROOT/var/run/{install_complete,db_install,gpl_check,version} $RC_ROOT/sbin/wrapper
 
 # copy the new version to the run cache
 
-    cp $RC_ROOT/etc/version $RC_ROOT/var/run/version
+    $_cp $RC_ROOT/etc/version $RC_ROOT/var/run/version
 
 # change the runlevel of all the services listed in etc, if they exist
 
-    echo -n "Setting service runlevels...."
+    $_echo -n "Setting service runlevels...."
 
-    if [ -x /sbin/chkconfig ]; then
+    if [ -x $_chkconfig ]; then
 	
-	for i in `cat $RC_ROOT/etc/services.*`; do
+	for i in `$_cat $RC_ROOT/etc/services.*`; do
 
-	    chkconfig --list $i &> /dev/null
+	    $_chkconfig --list $i &> /dev/null
 
 # if this service exists in chkconfig
 	    if [ $? -eq 0 ]; then
 		
 # runlevel with a single chkconfig command, so we'll run 3 of them instead
 		for runlevel in 3 4 5; do
-		    chkconfig --level $runlevel $i on &> /dev/null
+		    $_chkconfig --level $runlevel $i on &> /dev/null
 		done
 
 	    fi
@@ -93,24 +168,24 @@ if [ $? -ne 0 ]; then
 
     fi
 
-    echo "done"
+    $_echo "done"
 
 fi
 
 # make sure that ravencore is a listed service
 
-if [ -x /sbin/chkconfig ]; then
+if [ -x $_chkconfig ]; then
     
-    chkconfig --list ravencore &> /dev/null
+    $_chkconfig --list ravencore &> /dev/null
 
     if [ $? -ne 0 ]; then
 
 # not listed as a service, add it
-        chkconfig --add ravencore
+        $_chkconfig --add ravencore
 # set ravencore to startup on boot. Some distrobutions complain about setting more than one
 # runlevel with a single chkconfig command, so we'll run 3 of them instead
         for runlevel in 3 4 5; do
-	    chkconfig --level $runlevel ravencore on
+	    $_chkconfig --level $runlevel ravencore on
 	done
 	
     fi
@@ -119,25 +194,25 @@ fi
 
 # make sure the servgrp exists
 
-groupmod -g 149 servgrp 2> /dev/null
+$_groupmod -g 149 servgrp 2> /dev/null
 
 if [ $? -ne 0 ]; then
     
-    groupadd -g 149 servgrp
+    $_groupadd -g 149 servgrp
     
 # we need to figure out what user this system is configured to run apache as, so we can add it to servgrp
     
 # if apache is running, see what users it is running as
     
-    httpd_user=$(for i in `pidof $HTTPD`; do ls -dal /proc/$i; done | awk '!/root/{print $3}' | head -n 1)
+    httpd_user=$(for i in `$_pidof $HTTPD`; do $_ls -dal /proc/$i; done | $_awk '!/root/{print $3}' | $_head -n 1)
 
 # we won't have $httpd_user set if apache isn't running. Try to figure out the user from the conf file
 
     if [ -z "$httpd_user" ]; then
 
 # get the compiled in server root and server config file
-	httpd_server_root=$($HTTPD -V | grep HTTPD_ROOT | sed 's/=/ /' | awk '{print $3}' | sed 's/"//g')
-	httpd_config_file=$($HTTPD -V | grep SERVER_CONFIG_FILE | sed 's/=/ /' | awk '{print $3}' | sed 's/"//g')
+	httpd_server_root=$($HTTPD -V | $_grep HTTPD_ROOT | $_sed 's/=/ /' | $_awk '{print $3}' | $_sed 's/"//g')
+	httpd_config_file=$($HTTPD -V | $_grep SERVER_CONFIG_FILE | $_sed 's/=/ /' | $_awk '{print $3}' | $_sed 's/"//g')
 
 # look for the path to the apache conf file
 	
@@ -150,24 +225,24 @@ if [ $? -ne 0 ]; then
 # if there is no file existing in $httpd_server_root/$httpd_config_file or $httpd_config_file , then
 # we can't look up what user apache will run as
 	    
-	    echo "Unable to find apache's compiled in configuration file"
-	    echo "HTTPD_ROOT=$httpd_server_root"
-	    echo "SERVER_CONFIG_FILE=$httpd_config_file"
+	    $_echo "Unable to find apache's compiled in configuration file"
+	    $_echo "HTTPD_ROOT=$httpd_server_root"
+	    $_echo "SERVER_CONFIG_FILE=$httpd_config_file"
 	    
 	    exit 1
 	    
 	fi
 	
 # find the user from the httpd conf file
-        httpd_user=$(grep "^User" $httpd_config_file | awk '{print $2}')
+        httpd_user=$($_grep "^User" $httpd_config_file | $_awk '{print $2}')
 
 # if not found, search the conf files it includes ( ex: SuSE looks in uid.conf )
 
         if [ -z "$httpd_user" ]; then
 
-            for inc in `grep '^Include' $httpd_config_file 2> /dev/null`; do
+            for inc in `$_grep '^Include' $httpd_config_file 2> /dev/null`; do
 
-                httpd_user=$(grep "^User" $inc | awk '{print $2}' 2> /dev/null)
+                httpd_user=$($_grep "^User" $inc | $_awk '{print $2}' 2> /dev/null)
 
 # if we found the user, break out of the loop
 
@@ -181,7 +256,7 @@ if [ $? -ne 0 ]; then
 
         if [ -z "$httpd_user" ]; then
 
-            echo "Unable to find the user apache runs as from its configuration file $httpd_config_file"
+            $_echo "Unable to find the user apache runs as from its configuration file $httpd_config_file"
 
             exit 1
 
@@ -189,16 +264,16 @@ if [ $? -ne 0 ]; then
 
     fi
 
-    users_in_httpd_group=$(grep "^$httpd_user:" /etc/group | sed 's/:/ /g' | awk '{print $4}')
+    users_in_httpd_group=$($_grep "^$httpd_user:" /etc/group | $_sed 's/:/ /g' | $_awk '{print $4}')
 
 # if there are users, be sure to use a comma
     if [ -n "$users_in_httpd_group" ]; then
 	
-	usermod -G $users_in_httpd_group,servgrp $httpd_user
+	$_usermod -G $users_in_httpd_group,servgrp $httpd_user
 	
     else
 	
-	usermod -G servgrp $httpd_user
+	$_usermod -G servgrp $httpd_user
 
     fi
 
@@ -207,15 +282,15 @@ fi
 # make sure we have the rcadmin user / group
 # check the group first, because in order to add the user, we need a valid existing gid
 
-groupmod -g 147 rcadmin 2> /dev/null
+$_groupmod -g 147 rcadmin 2> /dev/null
 
-[ $? -ne 0 ] && groupadd -g 147 rcadmin
+[ $? -ne 0 ] && $_groupadd -g 147 rcadmin
 
 # 
 
-usermod -u 147 -G servgrp rcadmin &> /dev/null
+$_usermod -u 147 -G servgrp rcadmin &> /dev/null
 
-[ $? -ne 0 ] && useradd -M -u 147 -g 147 -G servgrp -d $RC_ROOT -s /bin/false rcadmin
+[ $? -ne 0 ] && $_useradd -M -u 147 -g 147 -G servgrp -d $RC_ROOT -s /bin/false rcadmin
 
 # check to see if our db_install script ran
 
@@ -232,22 +307,23 @@ fi
 
 # Check if we don't have something in the server-id.conf file
 
-SERVER_ID=$(cat $RC_ROOT/etc/server-id 2> /dev/null)
+SERVER_ID=$($_cat $RC_ROOT/etc/server-id 2> /dev/null)
 if [ -z "$SERVER_ID" ]; then
-# 16 item long string with randomly generated letters ( from A to Z )
-    perl -e 'for($i=0;$i<16;$i++) {print pack("C",int(rand(26))+65)}; print "\n"' > $RC_ROOT/etc/server-id
+# 16 item long string with randomly generated letters ( from a to Z )
+    $_perl -e 'for($i=0;$i<16;$i++) {$c=pack("C",int(rand(26))+65);print (int(rand(2))==0?$c:lc($c))}; print "\n"' \
+	> $RC_ROOT/etc/server-id
 fi
 
 # make sure the path to these directories are correct
 
 for dir in httpd_modules; do
 
-    if [ ! -d "$(cat $RC_ROOT/var/run/$dir.path 2> /dev/null)" ]; then
+    if [ ! -d "$($_cat $RC_ROOT/var/run/$dir.path 2> /dev/null)" ]; then
 	
-	for path in `cat $RC_ROOT/etc/paths.$dir.local $RC_ROOT/etc/paths.$dir 2> /dev/null`; do
+	for path in `$_cat $RC_ROOT/etc/paths.$dir.local $RC_ROOT/etc/paths.$dir 2> /dev/null`; do
 	    
 # check to see if this directory is in /usr/lib
-	    if_lib_dir=$(echo $path | sed 's|/usr/lib/.*|/usr/lib|')
+	    if_lib_dir=$($_echo $path | $_sed 's|/usr/lib/.*|/usr/lib|')
 	    
 # if so, if_lib_dir will equil "/usr/lib"
 
@@ -255,10 +331,10 @@ for dir in httpd_modules; do
 		
 # set the possible equiv of this $path if we are x86_64
 
-		path_64=$(echo $path | sed 's|/usr/lib/|/usr/lib64/|')
+		path_64=$($_echo $path | $_sed 's|/usr/lib/|/usr/lib64/|')
 		
 		if [ -d $path_64 ]; then
-		    echo $path_64 > $RC_ROOT/var/run/$dir.path
+		    $_echo $path_64 > $RC_ROOT/var/run/$dir.path
 		    
 		    reload_ravencore=1
     
@@ -268,7 +344,7 @@ for dir in httpd_modules; do
 	    
 	    if [ -d $path ] && [ ! -d $path_64 ]; then
 		
-		echo $path > $RC_ROOT/var/run/$dir.path
+		$_echo $path > $RC_ROOT/var/run/$dir.path
 		
 		reload_ravencore=1
 		
@@ -286,19 +362,19 @@ done
 
 if [ -f /etc/shells ]; then
     
-    grep "/bin/false" /etc/shells &> /dev/null
+    $_grep "/bin/false" /etc/shells &> /dev/null
     
-    [ $? -ne 0 ] && echo "/bin/false" >> /etc/shells
+    [ $? -ne 0 ] && $_echo "/bin/false" >> /etc/shells
     
 fi
     
 # check to make sure the session.save_path for php is correct, in case the $RC_ROOT variable changes
 
-echo "php_admin_value session.save_path $RC_ROOT/var/tmp" | diff $RC_ROOT/var/run/session.include - &> /dev/null
+$_echo "php_admin_value session.save_path $RC_ROOT/var/tmp" | $_diff $RC_ROOT/var/run/session.include - &> /dev/null
 
 if [ $? -ne 0 ]; then
 
-    echo "php_admin_value session.save_path $RC_ROOT/var/tmp" > $RC_ROOT/var/run/session.include
+    $_echo "php_admin_value session.save_path $RC_ROOT/var/tmp" > $RC_ROOT/var/run/session.include
 
     reload_ravencore=1
 
@@ -306,13 +382,13 @@ fi
 
 # make sure the system httpd binary matches what we have running ravencore
 
-diff $HTTPD $RC_ROOT/sbin/ravencore.httpd &> /dev/null
+$_diff $HTTPD $RC_ROOT/sbin/ravencore.httpd &> /dev/null
 
 if [ $? -ne 0 ]; then
 
-    rm -f $RC_ROOT/sbin/ravencore.httpd
+    $_rm -f $RC_ROOT/sbin/ravencore.httpd
 
-    cp -p $HTTPD $RC_ROOT/sbin/ravencore.httpd
+    $_cp -p $HTTPD $RC_ROOT/sbin/ravencore.httpd
 
     reload_ravencore=1
 
@@ -328,53 +404,54 @@ fi
 # set permissions and ownship of files in the ravencore root
 
 # start by giving everything root:rcadmin
-chown -R root:rcadmin $RC_ROOT
+$_chown -R root:rcadmin $RC_ROOT
 # sbin files should not be in the rcadmin group
-chown root:root $RC_ROOT/sbin/*
+$_chown root:root $RC_ROOT/sbin/*
 
 # shadow files, webmail files, and tmp files should be owned by rcadmin
-chown -R rcadmin:rcadmin $RC_ROOT/{.shadow,database.cfg,httpdocs/{webmail/data,filemanager/tmp},var/tmp}
+$_chown -R rcadmin:rcadmin $RC_ROOT/{.shadow,database.cfg,httpdocs/{webmail/data,filemanager/tmp},var/tmp}
 # but their directories should not be
-chown root:rcadmin $RC_ROOT/{httpdocs/{webmail/data,filemanager/tmp},var/tmp}
+$_chown root:rcadmin $RC_ROOT/{httpdocs/{webmail/data,filemanager/tmp},var/tmp}
 
 # directory permissions.. start by issuing everything 750
-chmod 750 $(find $RC_ROOT -type d)
+$_chmod 750 $(find $RC_ROOT -type d)
 
 # files in sbin, etc, and httpdocs/webmail need to allow files that are readable to everyone, to be read
-chmod 751 $RC_ROOT/{.,sbin,etc,httpdocs/{.,webmail}}
+$_chmod 751 $RC_ROOT/{.,sbin,etc,httpdocs/{.,webmail}}
 
 # set sbin files to 500, with the exception of mailscan
-chmod 500 $RC_ROOT/{bin,sbin}/*
-chmod 555 $RC_ROOT/sbin/mailscan
+$_chmod 500 $RC_ROOT/{bin,sbin}/*
+$_chmod 555 $RC_ROOT/sbin/mailscan
+$_chmod 550 $RC_ROOT/bin/disp_chkconfig
 
 # spamassassin reads the .spam preferences in here
-chmod 771 $RC_ROOT/httpdocs/webmail/data
-chmod 770 $RC_ROOT/var/{tmp,run} $RC_ROOT/httpdocs/{webmail/data/default_pref,filemanager/tmp}
+$_chmod 771 $RC_ROOT/httpdocs/webmail/data
+$_chmod 770 $RC_ROOT/var/{tmp,run} $RC_ROOT/httpdocs/{webmail/data/default_pref,filemanager/tmp}
 
 # make php files not world readable
-chmod 640 $RC_ROOT/httpdocs/*php
+$_chmod 640 $RC_ROOT/httpdocs/*php
 
 # make sure our database connect info stays safe
-chmod 600 $RC_ROOT/.shadow
-chmod 400 $RC_ROOT/database.cfg
+$_chmod 600 $RC_ROOT/.shadow
+$_chmod 400 $RC_ROOT/database.cfg
 
 # make sure that the vhosts.conf file exists and is readable by rcadmin and apache, but no one else
-touch $RC_ROOT/etc/vhosts.conf
-chgrp servgrp $RC_ROOT/etc/vhosts.conf
-chmod 440 $RC_ROOT/etc/vhosts.conf
+$_touch $RC_ROOT/etc/vhosts.conf
+$_chgrp servgrp $RC_ROOT/etc/vhosts.conf
+$_chmod 440 $RC_ROOT/etc/vhosts.conf
 
 # check to see if the wrapper works correctly
 
 # check with sudo to see if the wrapper works as rcadmin ( some systems don't have sudo, they skip this step )
 
-if [ -x /usr/bin/sudo ] && [ -x $RC_ROOT/sbin/wrapper ]; then
+if [ -x $_sudo ] && [ -x $RC_ROOT/sbin/wrapper ]; then
 
 # run the wrapper as rcadmin, forcing error to /dev/null . We'll know from stdout if we are working or not
-    case $(sudo -u rcadmin $RC_ROOT/sbin/wrapper testsuid 2> /dev/null) in
+    case $($_sudo -u rcadmin $RC_ROOT/sbin/wrapper testsuid 2> /dev/null) in
 # if it returns root, then we're good to go. leave well enough alone
 	"root");;
 # if we didn't get root, then remove the wrapper ( the next step will add it back )
-	*)rm -f $RC_ROOT/sbin/wrapper;;
+	*)$_rm -f $RC_ROOT/sbin/wrapper;;
     esac
 
 fi
@@ -383,9 +460,13 @@ fi
 
 if [ ! -x $RC_ROOT/sbin/wrapper ]; then
 
+# tell the user what we're doing
+
+    $_echo -n "Installing system wrapper..."
+
 # attempt to compile the wrapper code
 
-    gcc -o $RC_ROOT/sbin/wrapper $RC_ROOT/sbin/wrapper.c &> /dev/null
+    $_gcc -o $RC_ROOT/sbin/wrapper $RC_ROOT/sbin/wrapper.c &> /dev/null
 
 # if we failed for whatever reason, use the perl wrapper code instead
 
@@ -394,62 +475,18 @@ if [ ! -x $RC_ROOT/sbin/wrapper ]; then
 # we can test to see if perl has suid enabled the exit status of doing: perl -V | grep suid &> /dev/null
 # but for now, leave the control panel interface to handling this error
 
-	rm -f $RC_ROOT/sbin/wrapper
-	cp $RC_ROOT/sbin/wrapper.pl $RC_ROOT/sbin/wrapper
+	$_rm -f $RC_ROOT/sbin/wrapper
+	$_cp $RC_ROOT/sbin/wrapper.pl $RC_ROOT/sbin/wrapper
 	
     fi
     
+    $_echo "done"
+
 fi
 
 # make sure the wrapper has correct ownership / permissions
-chown root:rcadmin $RC_ROOT/sbin/wrapper
-chmod 4150 $RC_ROOT/sbin/wrapper
-
-# here, figure out what "services" are installed, and set the "x" bit on the conf.d file accordingly
-
-# we are base :) always set with +x
-
-chmod +x $RC_ROOT/conf.d/base.conf
-
-# for now, web and mysql are always here also
-
-chmod +x $RC_ROOT/conf.d/{web,mysql}.conf
-
-# is postfix installed?
-
-if [ -f /usr/sbin/postfix ]; then
-
-    chmod +x $RC_ROOT/conf.d/mail.conf
-
-else
-
-    chmod -x $RC_ROOT/conf.d/mail.conf
-
-fi
-
-# is spamassassin installed?
-
-if [ -f /usr/bin/spamc ]; then
-
-    chmod +x $RC_ROOT/conf.d/mailscan.conf
-
-else
-
-    chmod -x $RC_ROOT/conf.d/mailscan.conf
-
-fi
-
-# is bind installed?
-
-if [ -f /usr/sbin/named ]; then
-
-    chmod +x $RC_ROOT/conf.d/dns.conf
-
-else
-
-    chmod -x $RC_ROOT/conf.d/dns.conf
-
-fi
+$_chown root:rcadmin $RC_ROOT/sbin/wrapper
+$_chmod 4150 $RC_ROOT/sbin/wrapper
 
 # save our current umask state
 
@@ -457,7 +494,7 @@ old_umask=$(umask)
 
 # generate ssl cert for panel
 
-if [ -x /usr/bin/openssl ]; then
+if [ -x $_openssl ]; then
 
     umask 077
 
@@ -465,11 +502,11 @@ if [ -x /usr/bin/openssl ]; then
     
     if [ ! -f $RC_ROOT/etc/server.key ]; then
     
-	echo -n "Creating control panel SSL key file...."
+	$_echo -n "Creating control panel SSL key file...."
 
-	/usr/bin/openssl genrsa -rand /proc/apm:/proc/cpuinfo:/proc/dma:/proc/filesystems:/proc/interrupts:/proc/ioports:/proc/pci:/proc/rtc:/proc/uptime 1024 > $RC_ROOT/etc/server.key 2> /dev/null
+	$_openssl genrsa -rand /proc/apm:/proc/cpuinfo:/proc/dma:/proc/filesystems:/proc/interrupts:/proc/ioports:/proc/pci:/proc/rtc:/proc/uptime 1024 > $RC_ROOT/etc/server.key 2> /dev/null
 	
-	echo "done"
+	$_echo "done"
 
     fi
     
@@ -477,14 +514,14 @@ if [ -x /usr/bin/openssl ]; then
 
     if [ ! -f $RC_ROOT/etc/server.crt ]; then
 
-	echo -n "Creating control panel SSL cert file...."
+	$_echo -n "Creating control panel SSL cert file...."
 
 	FQDN=`hostname`
 	if [ "x${FQDN}" = "x" ]; then
 	    FQDN=localhost.localdomain
 	fi
 	
-	cat << EOF | /usr/bin/openssl req -new -key $RC_ROOT/etc/server.key -x509 -days 365 -out $RC_ROOT/etc/server.crt 2>/dev/null
+	$_cat << EOF | $_openssl req -new -key $RC_ROOT/etc/server.key -x509 -days 365 -out $RC_ROOT/etc/server.crt 2>/dev/null
 --
 SomeState
 SomeCity
@@ -494,7 +531,7 @@ ${FQDN}
 root@${FQDN}
 EOF
 	
-	echo "done"
+	$_echo "done"
 
     fi
     

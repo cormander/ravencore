@@ -32,14 +32,14 @@ CONNECT=0
 NEW_MYSQL_ADMIN_USER="admin"
 NEW_MYSQL_ADMIN_PASS="ravencore"
 
-echo "Attempting to gain access to mysqld and install the ravencore database"
-sleep 1
+$_echo "Attempting to gain access to mysqld and install the ravencore database"
+$_sleep 1
 
 # start mysqld if it isn't running
 
-if [ -z "$(pidof mysqld)" ]; then
+if [ -z "$($_pidof mysqld)" ]; then
 
-    echo "mysqld not running, attemping to start...."
+    $_echo "mysqld not running, attemping to start...."
     
     if [ -f $INITD/$mysql_service ]; then
 
@@ -47,7 +47,7 @@ if [ -z "$(pidof mysqld)" ]; then
 
     else
 
-	echo "Unable to find the mysql init script. the mysql server may not be installed"
+	$_echo "Unable to find the mysql init script in $INITD . The mysql server may not be installed"
 
 	exit 1
 
@@ -57,7 +57,7 @@ fi
 
 # load the database.cfg file
 
-echo -n "trying to connect with database.cfg file...."
+$_echo -n "trying to connect with database.cfg file...."
 
 . $RC_ROOT/database.cfg 2> /dev/null
 
@@ -67,7 +67,7 @@ if [ $? -ne 0 ]; then
 	
 	CONNECT=0
 	
-	echo "failed"
+	$_echo "failed"
 
 else
     
@@ -77,19 +77,19 @@ else
 	
 # attempt DB connection
 	
-	mysql -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS -e "" 2> /dev/null
+	$_mysql -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS -e "" 2> /dev/null
 	
 	if [ $? -eq 0 ]; then
 	    
 # success
 	    CONNECT=1
-	    echo "ok"
+	    $_echo "ok"
 
 	else
 	    
 # failure
 	    CONNECT=0
-	    echo "failed"
+	    $_echo "failed"
 
 	fi
 	
@@ -98,7 +98,7 @@ else
 # no MYSQL_ADMIN variables, no connection
 	
 	CONNECT=0
-	echo "failed"
+	$_echo "failed"
 
     fi
     
@@ -109,9 +109,9 @@ if [ $CONNECT -eq 0 ]; then
     
 # no conection, so we attempt blank password root mysql connection
 
-    echo -n "trying to connect with a blank password...."
+    $_echo -n "trying to connect with a blank password...."
     
-    mysql -u root -e "" 2> /dev/null
+    $_mysql -u root -e "" 2> /dev/null
     
     if [ $? -eq 0 ]; then
 	
@@ -121,12 +121,12 @@ if [ $CONNECT -eq 0 ]; then
 	MYSQL_ADMIN_USER="root"
 	MYSQL_ADMIN_PASS=""
 
-	echo "ok"
+	$_echo "ok"
 	
     else
 
 	CONNECT=0
-	echo "failed"
+	$_echo "failed"
 
     fi
 
@@ -136,9 +136,9 @@ if [ $CONNECT -eq 0 ]; then
 
 # attempt connection with our standard setup user / pass
 
-    echo -n "trying to connect with $NEW_MYSQL_ADMIN_USER / $NEW_MYSQL_ADMIN_PASS...."
+    $_echo -n "trying to connect with $NEW_MYSQL_ADMIN_USER / $NEW_MYSQL_ADMIN_PASS...."
 
-    mysql -u $NEW_MYSQL_ADMIN_USER -p$NEW_MYSQL_ADMIN_PASS -e "" 2> /dev/null
+    $_mysql -u $NEW_MYSQL_ADMIN_USER -p$NEW_MYSQL_ADMIN_PASS -e "" 2> /dev/null
     
     if [ $? -eq 0 ]; then
 
@@ -147,12 +147,12 @@ if [ $CONNECT -eq 0 ]; then
 	MYSQL_ADMIN_USER=$NEW_MYSQL_ADMIN_USER
 	MYSQL_ADMIN_PASS=$NEW_MYSQL_ADMIN_PASS
 	
-	echo "ok"
+	$_echo "ok"
 
     else
 	
 	CONNECT=0
-	echo "failed"
+	$_echo "failed"
 
     fi
 
@@ -164,11 +164,11 @@ if [ $CONNECT -eq 0 ]; then
 
 # stop mysqld
     
-    echo "trying to force mysqld to startup with no-auth....stopping mysqld"
+    $_echo "trying to force mysqld to startup with no-auth....stopping mysqld"
 
     $INITD/$mysql_service stop
     
-    sleep 3
+    $_sleep 3
 
 # determine where the mysql safe script is
     
@@ -186,7 +186,7 @@ if [ $CONNECT -eq 0 ]; then
 
     if [ -z "$safe_mysqld" ]; then
 
-	echo "Unable to find the path to the safe mysqld init script. Unable to continue"
+	$_echo "Unable to find the path to the safe mysqld init script. Unable to continue"
 
 	exit 1
 
@@ -194,19 +194,19 @@ if [ $CONNECT -eq 0 ]; then
     
 # start the mysqld server with our own intentions
     
-    echo "starting mysqld with --skip-grant-tables...."
+    $_echo "starting mysqld with --skip-grant-tables...."
 
     $safe_mysqld --user=mysql --socket=/var/lib/mysql/mysql.sock --pid-file=/var/run/mysqld/mysqld.pid --datadir=/var/lib/mysql --skip-grant-tables --skip-networking &> /dev/null &
 
 # give the mysqld server some time to start up
     
-    sleep 3
+    $_sleep 3
     
 # tell the server to set the root password to something we know.
 
 # different mysql versions can have different privelege columns. This loop will figure them out and
 # build our insert statement to generate a user with full mysqld access
-	for priv in $(mysql mysql -e "desc user" | sed '1d' | awk "/enum\('N','Y'\)/ {print \$1}"); do
+	for priv in $($_mysql mysql -e "desc user" | $_sed '1d' | $_awk "/enum\('N','Y'\)/ {print \$1}"); do
 
 	    privs_str="$privs_str $priv = 'Y',"
 
@@ -214,15 +214,15 @@ if [ $CONNECT -eq 0 ]; then
 
 # figure out if the $NEW_MYSQL_ADMIN_USER exists
 
-    admin_user_exists=$(mysql mysql -e "select count(*) from user where User = '$NEW_MYSQL_ADMIN_USER'" | sed '1d')
+    admin_user_exists=$($_mysql mysql -e "select count(*) from user where User = '$NEW_MYSQL_ADMIN_USER'" | $_sed '1d')
     
     if [ $admin_user_exists -gt 0 ]; then
 
-	echo "user $NEW_MYSQL_ADMIN_USER found. attempting to update the password to \"$NEW_MYSQL_ADMIN_PASS\"...."
+	$_echo "user $NEW_MYSQL_ADMIN_USER found. attempting to update the password to \"$NEW_MYSQL_ADMIN_PASS\"...."
 
 # update this user's password, as well as all the privilieges of the user
 #	mysqladmin -u $user flush-privileges password "$NEW_MYSQL_ADMIN_PASS" &> /dev/null
-	mysql mysql -e "update user set $privs_str Password = password('$NEW_MYSQL_ADMIN_PASS') where User = '$NEW_MYSQL_ADMIN_USER';flush privileges"
+	$_mysql mysql -e "update user set $privs_str Password = password('$NEW_MYSQL_ADMIN_PASS') where User = '$NEW_MYSQL_ADMIN_USER';flush privileges"
 
 # tell us that we reset their admin password
 	reset_password=1
@@ -231,47 +231,47 @@ if [ $CONNECT -eq 0 ]; then
 	
 # attempt to insert a full privileged user into the database
 
-	echo "user \"$NEW_MYSQL_ADMIN_USER\" not found for mysqld. attemping to create it...."
+	$_echo "user \"$NEW_MYSQL_ADMIN_USER\" not found for mysqld. attemping to create it...."
 
 # add the host, username, and password to the statement
 	sql="insert into user set $privs_str Host = 'localhost', User = '$NEW_MYSQL_ADMIN_USER', Password = password('$NEW_MYSQL_ADMIN_PASS')"
 
 # insert the user and flush the privileges
-	mysql mysql -e "$sql;flush privileges"
+	$_mysql mysql -e "$sql;flush privileges"
 
     fi
 
-    sleep 1
+    $_sleep 1
 
 # now we should restart mysqld so it's running normally
 
-    echo "attempting to restart the mysqld server...."
+    $_echo "attempting to restart the mysqld server...."
     
     $INITD/$mysql_service stop
 
 # wait a few seconds before we start, just to be safe
-    sleep 3
+    $_sleep 3
     
     $INITD/$mysql_service start
 
-    sleep 3
+    $_sleep 3
 
-    echo -n "now lets try our new connect information...."
+    $_echo -n "now lets try our new connect information...."
     
 # re-attempt the database connection
-    mysql -u $NEW_MYSQL_ADMIN_USER -p$NEW_MYSQL_ADMIN_PASS -e "select now()" &> /dev/null
+    $_mysql -u $NEW_MYSQL_ADMIN_USER -p$NEW_MYSQL_ADMIN_PASS -e "select now()" &> /dev/null
 
     if [ $? -eq 0 ]; then
 	
 	CONNECT=1
 	MYSQL_ADMIN_USER=$NEW_MYSQL_ADMIN_USER
 	MYSQL_ADMIN_PASS=$NEW_MYSQL_ADMIN_PASS
-	echo "ok"
+	$_echo "ok"
 	
     else
 
 	CONNECT=0
-	echo "failed"
+	$_echo "failed"
 	
     fi
     
@@ -280,14 +280,14 @@ fi
 if [ $CONNECT -eq 0 ]; then
 
 # failed to get any connection. We cannot continue
-
-    echo "Could not connect to MySQL server. Please setup a MySQL user 'admin' with password '$NEW_MYSQL_ADMIN_PASS' that has full administrative access, and run this script again"
+    
+    $_echo "Could not connect to MySQL server. Please setup a MySQL user 'admin' with password '$NEW_MYSQL_ADMIN_PASS' that has full administrative access, and run this script again"
 
     exit 1
 
 fi
 
-MYSQL_STR="mysql -u $MYSQL_ADMIN_USER"
+MYSQL_STR="$_mysql -u $MYSQL_ADMIN_USER"
 
 # if we have a mysql password, we're good to go
 
@@ -302,13 +302,13 @@ else
     MYSQL_ADMIN_USER=$NEW_MYSQL_ADMIN_USER
     MYSQL_ADMIN_PASS=$NEW_MYSQL_ADMIN_PASS
 
-    echo "creating user \"$NEW_MYSQL_ADMIN_USER\" for mysqld...."
+    $_echo "creating user \"$NEW_MYSQL_ADMIN_USER\" for mysqld...."
 
     $MYSQL_STR -e "grant all privileges on *.* to $MYSQL_ADMIN_USER@$MYSQL_ADMIN_HOST identified by '$MYSQL_ADMIN_PASS' with grant option"
 
 # remove blank password users
 
-    echo "removing mysql users with a blank password, if they exist...."
+    $_echo "removing mysql users with a blank password, if they exist...."
 
     $MYSQL_STR mysql -e "delete from user where Password = ''"
 
@@ -318,13 +318,13 @@ else
 
 # resest MYSQL_STR with new user
 
-    MYSQL_STR="mysql -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS"
+    MYSQL_STR="$_mysql -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS"
 
 fi
 
 # check to see if the database exists
 
-echo -n "checking to see if $MYSQL_ADMIN_DB database exists...."
+$_echo -n "checking to see if $MYSQL_ADMIN_DB database exists...."
 
 $MYSQL_STR -e "use $MYSQL_ADMIN_DB" 2> /dev/null
 
@@ -332,9 +332,9 @@ if [ $? -ne 0 ]; then
 
 # database doesn't exist, attempt to create it
 
-    echo "no"
+    $_echo "no"
 
-    echo "attempting to create it...."
+    $_echo "attempting to create it...."
 
     $MYSQL_STR -e "create database $MYSQL_ADMIN_DB" 2> /dev/null
     
@@ -342,7 +342,7 @@ if [ $? -ne 0 ]; then
 	
 # unable to create database, we probably don't have permission to
 	
-	echo "Unable to create database $MYSQL_ADMIN_DB, we probably don't have the appropriate permissions set. Please make sure $MYSQL_ADMIN_USER can create a database, and run this script again"
+	$_echo "Unable to create database $MYSQL_ADMIN_DB, we probably don't have the appropriate permissions set. Please make sure $MYSQL_ADMIN_USER can create a database, and run this script again"
 	
 	exit 1
 	
@@ -350,38 +350,38 @@ if [ $? -ne 0 ]; then
     
 # now we attempt to load the sql tables
     
-    echo -n "attempting to load the data structure...."
+    $_echo -n "attempting to load the data structure...."
 
-    for table in `ls $RC_ROOT/etc/sql_tables | sed 's/\.sql$//'`; do
+    for table in `$_ls $RC_ROOT/etc/sql_tables | $_sed 's/\.sql$//'`; do
 
 	$MYSQL_STR $MYSQL_ADMIN_DB < $RC_ROOT/etc/sql_tables/$table.sql
 
     done
 
-    echo "done"
+    $_echo "done"
 
 else
 
 # if we get here, the database already exists...
 
-    echo  "yes"
+    $_echo  "yes"
 
 # check the database integrety by matching all the tables
 
-    echo "checking database integrity"
+    $_echo "checking database integrity"
 
 # cache our table info
 
-    table_info=$($MYSQL_STR $MYSQL_ADMIN_DB -e "show tables" | sed '1d')
+    table_info=$($MYSQL_STR $MYSQL_ADMIN_DB -e "show tables" | $_sed '1d')
 
-    for table in `ls $RC_ROOT/etc/sql_tables | sed 's/\.sql$//'`; do
+    for table in `$_ls $RC_ROOT/etc/sql_tables | $_sed 's/\.sql$//'`; do
 
 # reset our variable of whether to show a dot
 	show_dot=1
 
 # check to see if we have this table by looping through $table_info and checking each one
 
-	$MYSQL_STR $MYSQL_ADMIN_DB -e "show tables" | sed '1d' | grep $table &> /dev/null
+	$MYSQL_STR $MYSQL_ADMIN_DB -e "show tables" | $_sed '1d' | $_grep $table &> /dev/null
 
 # didn't find the table
 
@@ -389,11 +389,11 @@ else
 
 # load the new table
 
-	    echo -n "found new table \"$table\". loading it into the database...."
+	    $_echo -n "found new table \"$table\". loading it into the database...."
 
 	    $MYSQL_STR $MYSQL_ADMIN_DB < $RC_ROOT/etc/sql_tables/$table.sql
 
-	    echo "ok"
+	    $_echo "ok"
 	    
 	    show_dot=0
 
@@ -403,49 +403,49 @@ else
 # the table .sql files were dumped with command:
 # mysqldump -d --opt -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS $MYSQL_ADMIN_DB $table | grep ' ' | grep -v '^--'
 
-	    mysqldump -d --opt -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS $MYSQL_ADMIN_DB $table | grep '^ ' | sed 's/`//g' > $RC_ROOT/var/tmp/diff.$$
+	    $_mysqldump -d --opt -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS $MYSQL_ADMIN_DB $table | $_grep '^ ' | $_sed 's/`//g' > $RC_ROOT/var/tmp/diff.$$
 
-	    new_columns=$(cat $RC_ROOT/etc/sql_tables/$table.sql | grep '^ ' | sed 's/`//g' | diff $RC_ROOT/var/tmp/diff.$$ - | grep '^>')
-	    custom_columns=$(cat $RC_ROOT/etc/sql_tables/$table.sql | grep '^ ' | sed 's/`//g' | diff $RC_ROOT/var/tmp/diff.$$ - | grep '^<' | sed 's/<//')
+	    new_columns=$($_cat $RC_ROOT/etc/sql_tables/$table.sql | $_grep '^ ' | $_sed 's/`//g' | $_diff $RC_ROOT/var/tmp/diff.$$ - | $_grep '^>')
+	    custom_columns=$($_cat $RC_ROOT/etc/sql_tables/$table.sql | $_grep '^ ' | $_sed 's/`//g' | $_diff $RC_ROOT/var/tmp/diff.$$ - | $_grep '^<' | $_sed 's/<//')
 	    
 # if the table structures differ ( new columns in the .sql file )
 	    
 	    if [ -n "$new_columns" ]; then
 		
-		echo -n "found new column data in table $table, saving table row information...."
+		$_echo -n "found new column data in table $table, saving table row information...."
 
 		show_dow=0
 
 # dump the table data
 		
-		mysqldump --add-locks --all -c --quick --lock-tables -t -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS $MYSQL_ADMIN_DB $table > $RC_ROOT/var/tmp/$table.$$.data.sql
+		$_mysqldump --add-locks --all -c --quick --lock-tables -t -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS $MYSQL_ADMIN_DB $table > $RC_ROOT/var/tmp/$table.$$.data.sql
 		
-		mysqldump --opt -d -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS $MYSQL_ADMIN_DB $table > $RC_ROOT/var/tmp/$table.$$.struct.sql
+		$_mysqldump --opt -d -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS $MYSQL_ADMIN_DB $table > $RC_ROOT/var/tmp/$table.$$.struct.sql
 		
-		echo "ok"
-		echo -n "loading new table structure...."
+		$_echo "ok"
+		$_echo -n "loading new table structure...."
 		
 # load the new table structure
 		
 		$MYSQL_STR $MYSQL_ADMIN_DB < $RC_ROOT/etc/sql_tables/$table.sql
 		
-		echo "ok"
+		$_echo "ok"
 
 # check to see if they made any additions to the table before the upgrade
 
 		if [ -n "$custom_columns" ]; then
 
-		    echo "custom database columns found in old table structure...."
+		    $_echo "custom database columns found in old table structure...."
 
-		    echo -n "attempting to re-add them...."
+		    $_echo -n "attempting to re-add them...."
 
 # cache the table definition
 
-		    table_info=$($MYSQL_STR $MYSQL_ADMIN_DB -e "desc $table" | sed '1d')
+		    table_info=$($MYSQL_STR $MYSQL_ADMIN_DB -e "desc $table" | $_sed '1d')
 
 # attempt to add them back
 
-	       	    cat $RC_ROOT/etc/sql_tables/$table.sql | grep '^ ' | sed 's/`//g' | diff $RC_ROOT/var/tmp/diff.$$ - | grep '^<' | sed 's/<//' | sed 's/,$//g' | while read line; do
+	       	    $_cat $RC_ROOT/etc/sql_tables/$table.sql | $_grep '^ ' | $_sed 's/`//g' | $_diff $RC_ROOT/var/tmp/diff.$$ - | $_grep '^<' | $_sed 's/<//' | $_sed 's/,$//g' | while read line; do
 
 # if this line is not blank
 
@@ -453,7 +453,7 @@ else
 
 # first item on the line is the column name
 			    
-			    column=$(echo $line | awk '{print $1}')
+			    column=$($_echo $line | $_awk '{print $1}')
 			    
 # check to see if this column doesn't already exist
 			    found=0
@@ -469,12 +469,12 @@ else
     
 		    done
 
-		    echo "done"
+		    $_echo "done"
 
 		fi
 
 
-		echo -n "reloading dumped data in the the new table...."
+		$_echo -n "reloading dumped data in the the new table...."
 # load the dumped data back into the table
 		
 		$MYSQL_STR $MYSQL_ADMIN_DB < $RC_ROOT/var/tmp/$table.$$.data.sql
@@ -483,64 +483,64 @@ else
 		
 		if [ $? -eq 0 ]; then
 		    
-		    rm -f $RC_ROOT/var/tmp/$table.$$.data.sql
-		    rm -f $RC_ROOT/var/tmp/$table.$$.struct.sql
+		    $_rm -f $RC_ROOT/var/tmp/$table.$$.data.sql
+		    $_rm -f $RC_ROOT/var/tmp/$table.$$.struct.sql
 		    
 		else
 		    
-		    echo "********"
-		    echo "* ERROR: import of data from table $table failed."
-		    echo "*        Please reference backup files stored in:"
-		    echo "******** $RC_ROOT/var/tmp/$table.$$.data.sql"
-		    echo "******** and $RC_ROOT/var/tmp/$table.$$.struct.sql"
-		    echo "********"
+		    $_echo "********"
+		    $_echo "* ERROR: import of data from table $table failed."
+		    $_echo "*        Please reference backup files stored in:"
+		    $_echo "******** $RC_ROOT/var/tmp/$table.$$.data.sql"
+		    $_echo "******** and $RC_ROOT/var/tmp/$table.$$.struct.sql"
+		    $_echo "********"
 		    
 		fi
 
-		echo "ok"
+		$_echo "ok"
 
 	    fi
 
-	    rm -f $RC_ROOT/var/tmp/diff.$$
+	    $_rm -f $RC_ROOT/var/tmp/diff.$$
 	    
 	fi # end if, did we find this $table
 
-	[ $show_dot -eq 1 ] && echo -n "."
+	[ $show_dot -eq 1 ] && $_echo -n "."
 
     done
     
-    echo
-    echo "database integrity check complete"
+    $_echo
+    $_echo "database integrity check complete"
 
 fi
 
 # write database.cfg and .shadow files
 
-echo "writting connect info to $RC_ROOT/database.cfg"
+$_echo "writting connect info to $RC_ROOT/database.cfg"
 
-cat <<EOF > $RC_ROOT/database.cfg
+$_cat <<EOF > $RC_ROOT/database.cfg
 MYSQL_ADMIN_HOST="$MYSQL_ADMIN_HOST"
 MYSQL_ADMIN_USER="$MYSQL_ADMIN_USER"
 MYSQL_ADMIN_DB="$MYSQL_ADMIN_DB"
 EOF
 
-echo $MYSQL_ADMIN_PASS > $RC_ROOT/.shadow
+$_echo $MYSQL_ADMIN_PASS > $RC_ROOT/.shadow
 
-chown rcadmin:root $RC_ROOT/.shadow $RC_ROOT/database.cfg
-chmod 600 $RC_ROOT/.shadow
-chmod 400 $RC_ROOT/database.cfg
+$_chown rcadmin:root $RC_ROOT/.shadow $RC_ROOT/database.cfg
+$_chmod 600 $RC_ROOT/.shadow
+$_chmod 400 $RC_ROOT/database.cfg
 
-echo "Success!!"
+$_echo "Success!!"
 
 if [ -n "$reset_password" ]; then
 
-    echo "**********"
-    echo "** NOTE ** We had to reset the $MYSQL_ADMIN_USER password to \"$MYSQL_ADMIN_PASS\" "
-    echo "**********"
+    $_echo "**********"
+    $_echo "** NOTE ** We had to reset the $MYSQL_ADMIN_USER password to \"$MYSQL_ADMIN_PASS\" "
+    $_echo "**********"
 
 fi
 
 # tell us that we ran the db_install script
-touch $RC_ROOT/var/run/db_install
+$_touch $RC_ROOT/var/run/db_install
 
 exit 0

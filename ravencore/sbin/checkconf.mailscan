@@ -23,7 +23,7 @@
 # make sure the ravencore-mailscan file exists
 
 [ ! -f $RC_ROOT/etc/postfix/master.cf/ravencore-mailscan ] && \
-    echo 'unix - n n - - pipe user=vmail argv='$RC_ROOT'/sbin/mailscan ${sender} ${recipient}' > \
+    $_echo 'unix - n n - - pipe user=vmail argv='$RC_ROOT'/sbin/mailscan ${sender} ${recipient}' > \
     $RC_ROOT/etc/postfix/master.cf/ravencore-mailscan
 
 # if we never ran, a .local file won't exist for the master.cf's smtp file
@@ -32,8 +32,8 @@ if [ ! -f $RC_ROOT/etc/postfix/master.cf/smtp.local ]; then
 
 # create the .local file by replacing "smtpd" with our content filter
     
-    cat $RC_ROOT/etc/postfix/master.cf/smtp | \
-	sed 's/smtpd/smtpd  -o content_filter=ravencore-mailscan/' > \
+    $_cat $RC_ROOT/etc/postfix/master.cf/smtp | \
+	$_sed 's/smtpd/smtpd  -o content_filter=ravencore-mailscan/' > \
 	$RC_ROOT/etc/postfix/master.cf/smtp.local
 
 # rebuild the master.cf file

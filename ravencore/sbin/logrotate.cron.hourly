@@ -33,7 +33,7 @@ if [ -f $lockfile ]; then
 
 # Remove the lock file
 
-    rm -f $lockfile
+    $_rm -f $lockfile
 
 else
 
@@ -49,9 +49,9 @@ else
 
 # Create the lock file and run the ravencore logrotation
 
-    touch $lockfile
+    $_touch $lockfile
 
-    /usr/sbin/logrotate -f $RC_ROOT/etc/logrotate.conf
+    $_logrotate -f $RC_ROOT/etc/logrotate.conf
 
 # Restart apache
 

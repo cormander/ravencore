@@ -18,12 +18,8 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-# set our real uid and such to root
-$< = $>;
-$( = $) = 0;
-
-# destroy the enviroment path variable
-$ENV{PATH} = $ENV{BASH_ENV} = '/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin';
+# destroy the enviroment
+%ENV = '';
 
 $data = "@ARGV";
 
@@ -44,6 +40,10 @@ if ($RC_ROOT =~ /^([\/-\w.]+)$/) {
 # exit out with error if the command to run isn't in the ravencore bin
 
 if( ! -x $RC_ROOT . "/bin/" . $ARGV[0] ) { print "Command doesn't exist\n";exit 1; }
+
+# set our real uid and such to root
+$< = $>;
+$( = $) = 0;
 
 exec $RC_ROOT . "/bin/" . $data;
 

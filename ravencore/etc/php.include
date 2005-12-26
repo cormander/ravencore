@@ -14,13 +14,12 @@ php_admin_flag register_globals Off
 php_admin_flag magic_quotes_sybase Off
 php_admin_flag magic_quotes_runtime Off
 php_admin_flag session.cookie_secure Off
-#<IfDefine SSL>
-#php_admin_flag session.cookie_secure On
-#</IfDefine>
 php_admin_flag display_startup_errors Off
-php_admin_value session.auto_start 0
 
+php_admin_value session.auto_start 0
 php_admin_value session.name RAVENCORE
+php_admin_value session.save_handler files
+
 php_admin_value max_execution_time 120
 php_admin_value log_errors_max_len 1024
 php_admin_value error_reporting "E_ALL & ~E_NOTICE"

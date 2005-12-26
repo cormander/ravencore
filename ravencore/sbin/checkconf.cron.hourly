@@ -22,7 +22,7 @@
 
 # loop through all the installed packages, by looking in the conf.d directory
 
-for i in $(ls $RC_ROOT/conf.d | sed 's/\.conf$//g'); do
+for i in $($_ls $RC_ROOT/conf.d | $_sed 's/\.conf$//g'); do
     
 # if this package is installed, and we have a checkconf script for it, and it's executable, run it
 

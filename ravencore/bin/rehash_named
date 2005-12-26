@@ -22,7 +22,7 @@
 
 if [ ! -x $RC_ROOT/conf.d/dns.conf ]; then
 
-    echo "Not a dns server, exiting"
+    $_echo "Not a dns server, exiting"
     exit 1
 
 fi
@@ -31,11 +31,12 @@ fi
 
 usage() {
 
-    echo "Usage: rehash_named [options] domain_list"
-    echo -e "\t--rebuild-conf  Rebuild named.conf file"
-    echo -e "\t--all           Rebuild dns configuration for all domains on the server"
-    echo -e "\t-v              Be verbose"
-    echo -e "\n\t                domain_list is one or more domains, seperated by spaces"
+    $_echo "Usage: rehash_named [options] domain_list"
+    $_echo -e "\t--rebuild-conf  Rebuild named.conf file"
+    $_echo -e "\t--all           Rebuild dns configuration for all domains on the server"
+    $_echo -e "\t-v              Be verbose"
+    $_echo -e "\n\t                domain_list is one or more domains, seperated by spaces"
+
     exit 1
 
 }
@@ -54,7 +55,7 @@ while [ "$1" ]; do
 
     case $1 in
 # Run mysql query to get a list of all domains with physical hosting
-        "--all") domain_list=$($MYSQL_STR -e "select distinct d.name from domains d, dns_rec r where r.did = d.id and d.soa is not null" | sed '1d');;
+        "--all") domain_list=$($MYSQL_STR -e "select distinct d.name from domains d, dns_rec r where r.did = d.id and d.soa is not null" | $_sed '1d');;
 #
 	"--rebuild-conf") rebuild_conf=1;;
 # Turn on verbose output
@@ -81,7 +82,7 @@ fi
 
 if [ -z $NAMED_ROOT ]; then
 
-    echo "Fatal error: NAMED_ROOT not defined"
+    $_echo "Fatal error: NAMED_ROOT not defined"
 
     exit 1
 
@@ -89,7 +90,7 @@ fi
 
 if [ ! -d $NAMED_ROOT ]; then
 
-    echo "Fatal error: $NAMED_ROOT does not exist"
+    $_echo "Fatal error: $NAMED_ROOT does not exist"
 
     exit 1
 
@@ -105,13 +106,13 @@ cd $NAMED_ROOT
 
 if [ ! -f num ]; then
     
-    echo 10 > num
+    $_echo 10 > num
     
 fi
 
 # Increment the value
 
-num=$(expr `cat num` + 1)
+num=$($_expr `cat num` + 1)
 
 # If the value is greater then 99, set it back to 10
 
@@ -129,16 +130,16 @@ echo $num > num
 
 for domain_name in $domain_list; do
 
-    did=$($MYSQL_STR -e "select id from domains where name = '$domain_name'" | sed '1d')
+    did=$($MYSQL_STR -e "select id from domains where name = '$domain_name'" | $_sed '1d')
     
 # Create this domain's SOA record
     
-    tmp=$($MYSQL_STR -e "select concat(name,':',soa) from domains where id = '$did'" | sed '1d')
+    tmp=$($MYSQL_STR -e "select concat(name,':',soa) from domains where id = '$did'" | $_sed '1d')
     
-    host_master=$(echo $tmp | sed 's/:.*//')
-    soa=$(echo $tmp | sed 's/.*://')
+    host_master=$($_echo $tmp | $_sed 's/:.*//')
+    soa=$($_echo $tmp | $_sed 's/.*://')
     
-    cat <<EOFDOM > $domain_name.$$
+    $_cat <<EOFDOM > $domain_name.$$
 \$TTL    300
 
 @       IN      SOA     $soa admin (
@@ -152,24 +153,24 @@ EOFDOM
 
 # Loop through the records for this domain
 
-    for i in `$MYSQL_STR -e "select concat(name,':',type,':',target) from dns_rec where did = '$did' order by type, name, target" | sed '1d'`; do
+    for i in `$MYSQL_STR -e "select concat(name,':',type,':',target) from dns_rec where did = '$did' order by type, name, target" | $_sed '1d'`; do
 	
-	name=$(echo $i | sed 's/:/ /g' | awk '{print $1}')
-	target=$(echo $i | sed 's/:/ /g' | awk '{print $3}')
+	name=$($_echo $i | $_sed 's/:/ /g' | $_awk '{print $1}')
+	target=$($_echo $i | $_sed 's/:/ /g' | $_awk '{print $3}')
 	
 # This may be an MX record. We seperate the MX token and the preference
 # with a - symbol, so replace this with a space
 
-	type=$(echo $i | sed 's/:/ /g' | awk '{print $2}' | sed 's/-/ /')
+	type=$($_echo $i | $_sed 's/:/ /g' | $_awk '{print $2}' | $_sed 's/-/ /')
 	
-	echo -e "$name\t\tIN $type\t$target" >> $domain_name.$$
+	$_echo -e "$name\t\tIN $type\t$target" >> $domain_name.$$
 	
     done
     
 # Check to make sure this domain has enough DNS entries to be safely put into
 # the configuration
     
-    /usr/sbin/named-checkzone -q $domain_name $domain_name.$$
+    $_checkzone -q $domain_name $domain_name.$$
     
     if [ $? -eq 0 ]; then
 	
@@ -181,7 +182,7 @@ EOFDOM
 
 	    v_echo "Adding $domain_name to named.conf"
 
-	    cat <<EOFNAMED >> /etc/named.conf
+	    $_cat <<EOFNAMED >> /etc/named.conf
 zone "$domain_name" {
         type master;
         file "$domain_name";
@@ -193,15 +194,15 @@ EOFNAMED
 
 # Make the temp zone file live
 	
-	mv -f $domain_name.$$ $domain_name
-		
+	$_mv -f $domain_name.$$ $domain_name
+	
     else
 	
 # Remove the bad zone file
 	
 	v_echo "Bad zone file for $domain_name"
 	
-	rm -f $domain_name.$$
+	$_rm -f $domain_name.$$
 	
     fi
     
@@ -213,7 +214,7 @@ if [ $rebuild_conf -ne 0 ]; then
 
 # Static stuff that will always be in the named.conf file
 
-    cat <<EOFNAMED > /etc/named.conf
+    $_cat <<EOFNAMED > /etc/named.conf
 
 options {
 	directory "$NAMED_ROOT";
@@ -238,9 +239,9 @@ EOFNAMED
 
 # Loop through the domains on the server
     
-    for domain_name in `$MYSQL_STR -e "select distinct d.name from domains d, dns_rec r where r.did = d.id and d.soa is not null" | sed '1d'`; do
+    for domain_name in `$MYSQL_STR -e "select distinct d.name from domains d, dns_rec r where r.did = d.id and d.soa is not null" | $_sed '1d'`; do
 	
-	cat <<EOFNAMED >> /etc/named.conf
+	$_cat <<EOFNAMED >> /etc/named.conf
 zone "$domain_name" {
         type master;
         file "$domain_name";

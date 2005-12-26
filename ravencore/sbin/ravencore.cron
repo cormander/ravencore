@@ -22,11 +22,11 @@
 
 # make sure this script is being called via /etc/cron.x
 
-echo $0 | grep '^/etc/cron\.' &> /dev/null
+$_echo $0 | $_grep '^/etc/cron\.' &> /dev/null
 
 if [ $? -ne 0 ]; then
 
-    echo "This script must be called from an /etc/cron.x directory"
+    $_echo "This script must be called from an /etc/cron.x directory"
 
     exit
 
@@ -34,15 +34,10 @@ fi
 
 # loop through the scripts in the sbin that end with .cron.x , if any
 
-for i in `ls $RC_ROOT/sbin/*$(echo $0 | sed 's|/etc/||' | sed 's|/.*||' 2> /dev/null)`; do
-
-    if [ -x $i ]; then
+for i in `$_ls $RC_ROOT/sbin/*$($_echo $0 | $_sed 's|/etc/||' | $_sed 's|/.*||' 2> /dev/null)`; do
 
 # execute the cron script
-
-	$i
-
-    fi
+    [ -x $i ] && $i
 
 done
 

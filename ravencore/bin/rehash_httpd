@@ -29,7 +29,7 @@
 
 if [ ! -x $RC_ROOT/conf.d/web.conf ]; then
 
-    echo "Not a webserver, exiting"
+    $_echo "Not a webserver, exiting"
     exit 1
 
 fi
@@ -38,11 +38,12 @@ fi
 
 usage() {
 
-    echo "Usage: rehash_httpd [options] domain_list"
-    echo -e "\t--all      Rebuild httpd.include for all domains on the server"
-    echo -e "\t--restart  Do a full restart of apache instead of just a reload"
-    echo -e "\t-v         Be verbose"
-    echo -e "\n\t           domain_list is one or more domains, seperated by spaces"
+    $_echo "Usage: rehash_httpd [options] domain_list"
+    $_echo -e "\t--all      Rebuild httpd.include for all domains on the server"
+    $_echo -e "\t--restart  Do a full restart of apache instead of just a reload"
+    $_echo -e "\t-v         Be verbose"
+    $_echo -e "\n\t           domain_list is one or more domains, seperated by spaces"
+
     exit 1
 
 }
@@ -59,7 +60,7 @@ while [ "$1" ]; do
 
     case $1 in
 # Run mysql query to get a list of all domains with physical hosting
-	"--all") domain_list=$($MYSQL_STR -e "select lcase(name) from domains d, sys_users u where d.suid = u.id" | sed '1d');;
+	"--all") domain_list=$($MYSQL_STR -e "select lcase(name) from domains d, sys_users u where d.suid = u.id" | $_sed '1d');;
 # Do a full restart of apache, assuming its already running
 	"--restart") restart_httpd=1;;
 # Turn on verbose output
@@ -86,7 +87,7 @@ done
 
 echo_e() {
 
-    echo -e $1 >> $VHOST_ROOT/$domain_name/conf/httpd.include
+    $_echo -e $1 >> $VHOST_ROOT/$domain_name/conf/httpd.include
 
 }
 
@@ -94,13 +95,13 @@ echo_e() {
 
 server_alias() {
     
-    for i in `$MYSQL_STR -e "select lcase(name) from domains where host_type = 'alias' and redirect_url = '$domain_name'" | sed '1d'`; do
+    for i in `$MYSQL_STR -e "select lcase(name) from domains where host_type = 'alias' and redirect_url = '$domain_name'" | $_sed '1d'`; do
 	
 	echo_e "\tServerAlias  "$i
 
 	v_echo "$domain_name has server alias $i"
 
-	case $($MYSQL_STR -e "select www from domains where name = 'tester.com'" | sed '1d') in
+	case $($MYSQL_STR -e "select www from domains where name = '$domain_name'" | $_sed '1d') in
 	    true)
 		echo_e "\tServerAlias  www."$i
 		v_echo "$domain_name has server alias www.$i"
@@ -128,13 +129,13 @@ mk_vrt() {
 
 # Build the arguments list, of what to setup this domain for
 
-    tmp=$($MYSQL_STR -e "select www,host_php,host_cgi,host_dir from domains where name = '$domain_name'\G" | sed '1d')
+    tmp=$($MYSQL_STR -e "select www,host_php,host_cgi,host_dir from domains where name = '$domain_name'\G" | $_sed '1d')
 
-    for arg in `echo $tmp | sed 's/: /:/g'`; do
+    for arg in `$_echo $tmp | $_sed 's/: /:/g'`; do
 
 # Substattue out the "true" if it exists. If it is false, it won't match the follow case statement
 
-        arg=$(echo $arg | sed 's/:true//')
+        arg=$($_echo $arg | $_sed 's/:true//')
 
 # Set our values appropriatly
 
@@ -207,12 +208,12 @@ mk_vrt() {
     echo_e "\t</IfModule>"
 
     if [ $cgi ]; then
-	mkdir -p $VHOST_ROOT/$domain_name/cgi-bin
-	chmod 750 $VHOST_ROOT/$domain_name/cgi-bin
-	chown $ftp_user:servgrp $VHOST_ROOT/$domain_name/cgi-bin &> /dev/null
+	$_mkdir -p $VHOST_ROOT/$domain_name/cgi-bin
+	$_chmod 750 $VHOST_ROOT/$domain_name/cgi-bin
+	$_chown $ftp_user:servgrp $VHOST_ROOT/$domain_name/cgi-bin &> /dev/null
 	echo_e "\tScriptAlias  /cgi-bin/ "$VHOST_ROOT"/"$domain_name"/cgi-bin/"
     else
-	rm -rf $VHOST_ROOT/$domain_name/cgi-bin
+	$_rm -rf $VHOST_ROOT/$domain_name/cgi-bin
     fi
     
 # If the awstats configuration file doesn't exist, build it
@@ -221,16 +222,16 @@ mk_vrt() {
 	
 # Copy the model conf file as this domains conf file
 	
-	cp -f $RC_ROOT/etc/awstats.model.conf.in $VHOST_ROOT/$domain_name/conf/awstats.$domain_name.conf
+	$_cp -f $RC_ROOT/etc/awstats.model.conf.in $VHOST_ROOT/$domain_name/conf/awstats.$domain_name.conf
 	
 # Run the needed perl pie statements to edit the config file appropriatly
 	
-	perl -p -i -e "s|LogFile=\".*\"|LogFile=\"$VHOST_ROOT/$domain_name/var/log/access_log.1\"|" $VHOST_ROOT/$domain_name/conf/awstats.$domain_name.conf
+	$_perl -p -i -e "s|LogFile=\".*\"|LogFile=\"$VHOST_ROOT/$domain_name/var/log/access_log.1\"|" $VHOST_ROOT/$domain_name/conf/awstats.$domain_name.conf
 
-	perl -p -i -e "s|SiteDomain=\".*\"|SiteDomain=\"$domain_name\"|" $VHOST_ROOT/$domain_name/conf/awstats.$domain_name.conf
+	$_perl -p -i -e "s|SiteDomain=\".*\"|SiteDomain=\"$domain_name\"|" $VHOST_ROOT/$domain_name/conf/awstats.$domain_name.conf
 
 # do we want to do this this?    HostAliases="localhost 127.0.0.1"
-	perl -p -i -e "s|DirData=\".*\"|DirData=\"$VHOST_ROOT/$domain_name/var/awstats\"|" $VHOST_ROOT/$domain_name/conf/awstats.$domain_name.conf
+	$_perl -p -i -e "s|DirData=\".*\"|DirData=\"$VHOST_ROOT/$domain_name/var/awstats\"|" $VHOST_ROOT/$domain_name/conf/awstats.$domain_name.conf
 	
     fi
 
@@ -239,7 +240,7 @@ mk_vrt() {
 	echo_e "\tSSLEngine on"
         echo_e "\tSSLVerifyClient none"
 
-	ssl_cert=$($MYSQL_STR -e "select value from parameters p inner join domains d on p.type_id = d.id where param = 'ssl_cert' and d.name = '$domain_name'" | sed '1d')
+	ssl_cert=$($MYSQL_STR -e "select value from parameters p inner join domains d on p.type_id = d.id where param = 'ssl_cert' and d.name = '$domain_name'" | $_sed '1d')
 
 	if [ -f "$ssl_cert" ]; then
 	    echo_e "\tSSLCertificateFile $ssl_cert"
@@ -279,7 +280,9 @@ mk_vrt() {
 	
 	echo_e "\t<IfModule sapi_apache2.c>"
 	echo_e "\t\tphp_admin_flag engine on"
-	echo_e "\t\tphp_admin_value open_basedir \""$VHOST_ROOT"/"$domain_name"/httpdocs:/tmp\""
+	echo_e "\t\tphp_admin_value open_basedir \"$VHOST_ROOT/$domain_name"
+	echo_e "\t\tphp_admin_value upload_tmp_dir \"$VHOST_ROOT/$domain_name/tmp\""
+	echo_e "\t\tphp_admin_value session.save_path \"$VHOST_ROOT/$domain_name/tmp\""
 	echo_e "\t</IfModule>"
 	
     else
@@ -314,10 +317,10 @@ mk_vrt() {
     
 # Setup this domains error documents
 
-    for i in `$MYSQL_STR -e "select concat(code, ':', file) from error_docs where did = '$did'" | sed '1d'`; do
+    for i in `$MYSQL_STR -e "select concat(code, ':', file) from error_docs where did = '$did'" | $_sed '1d'`; do
 
-	code=$(echo $i | sed 's/:.*//')
-	file=$(echo $i | sed 's/.*://')
+	code=$($_echo $i | $_sed 's/:.*//')
+	file=$($_echo $i | $_sed 's/.*://')
 	
 	echo_e "\tErrorDocument "$code" "$file
 
@@ -350,20 +353,20 @@ mk_vrt() {
 
 # Always make sure that the vhost root is readable
 
-mkdir -p $VHOST_ROOT
+$_mkdir -p $VHOST_ROOT
 
 tmp=
 
-for i in `echo $VHOST_ROOT | sed 's|/| |g'`; do
+for i in `$_echo $VHOST_ROOT | $_sed 's|/| |g'`; do
 
-    chmod 755 $tmp/$i
+    $_chmod 755 $tmp/$i
 
     tmp=$tmp/$i;
 
 done
 
-chmod 750 $VHOST_ROOT
-chown root:servgrp $VHOST_ROOT
+$_chmod 750 $VHOST_ROOT
+$_chown root:servgrp $VHOST_ROOT
 
 # Loop through the domain list
 
@@ -371,7 +374,7 @@ for i in $domain_list; do
 
     v_echo "Rebuilding configuration for $i"
 
-    tmp=$($MYSQL_STR -e "select concat(d.id, ':', lcase(name), ':', lcase(login)) from domains d, sys_users u where d.suid = u.id and name = '$i'" | sed '1d')
+    tmp=$($MYSQL_STR -e "select concat(d.id, ':', lcase(name), ':', lcase(login)) from domains d, sys_users u where d.suid = u.id and name = '$i'" | $_sed '1d')
 
 # if this domain doesn't exist in the database, echo error and go to the next element in the loop
 
@@ -385,9 +388,9 @@ for i in $domain_list; do
 
 # Split the value from the colon into their respective variables
 
-    did=$(echo $tmp | sed 's/:/ /g' | awk '{print $1}')
-    domain_name=$(echo $tmp | sed 's/:/ /g' | awk '{print $2}')
-    ftp_user=$(echo $tmp | sed 's/:/ /g' | awk '{print $3}')
+    did=$($_echo $tmp | $_sed 's/:/ /g' | $_awk '{print $1}')
+    domain_name=$($_echo $tmp | $_sed 's/:/ /g' | $_awk '{print $2}')
+    ftp_user=$($_echo $tmp | $_sed 's/:/ /g' | $_awk '{print $3}')
 
 #
 # have a case statement here for domains which are either on or off
@@ -400,7 +403,7 @@ for i in $domain_list; do
 
 # Check to see if the ftp user exists. If it doesn't exist, attempt to add it
 
-    if [ -z "$(grep "^$ftp_user:" /etc/passwd)" ]; then
+    if [ -z "$($_grep "^$ftp_user:" /etc/passwd)" ]; then
 
 	$RC_ROOT/bin/rehash_ftp $ftp_user
 
@@ -408,24 +411,26 @@ for i in $domain_list; do
 
 # Make sure the proper directories exist and that they are set to the correct permissions
 
-    mkdir -p $VHOST_ROOT/$domain_name/conf
-    mkdir -p $VHOST_ROOT/$domain_name/var/log
-    mkdir -p $VHOST_ROOT/$domain_name/var/awstats
-    mkdir -p $VHOST_ROOT/$domain_name/httpdocs
+    $_mkdir -p \
+	$VHOST_ROOT/$domain_name/conf \
+	$VHOST_ROOT/$domain_name/var/log \
+	$VHOST_ROOT/$domain_name/var/awstats \
+	$VHOST_ROOT/$domain_name/httpdocs \
+	$VHOST_ROOT/$domain_name/tmp
 
 # We probably want to check for error here, but that is for a later release
-    chown $ftp_user:servgrp $VHOST_ROOT/$domain_name/httpdocs &> /dev/null
-    chmod 750 $VHOST_ROOT/$domain_name/httpdocs
-    chmod 750 $VHOST_ROOT/$domain_name
-    chown root:servgrp $VHOST_ROOT/$domain_name
+    $_chown $ftp_user:servgrp $VHOST_ROOT/$domain_name/{tmp,httpdocs} &> /dev/null
+    $_chmod 750 $VHOST_ROOT/$domain_name/{.,httpdocs}
+    $_chmod 770 $VHOST_ROOT/$domain_name/tmp
+    $_chown root:servgrp $VHOST_ROOT/$domain_name
 
 # Get the old include file out of the way
     
-    rm -f $VHOST_ROOT/$domain_name/conf/httpd.include
+    $_rm -f $VHOST_ROOT/$domain_name/conf/httpd.include
 
 # Build the virtual host tag
 
-    case $($MYSQL_STR -e "select host_ssl from domains where id = '$did'" | sed '1d') in
+    case $($MYSQL_STR -e "select host_ssl from domains where id = '$did'" | $_sed '1d') in
 	true)
 # use the mk_vrt function twice, one with ssl and one without
 	    mk_vrt 1
@@ -447,14 +452,14 @@ vhosts=$RC_ROOT/etc/vhosts.conf
 
 if [ -f $vhosts ]; then
 
-    mv -f $vhosts $vhosts.old
-    touch $vhosts
+    $_mv -f $vhosts $vhosts.old
+    $_touch $vhosts
 
 fi
 
 # make sure that no other apache configuration denies access to the domains
 
-cat <<EOF > $vhosts
+$_cat <<EOF > $vhosts
 <Directory $VHOST_ROOT>
 Order allow,deny
 Allow from all
@@ -462,8 +467,8 @@ Allow from all
 EOF
 
 # get the compiled in server root and server config file
-httpd_server_root=$($HTTPD -V | grep HTTPD_ROOT | sed 's/=/ /' | awk '{print $3}' | sed 's/"//g')
-httpd_config_file=$($HTTPD -V | grep SERVER_CONFIG_FILE | sed 's/=/ /' | awk '{print $3}' | sed 's/"//g')
+httpd_server_root=$($HTTPD -V | $_grep HTTPD_ROOT | $_sed 's/=/ /' | $_awk '{print $3}' | $_sed 's/"//g')
+httpd_config_file=$($HTTPD -V | $_grep SERVER_CONFIG_FILE | $_sed 's/=/ /' | $_awk '{print $3}' | $_sed 's/"//g')
 
 # look for the path to the apache conf file
 
@@ -476,9 +481,9 @@ elif [ ! -f $httpd_config_file ]; then
 # if there is no file existing in $httpd_server_root/$httpd_config_file or $httpd_config_file , then
 # we can't look up what user apache will run as
     
-    echo "Unable to find apache's compiled in configuration file"
-    echo "HTTPD_ROOT=$httpd_server_root"
-    echo "SERVER_CONFIG_FILE=$httpd_config_file"
+    $_echo "Unable to find apache's compiled in configuration file"
+    $_echo "HTTPD_ROOT=$httpd_server_root"
+    $_echo "SERVER_CONFIG_FILE=$httpd_config_file"
     
     exit 1
     
@@ -486,39 +491,39 @@ fi
 
 # check to make sure we're included in the apache conf file
 
-grep "Include $vhosts" $httpd_config_file &> /dev/null
+$_grep "Include $vhosts" $httpd_config_file &> /dev/null
 
 if [ $? -ne 0 ]; then
 
 # if not, append to it
 
-    echo "Include $vhosts" >> $httpd_config_file
+    $_echo "Include $vhosts" >> $httpd_config_file
 
 fi
 
 # Rebuild the vhosts.conf file
 
-echo "NameVirtualHost *:80" >> $vhosts
-echo "NameVirtualHost *:443" >> $vhosts
+$_echo "NameVirtualHost *:80" >> $vhosts
+$_echo "NameVirtualHost *:443" >> $vhosts
 
 v_echo "Rebuilding the vhosts.conf file"
 
-for i in `$MYSQL_STR -e "select lcase(name) from domains d, sys_users u where d.suid = u.id and host_type = 'physical' and hosting = 'on'" | sed '1d'`; do
+for i in `$MYSQL_STR -e "select lcase(name) from domains d, sys_users u where d.suid = u.id and host_type = 'physical' and hosting = 'on'" | $_sed '1d'`; do
     
 # Add this domain's include file to the master vhosts.conf
     
-    echo "Include "$VHOST_ROOT"/"$i"/conf/httpd.include" >> $vhosts
+    $_echo "Include "$VHOST_ROOT"/"$i"/conf/httpd.include" >> $vhosts
     
 done
 
-for i in `$MYSQL_STR -e "select concat(lcase(name), ':::', redirect_url) from domains where host_type = 'redirect' and hosting = 'on'" | sed '1d'`; do
+for i in `$MYSQL_STR -e "select concat(lcase(name), ':::', redirect_url) from domains where host_type = 'redirect' and hosting = 'on'" | $_sed '1d'`; do
 
-    domain_name=$(echo $i | sed 's/:::.*//')
-    redirect_url=$(echo $i | sed 's/.*::://')
+    domain_name=$($_echo $i | $_sed 's/:::.*//')
+    redirect_url=$($_echo $i | $_sed 's/.*::://')
 
 # Make sure this domain doesn't exist in the vhost root
 
-    rm -rf $VHOST_ROOT/$domain_name
+    $_rm -rf $VHOST_ROOT/$domain_name
 
 # Unset values
 
@@ -526,27 +531,27 @@ for i in `$MYSQL_STR -e "select concat(lcase(name), ':::', redirect_url) from do
 
 # Does this domain support www alias
 
-    case $($MYSQL_STR -e "select www from domains where id = '$did'" | sed '1d') in
+    case $($MYSQL_STR -e "select www from domains where id = '$did'" | $_sed '1d') in
 	true) www=1;;
     esac
     
-    echo "<VirtualHost *:80>" >> $vhosts
-    echo -e "\tServerName\t"$domain_name >> $vhosts
+    $_echo "<VirtualHost *:80>" >> $vhosts
+    $_echo -e "\tServerName\t"$domain_name >> $vhosts
     if [ $www ]; then
-	echo -e "\tServerAlias  www."$domain_name":"$port >> $vhosts
+	$_echo -e "\tServerAlias  www."$domain_name":"$port >> $vhosts
     fi
     
     server_alias
 
-    echo -e "\tRedirectPermanent / \""$redirect_url"\"" >> $vhosts
-    echo "</VirtualHost>" >> $vhosts
+    $_echo -e "\tRedirectPermanent / \""$redirect_url"\"" >> $vhosts
+    $_echo "</VirtualHost>" >> $vhosts
 
-    echo "" >> $vhosts
+    $_echo "" >> $vhosts
 
 done
 
 # remove legacy file
-rm -f /etc/httpd/conf.d/httpd-include.conf
+$_rm -f /etc/httpd/conf.d/httpd-include.conf
 
 # Test to be sure we can restart apache. Save the results to http_tmp
 
@@ -555,18 +560,18 @@ $HTTPD -t &> http_tmp.$$
 if [ $? -ne 0 ]; then
 
 # cat out what the error was
-    cat http_tmp.$$
-    echo "Not restarting apache"
+    $_cat http_tmp.$$
+    $_echo "Not restarting apache"
 # remove the tmp file
-    rm -f http_tmp.$$
+    $_rm -f http_tmp.$$
     
     exit 1
 
 fi
 
-rm -f http_tmp.$$
+$_rm -f http_tmp.$$
 
-pidof $HTTPD &> /dev/null
+$_pidof $HTTPD &> /dev/null
 
 # if we are running, reload or restart
 

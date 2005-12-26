@@ -24,7 +24,7 @@ case $1 in
     reboot)cmd="-r";;
     shutdown)cmd="-h";;
     *)
-	echo "Usage: system {reboot, shutdown}"
+	$_echo "Usage: system {reboot, shutdown}"
 	exit
 	;;
 esac

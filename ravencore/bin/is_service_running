@@ -28,30 +28,33 @@ GOT_CONF=1
 
 . /etc/ravencore.conf || exit 1
 
+service=$1
+
 # check to see if the init script exists
 
-if [ ! -f $INITD/$1 ]; then
+if [ ! -f $INITD/$service ]; then
 
-    echo "no init script for $1"
+    $_echo "no init script for $service"
 
     exit 1
 
 fi
 
-status_output=$($INITD/$1 status)
+# send the "status" option to the init script, and force any error'd output to stdout
+status_output=$($INITD/$1 status 2> /dev/stdout)
 
 # save the exit status of the init script
 
 ret=$?
 
-# check to see if the init script said we're stopped
+# check to see if the init script said we're "stopped" or some variation of "not running"
 # this must be done before our "status" check
 
-is_stopped=$(echo $status_output | grep 'stopped')
+is_stopped=$($_echo $status_output | grep '[stopped||not.*running]')
 
 # check to make sure the status command was recognized
 
-case $(echo $status_output | grep "Usage: ") in
+case $($_echo $status_output | $_grep "Usage: ") in
 # we're OK
     "") ;;
 # we can't do a "status" on this init script. set $is_stopped to bypass our "Yes", our
@@ -65,7 +68,7 @@ esac
 
 if [ $ret -eq 0 ] && [ -z "$is_stopped" ]; then
   
-    echo Yes
+    $_echo Yes
 
     exit 0
   
@@ -73,18 +76,22 @@ else
 
 # try it again with a pidof... just in case this system doesn't support the "status" command
 # for init scripts
+
+# first, map service names to their pid name, b/c some are different
     
-    pidof $1 &> /dev/null
+    [ -f $RC_ROOT/etc/pname.$service ] && service=$($_cat $RC_ROOT/etc/pname.$service)
+    
+    $_pidof $service &> /dev/null
 
     if [ $? -eq 0 ]; then
 
-	echo Yes
+	$_echo Yes
 
 	exit 0
 	
     else
 
-	echo No
+	$_echo No
 
 	exit 1
 

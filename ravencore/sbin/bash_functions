@@ -34,24 +34,36 @@ if [ ! -d $RC_ROOT ]; then
 
 fi
 
+# get our command variables
+
+. $RC_ROOT/etc/cmd_maps.base
+
+# get our module's command variables
+
+for i in $($_ls $RC_ROOT/etc/cmd_maps.* | $_grep -v '\.base$'); do
+
+. $i
+
+done
+
 # make sure paths and variables are correctly set
 
 for tmp in httpd:HTTPD init.d:INITD httpd_modules:HTTPD_MODULES; do
 
 # each value is ext:var
 
-    ext=$(echo $tmp | sed 's/:.*//')
-    var=$(echo $tmp | sed 's/.*://')
+    ext=$($_echo $tmp | $_sed 's/:.*//')
+    var=$($_echo $tmp | $_sed 's/.*://')
 
 # set the variable
 
-    eval $var=$(cat $RC_ROOT/var/run/$ext.path 2> /dev/null)
+    eval $var=$($_cat $RC_ROOT/var/run/$ext.path 2> /dev/null)
 
 # check to make sure the variable exists
 
-    if [ ! -f "$(eval echo \$$var)" ] || [ ! -d "$(eval echo \$$var)" ]; then
+    if [ ! -f "$(eval $_echo \$$var)" ] || [ ! -d "$(eval $_echo \$$var)" ]; then
 
-        for i in $(cat $RC_ROOT/etc/paths.$ext.local $RC_ROOT/etc/paths.$ext 2> /dev/null); do
+        for i in $($_cat $RC_ROOT/etc/paths.$ext.local $RC_ROOT/etc/paths.$ext 2> /dev/null); do
 
 # the values in tis loop are either files or directories. If we get to the point where we need to
 # have a difference, we'll just create two loops, one with a -f and the other with a -d
@@ -60,7 +72,7 @@ for tmp in httpd:HTTPD init.d:INITD httpd_modules:HTTPD_MODULES; do
 
                 eval $var=$i
 
-                echo $i > $RC_ROOT/var/run/$ext.path
+                $_echo $i > $RC_ROOT/var/run/$ext.path
 
                 break
 
@@ -72,9 +84,9 @@ for tmp in httpd:HTTPD init.d:INITD httpd_modules:HTTPD_MODULES; do
 
 # if we get here and the value of $var is not set as a variable, die with an error
 
-    if [ -z $(eval "if [ -n \"\$$var\" ]; then echo hello; fi") ]; then
+    if [ -z $(eval "if [ -n \"\$$var\" ]; then $_echo hello; fi") ]; then
 
-        echo "System variable $var is unset, unable to determine path"
+        $_echo "System variable $var is unset, unable to determine path"
 
         exit 1
 
@@ -85,24 +97,24 @@ done
 # set the name of the system init script for apache. for now, assume it's the basename
 # of the $HTTPD path
 
-HTTPD_INIT=$(basename $HTTPD)
+HTTPD_INIT=$($_basename $HTTPD)
 
 # make sure database.cfg and .shadow exist
-touch $RC_ROOT/database.cfg $RC_ROOT/.shadow
+$_touch $RC_ROOT/database.cfg $RC_ROOT/.shadow
 
 # load the database config file
 
 . $RC_ROOT/database.cfg
 
 # The password should be contained on a single line in a file readable only by rcadmin
-MYSQL_ADMIN_PASS=$(cat $RC_ROOT/.shadow)
+MYSQL_ADMIN_PASS=$($_cat $RC_ROOT/.shadow)
 
 # This is the string which is used to connect to the database
-MYSQL_STR="mysql -h $MYSQL_ADMIN_HOST -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS $MYSQL_ADMIN_DB"
+MYSQL_STR="$_mysql -h $MYSQL_ADMIN_HOST -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS $MYSQL_ADMIN_DB"
 
 # find the real name of the service script to start mysqld
 
-mysql_service=$(basename /etc/init.d/mysql*)
+mysql_service=$($_basename /etc/init.d/mysql*)
 
 # function to die on mysql connect error, and log it to the system logger
 
@@ -125,7 +137,7 @@ if [ -z "$GOT_CONF" ]; then
 
 # get settings variables from database, and export them
     
-    for i in `$MYSQL_STR -e "select concat(setting,'=',value) from settings" | sed '1d'`; do
+    for i in `$MYSQL_STR -e "select concat(setting,'=',value) from settings" | $_sed '1d'`; do
 	
 	export $i
 	
@@ -137,9 +149,9 @@ if [ -z "$GOT_CONF" ]; then
     
 # get required conf variables, and check for their existance
     
-    for i in `cat $(for e in $(ls $RC_ROOT/conf.d); do if [ -x $RC_ROOT/conf.d/$e ]; then echo $RC_ROOT/conf.d/$e; fi; done) | grep -v "^#" | sed 's/=.*//g'`; do
+    for i in `$_cat $(for e in $($_ls $RC_ROOT/conf.d); do if [ -x $RC_ROOT/conf.d/$e ]; then $_echo $RC_ROOT/conf.d/$e; fi; done) | $_grep -v "^#" | $_sed 's/=.*//g'`; do
 	
-	export | sed 's/=/ /g' | awk '{print $3}' | grep $i &> /dev/null
+	export | $_sed 's/=/ /g' | $_awk '{print $3}' | $_grep $i &> /dev/null
 
 	if [ $? -ne 0 ]; then
 	    
@@ -187,7 +199,7 @@ v_echo() {
 
     if [ $verbose -eq 1 ]; then
 
-        echo $1
+        $_echo $1
 
     fi
 
@@ -201,24 +213,24 @@ rebuild_conf_file() {
     service=$2
     seperator=$3
 
-    conf_basename=$(basename $conf)
+    conf_basename=$($_basename $conf)
 
     if [ -f $conf ] && [ -d $RC_ROOT/etc/$service/$conf_basename ]; then
 	
-	for i in `ls -1 $RC_ROOT/etc/$service/$conf_basename | grep -v '\.local$'`; do
+	for i in `$_ls -1 $RC_ROOT/etc/$service/$conf_basename | $_grep -v '\.local$'`; do
 	    
 	    param_name="$RC_ROOT/etc/$service/$conf_basename/$i"
 	    [ -f $param_name.local ] && param_name=$param_name.local
 	    
-	    case `cat $param_name` in
+	    case `$_cat $param_name` in
 		"")
-		    echo -e "$i$seperator"
+		    $_echo -e "$i$seperator"
 		    ;;
 		
 		*)
-		    cat $param_name | while read -r param_value; do
+		    $_cat $param_name | while read -r param_value; do
 			
-			echo -e "$i$seperator$param_value"
+			$_echo -e "$i$seperator$param_value"
 			
 		    done
 		    ;;
@@ -226,7 +238,7 @@ rebuild_conf_file() {
 
 	done > $RC_ROOT/var/tmp/$conf_basename.$$
 	
-	diff $conf $RC_ROOT/var/tmp/$conf_basename.$$ &> /dev/null
+	$_diff $conf $RC_ROOT/var/tmp/$conf_basename.$$ &> /dev/null
 	
 	if [ $? -ne 0 ]; then
 
@@ -235,22 +247,22 @@ rebuild_conf_file() {
 
 # then save the conf file as the sys_orig. This will preserve the system's origonal configuration
 # so when we uninstall ravencore, they will be moved back
-		mv $conf $conf.sys_orig
+		$_mv $conf $conf.sys_orig
 
 # tell ravencore that this sys_orig file was made by appending it to our sys_orig list
-		echo "$service:$conf" >> $RC_ROOT/var/run/sys_orig_conf_files
+		$_echo "$service:$conf" >> $RC_ROOT/var/run/sys_orig_conf_files
 	    
 	    fi
 
-	    rm -f $conf
+	    $_rm -f $conf
 	    
-	    cp $RC_ROOT/var/tmp/$conf_basename.$$ $conf
+	    $_cp $RC_ROOT/var/tmp/$conf_basename.$$ $conf
 	    
 	    $INITD/$service restart &> /dev/null
 
 	fi
 	
-	rm -f $RC_ROOT/var/tmp/$conf_basename.$$
+	$_rm -f $RC_ROOT/var/tmp/$conf_basename.$$
 
     fi
 

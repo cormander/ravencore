@@ -30,34 +30,34 @@
 
 if [ ! -d /usr/libexec ]; then
 
-    ln -s /usr/lib /usr/libexec
+    $_ln -s /usr/lib /usr/libexec
 
 fi
 
 # make sure we have the the vmail user / group
 # check the group first, because in order to add the user, we need a valid existing gid
 
-groupmod -g 148 vmail 2> /dev/null
+$_groupmod -g 148 vmail 2> /dev/null
 
 if [ $? -ne 0 ]; then
 
-    groupadd -g 148 vmail
+    $_groupadd -g 148 vmail
 
 fi
 
-usermod -u 148 vmail 2> /dev/null
+$_usermod -u 148 vmail 2> /dev/null
 
 if [ $? -ne 0 ]; then
 
-    useradd -u 148 -g 148 -d $VMAIL_ROOT -s /bin/false vmail
+    $_useradd -u 148 -g 148 -d $VMAIL_ROOT -s /bin/false vmail
 
 fi
 
 # make sure the /etc/sasldb2 exists and is owned by postfix
 
-touch /etc/sasldb2
-chown postfix:postfix /etc/sasldb2
-chmod 600 /etc/sasldb2
+$_touch /etc/sasldb2
+$_chown postfix:postfix /etc/sasldb2
+$_chmod 600 /etc/sasldb2
 
 # rebuild configuration files
 
@@ -72,18 +72,18 @@ rebuild_conf_file "/usr/lib/sasl2/smtpd.conf" postfix ': '
 # something else. We "could" define it in our main.cf, but since we are not generating
 # this file completly, just use what the system already has there
 
-alias_database=$(postconf | grep alias_database | sed 's/:/ /' | awk '{print $4}')
+alias_database=$($_postconf | $_grep alias_database | $_sed 's/:/ /' | $_awk '{print $4}')
 
-grep "^devnull:" $alias_database &> /dev/null
+$_grep "^devnull:" $alias_database &> /dev/null
 
 if [ $? -ne 0 ]; then
     
-    echo -e "devnull:\t/dev/null" >> $alias_database
+    $_echo -e "devnull:\t/dev/null" >> $alias_database
     
 # run newaliases so postfix sees the new user
 # some systems report info on stdout when ran, force it to /dev/null
 
-    newaliases 1> /dev/null
+    $_newaliases 1> /dev/null
 
 fi
 
