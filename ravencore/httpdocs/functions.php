@@ -50,12 +50,15 @@ function get_all_services() {
       
       while(!feof($h)) $data .= fread($h, 1024);
       
-      pclose($h);
+      fclose($h);
       
       $tmp = explode("\n", $data);
       // get rid of the last line which is blank
       array_pop($tmp);
       
+      // looks likephp < 4.3 doesn't fill the $_ENV array. set the default here if it doesn't exist
+      if(!$_ENV['INITD']) $_ENV['INITD'] = '/etc/init.d';
+
       // only add services to the array we return if an init script exists for it
       foreach($tmp as $service) if(file_exists($_ENV['INITD'].'/'.$service)) array_push($services, $service);
       
@@ -141,7 +144,7 @@ function req_service($service) {
 
     nav_top();
 
-    print 'This server does not have ' . $service . ' installed. Page cannot be displayed.';
+    print __('This server does not have ' . $service . ' installed. Page cannot be displayed.');
 
     nav_bottom();
 
@@ -234,7 +237,7 @@ function domain_traffic_usage($did, $month, $year) {
   //$prog = "awk '/^BEGIN_DOMAIN/ { getline; print $4 }' " . $CONF[RC_ROOT] . "/var/lib/awstats/awstats" . $month . $year . "." . $domain_name . ".txt";
   //$prog = "awk '/^BEGIN_DOMAIN/ { while(1) { getline; if($1 == \"END_DOMAIN\") exit; print $4 } }' " . $CONF[RC_ROOT] . "/var/lib/awstats/awstats" . $month . $year . "." . $domain_name . ".txt";
 
-  $dir = $CONF[VHOST_ROOT] . '/' . $domain_name . '/var/awstats/awstats' . $month . $year . '.' . $domain_name . '.txt';
+  $dir = $CONF['VHOST_ROOT'] . '/' . $domain_name . '/var/awstats/awstats' . $month . $year . '.' . $domain_name . '.txt';
   
   if(file_exists($dir)) {
     
@@ -289,7 +292,7 @@ function working_directory($did, $dir) {
 
         array_shift($tmp);
 
-        $base_dir = $CONF[VHOST_ROOT] . "/" . $domain_name;
+        $base_dir = $CONF['VHOST_ROOT'] . "/" . $domain_name;
         $dir = "";
 
         foreach($tmp as $val) $dir .= "/$val";
@@ -534,7 +537,7 @@ function goto($url) {
   // session variables may not be saved before the browser changes to the new page, so we need to
   // save them here
   session_write_close();
-
+  
   header("Location: $url");
 
   exit;
@@ -545,7 +548,7 @@ function goto($url) {
 
 function mysql_panic() {
 
-  print "Unable to connect to DB server! Attempting to restart mysql <br><b>";
+  print __("Unable to connect to DB server! Attempting to restart mysql") . " <br><b>";
 
   socket_cmd("mysql_restart");
 
@@ -559,7 +562,7 @@ function mysql_panic() {
 
   } while( file_exists("/tmp/mysql_restart.lock") );
 
-  print "</b>Restart command completed. Please refresh the page.<p>If the problem persists, contact the system administrator";
+  print "</b>" . __("Restart command completed. Please refresh the page.") . "<p>" . __("If the problem persists, contact the system administrator");
 
   exit;
 
@@ -784,7 +787,7 @@ function req_admin() {
 
     nav_top();
 
-    print 'You are not authorized to view this page';
+    print __('You are not authorized to view this page');
 
     nav_bottom();
 
@@ -804,7 +807,7 @@ function is_admin() {
   // the $row_user array is only set if we are not the admin user. The variable is set
   // in the auth.php file
 
-  if($row_session[login] == $CONF[MYSQL_ADMIN_USER]) return true;
+  if($row_session['login'] == $CONF['MYSQL_ADMIN_USER']) return true;
   else return false;
 
 }
@@ -994,7 +997,7 @@ function nav_top() {
 
   global $js_alerts, $page_title, $sock_error, $shell_output, $row_user, $row_session;
 
-  if($_SESSION['status_mesg']) {
+  if( isset($_SESSION['status_mesg']) ) {
     
     $status_mesg = $_SESSION['status_mesg'];
     $_SESSION['status_mesg'] = '';
@@ -1009,10 +1012,10 @@ function nav_top() {
   if($page_title) print $page_title;
   else print "RavenCore";
   print '</title>
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Type" content="text/html; charset=' . locale_getcharset() . '">
 <link rel="icon" href="/favicon.ico" type="image/x-icon">
-<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-<style type="text/css" media="screen">@import "/css/style.css";</style>
+<link rel="shortcut icon" href="./favicon.ico" type="image/x-icon">
+<style type="text/css" media="screen">@import "./css/style.css";</style>
 <script type="text/javascript" src="js/help_menu.js">
 </script>
 ';
@@ -1057,7 +1060,7 @@ print '
    
    if(is_admin()) {
      
-     print '<li class="menu"><a href="users.php" onmouseover="show_help(\'List control panel users\');" onmouseout="help_rst();">Users (';
+     print '<li class="menu"><a href="users.php" onmouseover="show_help(\'' . __('List control panel users') . '\');" onmouseout="help_rst();">' . __('Users') . ' (';
      
      $sql = "select count(*) as count from users";
      $result = mysql_query($sql);
@@ -1070,7 +1073,7 @@ print '
      
      if(have_domain_services()) {
        
-       print '<li class="menu"><a href="domains.php" onmouseover="show_help(\'List domains\');" onmouseout="help_rst();">Domains (';
+       print '<li class="menu"><a href="domains.php" onmouseover="show_help(\'' . __('List domains') . '\');" onmouseout="help_rst();">' . __('Domains') . ' (';
        
        $sql = "select count(*) as count from domains";
        $result = mysql_query($sql);
@@ -1085,7 +1088,7 @@ print '
      
      if(have_service("mail")) {
        
-       print '<li class="menu"><a href="mail.php" onmouseover="show_help(\'List email addresses\');" onmouseout="help_rst();">Mail (';
+       print '<li class="menu"><a href="mail.php" onmouseover="show_help(\'' . __('List email addresses') . '\');" onmouseout="help_rst();">' . __('Mail'). ' (';
        
        $sql = "select count(*) as count from mail_users";
        $result = mysql_query($sql);
@@ -1100,7 +1103,7 @@ print '
      
      if(have_database_services()) {
        
-       print '<li class="menu"><a href="databases.php" onmouseover="show_help(\'List databases\');" onmouseout="help_rst();">Databases (';
+       print '<li class="menu"><a href="databases.php" onmouseover="show_help(\'' . __('List databases') . '\');" onmouseout="help_rst();">' . __('Databases') . ' (';
        
       $sql = "select count(*) as count from data_bases";
       $result = mysql_query($sql);
@@ -1115,7 +1118,7 @@ print '
      
      if(have_service("dns")) {
        
-       print '<li class="menu"><a href="dns.php" onmouseover="show_help(\'DNS for domains on this server\');" onmouseout="help_rst();">DNS (';
+       print '<li class="menu"><a href="dns.php" onmouseover="show_help(\'' . __('DNS for domains on this server') . '\');" onmouseout="help_rst();">' . __('DNS'). ' (';
        
        $sql = "select count(*) as count from domains where soa is not null";
        $result = mysql_query($sql);
@@ -1131,18 +1134,18 @@ print '
      // log manager currently disabled, it broke somewhere along the line :)
      //if(have_service("web")) print '<li class="menu"><a href="log_manager.php" onmouseover="show_help(\'View all server log files\');" onmouseout="help_rst();">Logs</a></li>';
      
-     print '<li class="menu"><a href="system.php" onmouseover="show_help(\'Manage system settings\');" onmouseout="help_rst();">System</a></li>';
+     print '<li class="menu"><a href="system.php" onmouseover="show_help(\'' . __('Manage system settings') . '\');" onmouseout="help_rst();">' . __('System') . '</a></li>';
      
    } else if($row_user) {
      
-     print '<li class="menu"><a href="users.php" onmouseover="show_help(\'Goto main server index page\');" onmouseout="help_rst();">Main Menu</a></li>
-<li class="menu"><a href="domains.php" onmouseover="show_help(\'List your domains\');" onmouseout="help_rst();">My Domains</a></li>';
+     print '<li class="menu"><a href="users.php" onmouseover="show_help(\'' . __('Goto main server index page') . '\');" onmouseout="help_rst();">' . __('Main Menu') . '</a></li>
+<li class="menu"><a href="domains.php" onmouseover="show_help(\'' . __('List your domains') . '\');" onmouseout="help_rst();">' . __('My Domains') . '</a></li>';
      
-    if(have_service("mail")) print '<li class="menu"><a href="mail.php" onmouseover="show_help(\'List all your email accounts\');" onmouseout="help_rst();">My email accounts</a></li>';
+    if(have_service("mail")) print '<li class="menu"><a href="mail.php" onmouseover="show_help(\'' . __('List all your email accounts') . '\');" onmouseout="help_rst();">' . __('My email accounts') . '</a></li>';
     
    }
    
-   print '<li class="menu right"><a href="logout.php" onmouseover="show_help(\'Logout\');" onmouseout="help_rst();" onclick="return confirm(\'Are you sure you wish to logout?\');">Logout</a></li></ul>
+   print '<li class="menu right"><a href="logout.php" onmouseover="show_help(\'' . __('Logout') . '\');" onmouseout="help_rst();" onclick="return confirm(\'' . __('Are you sure you wish to logout?') . '\');">' . __('Logout') . '</a></li></ul>
 <hr style="visibility: hidden;">';
    
    print '<div><font size="2" color=red><b>' . $status_mesg . '&nbsp;</b></font></div>';
@@ -1185,6 +1188,8 @@ function read_db_conf() {
   // of the files, for simplicity.
   
   $handle = popen("cat {/etc/ravencore.conf,../database.cfg}","r");
+  
+  $conf_data = '';
 
   while( !feof($handle) ) $conf_data .= fread($handle, 1024);
   
@@ -1220,10 +1225,10 @@ function read_db_conf() {
   
   // Read in the file containing the mysql database password
 
-  $CONF[MYSQL_ADMIN_PASS] = shell_exec("/bin/cat ../.shadow");
+  $CONF['MYSQL_ADMIN_PASS'] = shell_exec("/bin/cat ../.shadow");
 
   // Get rid of whitespace and return characters
-  $CONF[MYSQL_ADMIN_PASS] = trim($CONF[MYSQL_ADMIN_PASS]);
+  $CONF['MYSQL_ADMIN_PASS'] = trim($CONF['MYSQL_ADMIN_PASS']);
 
 }
 
@@ -1256,6 +1261,8 @@ function read_conf() {
   // only place where the value matters at this point.
   
   $handle = popen("cat \$(for i in `ls ../conf.d/`; do if [ -x ../conf.d/\$i ]; then echo ../conf.d/\$i; fi; done | tr '\n' ' ') ../etc/server_type.conf} 2> /dev/null","r");
+
+  $conf_data = '';
 
   while( !feof($handle) ) $conf_data .= fread($handle, 1024);
   
@@ -1298,14 +1305,19 @@ function read_conf() {
   }
 
   // get this version number
-  
-  $handle = fopen("../etc/version","r");
+  if ( file_exists("../etc/version") )
+  {
+	  $handle = fopen("../etc/version","r");
+	
+	  while( ! feof($handle) ) $version_data .= fread($handle, 1024);
+	
+	  fclose($handle);
 
-  while( !feof($handle) ) $version_data .= fread($handle, 1024);
+  	  $CONF['VERSION'] = trim($version_data);
 
-  fclose($handle);
-
-  $CONF[VERSION] = trim($version_data);
+  } else {
+  	$CONF['VERSION'] = '';
+  }
 
 }
 

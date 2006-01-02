@@ -64,19 +64,19 @@ if($did) {
   
   $num = mysql_num_rows($result);
   
-  if($num == 0) print "Domain does not exist";
+  if($num == 0) print __("Domain does not exist");
   else {
     $row = mysql_fetch_array($result);
 
-    print '<form method=post name=main>Mail for <a href="domains.php?did=' . $row[id] . '" onmouseover="show_help(\'Goto ' . $row[name] . '\');" onmouseout="help_rst();">' . $row[name] . '</a> is ';
+    print '<form method=post name=main>' . __('Mail for') . ' <a href="domains.php?did=' . $row[id] . '" onmouseover="show_help(\'' . __('Goto') . ' ' . $row[name] . '\');" onmouseout="help_rst();">' . $row[name] . '</a> ' . __('is') . ' ';
 
-    if($row[mail] != "on") print 'OFF <a href="javascript:document.main.submit();" onmouseover="show_help(\'Turn ON mail for ' . $row[name] . '\');" onmouseout="help_rst();">*</a>
+    if($row[mail] != "on") print __('OFF') . ' <a href="javascript:document.main.submit();" onmouseover="show_help(\'' . __('Turn ON mail for') . ' ' . $row[name] . '\');" onmouseout="help_rst();">*</a>
 <input type=hidden name=did value="' . $did . '">
 <input type=hidden name=action value="toggle">
 <input type=hidden name=mail value="on">
 ';
     else {
-      print 'ON <a href="javascript:document.main.submit();" onmouseover="show_help(\'Turn OFF  mail for ' . $row[name] . '\');" onmouseout="help_rst();" onclick="return confirm(\'Are you sure you wish to disable mail for this domain?\');">*</a>
+      print __('ON') . ' <a href="javascript:document.main.submit();" onmouseover="show_help(\'' . __('Turn OFF  mail for') . ' ' . $row[name] . '\');" onmouseout="help_rst();" onclick="return confirm(\'' . __('Are you sure you wish to disable mail for this domain?') . '\');">*</a>
 <input type=hidden name=did value="' . $did . '">
 <input type=hidden name=action value="toggle">
 <input type=hidden name=mail value="off">
@@ -84,18 +84,18 @@ if($did) {
 <p>';
 
 print '<form method=POST>
-Mail sent to email accounts not set up for this domain ( catchall address ):
+' . __('Mail sent to email accounts not set up for this domain ( catchall address )') . ':
 <br>
 <input type=radio name=catchall value=send_to';
       if($row[catchall] == "send_to") print ' checked';
-      print '> Send to: <input type=text name=catchall_addr value="' . $row[catchall_addr] . '"> ';
+      print '> ' . __('Send to') . ': <input type=text name=catchall_addr value="' . $row[catchall_addr] . '"> ';
       
 print '<br> <input type=radio name=catchall value=bounce';
       if($row[catchall] == "bounce") print ' checked';
-      print '> Bounce with: <input type=text name=bounce_message value="' . $row[bounce_message] . '"> <br>
+      print '> ' . __('Bounce with') . ': <input type=text name=bounce_message value="' . $row[bounce_message] . '"> <br>
 <input type=radio name="catchall" value="delete_it"';
       if($row[catchall] == "delete_it") print ' checked';
-      print '> Delete it <br>';
+      print '> ' . __('Delete it') . ' <br>';
 
       $sql = "select count(*) as count from domains where uid = '$uid'";
       $result_count = mysql_query($sql);
@@ -107,14 +107,14 @@ print '<br> <input type=radio name=catchall value=bounce';
 
 	print '<input type=radio name=catchall value=alias_to';
 	if($row[catchall] == "alias_to") print ' checked';
-	print '> Forwoard to that user @ <input type=text name=alias_addr value="' . $row[alias_addr] . '">';
+	print '> ' . __('Forwoard to that user') . ' @ <input type=text name=alias_addr value="' . $row[alias_addr] . '">';
 	
       //for users with more then one domain setup
       } else if($row_c[count] > 1) {
 
 	print '<input type=radio name=catchall value=alias_to';
         if($row[catchall] == "alias_to") print ' checked';
-	print '> Forwoard to that user @ <select name=alias_addr>';
+	print '> ' . __('Forwoard to that user') . ' @ <select name=alias_addr>';
 	
 	//all other domains for this user ( with mail turned on )
 	$sql = "select name from domains where uid = '$uid' and id != '$did' and mail = 'on'";
@@ -130,11 +130,11 @@ print '<br> <input type=radio name=catchall value=bounce';
 
 	print '</select>';
 
-      } else print '<input type=radio disabled> You need at least two domains in the account with mail turned on to be able to alias mail';
+      } else print '<input type=radio disabled> ' . __('You need at least two domains in the account with mail turned on to be able to alias mail');
       print '<p>';
       
       print '
-<input type=submit value="Update"> <input type=hidden name=did value="' . $row[id] . '"> <input type=hidden name=action value=update>
+<input type=submit value="' . __('Update') . '"> <input type=hidden name=did value="' . $row[id] . '"> <input type=hidden name=action value=update>
 </form>
 <p>';
       
@@ -143,33 +143,27 @@ print '<br> <input type=radio name=catchall value=bounce';
       
       $num = mysql_num_rows($result);
       
-      if($num == 0) print 'No mail for this domain.<p>';
-      else print '<table><tr><th colspan="100%">Mail for this domain:</th></tr>';
+      if($num == 0) print __('No mail for this domain.') . '<p>';
+      else print '<table><tr><th colspan="100%">' . __('Mail for this domain') . ':</th></tr>';
       
       print "";
       
       while( $row_email = mysql_fetch_array($result) ) {
 	
 	print '<tr>
-<td><a href="edit_mail.php?did=' . $row_email[did] . '&mid=' . $row_email[id] . '" onmouseover="show_help(\'Edit ' . $row_email[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();">edit</a></td>
+<td><a href="edit_mail.php?did=' . $row_email[did] . '&mid=' . $row_email[id] . '" onmouseover="show_help(\'' . __('Edit') . ' ' . $row_email[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();">' . __('edit') . '</a></td>
 <td>' . $row_email[mail_name] . '@' . $row[name] . '</td>
 <td>';
 
-        if( @fsockopen("localhost", 143) ) print '<form method=POST action="webmail/src/redirect.php" name="webmail_' . $row_email[id] . '" target="_blank">
-<input type=hidden name="login_username" value="' . $row_email[mail_name] . '@' . $row[name] . '" />
-<input type=hidden name="secretkey" value="' . $row_email[passwd] . '" />
-<input type=hidden name="js_autodetect_results" value="0" />
-<input type=hidden name="just_logged_in" value="1" />
-<a href="javascript:document.webmail_' . $row_email[id] . ' .submit();">Webmail</a>
-</form>';
-	else print '<a href="#" onclick="alert(\'Webmail is currently offline\')" onmouseover="show_help(\'Webmail is currently offline\');" onmouseout="help_rst();">Webmail ( offline )</a>';
+        if( @fsockopen("localhost", 143) ) print '<a href="webmail.php?mid=' . $row_email[id] . '&did=' . $row_email[did] . '" target="_blank">' . __('Webmail') . '</a>';
+	else print '<a href="#" onclick="alert(\'' . __('Webmail is currently offline') . '\')" onmouseover="show_help(\'' . __('Webmail is currently offline') . '\');" onmouseout="help_rst();">' . __('Webmail') . ' ( ' . __('offline'). ' )</a>';
 
 print '</td>
-<td><a href=mail.php?did=' . $row[id] . '&mid=' . $row_email[id] . '&action=delete onmouseover="show_help(\'Delete ' . $row_email[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();" onclick="';
+<td><a href=mail.php?did=' . $row[id] . '&mid=' . $row_email[id] . '&action=delete onmouseover="show_help(\'' . __('Delete') . ' ' . $row_email[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();" onclick="';
 	
-	if(!user_can_add($uid,"email") and !is_admin()) print 'return confirm(\'If you delete this email, you may not be able to add it again.\rAre you sure you wish to do this?\');';
-	else print 'return confirm(\'Are you sure you wish to delete this email?\');';
-	print '">delete</a></td></tr>';
+	if(!user_can_add($uid,"email") and !is_admin()) print 'return confirm(\'' . __('If you delete this email, you may not be able to add it again.\rAre you sure you wish to do this?') . '\');';
+	else print 'return confirm(\'' . __('Are you sure you wish to delete this email?') . '\');';
+	print '">' . __('delete') . '</a></td></tr>';
 	
       }
       
@@ -179,9 +173,9 @@ print '</td>
 	
 	print ' <a href="edit_mail.php?did=' . $row[id] . '"';
 	
-	if(!user_can_add($uid,"email") and is_admin()) print ' onclick="return confirm(\'This user is only allowed to create ' . user_have_permission($uid,"email") . ' email accounts. Are you sure you want to add another?\');"';
+	if(!user_can_add($uid,"email") and is_admin()) print ' onclick="return confirm(\'' . __('This user is only allowed to create ' . user_have_permission($uid,"email") . ' email accounts. Are you sure you want to add another?') . '\');"';
 	
-	print ' onmouseover="show_help(\'Add an email account\');" onmouseout="help_rst();">Add Mail</a>';
+	print ' onmouseover="show_help(\'' . __('Add an email account') . '\');" onmouseout="help_rst();">' . __('Add Mail') . '</a>';
 	
       }
 
@@ -206,10 +200,10 @@ print '</td>
   
   if($row[count] == 0) {
     
-    print 'You have no domains setup.';
+    print __('You have no domains setup.');
 
     // give an "add a domain" link if the user has permission to add one more
-    if(is_admin() or user_have_permission($uid,"domain")) print ' <a href="edit_domain.php">Add a Domain</a>';
+    if(is_admin() or user_have_permission($uid,"domain")) print ' <a href="edit_domain.php">' . __('Add a Domain') . '</a>';
 
     nav_bottom();
     
@@ -217,13 +211,13 @@ print '</td>
     
   }
   
-  print '<a href="edit_mail.php" onmouseover="show_help(\'Create a new email account\');" onmouseout="help_rst();">Add an email address</a>
+  print '<a href="edit_mail.php" onmouseover="show_help(\'' . __('Create a new email account') . '\');" onmouseout="help_rst();">' . __('Add an email address') . '</a>
 <p>
 <form method="GET" name=search>
-   Search: <input type=text name=search value="' . $_GET[search] . '">
-<input type=submit value="Go" onclick="if(!document.search.search.value) { alert(\'Please enter in a search value!\'); return false; }">';
+   ' . __('Search') . ': <input type=text name=search value="' . $_GET[search] . '">
+<input type=submit value="' . __('Go') . '" onclick="if(!document.search.search.value) { alert(\'' . __('Please enter in a search value!') . '\'); return false; }">';
 
-  if($_GET[search]) print ' <input type=button value="Show All" onclick="self.location=\'mail.php\'">';
+  if($_GET[search]) print ' <input type=button value="' . __('Show All') . '" onclick="self.location=\'mail.php\'">';
 
   print '</form><p>';
 
@@ -247,31 +241,24 @@ print '</td>
 
   $num = mysql_num_rows($result);
 
-  if($num == 0 and !$_GET[search]) print "There are no mail users setup";
-  else if($_GET[search]) print 'Your search returned <i><b>' . $num . '</b></i> results<p>';
+  if($num == 0 and !$_GET[search]) print __("There are no mail users setup");
+  else if($_GET[search]) print __('Your search returned') . ' <i><b>' . $num . '</b></i> ' . __('results') . '<p>';
 
-  if($num != 0) print '<table width="45%"><tr><th colspan="100%">Email Addresses</th></tr>';
+  if($num != 0) print '<table width="45%"><tr><th colspan="100%">' . __('Email Addresses') . '</th></tr>';
 
   while( $row = mysql_fetch_array($result) ) {
 
-    print '<tr><td><a href="edit_mail.php?did=' . $row[did] . '&mid=' . $row[mid] . '" onmouseover="show_help(\'Edit ' . $row[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();">' . $row[mail_name] . '@' . $row[name] . '</td><td>';
+    print '<tr><td><a href="edit_mail.php?did=' . $row[did] . '&mid=' . $row[mid] . '" onmouseover="show_help(\'' . __('Edit') . ' ' . $row[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();">' . $row[mail_name] . '@' . $row[name] . '</td><td>';
     
-    if( @fsockopen("localhost", 143) ) print '<form method=POST action="webmail/src/redirect.php" name="webmail_' . $row[mid] . '" target="_blank">
-<input type=hidden name="login_username" value="' . $row[mail_name] . '@' . $row[name] . '" />
-<input type=hidden name="secretkey" value="' . $row[passwd] . '" />
-<input type=hidden name="js_autodetect_results" value="0" />
-<input type=hidden name="just_logged_in" value="1" />
-<a href="javascript:document.webmail_' . $row[mid] . ' .submit();">Webmail</a>
-</form>';
-    else print '<a href="#" onclick="alert(\'Webmail is currently offline\')" onmouseover="show_help(\'Webmail is current\
-ly offline\');" onmouseout="help_rst();">Webmail ( offline )</a>';
+    if( @fsockopen("localhost", 143) ) print '<a href="webmail.php?mid=' . $row[mid] . '&did=' . $row[did] . '" target="_blank">' . __('Webmail') . '</a>';
+    else print '<a href="#" onclick="alert(\'' . __('Webmail is currently offline') . '\')" onmouseover="show_help(\'' . __('Webmail is currently offline') . '\');" onmouseout="help_rst();">' . __('Webmail') . ' ( ' . __('offline') . ' )</a>';
     
     print '</td>
-<td><a href=mail.php?did=' . $row[did] . '&mid=' . $row[mid] . '&action=delete onmouseover="show_help(\'Delete ' . $row[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();" onclick="';
+<td><a href=mail.php?did=' . $row[did] . '&mid=' . $row[mid] . '&action=delete onmouseover="show_help(\'' . __('Delete') . ' ' . $row[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();" onclick="';
     
-    if(!user_can_add($uid,"email") and !is_admin()) print 'return confirm(\'If you delete this email, you may not be able to add it again.\rAre you sure you wish to do this?\');';
-    else print 'return confirm(\'Are you sure you wish to delete this email?\');';
-    print '">delete</a></td></tr>';
+    if(!user_can_add($uid,"email") and !is_admin()) print 'return confirm(\'' . __('If you delete this email, you may not be able to add it again.\rAre you sure you wish to do this?') . '\');';
+    else print 'return confirm(\'' . __('Are you sure you wish to delete this email?') . '\');';
+    print '">' . __('delete') . '</a></td></tr>';
     
   }
   

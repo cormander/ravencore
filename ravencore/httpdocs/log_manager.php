@@ -40,7 +40,7 @@ if($action == "delete") {
 
 } else if($action == "compress" or $action == "decompress") {
 
-  if(ereg("\.\.", $_GET[log_file])) alert("Unable to $action log file");
+  if(ereg("\.\.", $_GET[log_file])) alert( __("Unable to $action log file") );
   else {
 
     socket_cmd("log_compress --$action $domain_name $_GET[log_file]");
@@ -100,13 +100,13 @@ if($num != 0) {
   
   while( $row = mysql_fetch_array($result) ) {
     
-    print '<form method="post" onsubmit="return confirm(\'Are you sure you wish to delete this log file?\');">Log files for <a href="domains.php?did=' . $row[id] . '" onmouseover="show_help(\'Manage ' . $row[name] . '\');" onmouseout="help_rst();">' . $row[name] . '</a>';
+    print '<form method="post" onsubmit="return confirm(\'' . __('Are you sure you wish to delete this log file?') . '\');">' . __('Log files for') . ' <a href="domains.php?did=' . $row[id] . '" onmouseover="show_help(\'' . __('Manage') . ' ' . $row[name] . '\');" onmouseout="help_rst();">' . $row[name] . '</a>';
 
-    if(!$did) print '- <a href="log_manager.php?did=' . $row[id] . '" onmouseover="show_help(\'Go to log rotation manager for ' . $row[name] . '\');" onmouseout="help_rst();">Log Rotation</a>';
+    if(!$did) print '- <a href="log_manager.php?did=' . $row[id] . '" onmouseover="show_help(\'' . __('Go to log rotation manager for') . ' ' . $row[name] . '\');" onmouseout="help_rst();">' . __('Log Rotation') . '</a>';
 
-    print '<p><table><tr><th width=175>Log Name</th>
-<th width=100>Compression</th>
-<th width=100>File Size</th>
+    print '<p><table><tr><th width=175>' . __('Log Name') . '</th>
+<th width=100>' . __('Compression') . '</th>
+<th width=100>' . __('File Size') . '</th>
 <th>&nbsp;</th>
 </tr>';
     
@@ -134,7 +134,7 @@ if($num != 0) {
 	
 	print '<tr><td>';
 
-	if($size) print '<a href="download_log.php?did=' . $row[id] . '&log_file=' . $log . '" onmouseover="show_help(\'Download the ' . $row[name] . ' ' . $log . '\');" onmouseout="help_rst();">';
+	if($size) print '<a href="download_log.php?did=' . $row[id] . '&log_file=' . $log . '" onmouseover="show_help(\'' . __('Download the') . ' ' . $row[name] . ' ' . $log . '\');" onmouseout="help_rst();">';
 
 	print $log;
 
@@ -156,7 +156,7 @@ if($num != 0) {
       
     }
 
-    print '<tr><td align=right colspan=3><input type=submit value="Delete"></td></tr></table>
+    print '<tr><td align=right colspan=3><input type=submit value="' . __('Delete') . '"></td></tr></table>
 <input type=hidden name=action value=delete>
 <input type=hidden name=did value=' . $row[id] . '>
 </form>
@@ -175,10 +175,10 @@ if($num != 0) {
     
     print '<p>
 <form method=post name=status>
-Custom log rotation for ' . $row[name] . ' is ';
+' . __('Custom log rotation for') . ' ' . $row[name] . ' ' . __('is'). ' ';
     
-    if($row[logrotate] == "on") print 'ON <a href="javascript:document.status.submit();" onclick="return confirm(\'Are you sure you wish to turn off the custom log rotation for ' . $row[name] . '?\');" onmouseover="show_help(\'Turn OFF log rotation for ' . $row[name] . '\');" onmouseout="help_rst();">*</a> <input type=hidden name=toggle value=off>';
-    else print ' OFF <a href="javascript:document.status.submit();" onmouseover="show_help(\'Turn ON log rotation for ' . $row[name] . '\');" onmouseout="help_rst();">*</a> <input type=hidden name=toggle value=on>';
+    if($row[logrotate] == "on") print __('ON') .' <a href="javascript:document.status.submit();" onclick="return confirm(\'' . __('Are you sure you wish to turn off the custom log rotation for ' . $row[name]) . '?\');" onmouseover="show_help(\'' . __('Turn OFF log rotation for ' . $row[name]) . '\');" onmouseout="help_rst();">*</a> <input type=hidden name=toggle value=off>';
+    else print ' ' . __('OFF') . ' <a href="javascript:document.status.submit();" onmouseover="show_help(\'' . __('Turn ON log rotation for ' . $row[name]) . '\');" onmouseout="help_rst();">*</a> <input type=hidden name=toggle value=on>';
     
     print '<input type=hidden name=action value=toggle>
 <input type=hidden name=did value = ' . $did . '>
@@ -192,7 +192,7 @@ function validate_form(f) {
 
 if(!f.log_rotate_num.value) {
 
-alert("You must choose how many log files you wish to keep!");
+alert("' . __('You must choose how many log files you wish to keep!') . '");
 
 return false;
 
@@ -200,7 +200,7 @@ return false;
 
 if(!f.filesize.checked && !f.when.checked) {
 
-alert("You must make a rotation selection: filesize, date, or both");
+alert("' . __('You must make a rotation selection: filesize, date, or both') . '");
 
 return false;
 
@@ -212,13 +212,13 @@ return true;
 -->
 </script>
 <form method=post name=logrotate onsubmit="return validate_form(this);">
-Keep <input type=text size=2 name=log_rotate_num value=' . $row[log_rotate_num] . '> log files<p>
-Rotate by -
+' . __('Keep') . ' <input type=text size=2 name=log_rotate_num value=' . $row[log_rotate_num] . '> ' . __('log files') . '<p>
+' . __('Rotate by') . ' -
 <br>
 <table><tr><td rowspan=2 valign=middle>
 <input type=checkbox name=filesize value=true';
       if($row[log_rotate_size]) print ' checked';
-      print '> Filesize: <input type=text size=4 name=log_rotate_size value=' . $row[log_rotate_size] . '>
+      print '> ' . __('Filesize') . ': <input type=text size=4 name=log_rotate_size value=' . $row[log_rotate_size] . '>
 </td><td>K <input type=radio name=log_rotate_size_ext value=k';
       if($row[log_rotate_size_ext] == "k") print ' checked';
       print '></td></tr>
@@ -230,24 +230,24 @@ Rotate by -
 <table><tr><td rowspan=3 valign=top>
 <input type=checkbox name=when value=true';
       if($row[log_when_rotate]) print ' checked';
-      print '> Date:</td><td><input type=radio name=log_when_rotate value=daily';
+      print '> ' . __('Date') . ':</td><td><input type=radio name=log_when_rotate value=daily';
       if($row[log_when_rotate] == "daily") print ' checked';
-      print '> Daily</td></tr>
+      print '> ' . __('Daily') . '</td></tr>
 <tr><td><input type=radio name=log_when_rotate value=weekly';
       if($row[log_when_rotate] == "weekly") print ' checked';
-      print '> Weekly</td></tr>
+      print '> ' . __('Weekly') . '</td></tr>
 <tr><td><input type=radio name=log_when_rotate value=monthly';
       if($row[log_when_rotate] == "monthly") print ' checked';
-      print '> Monthly</td></tr>
+      print '> ' . __('Monthly') . '</td></tr>
 </table>
 <br>
-Email about-to-expire files to: <input type=text size=30 name=log_mail_addr value="' . $row[log_mail_addr] . '">
+' . __('Email about-to-expire files to') . ': <input type=text size=30 name=log_mail_addr value="' . $row[log_mail_addr] . '">
 <br>
 <input type=checkbox name=log_compress value=yes';
       if($row[log_compress] == "yes") print ' checked';
-      print '> Compress log files
+      print '> ' . __('Compress log files') . '
 <p>
-<input type=submit value=Update><input type=hidden name=action value=update>
+<input type=submit value=' . __('Update') . '><input type=hidden name=action value=update>
 </form>
 ';
       
@@ -257,7 +257,7 @@ Email about-to-expire files to: <input type=text size=30 name=log_mail_addr valu
   
 } else {
 
-  print "No domains setup, so there are no Log files";
+  print __("No domains setup, so there are no Log files");
 
 }
  
