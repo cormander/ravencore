@@ -20,11 +20,15 @@
 
 . /etc/ravencore.conf || exit 1
 
-# make sure the ravencore-mailscan file exists
+# we kind of really need $VMAIL_ROOT to be set to function, so we exit if we don't have it
+# set. But don't exit with an error code, because when we are a fresh install, that will kill
+# us :)
 
-[ ! -f $RC_ROOT/etc/postfix/master.cf/ravencore-mailscan ] && \
-    $_echo 'unix - n n - - pipe user=vmail argv='$RC_ROOT'/sbin/mailscan ${sender} ${recipient}' > \
-    $RC_ROOT/etc/postfix/master.cf/ravencore-mailscan
+[ -z "$VMAIL_ROOT" ] && exit 0;
+
+# make sure the clamav socket and pid are owned by amavis
+
+$_chown -R amavis:amavis /var/run/clamav
 
 # if we never ran, a .local file won't exist for the master.cf's smtp file
 
@@ -33,7 +37,7 @@ if [ ! -f $RC_ROOT/etc/postfix/master.cf/smtp.local ]; then
 # create the .local file by replacing "smtpd" with our content filter
     
     $_cat $RC_ROOT/etc/postfix/master.cf/smtp | \
-	$_sed 's/smtpd/smtpd  -o content_filter=ravencore-mailscan/' > \
+	$_sed 's/smtpd/smtpd  -o content_filter=smtp:[127.0.0.1]:10024/' > \
 	$RC_ROOT/etc/postfix/master.cf/smtp.local
 
 # rebuild the master.cf file
@@ -41,6 +45,12 @@ if [ ! -f $RC_ROOT/etc/postfix/master.cf/smtp.local ]; then
     rebuild_conf_file "$VMAIL_CONF_DIR/master.cf" postfix '\t'
 
 fi
+
+# make sure the spamassassin pid is writable to vmail
+
+touch $SPAMD_PID_FILE &> /dev/null
+chown vmail:vmail $SPAMD_PID_FILE &> /dev/null
+chmod 640 $SPAMD_PID_FILE &> /dev/null
 
 # make sure that the spamassassin daemon has the correct runtime options
 # find the system's spamassassin daemon config file
@@ -51,6 +61,16 @@ fi
 # if we found it
 
 [ -n "$spamassassin_config" ] && rebuild_conf_file $spamassassin_config "spamassassin" "="
+
+# do the same for clamd
+
+[ -f /etc/clamd.conf ] && clamd_conf=/etc/clamd.conf
+
+[ -n "$clamd_conf" ] && rebuild_conf_file $clamd_conf "clamd" " "
+
+# now manage the amavisd.conf file
+
+rebuild_conf_file "/etc/amavisd.conf" "amavisd" ' = ' 1
 
 # check for a local script to run, and run it if it is executeable
 

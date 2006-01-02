@@ -18,6 +18,12 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
+#
+# NOTE: This file became obsolete with the addition of amavisd-new support.
+#       It is only been kept in ravencore to prevent older systems that are
+#       upgrading, from being broken because of it no longer existing.
+#
+
 # first elementis the sender
 $sender = shift(@ARGV);
 

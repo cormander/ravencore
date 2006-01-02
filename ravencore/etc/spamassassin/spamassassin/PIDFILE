@@ -1,1 +1,1 @@
-"/var/run/spamd.pid"
+"$_[SPAMD_PID_FILE]"
