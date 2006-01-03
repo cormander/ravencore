@@ -91,7 +91,7 @@ for conf in $($_ls $RC_ROOT/conf.d); do
 
 # toggle our conf file with the executable bit, based on if the module has all its dependencies
 
-    [ $dep_check_failed -eq 1 ] && chmod -x $RC_ROOT/conf.d/$conf.conf || chmod +x $RC_ROOT/conf.d/$conf.conf
+    [ $dep_check_failed -eq 1 ] && $_chmod -x $RC_ROOT/conf.d/$conf.conf || $_chmod +x $RC_ROOT/conf.d/$conf.conf
     
 done
 
@@ -400,6 +400,12 @@ fi
 [ -f /etc/vsftpd/vsftpd.conf ] && vsftpd_conf=/etc/vsftpd/vsftpd.conf
 
 [ -n "$vsftpd_conf" ] && rebuild_conf_file $vsftpd_conf "vsftpd" "="
+
+# check to make sure the proftpd.conf file is correct
+
+[ -f /etc/proftpd.conf ] && proftpd_conf=/etc/proftpd.conf
+
+[ -n "$proftpd_conf" ] && [ -z "$vsftpd_conf" ] && rebuild_conf_file $proftpd_conf "proftpd" "\t"
 
 # set permissions and ownship of files in the ravencore root
 
