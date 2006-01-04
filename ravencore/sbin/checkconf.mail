@@ -59,12 +59,20 @@ $_touch /etc/sasldb2
 $_chown postfix:postfix /etc/sasldb2
 $_chmod 600 /etc/sasldb2
 
+# ask dovecot what version it is
+
+dovecot_v=$(dovecot --version 2> /dev/null | sed 's/\..*//')
+
 # rebuild configuration files
 
-rebuild_conf_file "/etc/dovecot.conf" dovecot ' = '
 rebuild_conf_file "$VMAIL_CONF_DIR/main.cf" postfix ' = '
 rebuild_conf_file "$VMAIL_CONF_DIR/master.cf" postfix '\t'
 rebuild_conf_file "/usr/lib/sasl2/smtpd.conf" postfix ': '
+
+# dovecot 0.9x rebuilds this way
+[ $dovecot_v -eq 0 ] && rebuild_conf_file "/etc/dovecot.conf" dovecot ' = '
+# for now, use static config file
+[ $dovecot_v -eq 1 ] && rebuild_conf_file "/etc/dovecot.conf" dovecot ' = ' 1
 
 # make sure "devnull" exists in the aliases file
 
