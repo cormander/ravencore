@@ -55,16 +55,16 @@ $num = mysql_num_rows($result);
 
 if (!$_POST[user] or $num == 0) {
 
-  print "<a href=\"crontab.php?add=1\">Add a crontab</a><p>";
+  print "<a href=\"crontab.php?add=1\">". __("Add a crontab") ."</a><p>";
   
   $_POST[user] = "";
 
 }
 
-if($num == 0) print "There are no crontabs.<p>";
+if($num == 0) print __("There are no crontabs.") ."<p>";
 else { 
 
-  print "<form name=f method=get>User: <select name=user onchange=\"document.f.submit()\"><option value=''>- - Choose a user - -</option>";
+  print "<form name=f method=get>". __("User") .": <select name=user onchange=\"document.f.submit()\"><option value=''>- - ". __("Choose a user") ." - -</option>";
 
   while ( $row = mysql_fetch_array($result) ) {
     
@@ -89,7 +89,7 @@ if($user) {
 
   if($num == 0) {
 
-    print "No crontab for user $user";
+    print __("No crontab for user $user");
 
     exit;
 
@@ -103,7 +103,7 @@ if($user) {
       
     }
     
-    print "</table><input type=submit value=\"Delete Selected\"> <input type=hidden name=user value=\"$user\"><input type=hidden name=action value=delete></form>";
+    print "</table><input type=submit value=\"". __("Delete Selected") ."\"> <input type=hidden name=user value=\"$user\"><input type=hidden name=action value=delete></form>";
 
   }
 
@@ -121,7 +121,7 @@ User: <?php
 ?>
 
 <p>
-   Entry:
+   <?php e_('Entry')?>:
 <input type="text" size=4 name=minute>
 <input type="text" size=4 name=hour>
 <input type="text" size=4 name=dayofm>
@@ -131,7 +131,7 @@ User: <?php
 
 <p>
 
-<input type=submit value="Add Crontab"> <input type="hidden" name=action value=add>
+<input type=submit value="<?php e_('Add Crontab')?>"> <input type="hidden" name=action value=add>
 
 </form>
 

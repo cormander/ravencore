@@ -36,6 +36,7 @@ $CONF = array();
 $conf_not_complete = false;
 
 // Include our function file
+include 'functions/locale.php'; // lang file have to go first
 
 include "functions.php";
 
@@ -45,7 +46,7 @@ if(!function_exists("session_start")) {
 
   nav_top();
 
-  print $lang['auth_no_php_session'];
+  print __('The server doesn\'t have PHP session functions available.<p>Please recompile PHP with sessions enabled.');
 
   nav_bottom();
 
@@ -60,18 +61,14 @@ session_start();
 
 $session_id = session_id();
 
-// get our lang based on our session. default to en
-// language support not done. so for now, just include lang/en.php
- include("lang/en.php");
-
 //A list of variables that are allowed to use the GET and POST methods
 $reg_glob_vars = array('uid','did','mid','action','db','dbu','page_type');
 
 foreach($reg_glob_vars as $val) {
 
-  if($_REQUEST[$val]) {
+  if( isset($_REQUEST[$val]) ) {
 
-    $eval_code = '$' . $val . ' = $_REQUEST[' . $val . '];';
+    $eval_code = '$' . $val . ' = $_REQUEST[\'' . $val . '\'];';
 
     eval($eval_code);
 
@@ -83,12 +80,24 @@ foreach($reg_glob_vars as $val) {
 
 read_db_conf();
 
+// on installation, we won't have a default locale. Set it to the system EV
+
+//set our language
+
+if( isset($_REQUEST['lang']) or isset($_SESSION['lang']) ) {
+
+  $_SESSION['lang'] = ($_REQUEST['lang'] ? $_REQUEST['lang'] : $_SESSION['lang'] );
+
+  locale_set( $_SESSION['lang'] );
+
+}
+
 // Check to see if the database conf file exists
 if(!file_exists("$CONF[RC_ROOT]/database.cfg")) {
 
   nav_top();
 
-  print $lang['auth_no_database_cfg'];
+  print __('You are missing the database configuration file: ' . $CONF['RC_ROOT'] . '/database.cfg<p>Please run the following script as root:<p>' . $CONF['RC_ROOT'] . '/sbin/database_reconfig');
 
   nav_bottom();
 
@@ -102,7 +111,14 @@ if(trim(shell_exec("../sbin/wrapper testsuid")) != "root") {
 
   nav_top();
 
-  print $lang['auth_test_suid_error'];
+  print __('Your system is unable to set uid to root with the wrapper. This is required for ravencore to function. To correct this:<p>
+			Remove the file: <b>/usr/local/ravencore/sbin/wrapper</b><p>
+			Then do one of the following:<p>
+			* Install <b>gcc</b> and the package that includes <b>/usr/include/sys/types.h</b> and restart ravencore<br />
+			&nbsp;&nbsp;or<br />
+			* Install the <b>perl-suidperl</b> package and restart ravencore<br />
+			&nbsp;&nbsp;or<br />
+			* Copy the wrapper binary from another server with ravencore installed into ravencore\'s sbin/ on this server');
 
   nav_bottom();
 
@@ -116,7 +132,9 @@ if(!function_exists("mysql_connect")) {
 
   nav_top();
 
-  print $lang['auth_no_php_mysql'];
+  print __('Unable to call the mysql_connect function. 
+  			Please install the php-mysql package or recompile PHP with mysql support, and restart the control panel.<p>
+			If php-mysql is installed on the server, check to make sure that the mysql.so extention is getting loaded in your system\'s php.ini file');
 
   nav_bottom();
 
@@ -126,7 +144,7 @@ if(!function_exists("mysql_connect")) {
 
 // Connect to the database
 
-$link = mysql_connect($CONF[MYSQL_ADMIN_HOST], $CONF[MYSQL_ADMIN_USER], $CONF[MYSQL_ADMIN_PASS]);
+$link = mysql_connect($CONF['MYSQL_ADMIN_HOST'], $CONF['MYSQL_ADMIN_USER'], $CONF['MYSQL_ADMIN_PASS']);
 
 if(!$link) {
 
@@ -134,7 +152,7 @@ if(!$link) {
 
   nav_top();
 
-  print $lang['auth_no_database_connect'];
+  print __('Unable to get a database connection.');
 
   nav_bottom();
 
@@ -144,11 +162,17 @@ if(!$link) {
 
 //Use the admin database. Default is ravencore
 
-mysql_select_db($CONF[MYSQL_ADMIN_DB], $link) or die(mysql_error());
+mysql_select_db($CONF['MYSQL_ADMIN_DB'], $link) or die(mysql_error());
 
 // read our database configuration settings
 
 read_conf();
+
+// set our locale if not already
+
+if( ! $CONF['DEFAULT_LOCALE'] ) $_SESSION['lang'] = @ereg_replace('\..*','',shell_exec('echo $LANG'));
+
+if(!$_SESSION['lang']) locale_set( $CONF['DEFAULT_LOCALE'] );
 
 // set our some of our php_admin_values that we can't define in the ravencore.httpd.conf
 error_reporting(E_ALL ^ E_NOTICE);
@@ -165,9 +189,9 @@ if($action == "login") {
   $row_lock = mysql_fetch_array($result);
 
   //if we have the same or more as the lockout count, lock the login
-  if($row_lock[count] >= $CONF[LOCKOUT_COUNT] and $CONF[LOCKOUT_COUNT]) {
+  if($row_lock['count'] >= $CONF['LOCKOUT_COUNT'] and $CONF['LOCKOUT_COUNT']) {
 
-      $login_error = $lang['auth_login_locked'];
+      $login_error = __('Login locked.');
       
       syslog(LOG_WARNING, "Login attempted for user $_POST[user], but was denied by auto-lock from $_SERVER[REMOTE_ADDR]");
 
@@ -179,16 +203,16 @@ if($action == "login") {
   
   //now we do password authentication
 
-  if($_POST[user] == $CONF[MYSQL_ADMIN_USER]) {
+  if($_POST['user'] == $CONF['MYSQL_ADMIN_USER']) {
     
-    if( $_POST[user] != $CONF[MYSQL_ADMIN_USER] or $_POST[pass] != $CONF[MYSQL_ADMIN_PASS] ) {
+    if( $_POST['user'] != $CONF['MYSQL_ADMIN_USER'] or $_POST['pass'] != $CONF['MYSQL_ADMIN_PASS'] ) {
       
       // admin login faliure
       
       $sql = "insert into login_failure set date = now(), login = '$_POST[user]'";
       mysql_query($sql);
 
-      $login_error = $lang['auth_login_failure'];
+      $login_error = __('Login failure.');
       
       syslog(LOG_WARNING, "Login failure for user $_POST[user] from $_SERVER[REMOTE_ADDR]");
 
@@ -229,7 +253,7 @@ if($action == "login") {
 	$sql = "insert into login_failure set date = now(), login = '$_POST[user]'";
 	mysql_query($sql);
 	
-	$login_error = $lang['auth_login_failure'];
+	$login_error = __('Login failure.');
 	
 	syslog(LOG_WARNING, "Login failure for user $_POST[user] from $_SERVER[REMOTE_ADDR]");
 
@@ -253,11 +277,11 @@ if($action == "login") {
     // set the timeout for the tcp connection, lucky 7
     $timeout = 7;
 
-    if ($fsock = @fsockopen('www.ravencore.com', 80, $errno, $errstr, $timeout))
+    if ($CONF[VERSION] and $fsock = @fsockopen('www.ravencore.com', 80, $errno, $errstr, $timeout) )
       {
 	
 	// set the timeout for reading / writting data to the socket
-	stream_set_timeout($fsock, $timeout);
+	if(function_exists(stream_set_timeout)) stream_set_timeout($fsock, $timeout);
 	
 	$general_version = preg_replace('/\.\d*$/', '.x', $CONF[VERSION]);
 
@@ -284,11 +308,11 @@ if($action == "login") {
 
 	  if($_POST[user] == $CONF[MYSQL_ADMIN_USER]) {
 
-	    $_SESSION['status_mesg'] = $lang['auth_cp_userlock_outdated_settings'];
+	    $_SESSION['status_mesg'] = __('Control panel is locked for users, because your "lock if outdated" setting is active, and we appear to be outdated.');
 
 	  } else {
 
-	    $login_error = $lang['auth_locked_outdated'];
+	    $login_error = __('Login locked because control panel is outdated.');
 
 	    syslog(LOG_WARNING, "Control panel outdated");
 
@@ -319,7 +343,7 @@ if($action == "login") {
 
       nav_top();
 
-      print $lang['auth_api_cmd_failed'];
+      print __('API command failed. This server is configured as a master server.');
 
       nav_bottom();
 
@@ -471,19 +495,19 @@ if(!file_exists("../var/run/gpl_check") and is_admin() and $_SERVER[PHP_SELF] !=
 
     nav_top();
     
-    if($action == "gpl_agree") print '<b><font color="red">' . $lang['auth_must_agree_gpl'] . '</font></b><p>';
+    if($action == "gpl_agree") print '<b><font color="red">' . __('You must agree to the GPL License to use RavenCore.') . '</font></b><p>';
 
-    print $lang['please_agree_gpl'] . '<hr><pre>';
+    print __('Please read the GPL License and select the "I agree" checkbox below') . '<hr><pre>';
 
     $h = fopen("../LICENSE","r");
     
     fpassthru($h);
     
-    print $lang['auth_gpl_appear_below'] . '</pre>
+    print __('The GPL License should appear in the frame below') . ': </pre>
 <iframe src="GPL" width=675 height=250>
 </iframe>
 <p>
-<form method=post> <input type=checkbox name=gpl_agree value=yes> ' . $lang['auth_i_agree_gpl'] . '
+<form method=post> <input type=checkbox name=gpl_agree value=yes> ' . __('I agree to these terms and conditions.') . '
 
 <p>
 <input type=submit value=Submit> <input type=hidden name=action value=gpl_agree></form>';
@@ -507,9 +531,11 @@ if($conf_not_complete and $_SERVER[PHP_SELF] != "/change_password.php" and $_SER
 
     // if we have $action, that means we're being posted to. Don't print anything
 
-    if($action != "update_conf") print '<div align=center>' . $lang['auth_welcome_and_thank_you'] . '</div>
+    if($action != "update_conf") print '<div align=center>' . __('Welcome, and thank you for using RavenCore!') . '</div>
 <p>
-' . $lang['auth_please_upgrade_config'] . '
+' . __('You installed and/or upgraded some packages that require new configuration settings.') .
+				   __('Please take a moment to review these settings. We recomend that you keep the default values, ') .
+				   __('but if you know what you are doing, you may adjust them to your liking.') . '
 <div align=center>
 <form method=post>
 <input type=hidden name=action value="update_conf">
@@ -575,13 +601,30 @@ if($conf_not_complete and $_SERVER[PHP_SELF] != "/change_password.php" and $_SER
 
 	    if($action != "update_conf" and !$printed_header) {
 	      
-	      print '<tr><th colspan=2 align=center>' . ereg_replace('\.conf$',"",$conf_file) . ' ' . $lang['auth_conf_file_configuration'] . '</th></tr>';
+	      print '<tr><th colspan=2 align=center>' . ereg_replace('\.conf$',"",$conf_file) . ' ' . __('configuration') . '</th></tr>';
 
 	      $printed_header = true;
 
 	    }
-	    
-	    print '<tr><td>' . $var_name . ':</td><td> <input name="' . $var_name . '" value="' . $var_value . '"></td></tr>';
+	
+	    print '<tr><td>' . $var_name . ':</td><td>';
+
+	    // values with | character are considered to be a list of possible values
+	    if(@ereg('\|',$var_value)) {
+
+	      print '<select name="' . $var_name . '">';
+
+	      foreach( explode('|',$var_value) as $val) {
+
+		print '<option value="' . $val . '">' . $val . '</option>';
+
+	      }
+
+	      print '</select>';
+
+	    } else print '<input name="' . $var_name . '" value="' . $var_value . '">';
+
+	    print '</td></tr>';
 	    
 	  }
 
@@ -601,7 +644,7 @@ if($conf_not_complete and $_SERVER[PHP_SELF] != "/change_password.php" and $_SER
 
     if($action != "update_conf") {
 
-      print '<tr><td colspan=2 align=right><input type="submit" value="Submit"></td></tr></table></div>';
+      print '<tr><td colspan=2 align=right><input type="submit" value="'. __('Submit') .'"></td></tr></table></div>';
     
       nav_bottom();
   
@@ -619,7 +662,7 @@ if($conf_not_complete and $_SERVER[PHP_SELF] != "/change_password.php" and $_SER
 
   } else {
 
-    $login_error = $lang['auth_locked_upgrading'];
+    $login_error = __('Control Panel is being upgraded. Login Locked.');
 
     include "login.php";
 

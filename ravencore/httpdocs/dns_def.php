@@ -41,10 +41,10 @@ $result = mysql_query($sql);
     
 $num = mysql_num_rows($result);
 
-if($num == 0) print "No default DNS records setup for this server";
+if($num == 0) print __("No default DNS records setup for this server");
 else {
       
-  print '<h3>Default DNS for domains setup on this server</h3><form method=post><table><tr><td>&nbsp;</td><td>Record Name</td><td>Record Type</td><td>Record Target</td></tr>';
+  print '<h3>' . __('Default DNS for domains setup on this server') . '</h3><form method=post><table><tr><td>&nbsp;</td><td>' . _('Record Name') . '</td><td>' . __('Record Type') . '</td><td>' . __('Record Target') . '</td></tr>';
       
   while( $row = mysql_fetch_array($result) ) {
     
@@ -52,7 +52,7 @@ else {
     
       }
   
-  print '<tr><td colspan=4><input type=submit value="Delete Selected"></tr>
+  print '<tr><td colspan=4><input type=submit value="' . __('Delete Selected') . '"></tr>
 <input type=hidden name=action value=delete>
 <input type=hidden name=did value="' . $did. '">
 </table></form>';
@@ -60,14 +60,15 @@ else {
 }
 
 print '<p><form method=post action="add_def_dns.php">
-Add record: <select name=type>
+' . __('Add record') . ': <select name=type>
 <option value=A>A</option>
 <option value=NS>NS</option>
 <option value=MX>MX</option>
 <option value=SOA>SOA</option>
 <option value=CNAME>CNAME</option>
 <option value=PTR>PTR</option>
-</select> <input type=submit value=Add>
+<option value=TXT>TXT</option>
+</select> <input type=submit value="' . __('Add') . '">
 <input type=hidden name=did value="' . $did . '">
 </form>';
 

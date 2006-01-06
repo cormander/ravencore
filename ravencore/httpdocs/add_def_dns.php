@@ -28,16 +28,16 @@ if($action == "add") {
   
   $row = mysql_fetch_array($result);
 
-  if($row[count] != 0) alert("You already have a $_POST[type] record for $_POST[name] pointing to $_POST[target]");
+  if($row[count] != 0) alert( __("You already have a $_POST[type] record for $_POST[name] pointing to $_POST[target]") );
   else {
 
-    if($_POST[name] == $_POST[target] and $_POST[type] != "MX") alert("Your record name and target cannot be the same.");
+    if($_POST[name] == $_POST[target] and $_POST[type] != "MX") alert( __("Your record name and target cannot be the same.") );
     else {
 
-      if( ($_POST[type] == "SOA" or $_POST[type] == "MX" or $_POST[type] == "CNAME") and is_ip($_POST[target]) ) alert("A $_POST[type] record cannot point to an IP address!");
+      if( ($_POST[type] == "SOA" or $_POST[type] == "MX" or $_POST[type] == "CNAME") and is_ip($_POST[target]) ) alert( __("A $_POST[type] record cannot point to an IP address!") );
       else {
 	
-	if(ereg('\.$',$_POST[name])) alert("You cannot enter in a full domain as the record name.");
+	if(ereg('\.$',$_POST[name])) alert( __("You cannot enter in a full domain as the record name.") );
 	else {
 	  
 	  if($_POST[type] == "MX") $_POST[type] .= '-' . $_POST[preference];
@@ -75,61 +75,67 @@ switch($_POST[type]) {
    
    if($row[count] != 0) {
 
-     print 'You already have a default SOA record set';
+     print __('You already have a default SOA record set');
      nav_bottom();
      exit;
 
    }
 
    print '<input type=hidden name=type value=SOA>
-Default Start of Authority: <input type=text name=target>
+'. __('Default Start of Authority') .': <input type=text name=target>
 ';
    break;
+   
  case "A":
    print '<input type=hidden name=type value=A>
-Record Name: <input type=text name=name>
-<br>
-Target IP: <input type=text name=target>
-';
+			'. __('Record Name') .': <input type=text name=name>
+			<br>
+			'. __('Target IP') .': <input type=text name=target>
+			';
    
    break;
+   
  case "NS":
    print '<input type=hidden name=type value=NS>
-<input type=hidden name=name value="@">
-Nameserver: <input type=text name=target>
-';
+			<input type=hidden name=name value="@">
+			'. __('Nameserver') .': <input type=text name=target>
+			';
    break;
+   
  case "MX":
-   print 'Mail for the domain: <input type=hidden name=name value="@">
-<input type=hidden name=type value=MX>
-MX Preference: <select name=preference>';
-   for($i = 10; $i < 51; $i+=10) print '<option value="' . $i . '">' . $i . '</option>';
-print '</select>
-<br>
-Mail Server: <input type=text name=target> ( must not be an IP! )
-';
+   print __('Mail for the domain') .': <input type=hidden name=name value="@">
+	<input type=hidden name=type value=MX>
+	'. __('MX Preference') .': <select name=preference>';
+	for($i = 10; $i < 51; $i+=10) print '<option value="' . $i . '">' . $i . '</option>';
+	print '</select>
+	<br>
+	'. __('Mail Server') .': <input type=text name=target> ( must not be an IP! )
+	';
    break;
+   
  case "CNAME":
    print '<input type=hidden name=type value=CNAME>
-Alias name: <input type=text name=name>
-<br>
-Target name: <input type=text name=target>';
+		'. __('Alias name') .': <input type=text name=name>
+		<br>
+		'. __('Target name') .': <input type=text name=target>';
    break;
+   
  case "PTR":
    print '<input type=hidden name=type value=PTR>
-Reverse pointer records are not yet available';
+	'. __('Reverse pointer records are not yet available');
    nav_bottom();
    exit;
 
    break;
+   
  default:
-   print 'Invalid DNS record type';
+   print __('Invalid DNS record type');
    nav_bottom();
    exit;
    break;
 }
 
-print '<p><input type=submit value="Add Record">
+print '<p><input type=submit value="'. __('Add Record') .'">
 </form>';
 
 nav_bottom();

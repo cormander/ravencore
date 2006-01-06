@@ -135,24 +135,24 @@ $result = mysql_query($sql);
 
 $num = mysql_num_rows($result);
 
-if($num == 0) print "Domain does not exist";
+if($num == 0) print __("Domain does not exist");
 else {
   $row = mysql_fetch_array($result);
   
-  print '<form name=main method=POST>Name: ' . $row[name];
+  print '<form name=main method=POST>' . __('Name') . ': ' . $row[name];
 
-  if($row[host_type] != "none") print ' - <a href="hosting.php?action=delete&did=' . $row[id] . '" onclick="return confirm(\'Are you sure you wish to delete hosting for this domain?\');">delete hosting</a>
+  if($row[host_type] != "none") print ' - <a href="hosting.php?action=delete&did=' . $row[id] . '" onclick="return confirm(\'' . __('Are you sure you wish to delete hosting for this domain?') . '\');">' . __('delete hosting') . '</a>
 <input type=hidden name=did value=' . $row[id] . '>';
 
   print '<p>';
 
   if($_POST[host_type] or $row[host_type] != "none") {
     
-    print "www prefix: <input type=radio name=www value=true";
+    print __("www prefix") . ": <input type=radio name=www value=true";
     if($row[www] == "true") print " checked";
-    print "> Yes <input type=radio name=www value=false";
+    print "> " . __('Yes') . " <input type=radio name=www value=false";
     if($row[www] == "false") print " checked";
-    print "> No <p>";
+    print "> " . __('No') . " <p>";
     
   }
 
@@ -166,8 +166,8 @@ else {
 
     // If we have this value, we don't have ftp information. Print form to add it
     if($_POST[host_type]) print '
-FTP Username: <input type=text name=login><p>
-FTP Password: <input type=password name=passwd>';
+' . __('FTP Username') . ': <input type=text name=login><p>
+' . __('FTP Password') . ': <input type=password name=passwd>';
 
     else {
 
@@ -178,12 +178,12 @@ FTP Password: <input type=password name=passwd>';
       
       $row_ftp = mysql_fetch_array($result_ftp);
       
-      print 'FTP Username: ' . $row_ftp[login] . '<p>';
-      print 'FTP Password: <input type=password name=passwd value="' . $row_ftp[passwd] . '">';
+      print __('FTP Username') . ': ' . $row_ftp[login] . '<p>';
+      print __('FTP Password') . ': <input type=password name=passwd value="' . $row_ftp[passwd] . '">';
       
     }
 
-    print '<p>Shell: <select name=login_shell';
+    print '<p>' . __('Shell') . ': <select name=login_shell';
     if(!user_can_add($uid, "shell_user") and !is_admin() and $row_ftp[shell] == $CONF[DEFAULT_LOGIN_SHELL]) print " disabled";
     print '><option value="' . $CONF[DEFAULT_LOGIN_SHELL] . '">' . $CONF[DEFAULT_LOGIN_SHELL] . '</option>';
 
@@ -200,40 +200,39 @@ FTP Password: <input type=password name=passwd>';
 
     print '</select></p>';
 
-    print "<p>SSL Support: <input type=radio name=ssl value=true";
+    print "<p>" . __('SSL Support') . ": <input type=radio name=ssl value=true";
     if($row[host_ssl] == "true") print " checked";
     if(!user_can_add($uid, "host_ssl") and !is_admin()) print " disabled";
-    print "> Yes <input type=radio name=ssl value=false";
-    if($row[host_ssl] == "true" and !user_can_add($uid, "host_ssl") and !is_admin()) print ' onclick="return confirm(\'If you disable ssl support, you will not be able to enable it again.\rAre you sure you wish to do this?\');"';
+    print "> " . __('Yes') . " <input type=radio name=ssl value=false";
+    if($row[host_ssl] == "true" and !user_can_add($uid, "host_ssl") and !is_admin()) print ' onclick="return confirm(\'' . __('If you disable ssl support, you will not be able to enable it again.\rAre you sure you wish to do this?') . '\');"';
     if($row[host_ssl] == "false") print " checked";
-    print "> No";
+    print "> " . __('No');
     
-    print "<p>PHP Support: <input type=radio name=php value=true";
+    print "<p>" . __('PHP Support') . ": <input type=radio name=php value=true";
     if($row[host_php] == "true") print " checked";
     if(!user_can_add($uid, "host_php") and !is_admin()) print " disabled";
-    print ">Yes <input type=radio name=php value=false";
-    if($row[host_php] == "true" and !user_can_add($uid, "host_php") and !is_admin()) print ' onclick="return confirm(\'If you disable php support, you will not be able to enable it again.\rAre you sure you wish to do this?\');"';
+    print "> " . __('Yes') . " <input type=radio name=php value=false";
+    if($row[host_php] == "true" and !user_can_add($uid, "host_php") and !is_admin()) print ' onclick="return confirm(\'' . __('If you disable php support, you will not be able to enable it again.\rAre you sure you wish to do this?') . '\');"';
     if($row[host_php] == "false") print " checked";
-    print "> No";
+    print "> " . __('No');
     
-    print "<p>CGI Support: <input type=radio name=cgi value=true";
+    print "<p>" . __('CGI Support') . ": <input type=radio name=cgi value=true";
     if($row[host_cgi] == "true") print " checked";
     if(!user_can_add($uid, "host_cgi") and !is_admin()) print " disabled";
-    print ">Yes <input type=radio name=cgi value=false";
-    if($row[host_cgi] == "true" and !user_can_add($uid, "host_cgi") and !is_admin()) print ' onclick="return confirm(\'If you disable cgi support, you will not be able to enable it again.\rAre you sure you wish to do this?\');"';
+    print "> " . __('Yes') ." <input type=radio name=cgi value=false";
+    if($row[host_cgi] == "true" and !user_can_add($uid, "host_cgi") and !is_admin()) print ' onclick="return confirm(\'' . __('If you disable cgi support, you will not be able to enable it again.\rAre you sure you wish to do this?') . '\');"';
     if($row[host_cgi] == "false") print " checked";
-    print "> No";
+    print "> " . __('No');
     
-    print '<p>
-Directory indexing: <input type=radio name=dir value=true';
+    print '<p>' . __('Directory indexing') . ': <input type=radio name=dir value=true';
     if($row[host_dir] == "true") print ' checked';
-    print '> Yes <input type=radio name=dir value=false';
+    print '> ' . __('Yes') . ' <input type=radio name=dir value=false';
     if($row[host_dir] == "false") print ' checked';
-    print '> No<p>';
+    print '> ' . __('No') . '<p>';
 
     // If we have the $host_type value here, it means we need to add it rather then update it
-    if($_POST[host_type]) print '<input type=submit value=Add> <input type=hidden name=action value=add>';
-    else print '<input type=submit value=Update> <input type=hidden name=action value=edit>';
+    if($_POST[host_type]) print '<input type=submit value=' . __('Add') . '> <input type=hidden name=action value=add>';
+    else print '<input type=submit value=' . __('Update') . '> <input type=hidden name=action value=edit>';
     print '<input type=hidden name=host_type value=physical>';
 
     break;
@@ -245,33 +244,33 @@ Directory indexing: <input type=radio name=dir value=true';
     else print 'http://';
     print '"><p>';
     // If we have the $host_type value here, it means we need to add it rather then update it
-    if($_POST[host_type]) print '<input type=submit value=Add> <input type=hidden name=action value=add>';
-    else print '<input type=submit value=Update> <input type=hidden name=action value=edit>';
+    if($_POST[host_type]) print '<input type=submit value=' . __('Add') . '> <input type=hidden name=action value=add>';
+    else print '<input type=submit value=' . __('Update') . '> <input type=hidden name=action value=edit>';
     print '<input type=hidden name=host_type value=redirect>';
     
     break;
 
   case "alias":
 
-    print 'This domain is an alias of <input type=text name=redirect_url value="';
+    print __('This domain is an alias of') . ' <input type=text name=redirect_url value="';
     if($row[redirect_url]) print $row[redirect_url];
     print '"><p>';
     // If we have the $host_type value here, it means we need to add it rather then update it
-    if($_POST[host_type]) print '<input type=submit value=Add> <input type=hidden name=action value=add>';
-    else print '<input type=submit value=Update> <input type=hidden name=action value=edit>';
+    if($_POST[host_type]) print '<input type=submit value=' . __('Add') . '> <input type=hidden name=action value=add>';
+    else print '<input type=submit value=' . __('Update') . '> <input type=hidden name=action value=edit>';
     print '<input type=hidden name=host_type value=alias>';
 
     break;
     
   default:
     
-    print '<input type=radio name=host_type value=physical> Host on this server
+    print '<input type=radio name=host_type value=physical> ' . __('Host on this server') . '
 <br>
-<input type=radio name=host_type value=redirect> Redirect to another domain
+<input type=radio name=host_type value=redirect> ' . __('Redirect to another domain') . '
 <br>
-<input type=radio name=host_type value=alias> Show contents of another site on this server
+<input type=radio name=host_type value=alias> ' . __('Show contents of another site on this server') . '
 <p>
-<input type=submit value="Continue">';
+<input type=submit value="' . __('Continue') . '">';
     break;
     
   }

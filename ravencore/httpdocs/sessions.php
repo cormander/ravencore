@@ -37,7 +37,7 @@ nav_top();
 $sql = "select * from sessions";
 $result = mysql_query($sql);
 
-print '<form method=post><table width=600><tr><th width=20%>Login</th><th width=20%>IP Address</th><th width=20%>Session Time</th><th width=20%>Idle Time</th><th width=20%>Delete</th></tr>';
+print '<form method=post><table width=600><tr><th width=20%>' . __('Login') . '</th><th width=20%>' . __('IP Address') . '</th><th width=20%>' . __('Session Time') . '</th><th width=20%>' . __('Idle Time') . '</th><th width=20%>' . __('Delete') . '</th></tr>';
 
 while( $row = mysql_fetch_array($result) ) {
 
@@ -63,7 +63,7 @@ while( $row = mysql_fetch_array($result) ) {
 
 }
 
-print '<tr><td colspan=4></td><td><input type=hidden name=action value=delete><input type=submit value="Remove"></td></tr></table></form>';
+print '<tr><td colspan=4></td><td><input type=hidden name=action value=delete><input type=submit value="' . __('Remove') . '"></td></tr></table></form>';
 
 nav_bottom();
 

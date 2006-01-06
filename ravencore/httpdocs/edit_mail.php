@@ -41,14 +41,14 @@ if($action) {
   $result = mysql_query($sql);
   $row = mysql_fetch_array($result);
 
-  if($row[count] != 0 and $page_type == "add") alert("That email address already exists");
+  if($row[count] != 0 and $page_type == "add") alert( __("That email address already exists") );
   else {
 
     // Make sure that the passwords match
 
     if($_POST[confirm_passwd] != $_POST[passwd]) {
 
-      alert("Your passwords do not match");
+      alert( __("Your passwords do not match") );
       $_POST[confirm_passwd] = "";
       $_POST[passwd] = "";
 
@@ -60,7 +60,7 @@ if($action) {
 	
 	if($_POST[redirect] and !$_POST[redirect_addr]) {
 	  
-	  alert("You selected you wanted a redirect, but left the address blank");
+	  alert( __("You selected you wanted a redirect, but left the address blank") );
 	  $select = "redirect_addr";
 	  
 	} else {
@@ -97,7 +97,7 @@ if($action) {
 	      
 	    } else {
 	      
-	      alert("Invalid password. Must only contain letters and numbers");
+	      alert( __("Invalid password. Must only contain letters and numbers.") );
 	      $_POST[passwd] = "";
 	      $select = "passwd";
 	      
@@ -105,7 +105,7 @@ if($action) {
 	    
 	  } else {
 	    
-	    alert("The redirect list contains an invalid email address.");
+	    alert( __("The redirect list contains an invalid email address.") );
 	    $_POST[redirect_addr] = "";
 	    $select = "redirect_addr";
 	    
@@ -116,7 +116,7 @@ if($action) {
       } else {
 	
 	// We failed to pass the mailname regex
-	alert("Invalid mailname. It may only contain letters, number, dashes, dots, and underscores. Must both start and end with either a letter or number.");
+	alert( __("Invalid mailname. It may only contain letters, number, dashes, dots, and underscores. Must both start and end with either a letter or number.") );
 	$_POST[name] = "";
 	$select = "name";
 	
@@ -141,7 +141,7 @@ if($did) {
   
   if($row_chk[mail] != "on") {
     
-    print 'Mail is disabled for ' . $row_chk[name] . '. You can not add an email address for it.';
+    print __('Mail is disabled for ' . $row_chk[name] . '. You can not add an email address for it.');
     
     nav_bottom();
     
@@ -173,13 +173,13 @@ if($page_type == "edit") {
 <table>
 <tr><th colspan="2"><?php
 
-print ($mid ? 'Edit' : 'Add');
-
-?> mail</th><th><?php
+print ( $mid ? __('Edit') : __('Add') );
+print ' ' . __('mail');
+?></th><th><?php
 
 ?></th></tr>
 
-<tr><td>Mail Name:</td><td><?php
+<tr><td><?php e_('Mail Name')?>: </td><td><?php
 
 if($page_type == "add") {
 
@@ -227,17 +227,17 @@ if( $page_type == "add" and !$did) {
 if($page_type == "add" and !$did) print "</select>";
 
 ?></td></tr>
-<tr><td>Password:</td><td><input type="password" name=passwd<?php
+<tr><td><?php e_('Password')?>: </td><td><input type="password" name=passwd<?php
 
 if($_POST[passwd]) print ' value="' . $_POST[passwd] . '"'; else print ' value="' . $row_mail[passwd] . '"';
 
 ?>></td></tr>
-<tr><td>Confirm:</td><td><input type="password" name=confirm_passwd<?php
+<tr><td><?php e_('Confirm')?>: </td><td><input type="password" name=confirm_passwd<?php
 
 if($_POST[confirm_passwd]) print ' value="' . $_POST[confirm_passwd] . '"'; else print ' value="' . $row_mail[passwd] . '"';
 
 ?>></td></tr>
-<tr><td>Mailbox:</td><td><input type="checkbox" name=mailbox value="true"<?php
+<tr><td><?php e_('Mailbox')?>: </td><td><input type="checkbox" name=mailbox value="true"<?php
 
 if($page_type == "add") {
   
@@ -249,7 +249,7 @@ if($page_type == "add") {
 
 }
 
-?> onclick="if(!this.checked) return confirm('Mail will not be stored on the server if you disable this option. Are you sure you wish to do this?');"></td></tr>
+?> onclick="if(!this.checked) return confirm('<?php e_('Mail will not be stored on the server if you disable this option. Are you sure you wish to do this?')?>');"></td></tr>
 <!-- per user spam-assassin enabling is currently disabled
 <tr><td>SPAM Filter:</td><td><input type="checkbox" name=spamassassin value="true"<?php
 
@@ -264,7 +264,7 @@ if($page_type == "add") {
 }
 
 ?> onclick="if(!this.checked) return confirm('Are you sure you don\'t want spam filtering?');"></td></tr>-->
-<tr><td valign="top">Redirect:</td><td valign="top">
+<tr><td valign="top"><?php e_('Redirect')?>: </td><td valign="top">
 <table style="border: 0px; margin: 0px;"><tr>
 <td valign="top" align="left"><input type="checkbox" name=redirect value="true"<?php
 
@@ -278,7 +278,7 @@ if($page_type == "add") {
 
 }
 
-?> onclick="if(this.checked) { document.main.redirect_addr.disabled=false; if(tmp) document.main.redirect_addr.value=tmp; document.main.redirect_addr.focus(); } else { document.main.redirect_addr.disabled=true; tmp = document.main.redirect_addr.value; document.main.redirect_addr.value=''}"></td><td><font size="1">List email addresses here, seperate each with a comma and a space</font><br /><textarea nowrap rows="5" cols="40"<?php
+?> onclick="if(this.checked) { document.main.redirect_addr.disabled=false; if(tmp) document.main.redirect_addr.value=tmp; document.main.redirect_addr.focus(); } else { document.main.redirect_addr.disabled=true; tmp = document.main.redirect_addr.value; document.main.redirect_addr.value=''}"></td><td><font size="1"><?php e_('List email addresses here, seperate each with a comma and a space')?></font><br /><textarea nowrap rows="5" cols="40"<?php
 
 if($page_type == "add") {
 
@@ -308,8 +308,8 @@ if($page_type == "add") {
 <?php if($page_type == "add") print '<input type="hidden" name="page_type" value="' . $page_type . '">'; ?>
 <input type="submit" value="<?php 
 
-if($page_type == "add") print 'Add Mail';
-else print 'Update';
+if($page_type == "add") print __('Add Mail');
+else print __('Update');
 
 ?>"></td></tr>
 </table>

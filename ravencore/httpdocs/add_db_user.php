@@ -57,7 +57,7 @@ if($action == "add") {
 
     } else {
 
-      alert("Invalid password. Must only contain letters and numbers, must be atleast 5 characters, and not a dictionary word");
+      alert( __("Invalid password. Must only contain letters and numbers, must be atleast 5 characters, and not a dictionary word") );
       $_POST[passwd] = "";
 
     }
@@ -73,16 +73,16 @@ $result = mysql_query($sql);
 
 $row = mysql_fetch_array($result);
 
-print 'Adding a user for database ' . $row[name] . '<p>
+print __('Adding a user for database') .' '. $row[name] . '<p>
 
 <form method="post">
 
-Login: <input type="text" name=login>
+'. __('Login') .': <input type="text" name=login>
 <p>
-Password: <input type="password" name=passwd>
+'. __('Password') .': <input type="password" name=passwd>
 <p>
 
-<input type="submit" value="Add User">
+<input type="submit" value="'. __('Add User') .'">
 <input type="hidden" name=action value="add">
 <input type="hidden" name=did value="' . $did . '">
 <input type="hidden" name=db value="' . $db . '">

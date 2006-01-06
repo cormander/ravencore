@@ -31,6 +31,7 @@ $row = mysql_fetch_array($result);
 $_SESSION['name'] = $row[name];
 $_SESSION['login'] = $row[login];
 $_SESSION['passwd'] = $row[passwd];
+$_SESSION['phpmyadmin_lang'] = $locales[$current_locale]['phpmyadmin'];
 
 goto("phpmyadmin/");
 

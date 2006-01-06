@@ -27,11 +27,11 @@ $domain_name = get_domain_name($did);
 
 //We can't decend a directory, or else we would provide read access to almost the entire server!
 
-if(ereg("\.\.", $_GET[log_file])) die("Illegal argument");
+if(ereg("\.\.", $_GET[log_file])) die( __("Illegal argument") );
 
 $log_location = "$CONF[VHOST_ROOT]/$domain_name/logs/$_GET[log_file]";
 
-$handle = fopen("$log_location","r") or die("Unable to open $log_location");
+$handle = fopen("$log_location","r") or die( __("Unable to open $log_location") );
 
 $size = filesize($log_location);
 

@@ -36,7 +36,7 @@ if($action == "add") {
 
   if($row[count] != 0) {
 
-    alert("The domain $_POST[name] is already setup on this server");
+    alert( __("The domain $_POST[name] is already setup on this server") );
 
     $_POST[name] = "";
     $select = "name";
@@ -46,7 +46,7 @@ if($action == "add") {
 
   } else if(!$_POST[name]) {
 
-    alert("Please enter the domain name you wish to setup");
+    alert( __("Please enter the domain name you wish to setup") );
     $select = "name";
 
   } else {
@@ -119,7 +119,7 @@ if($action == "add") {
 	
       } else { // they put in www. , they shouldn't do this
 	
-	alert("Invalid domain name. Please re-enter the domain name without the www.");
+	alert( __("Invalid domain name. Please re-enter the domain name without the www.") );
 	
       }
 
@@ -127,7 +127,7 @@ if($action == "add") {
       
       // We failed against the regex provided above
       
-      alert("Invalid domain name. May only contain letters, numbers, dashes and dots. Must not start or end with a dash or a dot, and a dash and a dot cannot be next to each other");
+      alert( __("Invalid domain name. May only contain letters, numbers, dashes and dots. Must not start or end with a dash or a dot, and a dash and a dot cannot be next to each other") );
       
     }
     
@@ -155,7 +155,7 @@ if(is_admin()) {
 
   if($row[count] != 0 ) {
 
-    print 'Control Panel User: <select name="uid"><option value="">Select One</option>';
+    print __('Control Panel User') . ': <select name="uid"><option value="">' . __('Select One') . '</option>';
     
     $sql = "select * from users";
     $result = mysql_query($sql);
@@ -176,15 +176,15 @@ if(is_admin()) {
 
 ?>
 <table>
-<tr><th colspan="2">Add domain</th></tr>
-<tr><td>Name:</td><td>http://<input type="text" name="name"></td></tr>
-<tr><td align="center"><input type="submit" value="Add Domain"></td>
+<tr><th colspan="2"><?php e_('Add domain')?></th></tr>
+<tr><td><?php e_('Name')?>: </td><td>http://<input type="text" name="name"></td></tr>
+<tr><td align="center"><input type="submit" value="<?php e_('Add Domain')?>"></td>
 <td><?php
 
 // Only display these options if we are a webserver
 
 if(have_service("web")) { ?>
-<input type=checkbox name=hosting value="true" <?php if(($action and $_POST[hosting]) or !$action) print ' checked'; ?>> Proceed to hosting setup
+<input type=checkbox name=hosting value="true" <?php if(($action and $_POST[hosting]) or !$action) print ' checked'; ?>> <?php e_('Proceed to hosting setup')?>
 <?php
 }
 
@@ -196,7 +196,7 @@ if(have_service("dns")) {
   $result = mysql_query($sql);
   
   // only display this option if we have default dns record setup
-  if(mysql_num_rows($result) > 0) print '<input type=checkbox name="dns" value="true" checked> Add default DNS to this domain';
+  if(mysql_num_rows($result) > 0) print '<input type=checkbox name="dns" value="true" checked> ' . __('Add default DNS to this domain');
 
 }
 

@@ -46,11 +46,11 @@ if(!$did) {
 
   $num = mysql_num_rows($result);
 
-  if($num == 0) print 'No DNS records setup on the server';
+  if($num == 0) print __('No DNS records setup on the server');
   else {
 
-    print 'The following domains are setup for DNS<p>
-<table><tr><th>Domain</th><th>Records</th></tr>';
+    print __('The following domains are setup for DNS') .'<p>
+<table><tr><th>'. __('Domain') .'</th><th>'. __('Records') .'</th></tr>';
 
     while( $row = mysql_fetch_array($result) ) {
 
@@ -79,7 +79,7 @@ if(!$did) {
   $num = mysql_num_rows($result);
 
   if($num == 0) print '<form method=post action=add_dns.php name=main>
-No SOA record setup for this domain - <a href="javascript:document.main.submit();">Add SOA record</a>
+'. __('No SOA record setup for this domain') .' - <a href="javascript:document.main.submit();">'. __('Add SOA record') .'</a>
 <input type=hidden name=did value="' . $did . '">
 <input type=hidden name=type value="SOA">
 </form>';
@@ -89,10 +89,10 @@ No SOA record setup for this domain - <a href="javascript:document.main.submit()
     
     $domain_name = $row[name];  
     
-    print 'DNS for <a href="domains.php?did=' . $did . '">' . $domain_name . '</a><p>';
+    print __('DNS for') .' <a href="domains.php?did=' . $did . '">' . $domain_name . '</a><p>';
     
     print '<form method=post name=del>
-Start of Authority for ' . $domain_name . ' is ' . $row[soa] . ' - <a href="javascript:document.del.submit();">delete</a>
+' . __('Start of Authority for ') . $domain_name . __(' is ') . $row[soa] . ' - <a href="javascript:document.del.submit();">' . __('delete') . '</a>
 <input type=hidden name=did value="' . $did . '">
 <input type=hidden name=type value="SOA">
 <input type=hidden name=action value=delete>
@@ -104,12 +104,12 @@ Start of Authority for ' . $domain_name . ' is ' . $row[soa] . ' - <a href="java
     
     $num = mysql_num_rows($result);
     
-    if($num == 0) print "No DNS records setup for this domain";
+    if($num == 0) print __("No DNS records setup for this domain");
     else {
 
       print '<form method=post>';
 
-      print '<table><tr><th>&nbsp;</th><th>Record Name</th><th>Record Type</th><th>Record Target</th></tr>';
+      print '<table><tr><th>&nbsp;</th><th>' . __('Record Name') . '</th><th>' . __('Record Type') . '</th><th>' . __('Record Target') . '</th></tr>';
       
       while( $row = mysql_fetch_array($result) ) {
 	
@@ -117,7 +117,7 @@ Start of Authority for ' . $domain_name . ' is ' . $row[soa] . ' - <a href="java
 	
       }
       
-      print '<tr><td colspan=4><input type=submit value="Delete Selected"></tr>';
+      print '<tr><td colspan=4><input type=submit value="' . __('Delete Selected') . '"></tr>';
       
       print '<input type=hidden name=action value=delete>
 <input type=hidden name=did value="' . $did. '">
@@ -126,13 +126,14 @@ Start of Authority for ' . $domain_name . ' is ' . $row[soa] . ' - <a href="java
     }
     
     if(user_can_add($uid,"dns_rec") or is_admin()) print '<p><form method=post action=add_dns.php>
-Add record: <select name=type>
+' . __('Add record') . ': <select name=type>
 <option value=A>A</option>
 <option value=NS>NS</option>
 <option value=MX>MX</option>
 <option value=CNAME>CNAME</option>
 <option value=PTR>PTR</option>
-</select> <input type=submit value=Add>
+<option value=TXT>TXT</option>
+</select> <input type=submit value=' . __('Add') . '>
 <input type=hidden name=did value="' . $did . '">
 </form>';
     

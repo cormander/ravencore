@@ -23,9 +23,12 @@ include "auth.php";
 
 req_admin();
 
+$lang = $_SESSION['lang'];
+
 $_SESSION['login'] = $CONF[MYSQL_ADMIN_USER];
 $_SESSION['passwd'] = $CONF[MYSQL_ADMIN_PASS];
 $_SESSION['name'] = '';
+$_SESSION['phpmyadmin_lang'] = $locales[$lang]['phpmyadmin'];
 
 goto("phpmyadmin/");
 

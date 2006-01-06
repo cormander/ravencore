@@ -47,7 +47,13 @@ nav_top();
 
 <table>
 
-<tr><th>Service</th><th>Running</th><th>Start</th><th>Stop</th><th>Restart</th></tr>
+<tr>
+	<th><?php e_('Service')?></th>
+	<th><?php e_('Running')?></th>
+	<th><?php e_('Start')?></th>
+	<th><?php e_('Stop')?></th>
+	<th><?php e_('Restart')?></th>
+</tr>
 <?php
 
 $services = get_all_services();

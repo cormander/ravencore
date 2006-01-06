@@ -36,7 +36,7 @@ nav_top();
 
 ?>
 
-<form <?php if($form_action) print 'action="' . $form_action . '" '; ?>method="POST" name="f">
+<form name="main" <?php if($form_action) print 'action="' . $form_action . '" '; ?>method="POST" name="f">
 
 <div align="center">
 <?php
@@ -47,43 +47,63 @@ if($login_error) print "<br><b><font color=red>" . $login_error . "</font></b>";
 </div>
 <div align=center>
       <table>
-<tr><th colspan="2"><?php echo $lang['login_please_login']; ?></th></tr>
+<tr><th colspan="2"><?php e_('Please Login') ?></th></tr>
 <tr>
-<td><?php echo $lang['login_username']; ?>:</td>
+<td><?php e_('Username') ?>:</td>
 <td><input name="user" size="15" value="<?php print $_POST[user]; ?>"></td>
 </tr><tr>
-<td><?php echo $lang['login_password']; ?>:</td>
+<td><?php e_('Password') ?>:</td>
 <td><input name="pass" TYPE="PASSWORD" size="15" value=""></td>
 </tr>
-<!-- language support is not done
 <tr>
-<td><?php echo $lang['login_language']; ?>:</font></td>
-<td><select name="lang">
-<option value="default"><?php echo $lang['login_option_default']; ?></option>
+<td><?php e_('Language') ?>:</font></td>
+<td><select name="lang" onchange="document.lang_select.lang.value=document.main.lang.value; document.lang_select.submit()">
+<?php
+
+foreach($locales as $key => $val) {
+
+  print '<option value="' . $key . '"';
+
+  if($_SESSION['lang'] == $key) {
+
+    print ' selected';
+    $lang_selected = 1;
+
+  } else if($CONF['DEFAULT_LOCALE'] == $key and $lang_selected == 0) print ' selected';
+
+  print '>' . $val['name'] . '</option>' . "\n";
+  
+}
+
+?>
 </select>
+
 </td>
 </tr>
--->
 <tr>
 <td colspan="2" align="right">
 <div style="float: left"><font size="2">
 <?php
-if($_ENV['RUN_SSL']) echo ($_SERVER['HTTPS'] ? $lang['login_your_login_is_secure'] : '<a href="https://' . $_SERVER['SERVER_NAME'] . ':8080"> ' . $lang['login_go_to_secure_login'] . '</a>');
+if($_ENV['RUN_SSL']) echo ($_SERVER['HTTPS'] ? __('Your login is secure') : '<a href="https://' . $_SERVER['SERVER_NAME'] . ':8080"> ' . __('Go to Secure Login') . '</a>');
 ?>
 </font></div>
 <input type="hidden" name="action" value="login">
-<input type="submit" name="submit" value="<?php echo $lang['login_login']; ?>">
+<input type="submit" name="submit" value="<?php e_('Login') ?>">
 </td>
 </tr>
 </table>
 
 </form>
 
+<form name="lang_select" method="post">
+<input type="hidden" name="lang">
+</form>
+
 <script type="text/javascript">
 
 <!--
 
-f.user.focus();
+document.main.user.focus();
 
 -->
 

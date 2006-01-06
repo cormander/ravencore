@@ -52,11 +52,11 @@ print '' . $lang['add_db_adding_a_database_for'] . ' ' . $row[name] . '<p>
 
 <form method="post">
 
-Name: <input type="text" name=name>
+'. __('Name') .'": <input type="text" name=name>
 
 <p>
 
-<input type="submit" value="' . $lang['add_db_add_database'] . '">
+<input type="submit" value="' . __('Add Database') . '">
 <input type="hidden" name=action value="add">
 <input type="hidden" name=did value="' . $did . '">
 

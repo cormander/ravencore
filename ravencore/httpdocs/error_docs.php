@@ -38,7 +38,7 @@ if($action == "add") {
 
   $http_codes = explode("\n", $code_data);
   
-  if(!in_array($_POST[code], $http_codes)) alert("$_POST[code] is not a valid http code!");
+  if(!in_array($_POST[code], $http_codes)) alert( __("$_POST[code] is not a valid http code!") );
   else {
 
     $sql = "select count(*) as count from error_docs where did = '$did' and code = '$_POST[code]'";
@@ -46,7 +46,7 @@ if($action == "add") {
     
     $row = mysql_fetch_array($result);
     
-    if($row[count] != 0) alert("You already have a $_POST[code] error document");
+    if($row[count] != 0) alert( __("You already have a $_POST[code] error document") );
     else {
       
       $sql = "insert into error_docs set did = '$did', code = '$_POST[code]', file = '$_POST[file]'";
@@ -78,7 +78,7 @@ $result = mysql_query($sql);
 
 $num = mysql_num_rows($result);
 
-if($num == 0) print 'No custom error documents setup.';
+if($num == 0) print __('No custom error documents setup.');
 else {
 
   print '<form method=POST>';
@@ -89,23 +89,23 @@ else {
     
   }
   
-  print '<input type=submit value=Delete><input type=hidden name=action value=delete></form>';
+  print '<input type=submit value=' . __('Delete') . '><input type=hidden name=action value=delete></form>';
 
 }
 
 print '<p><form method=POST>
-Add Custom Error Document:
+' . __('Add Custom Error Document') . ':
 <br>
-Code: <input type=text size=2 name=code>
+' . __('Code') . ': <input type=text size=2 name=code>
 <br>
-File: <input type=text name=file>
+' . __('File') . ': <input type=text name=file>
 <p>
-<input type=submit value=Add>
+<input type=submit value=' . __('Add') . '>
 <input type=hidden name=action value=add>
 <input type=hidden name=did value=' . $did . '>
 </form>';
 
-print '<p><a href="http_status_codes.php" target=_blank>List HTTP Status Codes</a>';
+print '<p><a href="http_status_codes.php" target=_blank>' . __('List HTTP Status Codes') . '</a>';
 
 nav_bottom();
 

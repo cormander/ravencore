@@ -32,7 +32,7 @@ $_SESSION['user'] = $row[login];
 $_SESSION['password'] = $row[passwd];
 
 $_SESSION['server'] = "localhost";
-$_SESSION['language'] = "english";
+$_SESSION['language'] = $locales[$current_locale]['filemanager'];
 $_SESSION['port'] = 21;
 
 goto("filemanager/");

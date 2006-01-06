@@ -27,22 +27,22 @@ if($action) {
 
   if(!$_POST[name]) {
 
-    alert("You must enter a name for this user");
+    alert( __("You must enter a name for this user") );
     $select = "name";
 
   } else if(!$_POST[login]) {
     
-    alert("You must enter a login for this user");
+    alert( __("You must enter a login for this user") );
     $select = "login";
     
   } else if(!$_POST[passwd]) {
 
-    alert("You must enter a password for this user");
-    $select = "passwd";
+    alert( __("You must enter a password for this user") );
+	$select = "passwd";
 
   } else if($_POST[passwd] != $_POST[confirm_passwd]) {
 
-    alert("Your passwords do not match");
+    alert( __("Your passwords do not match") );
     $_POST[passwd] = "";
     $_POST[confirm_passwd] = "";
     $select = "passwd";
@@ -57,20 +57,20 @@ if($action) {
     */
   } else if(!valid_passwd($_POST[passwd])) {
 
-    alert("Your password must be atleast 5 characters long, and not a dictionary word.");
+    alert( __("Your password must be atleast 5 characters long, and not a dictionary word.") );
     $_POST[passwd] = "";
     $_POST[confirm_passwd] = "";
     $select = "passwd";
 
   } else if(!$_POST[email] or !preg_match('/^'.REGEX_MAIL_NAME.'@'.REGEX_DOMAIN_NAME.'$/',$_POST[email])) {
 
-    alert("The email address entered is invalid");
+    alert( __("The email address entered is invalid") );
     $_POST[email] = "";
     $select = "email";
 
   } else if($_POST[login] == $CONF[MYSQL_ADMIN_USER]) {
 
-    alert("$_POST[login] is an invalid login name");
+    alert( __("$_POST[login] is an invalid login name") );
     $_POST[login] = "";
     $select = "login";
 
@@ -89,7 +89,7 @@ if($action) {
       
       if($row[count] != 0) {
 	
-	alert("The user login '$_POST[login]' already exists");
+	alert( __("The user login '$_POST[login]' already exists") );
 	
 	// Unset the login variable, so that we don't print it in the form below
 	
@@ -124,7 +124,7 @@ if($action) {
       
       $row = mysql_fetch_array($result);
       
-      if($row[count] != 0) alert("The user login '$_POST[login]' already exists");
+      if($row[count] != 0) alert( __("The user login '$_POST[login]' already exists") );
       else {
 	
 	$sql = "update users set name = '$_POST[name]', email = '$_POST[email]', login = '$_POST[login]', passwd = '$_POST[passwd]' where id = '$uid'";
@@ -160,29 +160,29 @@ if($uid) {
 <table>
 <tr><th colspan="2"><?php
 
-print ($uid ? 'Edit' : 'Add') . ' info';
+print ($uid ? __('Edit') : __('Add')) . ' ' . __('info');
 
 ?></th></tr>
-<tr><td>*Full Name:</td><td><input type="text" name="name" value="<?php if($_POST[name]) print $_POST[name]; else print $row_u[name]; ?>"></td></tr>
-<tr><td>*Email Address:</td><td><input type="text" name="email" value="<?php if($_POST[email]) print $_POST[email]; else print $row_u[email]; ?>"></td></tr>
-<tr><td>*Login:</td><td><input type="text" name="login" value="<?php if($_POST[login]) print $_POST[login]; else print $row_u[login]; ?>"></td></tr>
-<tr><td>*Password:</td><td><input type="password" name="passwd" value="<?php if($_POST[passwd]) print $_POST[passwd]; else /*if(is_admin())*/ print $row_u[passwd]; ?>"></td></tr>
-<tr><td>*Confirm:</td><td><input type="password" name="confirm_passwd" value="<?php if($_POST[confirm_passwd]) $_POST[passwd]; else /*if(is_admin())*/ print $row_u[passwd]; ?>"></td></tr>
+<tr><td>*<?php e_('Full Name')?>: </td><td><input type="text" name="name" value="<?php if($_POST[name]) print $_POST[name]; else print $row_u[name]; ?>"></td></tr>
+<tr><td>*<?php e_('Email Address')?>: </td><td><input type="text" name="email" value="<?php if($_POST[email]) print $_POST[email]; else print $row_u[email]; ?>"></td></tr>
+<tr><td>*<?php e_('Login')?>: </td><td><input type="text" name="login" value="<?php if($_POST[login]) print $_POST[login]; else print $row_u[login]; ?>"></td></tr>
+<tr><td>*<?php e_('Password')?>: </td><td><input type="password" name="passwd" value="<?php if($_POST[passwd]) print $_POST[passwd]; else /*if(is_admin())*/ print $row_u[passwd]; ?>"></td></tr>
+<tr><td>*<?php e_('Confirm')?>: </td><td><input type="password" name="confirm_passwd" value="<?php if($_POST[confirm_passwd]) $_POST[passwd]; else /*if(is_admin())*/ print $row_u[passwd]; ?>"></td></tr>
 <tr><td colspan="2" align="right"><input type="hidden" name="action" value="<?php if(!$uid) print 'add'; else print 'edit'; ?>">
-<input type="submit" value="<?php if(!$uid) print 'Add User'; else print 'Edit Info'; ?>">
-<?php if(!$uid and is_admin()) print '<br /><input type=checkbox name=permissions value=true checked> Proceed to Permissions Setup'; ?>
+<input type="submit" value="<?php if(!$uid) print __('Add User'); else print __('Edit Info'); ?>">
+<?php if(!$uid and is_admin()) print '<br /><input type=checkbox name=permissions value=true checked> ' . __('Proceed to Permissions Setup'); ?>
 </td></tr>
 </table>
 
 <p>
-* Required fields
+* <?php e_('Required fields')?>
 
 </form>
 
 <?php
 
 //only the admin can delete users
-if(is_admin() and $uid) print '<p>&nbsp;<p><a href=users.php?action=delete&uid=' . $uid . ' onclick="return confirm(\'Are you sure you wish to delete this user?\');">delete</a>';
+if(is_admin() and $uid) print '<p>&nbsp;<p><a href=users.php?action=delete&uid=' . $uid . ' onclick="return confirm(\'' . __('Are you sure you wish to delete this user?') . '\');">' . __('delete') . '</a>';
 
 // Use javascript to focus on the selected element, if there is one
 

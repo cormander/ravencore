@@ -34,7 +34,7 @@ if($row[host_type] != "physical") {
 
   nav_top();
 
-  print $domain_name . ' is not setup for physical hosting. Webstats are not available';
+  print $domain_name . ' ' . __('is not setup for physical hosting. Webstats are not available');
 
   nav_bottom();
 
@@ -54,13 +54,13 @@ $_SERVER[QUERY_STRING] = preg_replace('/config=([\/-\w.]+)/', '', $_SERVER[QUERY
 // put this domain's configdir into the query string so we're looking for the conf file in the right place
 
 $_SERVER[QUERY_STRING] .= "&configdir=" . $CONF[VHOST_ROOT] . "/" . $domain_name . "/conf";
-$_SERVER[QUERY_STRING] .= "&config=" . $domain_name . "&did=" . $did;
+$_SERVER[QUERY_STRING] .= "&config=" . $domain_name . "&did=" . $did . "&Lang=" . $locales[$current_locale]['awstats'];
 
 // run awstats in a simulated CGI enviroment, and output the results to the web
 // fix the links too, by changeing references to "awstats.pl" to "webstats.php"
 
 print ereg_replace(
-		   '<input type="submit" value=" OK " class="aws_button" />','<input type="submit" value=" OK " class="aws_button" /><input type="hidden" name="did" value="' . $did . '"',
+		   '<input type="submit" value=" ' . __('OK') . ' " class="aws_button" />','<input type="submit" value=" OK " class="aws_button" /><input type="hidden" name="did" value="' . $did . '"',
 		   shell_exec("export GATEWAY_INTERFACE=\"CGI/1.1\" QUERY_STRING=\"" . $_SERVER[QUERY_STRING] . "\"; " . $CONF[RC_ROOT] . "/var/awstats/wwwroot/cgi-bin/awstats.pl | sed 's/awstats.pl/webstats.php/g' | sed '1d' | sed '1d' | sed '1d' | sed '1d'")
 		   );
 
