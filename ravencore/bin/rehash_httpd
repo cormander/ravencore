@@ -101,7 +101,7 @@ server_alias() {
 
 	v_echo "$domain_name has server alias $i"
 
-	case $($MYSQL_STR -e "select www from domains where name = '$domain_name'" | $_sed '1d') in
+	case $($MYSQL_STR -e "select www from domains where name = '$i'" | $_sed '1d') in
 	    true)
 		echo_e "\tServerAlias  www."$i
 		v_echo "$domain_name has server alias www.$i"
