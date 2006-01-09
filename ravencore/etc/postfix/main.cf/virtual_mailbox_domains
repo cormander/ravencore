@@ -1,1 +1,1 @@
-hash:/etc/postfix/vmaildomains
+hash:$_[VMAIL_CONF_DIR]/vmaildomains

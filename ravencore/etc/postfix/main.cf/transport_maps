@@ -1,1 +1,1 @@
-hash:/etc/postfix/vtransportmap
+hash:$_[VMAIL_CONF_DIR]/vtransportmap

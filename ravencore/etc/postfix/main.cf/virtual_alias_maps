@@ -1,1 +1,1 @@
-hash:/etc/postfix/valiasmap
+hash:$_[VMAIL_CONF_DIR]/valiasmap
