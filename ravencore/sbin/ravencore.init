@@ -26,12 +26,18 @@
 # config: /usr/local/ravencore/etc/ravencore.httpd.conf
 # pidfile: /usr/local/ravencore/var/run/ravencore.httpd.pid
 
-# we don't want to require a database connection, so say we already have one
-# so bash_functions doesn't attempt to read the database configuration
+# if we are a new installation we don't want to require a database connection to get all
+# of our configuration settings, so bash_functions doesn't attempt to read the database
+# and stop us because we don't them them yet
 
 export GOT_CONF=1
 
 . /etc/ravencore.conf || exit 1
+
+# if our installation is infact complete, we will eventually need the database configuration,
+# so unset the GOT_CONF variable
+
+[ -f $RC_ROOT/var/run/install_complete ] && export GOT_CONF=
 
 # so our services.php page knows where init scripts are
 export INITD=$INITD
@@ -125,10 +131,6 @@ start() {
 
     fi
 
-# say we're starting up...
-
-    $_echo -n $"Starting control panel: "
-
 # check httpd version series. The result of this command will look like: 1.3 , 2.0 , etc
     httpd_v=$($httpd -v | $_sed '2d' | $_awk '{print $3}' | $_sed 's|.*/||' | $_sed 's/\./ /g' | $_awk '{print $1"."$2}')
     
@@ -153,25 +155,6 @@ if [ ! -f $RC_ROOT/etc/port.conf ]; then
     $_echo "Listen 8000" > $RC_ROOT/etc/port.conf
 
 fi
-
-# set our runtime options
-# conf file is different depending on the httpd version
-    OPTIONS="$OPTIONS -d $RC_ROOT -f etc/ravencore.httpd-$httpd_v.conf"
-
-# check for compiled-in modules, and include the ones that are not, that we need to function
-
-# get the list from the apache binary
-    compiled_modules=`$httpd -l`
-
-    for module in log_config setenvif mime negotiation dir actions alias include; do
-
-	if [ -z "$($_echo $compiled_modules | $_grep $module)" ]; then
-
-	    OPTIONS="$OPTIONS -D$module"
-
-	fi
-
-    done
 
 # check to make sure our httpd_modules symlink is correct
 
@@ -201,6 +184,46 @@ fi
 
     fi
 
+# set our runtime options
+# conf file is different depending on the httpd version
+    OPTIONS="$OPTIONS -d $RC_ROOT -f etc/ravencore.httpd-$httpd_v.conf"
+
+# check for compiled-in modules, and include the ones that are not, that we need to function
+
+# get the list from the apache binary
+    compiled_modules=`$httpd -l`
+
+    for module in log_config setenvif mime negotiation dir actions alias include; do
+
+# if this module is not compiled in to the binary
+
+	if [ -z "$($_echo $compiled_modules | $_grep $module)" ]; then
+
+# check to see if the module exists, get the location from the ravencore.httpd conf file
+
+	    module_location=$($_grep $module $RC_ROOT/etc/ravencore.httpd-$httpd_v.conf | $_grep '\.so$' | $_awk '{print $3}')
+
+# if it doesn't exist, echo a warning
+
+	    if [ -n "$module_location" ] && [ ! -f $RC_ROOT/$module_location ]; then
+		
+		module_filename=$($_basename $module_location)
+
+		$_echo "WARNING: unable to find $module_filename for the apache $module module in:" $($_cat $RC_ROOT/var/run/httpd_modules.path) ". Excluding from configuration"
+		
+	    else
+		
+# only include the module if the file is found. this has apache give a different error message then we do,
+# and with that additional info it should be easier for the user to find an answer to what exactly is wrong
+
+		OPTIONS="$OPTIONS -D$module"
+	    
+	    fi
+
+	fi
+
+    done
+
 # check to see if the php and ssl apache modules lives in a strange place.
 # this will, in some cases, pick up the real file in the expected place.. but that's ok, linking a file
 # to itself won't cause anything bad to happen, and we just force the error'd output to /dev/null
@@ -220,20 +243,24 @@ fi
 	
     done
     
-# only load PHP if we have it installed. If it isn't installed, our no_php.html will show up as the
-# default index page of the control panel
-    
+# only load PHP if we have it installed. That way, if we can't find PHP, we will successfully start up
+# without php configured at all, and our no_php.html will show up as the default index page of the control
+# panel, thus giving a more user-friendly (and less depressing) error message then a startup failure.
+
 # first check to see if we have a funky name for the php module, mod_php ( it's normally libphp )
 # we look through 4 and 5 because those are the supported versions
 
     for num in 4 5; do
 
 # basically, if mod_php4.so exist but there isn't a libphp4.so, create a symlink
-	if [ -f $RC_ROOT/etc/httpd_modules/mod_php$num.so ] && [ ! -f $RC_ROOT/etc/httpd_modules/libphp$num.so ]; then
+	[ -f $RC_ROOT/etc/httpd_modules/mod_php$num.so ] && [ ! -f $RC_ROOT/etc/httpd_modules/libphp$num.so ] && \
 	    $_ln -s $RC_ROOT/etc/httpd_modules/mod_php$num.so $RC_ROOT/etc/httpd_modules/libphp$num.so
-	fi
 
     done
+
+# say we're starting up... this needs to come before the (no php) and (no ssl) echos
+
+    $_echo -n $"Starting control panel: "
 
 # php5 listed first, because on a test system with both php5 and php4 libs installed, mysql only worked with
 # php5 loaded
@@ -266,7 +293,7 @@ fi
 # if we are missing a cert or key file, don't attempt to start with ssl
 		if [ ! -f $RC_ROOT/etc/server.crt ] || [ ! -f $RC_ROOT/etc/server.key ]; then
 		    $_echo
-		    $_echo "Warning: ssl cert and/or key file missing. Starting with no ssl"
+		    $_echo "WARNING: ssl cert and/or key file missing. Starting with no ssl"
 		else
 # if we have the openssl command, verify that the .crt file is OK
 		    if [ -x $_openssl ]; then
@@ -278,7 +305,7 @@ fi
 			if [ $? -ne 0 ]; then
 			    
 			    $_echo
-			    $_echo "Warning: Unable to verify the server.crt file. Starting without ssl"
+			    $_echo "WARNING: Unable to verify the server.crt file. Starting without ssl"
 
 			else
 			    
@@ -307,6 +334,15 @@ fi
 # notify us that we are not useing ssl, b/c it's not installed
 	$_echo -n " (no ssl)"
     fi
+
+# if running in ssl, be sure we have the port_ssl.conf
+
+if [ ! -f $RC_ROOT/etc/port_ssl.conf ]; then
+
+    $_echo "Listen 8080" > $RC_ROOT/etc/port_ssl.conf
+
+fi
+
 
 # unset these enviroment variables so they don't get set in the apache enviroment
     
@@ -337,6 +373,27 @@ fi
 	fi
 	
     fi
+
+# check to see if we're a completed installation...
+
+    if [ ! -f $RC_ROOT/var/run/install_complete ]; then
+
+	$_echo
+	$_echo "----------"
+	$_echo
+	$_echo "Thank You for using RavenCore!"
+	$_echo
+	$_echo "The install/upgrade process will not be completed until after you login to the control panel web interface as the admin user, and accept the license agreement (GPL)."
+	$_echo
+
+# simple loop to get all IP addresses bound to a machine
+
+	IP_ADDRESSES=$(for IFACE in `ifconfig | grep -v '^ ' | awk '{print $1}'`; do echo $(for i in `ifconfig | awk "/^\$IFACE/ {print \\$1}"`; do ifconfig $i | grep -o 'addr:[[:digit:]]\{1,3\}\.[[:digit:]]\{1,3\}\.[[:digit:]]\{1,3\}\.[[:digit:]]\{1,3\}' | sed 's/addr://'; done); done)
+
+	for i in $IP_ADDRESSES; do $_echo "http://"$i":8000/"; done
+
+    fi
+
     
     return $RETVAL
     
