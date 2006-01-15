@@ -18,36 +18,54 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-runlevel=$1
-runlevel=3
+if [ -z "$runlevel" ]; then
 
-echo "<h2>Services set to start on boot ( runlevel 3 )</h2>"
+# get our default runlevel
+        
+    runlevel=$(grep ':initdefault:' /etc/inittab | sed 's/:/ /g' | awk '{print $2}')
 
-echo "<table cellpadding=0 cellspacing=0 border=0><tr>"
+fi
 
-for i in `chkconfig --list | grep '^[[:alpha:]]' | grep -v 'based services' | awk '{print $1}' | sort`; do
+echo "<h2>Services set to start on boot ( runlevel $runlevel "
 
-    echo "<tr><td>$i</td>"
+#<select name=runlevel>"
+#for i in 1 2 3 4 5; do
+#    echo -n "<option value=$i"
+#    [ $runlevel -eq $i ] && echo -n " selected"
+#    echo ">$i</option>"
+#done
 
-    e=$(chkconfig --list $i | sed "s/$i//" | awk "{print \$$(expr $runlevel "+" 1)}")
-    echo 
-    status=$(echo $e | sed 's/.*://')
-    
+#echo "</select>
+
+echo " )</h2>"
+
+echo "<table cellpadding=0 cellspacing=0 border=1><tr>"
+
+chkconfig --list | grep '^[[:alpha:]]' | while read -r line; do
+
+    i=$(echo $line | awk '{print $1}')
+
+    echo "<tr><td width=200>$i</td>"
+
+    status=$(echo $line | awk "{print \$$(expr $runlevel "+" 2)}" | sed 's/.*://')
+
     case $status in
 	on)
 	    new_status=off
+	    running='<img src="images/solidgr.gif" border=0>'
+	    start='<img src="images/start_grey.gif" border=0>'
+	    stop='<a href="chkconfig.php?service='$i'&status='$new_status'"><img src="images/stop.gif" border=0></a>'
 	    ;;
 	off)
 	    new_status=on
-	    ;;
-	*)
-	    new_status=reset
+	    running='<img src="images/solidrd.gif" border=0>'
+	    start='<a href="chkconfig.php?service='$i'&status='$new_status'"><img src="images/start.gif" border=0></a>'
+	    stop='<img src="images/stop_grey.gif" border=0>'
 	    ;;
     esac
 
-    echo "<td>&nbsp; &nbsp; $status <a href=\"chkconfig.php?service=$i&status=$new_status\">*</a></td>"
 
-    echo "</tr>"
+    echo '<td>' $running '</td><td>' $start '</td><td>' $stop '</td></tr>'
 
 done
 

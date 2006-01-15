@@ -23,13 +23,12 @@ include "auth.php";
 
 req_admin();
 
-if($_GET[cmd]) {
+if ($_GET[cmd])
+{
+    socket_cmd("system $_GET[cmd]");
 
-  socket_cmd("system $_GET[cmd]");
-  
-  alert( __("The system will now $_GET[cmd]") );
-  
-}
+    alert(__("The system will now $_GET[cmd]"));
+} 
 
 nav_top();
 
@@ -43,47 +42,38 @@ nav_top();
 
 <p>
 
-<a href="sessions.php" onmouseover="show_help('<?php e_('View who is logged into the server, and where from')?>');" onmouseout="help_rst();"><?php e_('Login Sessions')?></a>
-
-<p>
-
-<?php
-/*
-<a href="iptables.php" onmouseover="show_help('<?php e_('Manage the server firewall');" onmouseout="help_rst();"><?php e_('Firewall Configuration')?></a>
-
-<p>
-
-*/
-?>
 <a href="chkconfig.php" onmouseover="show_help('<?php e_('Services that automatically start when the server boots up')?>');" onmouseout="help_rst();"><?php e_('Startup Services')?></a>
 
 <p>
 
 <?php
-
-if(have_service("web")) {
-  
-  // commented out because it doesn't currently work
-  //print '<a href="crontab.php" onmouseover="show_help(\'Manage Vixie Crontab for the server\');" onmouseout="help_rst();">Manage Crontab</a>';
-  
+if(! $server->db_panic )
+{
+?>
+<a href="sessions.php" onmouseover="show_help('<?php e_('View who is logged into the server, and where from')?>');" onmouseout="help_rst();"><?php e_('Login Sessions')?></a>
+<?php
 }
 
-?>
+print '<p>';
 
-<p>
+if (have_service("web"))
+{ 
+  // commented out because it doesn't currently work
+  // print '<a href="crontab.php" onmouseover="show_help(\'Manage Vixie Crontab for the server\');" onmouseout="help_rst();">Manage Crontab</a>';
+  // print '<p>';
+} 
 
-<?php
+if ( have_service("dns") and ! $server->db_panic )
+{
 
-if(have_service("dns")) {
-
-?>
+    ?>
 <a href="dns_def.php" onmouseover="show_help('<?php e_('The DNS records that are setup for a domain by default when one is added to the server')?>');" onmouseout="help_rst();"><?php e_('Default DNS')?></a>
 
 <p>
 
 <?php
 
-   }
+} 
 
 print '<a href="change_password.php" onmouseover="show_help(\'' . __('Change the admin password') . '\');" onmouseout="help_rst();">' . __('Change Admin Password') . '</a>';
 
@@ -100,11 +90,14 @@ print '<a href="change_password.php" onmouseover="show_help(\'' . __('Change the
 </p>
 
 <p>
-<a href="jta/" target=_blank onmouseover="show_help('<?php e_('SSH Terminal to your server via a Java(TM) Applet'); ?>');" onmouseout="help_rst();"><?php e_('SSH Terminal'); ?></a>
+<a href="jta/" target=_blank onmouseover="show_help('<?php e_('SSH Terminal to your server via a Java(TM) Applet');
+?>');" onmouseout="help_rst();"><?php e_('SSH Terminal');
+?></a>
 </p>
 
 <p>
-<a href="sysinfo/index.php?lng=<?php print $locales[$current_locale]['sysinfo']; ?>" target="_blank" onmouseover="show_help('<?php e_('View general system information')?>');" onmouseout="help_rst();"><?php e_('System Info')?></a>
+<a href="sysinfo/index.php?lng=<?php print $locales[$current_locale]['sysinfo'];
+?>" target="_blank" onmouseover="show_help('<?php e_('View general system information')?>');" onmouseout="help_rst();"><?php e_('System Info')?></a>
 </p>
 
 <p>
@@ -124,7 +117,7 @@ print '<a href="change_password.php" onmouseover="show_help(\'' . __('Change the
 
 <?php
 
-print '<a href="system.php?cmd=reboot" onclick="return confirm(\'' . __('Are you sure you wish to reboot the system?') . '\');" onmouseover="show_help(\'' . __('Reboot the server') . '\');" onmouseout="help_rst();">' . __('Reboot Server'). '</a>';
+print '<a href="system.php?cmd=reboot" onclick="return confirm(\'' . __('Are you sure you wish to reboot the system?') . '\');" onmouseover="show_help(\'' . __('Reboot the server') . '\');" onmouseout="help_rst();">' . __('Reboot Server') . '</a>';
 
 ?>
 
