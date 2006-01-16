@@ -211,7 +211,7 @@ if( ! $server->db_panic )
     {
       
       $uid = $session->get_user_id();
-      
+
       $u = new user($uid);
       
     }

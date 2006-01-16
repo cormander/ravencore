@@ -240,7 +240,7 @@ class session {
 	  {
 	    $this->admin_user = true;
 	  }
-	
+
 	// update your idle
 	$sql = "update sessions set idle = now() where id = '" . $this->id . "'";
 	$db->Execute($sql);

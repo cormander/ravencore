@@ -79,10 +79,6 @@ print '<a href="change_password.php" onmouseover="show_help(\'' . __('Change the
 
 ?>
 
-<p>
-
-<a href="language.php" onmouseover="show_help('<?php e_('Manage languages')?>');" onmouseout="help_rst();"><?php e_('Language Support')?></a>
-
 </td><td valign=top>
 
 <p>
