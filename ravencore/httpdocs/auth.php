@@ -18,706 +18,245 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 */
-
 // Define our regular expressions. They don't contain ^ or $ in them, because they are used with
 // each other in some places. Be sure you supply ^ before the string, and $ after it:
-//    eg: preg_match('/^'.REGEX.'$/')
-//        preg_match('/^'.REGEX.'@'.REGEX2.'$/')
-// to get the full effectiveness of the regular expressions. 
+// eg: preg_match('/^'.REGEX.'$/')
+// preg_match('/^'.REGEX.'@'.REGEX2.'$/')
+// to get the full effectiveness of the regular expressions.
+define("REGEX_MAIL_NAME", '([a-zA-Z\d]+((\.||\-||_)[a-zA-Z\d]?)?)*[a-zA-Z\d]');
+define("REGEX_DOMAIN_NAME", '([a-zA-Z\d]+((\.||\-)[a-zA-Z\d]?)?)*[a-zA-Z\d]\.[a-zA-Z]+');
+define("REGEX_PASSWORD", '[a-zA-Z\d]*');
 
-define("REGEX_MAIL_NAME",'([a-zA-Z\d]+((\.||\-||_)[a-zA-Z\d]?)?)*[a-zA-Z\d]');
-define("REGEX_DOMAIN_NAME",'([a-zA-Z\d]+((\.||\-)[a-zA-Z\d]?)?)*[a-zA-Z\d]\.[a-zA-Z]+');
-define("REGEX_PASSWORD",'[a-zA-Z\d]*');
+// set our some of our php_admin_values that we can't define in the ravencore.httpd.conf
+error_reporting(E_ALL ^ E_NOTICE);
 
-//Initialize some variables
-
+// Initialize some variables
 $js_alerts = array();
 $CONF = array();
 $conf_not_complete = false;
 
 // Include our function file
-include 'functions/locale.php'; // lang file have to go first
-
 include "functions.php";
 
-//make sure PHP was compiled with sessions enabled
+// A list of variables that are allowed to use the GET and POST methods
+$reg_glob_vars = array('uid', 'did', 'mid', 'action', 'db', 'dbu', 'page_type');
 
-if(!function_exists("session_start")) {
+foreach ($reg_glob_vars as $val)
+{
+    if (isset($_REQUEST[$val]))
+    {
+        $eval_code = '$' . $val . ' = $_REQUEST[\'' . $val . '\'];';
 
-  nav_top();
-
-  print __('The server doesn\'t have PHP session functions available.<p>Please recompile PHP with sessions enabled.');
-
-  nav_bottom();
-
-  exit;
-
+        eval($eval_code);
+    }
 }
 
-//start our session
-session_start();
+// start our session
+$session = new session();
 
-//Get the ID of this session
-
-$session_id = session_id();
-
-//A list of variables that are allowed to use the GET and POST methods
-$reg_glob_vars = array('uid','did','mid','action','db','dbu','page_type');
-
-foreach($reg_glob_vars as $val) {
-
-  if( isset($_REQUEST[$val]) ) {
-
-    $eval_code = '$' . $val . ' = $_REQUEST[\'' . $val . '\'];';
-
-    eval($eval_code);
-
-  }
-
-}
-
-//Get our conf vars
-
-read_db_conf();
-
-// on installation, we won't have a default locale. Set it to the system EV
-
-//set our language
-
-if( isset($_REQUEST['lang']) or isset($_SESSION['lang']) ) {
-
-  $_SESSION['lang'] = ($_REQUEST['lang'] ? $_REQUEST['lang'] : $_SESSION['lang'] );
-
-  locale_set( $_SESSION['lang'] );
-
-}
-
-// Check to see if the database conf file exists
-if(!file_exists("$CONF[RC_ROOT]/database.cfg")) {
-
-  nav_top();
-
-  print __('You are missing the database configuration file: ' . $CONF['RC_ROOT'] . '/database.cfg<p>Please run the following script as root:<p>' . $CONF['RC_ROOT'] . '/sbin/database_reconfig');
-
-  nav_bottom();
-
-  exit;
-
-}
-
-// make sure that perl-suidperl works. If it doesn't, it won't run, and "OK" won't be printed.
-
-if(trim(shell_exec("../sbin/wrapper testsuid")) != "root") {
-
-  nav_top();
-
-  print __('Your system is unable to set uid to root with the wrapper. This is required for ravencore to function. To correct this:<p>
-			Remove the file: <b>/usr/local/ravencore/sbin/wrapper</b><p>
-			Then do one of the following:<p>
-			* Install <b>gcc</b> and the package that includes <b>/usr/include/sys/types.h</b> and restart ravencore<br />
-			&nbsp;&nbsp;or<br />
-			* Install the <b>perl-suidperl</b> package and restart ravencore<br />
-			&nbsp;&nbsp;or<br />
-			* Copy the wrapper binary from another server with ravencore installed into ravencore\'s sbin/ on this server');
-
-  nav_bottom();
-
-  exit;
-
-}
-
-// check to see if we have mysql functions
-
-if(!function_exists("mysql_connect")) {
-
-  nav_top();
-
-  print __('Unable to call the mysql_connect function. 
-  			Please install the php-mysql package or recompile PHP with mysql support, and restart the control panel.<p>
-			If php-mysql is installed on the server, check to make sure that the mysql.so extention is getting loaded in your system\'s php.ini file');
-
-  nav_bottom();
-
-  exit;
-
-}
+// set our server object
+$server = new server();
 
 // Connect to the database
+require_once './adodb/adodb.inc.php';
+$db =& ADONewConnection('mysql');
 
-$link = mysql_connect($CONF['MYSQL_ADMIN_HOST'], $CONF['MYSQL_ADMIN_USER'], $CONF['MYSQL_ADMIN_PASS']);
+$db->SetFetchMode(ADODB_FETCH_ASSOC);
 
-if(!$link) {
+$dbConnect = $db->Connect($CONF['MYSQL_ADMIN_HOST'], $CONF['MYSQL_ADMIN_USER'],
+			  $CONF['MYSQL_ADMIN_PASS'], $CONF['MYSQL_ADMIN_DB']);
 
-  //Print message here
 
-  nav_top();
-
-  print __('Unable to get a database connection.');
-
-  nav_bottom();
-
-  exit;
-
-}
-
-//Use the admin database. Default is ravencore
-
-mysql_select_db($CONF['MYSQL_ADMIN_DB'], $link) or die(mysql_error());
-
-// read our database configuration settings
-
-read_conf();
-
-// set our locale if not already
-
-if( ! $CONF['DEFAULT_LOCALE'] ) $_SESSION['lang'] = @ereg_replace('\..*','',shell_exec('echo $LANG'));
-
-if(!$_SESSION['lang']) locale_set( $CONF['DEFAULT_LOCALE'] );
-
-// set our some of our php_admin_values that we can't define in the ravencore.httpd.conf
-error_reporting(E_ALL ^ E_NOTICE);
-
-//If we're trying to login, run the authentication
-
-if($action == "login") {
-
-  // check the lockout to see if we have several failed attempts
-  $sql = "select count(*) as count from login_failure where login = '$_POST[user]' and ( ( to_days(date) * 24 * 60 * 60 ) + time_to_sec(date) + '$CONF[LOCKOUT_TIME]' ) > ( ( to_days(now()) * 24 * 60 * 60 ) + time_to_sec(now() ) )";
-
-  $result = mysql_query($sql) or die(mysql_error());
-
-  $row_lock = mysql_fetch_array($result);
-
-  //if we have the same or more as the lockout count, lock the login
-  if($row_lock['count'] >= $CONF['LOCKOUT_COUNT'] and $CONF['LOCKOUT_COUNT']) {
-
-      $login_error = __('Login locked.');
-      
-      syslog(LOG_WARNING, "Login attempted for user $_POST[user], but was denied by auto-lock from $_SERVER[REMOTE_ADDR]");
-
-      include("login.php");
-      
-      exit;
-
-  }
-  
-  //now we do password authentication
-
-  if($_POST['user'] == $CONF['MYSQL_ADMIN_USER']) {
-    
-    if( $_POST['user'] != $CONF['MYSQL_ADMIN_USER'] or $_POST['pass'] != $CONF['MYSQL_ADMIN_PASS'] ) {
-      
-      // admin login faliure
-      
-      $sql = "insert into login_failure set date = now(), login = '$_POST[user]'";
-      mysql_query($sql);
-
-      $login_error = __('Login failure.');
-      
-      syslog(LOG_WARNING, "Login failure for user $_POST[user] from $_SERVER[REMOTE_ADDR]");
-
-      include("login.php");
-      
-      exit;
-      
-    }
-    
-  } else {
-    
-    //user login auth
-
-    $sql = "select * from users where binary(login) = '$_POST[user]' and binary(passwd) = '$_POST[pass]'";
-    $result = mysql_query($sql);
-    
-    $num = mysql_num_rows($result);
-    
-    if($num != 1) {
-
-      // email user auth
-
-      list($login_mailname, $login_domain) = split("@",$_POST[user]);
-
-      $sql = "select m.id, d.name, uid, did from mail_users m, domains d where mail_name = '$login_mailname' and name = '$login_domain' and m.passwd = '$_POST[pass]'";
-      $result = mysql_query($sql);
-
-      $num = mysql_num_rows($result);
-
-      $row_email_user = mysql_fetch_array($result);
-
-      $mid = $row_email_user[id];
-      $uid = $row_email_user[uid];
-      $did = $row_email_user[did];
-
-      if($num != 1) {
-
-	$sql = "insert into login_failure set date = now(), login = '$_POST[user]'";
-	mysql_query($sql);
-	
-	$login_error = __('Login failure.');
-	
-	syslog(LOG_WARNING, "Login failure for user $_POST[user] from $_SERVER[REMOTE_ADDR]");
-
-	include "login.php";
-	
-	exit;
-      
-      }
-
-    }
-
-    // we have this here so the is_admin function still works
-    $row_user = mysql_fetch_array($result);
-    
-  }
-
-  // look in our misc table to see if we should lock the control panel to users if our version is outdated
-  // only bother checking if the configuration is complete
-  if($CONF[LOCK_IF_OUTDATED] == 1 and !$conf_not_complete and $CONF[SERVER_TYPE] != "slave") {
-
-    // set the timeout for the tcp connection, lucky 7
-    $timeout = 7;
-
-    if ($CONF[VERSION] and $fsock = @fsockopen('www.ravencore.com', 80, $errno, $errstr, $timeout) )
-      {
-	
-	// set the timeout for reading / writting data to the socket
-	if(function_exists(stream_set_timeout)) stream_set_timeout($fsock, $timeout);
-	
-	$general_version = preg_replace('/\.\d*$/', '.x', $CONF[VERSION]);
-
-	@fputs($fsock, "GET /updates/" . $general_version . ".txt HTTP/1.1\r\n");
-	@fputs($fsock, "HOST: www.ravencore.com\r\n");
-	@fputs($fsock, "Connection: close\r\n\r\n");
-
-	while (!@feof($fsock)) $data .= @fread($fsock, 1024);
-
-	@fclose($fsock);
-
-	$http_info = explode("\r\n",$data);
-	
-	//this will always be blank
-	//array_pop($http_info);
-	$current_version = trim(array_pop($http_info));
-
-	//echo "$general_version -- $current_version -- $CONF[VERSION]";
-	
-	list($x,$y,$current_version) = explode('.',$current_version);
-	list($x,$y,$conf_version) = explode('.',$CONF[VERSION]);
-
-	if($current_version > $conf_version) { //real
-
-	  if($_POST[user] == $CONF[MYSQL_ADMIN_USER]) {
-
-	    $_SESSION['status_mesg'] = __('Control panel is locked for users, because your "lock if outdated" setting is active, and we appear to be outdated.');
-
-	  } else {
-
-	    $login_error = __('Login locked because control panel is outdated.');
-
-	    syslog(LOG_WARNING, "Control panel outdated");
-
-	    include("login.php");
-
-	    exit;
-
-	  }
-
-	}
-
-      }
-
-  }
-
-  // slave server socket_cmd
-  if($_POST[socket_cmd]) {
-
-    if($CONF[SERVER_TYPE] == "slave") {
-
-      socket_cmd(trim(urldecode($_POST[socket_cmd])));
-      
-      syslog(LOG_INFO, "Posted command '$_POST[socket_cmd]' from $_SERVER[REMOTE_ADDR]");
-      
-      exit;
-
-    } else {
-
-      nav_top();
-
-      print __('API command failed. This server is configured as a master server.');
-
-      nav_bottom();
-
-      syslog(LOG_INFO, "API command attempted on master server from $_SERVER[REMOTE_ADDR]");
-
-      exit;
-
-    }
-
-  }
-
-  //
-
-  $sql = "insert into sessions set session_id = '$session_id', login = '$_POST[user]', location = '$_SERVER[REMOTE_ADDR]', created = now(), idle = now()";
-  mysql_query($sql);
-
-  syslog(LOG_INFO, "User $_POST[user] logged in from $_SERVER[REMOTE_ADDR]");
-
-  // redirect email users to the edit_mail page
-
-  if($row_email_user) goto("edit_mail.php");
-
-  // send ourself back to where we were upon login
-  $url = $_SERVER[PHP_SELF];
-  // only add the query string if it exists
-  if($_SERVER[QUERY_STRING]) $url .= '?' . $_SERVER[QUERY_STRING];
-
-  // only do a header redirect if we have no pending alerts
-  if(!$js_alerts) goto($url);
-
-}
-
-// We can't proceed past this point if we are a slave server
-if($CONF[SERVER_TYPE] == "slave") exit;
-
-// Define a default value for SESSION_TIMOUT here, because if we don't have one at all,
-// we'll never be able to login
-
-if(!$CONF[SESSION_TIMEOUT]) $session_timeout = 600;
-else $session_timeout = $CONF[SESSION_TIMEOUT];
-
-//Delete sessions that have been idle for too long. We must do this before we attempt
-//to lookup our session.
-
-$sql = "delete from sessions where ( ( to_days(idle) * 24 * 60 * 60 ) + time_to_sec(idle) + $session_timeout ) < ( ( to_days(now()) * 24 * 60 * 60 ) + time_to_sec(now() ) )";
-mysql_query($sql) or die(mysql_error());
-
-$sql = "select * from sessions where binary(session_id) = '$session_id'";
-$result = mysql_query($sql);
-
-$num = mysql_num_rows($result);
-
-//we found this user's session
-
-if($num != 0) {
-
-  $row_session = mysql_fetch_array($result);
-  
-  //make sure the remote addr didn't change
-  if($row_session[location] != $_SERVER[REMOTE_ADDR]) {
-
-    syslog(LOG_WARNING, "Session hijack attempt detected for user $row[login] from $_SERVER[REMOTE_ADDR]");
-    
-    //if it is different, destroy the session
-    $sql = "delete from sessions where id = '$row_session[id]'";
-    mysql_query($sql);
-    
-    goto("$PHP_SELF");
-    
-  }
-  
-  //If this user is not an admin
-  if($row_session[login] != $CONF[MYSQL_ADMIN_USER]) {
-
-    $sql = "select * from users where login = '$row_session[login]'";
-    $result = mysql_query($sql);
-
-    $num = mysql_num_rows($result);
-
-    if($num != 0) {
-
-      // we are a control panel user
-      
-      $row_user = mysql_fetch_array($result);
-      
-      //It is VERY important that we always set the $uid variable for non admin users
-      $uid = $row_user[id];
-
-    } else {
-
-      // we are an email user
-
-      list($login_mailname, $login_domain) = split("@",$row_session[login]);
-
-      $sql = "select m.id, d.name, uid, did from mail_users m, domains d where mail_name = '$login_mailname' and name = '$login_domain'";
-      $result = mysql_query($sql);
-
-      $row_email_user = mysql_fetch_array($result);
-
-      // set these values to make sure the user can't change them by messing with the URL
-      $mid = $row_email_user[id];
-      $uid = $row_email_user[uid];
-      $did = $row_email_user[did];
-
-    }
-
-  }
-  
-  //update your idle
-  $sql = "update sessions set idle = now() where id = '$row_session[id]'";
-  mysql_query($sql);
-  
-} else {
-
-  //No session found.
-  
-  include "login.php";
-  
-  exit;
-  
-}
-
-// make sure the admin password doesn't stay as "ravencore"
-
-if($CONF[MYSQL_ADMIN_PASS] == "ravencore" and
-   $row_session[login] == $CONF[MYSQL_ADMIN_USER] and
-   $_SERVER[PHP_SELF] != "/change_password.php" and
-   $_SERVER[PHP_SELF] != "/logout.php") {
-
-  // tell the change_password file that it is being included, rather than called from the browser directly
-  $being_included = true;
-
-  include("change_password.php");
-
-  exit;
-
-}
-
-// make the user agrees to the GNU GPL license for using RavenCore
-// just in case the gpl_check file gets removed, you can still logout
-
-if(!file_exists("../var/run/gpl_check") and is_admin() and $_SERVER[PHP_SELF] != "/logout.php") {
-
-  if($action == "gpl_agree" and $_POST[gpl_agree]) {
-
-    shell_exec("touch ../var/run/gpl_check");
-
-  } else {
-
+if (!$dbConnect)
+{
+  /*
     nav_top();
-    
-    if($action == "gpl_agree") print '<b><font color="red">' . __('You must agree to the GPL License to use RavenCore.') . '</font></b><p>';
 
-    print __('Please read the GPL License and select the "I agree" checkbox below') . '<hr><pre>';
-
-    $h = fopen("../LICENSE","r");
-    
-    fpassthru($h);
-    
-    print __('The GPL License should appear in the frame below') . ': </pre>
-<iframe src="GPL" width=675 height=250>
-</iframe>
-<p>
-<form method=post> <input type=checkbox name=gpl_agree value=yes> ' . __('I agree to these terms and conditions.') . '
-
-<p>
-<input type=submit value=Submit> <input type=hidden name=action value=gpl_agree></form>';
+    print __('Unable to get a database connection.');
 
     nav_bottom();
 
-    exit;
+  exit;
+  */
 
-  }
+  $server->db_panic();
 
 }
 
-// check to make sure we have a complete database configuration. If not, prompt the admin
-// user to update it, and lock out the rest of the users
 
-if($conf_not_complete and $_SERVER[PHP_SELF] != "/change_password.php" and $_SERVER[PHP_SELF] != "/logout.php") {
+// read our database configuration settings
+$server->read_conf();
 
-  if(is_admin()) {
+if (!$_SESSION['lang'] and $CONF['DEFAULT_LOCALE'])
+{
+  locale_set($CONF['DEFAULT_LOCALE']);
+}
 
-    if($action != "update_conf") nav_top();
+// set our locale if not already
+if (!$_SESSION['lang'] and !$CONF['DEFAULT_LOCALE'])
+{
+  $_SESSION['lang'] = @ereg_replace('\..*', '', shell_exec('echo $LANG'));
+}
 
-    // if we have $action, that means we're being posted to. Don't print anything
+// If we're trying to login, run the authentication
+if ($action == "login")
+{
 
-    if($action != "update_conf") print '<div align=center>' . __('Welcome, and thank you for using RavenCore!') . '</div>
-<p>
-' . __('You installed and/or upgraded some packages that require new configuration settings.') .
-				   __('Please take a moment to review these settings. We recomend that you keep the default values, ') .
-				   __('but if you know what you are doing, you may adjust them to your liking.') . '
-<div align=center>
-<form method=post>
-<input type=hidden name=action value="update_conf">
-<table>';
-    
-    $data = "";
+  if( ! $session->do_auth($_POST['user'], $_POST['pass']) )
+    {
 
-    $handle = popen("for i in `ls ../conf.d/`; do if [ -x ../conf.d/\$i ]; then echo \$i; fi; done","r");
-
-    while( !feof($handle) ) $data .= fread($handle, 1024);
-
-    pclose($handle);
-
-    // Seperate the data line by line
-
-    $conf_files = explode("\n", $data);
-
-    foreach($conf_files as $conf_file) {
-      
-      if(!$conf_file) continue;
-
-      // reset whether we have printed this conf file's name yet
-      $printed_header = false;
-
-      $conf_data = "";
-
-      $handle = fopen("../conf.d/$conf_file","r");
-      
-      while( !feof($handle) ) $conf_data .= fread($handle, 1024);
-      
-      fclose($handle);
-      
-      // Seperate the data line by line
-      
-      $conf_array = explode("\n", $conf_data);
-      
-      foreach($conf_array as $line) {
-
-	// Get rid of quotation marks
-	
-	$line = ereg_replace("\"", "", $line);
-	$line = ereg_replace("\'", "", $line);
-	
-	// If this looks like a bash shell variable, make it into a php variable. All conf
-	// variables will be all upper case. If they are not, they won't get read in here.
-	
-	if(preg_match("/^[A-Z||_]*=/", $line)) {
-	  
-	  // the name of the variable
-	  
-	  $var_name = ereg_replace("=.*", "", $line);
-	  
-	  // the shipped default of the variable
-	  
-	  $var_value = ereg_replace(".*=", "", $line);
-	  
-	  // check to make sure we have this variable
-
-	  if(!$CONF[$var_name] and $action != "update_conf") {
-
-	    // only print "conf configuration" if we are not posting variables, and if we haven't printed
-	    // something of this category yet
-
-	    if($action != "update_conf" and !$printed_header) {
-	      
-	      print '<tr><th colspan=2 align=center>' . ereg_replace('\.conf$',"",$conf_file) . ' ' . __('configuration') . '</th></tr>';
-
-	      $printed_header = true;
-
-	    }
-	
-	    print '<tr><td>' . $var_name . ':</td><td>';
-
-	    // values with | character are considered to be a list of possible values
-	    if(@ereg('\|',$var_value)) {
-
-	      print '<select name="' . $var_name . '">';
-
-	      foreach( explode('|',$var_value) as $val) {
-
-		print '<option value="' . $val . '">' . $val . '</option>';
-
-	      }
-
-	      print '</select>';
-
-	    } else print '<input name="' . $var_name . '" value="' . $var_value . '">';
-
-	    print '</td></tr>';
-	    
-	  }
-
-	  if(($_POST[$var_name]) and $action == "update_conf") {
-
-	    // insert this into the database
-	    $sql = "insert into settings set setting = '$var_name', value = '" . $_POST[$var_name] . "'";
-	    mysql_query($sql);
-
-	  }
-	  
+      if( ! $server->db_panic )
+	{      
+	  $sql = "insert into login_failure set date = now(), login = '" . $_POST['user'] . "'";
+	  $db->Execute($sql);
 	}
-	
-      }
+
+      $login_error = $session->login_error;
+      
+      syslog(LOG_WARNING, "Login failure for user " . $_POST['user'] . "from " . $_SERVER['REMOTE_ADDR']);
+      
+      include("login.php");
+      
+      exit;
       
     }
 
-    if($action != "update_conf") {
-
-      print '<tr><td colspan=2 align=right><input type="submit" value="'. __('Submit') .'"></td></tr></table></div>';
-    
-      nav_bottom();
-  
-      exit;
-
-    } else {
-
-      $url = $_SERVER[PHP_SELF];
-
-      if($_SERVER[QUERY_STRING]) $url .= '?' . $_SERVER[QUERY_STRING];
-
-      goto($url);
-
+  if ( ! $server->check_version() )
+    {
+      
+      // real
+      if ($_POST['user'] == $CONF['MYSQL_ADMIN_USER'])
+	{
+	  $_SESSION['status_mesg'] = __('Control panel is locked for users, because your "lock if outdated" setting is active, and we appear to be outdated.');
+	}
+      else
+	{
+	  $login_error = __('Login locked because control panel is outdated.');
+	  
+	  syslog(LOG_WARNING, "Control panel outdated");
+	  
+	  include("login.php");
+	  
+	  exit;
+	}
     }
 
-  } else {
+    // slave server socket_cmd
+    if ($_POST['socket_cmd'])
+    {
+        if ($CONF['SERVER_TYPE'] == "slave")
+        {
+            socket_cmd(trim(urldecode($_POST['socket_cmd'])));
 
-    $login_error = __('Control Panel is being upgraded. Login Locked.');
+            syslog(LOG_INFO, "Posted command '$_POST[socket_cmd]' from $_SERVER[REMOTE_ADDR]");
 
-    include "login.php";
+            exit;
+        }
+        else
+        {
+            nav_top();
 
+            print __('API command failed. This server is configured as a master server.');
+
+            nav_bottom();
+
+            syslog(LOG_INFO, "API command attempted on master server from $_SERVER[REMOTE_ADDR]");
+
+            exit;
+        }
+    }
+
+    // send the admin user to the system page if the server is in panic mode
+    if($server->db_panic)
+      {
+	goto("system.php");
+      }
+
+    // send ourself back to where we were upon login
+    $url = $_SERVER['PHP_SELF'];
+    // only add the query string if it exists
+    if ($_SERVER['QUERY_STRING'])
+    {
+        $url .= '?' . $_SERVER['QUERY_STRING'];
+    }
+
+    // only do a header redirect if we have no pending alerts
+    if (!$js_alerts)
+    {
+        goto($url);
+    }
+} // End auth login if
+
+// We can't proceed past this point if we are a slave server
+if ($CONF['SERVER_TYPE'] == 'slave')
+{
     exit;
+}
+
+if( ! $session->found() )
+{
+  // No session found.
+  include "login.php";
+
+  exit;
+
+}
+
+if( ! $server->db_panic )
+{
   
-  }
+  // create user object if this is not an admin user
+  
+  if( ! is_admin() )
+    {
+      
+      $uid = $session->get_user_id();
+      
+      $u = new user($uid);
+      
+    }
+  
+  // make sure the installation of the server is complete before we continue
+  
+  $server->install_checks();
+  
+  // NOTE! Anything beyond this point is considered a logged in user
+  
+  if ( $uid )
+    {
+      
+      $u = new user($uid);
+      
+    }
 
+  if ( $did )
+    {
+      
+      $d = new domain($did);
+      
+    }
+  
+  // If we have a $did and no $uid, we're an admin looking at a user's domain page. Get the $uid
+  if (!$uid and $did)
+    {
+      
+      $u = new user($d->info['uid']);
+      
+      $uid = $u->uid;
+      
+    }
+  
+  // If we have a $did, match it with the given $uid. If we fail, goto the user's main page
+  
+  // TODO:
+  // Fix this. if we switch a domains' user, this stops it cold
+  //
+  
+  if ( $did and $u and ! $u->owns_domain($did) )
+    {
+    goto("users.php?uid=$uid");
+    }
+  
 }
-
-//NOTE! Anything beyond this point is considered a logged in user
-
-// check for var/run/install_complete
-// if it doesn't exist, run all rehash scripts and create the file
-// this step is VERY IMPORTANT for upgrading systems.
-
-if(!file_exists('../var/run/install_complete')) {
-
-  if( have_service("web") ) {
-    socket_cmd("rehash_ftp --all");
-    socket_cmd("rehash_httpd --all");
-  }
-
-  if( have_service("mail") ) socket_cmd("rehash_mail --all");
-
-  if( have_service("dns") ) socket_cmd("rehash_named --all --rebuild-conf");
-
-  shell_exec('touch ../var/run/install_complete');
-
-}
-
-//If we have a $did and no $uid, we're an admin looking at a user's domain page. Get the $uid
-
-if(!$uid and $did) {
-
-  $sql = "select uid from domains where id = '$did'";
-  $result = mysql_query($sql);
-
-  $row = mysql_fetch_array($result);
-
-  $uid = $row[uid];
-
-}
-
-// make sure email users only access email user allowed pages
-
-if($row_email_user and !$email_user_page) {
-
-  goto("/edit_mail.php");
-
-}
-
-//If we have a $did, match it with the given $uid. If we fail, goto the user's main page
-
-if($did and !user_have_domain($uid, $did) and !$row_email_user) goto("users.php?uid=$uid");
-
-if($did) $domain_name = get_domain_name($did);
 
 ?>

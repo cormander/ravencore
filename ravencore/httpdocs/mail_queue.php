@@ -25,9 +25,9 @@ req_admin();
 
 nav_top();
 
-$h = popen('/usr/sbin/postqueue -p','r');
+$h = popen('/usr/sbin/postqueue -p', 'r');
 
-while(!feof($h)) $data .= fread($h, 1024);
+while (!feof($h)) $data .= fread($h, 1024);
 
 pclose($h);
 

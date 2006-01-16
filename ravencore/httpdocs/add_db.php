@@ -21,38 +21,36 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 include "auth.php";
 
-if(!$did) goto("users.php?uid=$uid");
+if (!$did) goto("users.php?uid=$uid");
 
-if(!user_can_add($uid,"database") and !is_admin()) goto("users.php?user=$uid");
+if (!user_can_add($uid, "database") and !is_admin()) goto("users.php?user=$uid");
 
-if($action == "add") {
+if ($action == "add")
+{
+    $sql = "create database $_POST[name]";
 
-  $sql = "create database $_POST[name]";
+    if ($db->Execute($sql))
+    {
+        $sql = "insert into data_bases set name = '$_POST[name]', did = '$did'";
+        $db->Execute($sql);
 
-  if( mysql_query($sql) ) {
-
-    $sql = "insert into data_bases set name = '$_POST[name]', did = '$did'";
-    mysql_query($sql);
-
-    goto("databases.php?did=$did");
-    
-
-  } else alert(mysql_error());
-
-}
+        goto("databases.php?did=$did");
+    } 
+    else alert($db->ErrorMsg());
+} 
 
 nav_top();
 
 $sql = "select * from domains where id = '$did'";
-$result = mysql_query($sql);
+$result =& $db->Execute($sql);
 
-$row = mysql_fetch_array($result);
+$row =& $result->FetchRow();
 
-print '' . $lang['add_db_adding_a_database_for'] . ' ' . $row[name] . '<p>
+print '' . $lang['add_db_adding_a_database_for'] . ' ' . $row['name'] . '<p>
 
 <form method="post">
 
-'. __('Name') .'": <input type="text" name=name>
+' . __('Name') . '": <input type="text" name=name>
 
 <p>
 

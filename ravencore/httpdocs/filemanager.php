@@ -21,12 +21,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 include "auth.php";
 
-if(!$did) goto("users.php");
+if (!$did) goto("users.php");
 
 $sql = "select login, passwd from sys_users s, domains d where d.id = '$did' and d.suid = s.id";
-$result = mysql_query($sql);
+$result =& $db->Execute($sql);
 
-$row = mysql_fetch_array($result);
+$row =& $result->FetchRow();
 
 $_SESSION['user'] = $row[login];
 $_SESSION['password'] = $row[passwd];

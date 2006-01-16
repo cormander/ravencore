@@ -21,68 +21,64 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 include "auth.php";
 
-if(!$db or !$did) goto("users.php?user=$uid");
+if (!$db or !$did) goto("users.php?user=$uid");
 
-if($action == "add") {
+if ($action == "add")
+{ 
+    // does user already exist?
+    $sql = "select count(*) as count from data_base_users where login = '$_POST[login]'";
+    $result =& $db->Execute($sql);
 
-  // does user already exist?
-  $sql = "select count(*) as count from data_base_users where login = '$_POST[login]'";
-  $result = mysql_query($sql);
+    $row =& $result->FetchRow(); 
+    // we can't use the admin username
+    if ($_POST['login'] == $CONF['MYSQL_ADMIN_USER']) $row['count'] = 1;
 
-  $row = mysql_fetch_array($result);
+    if ($row['count'] != 0) $error = "User $_POST[login] already exists";
+    else
+    {
+        if (preg_match('/^' . REGEX_PASSWORD . '$/', $_POST[passwd]) and valid_passwd($_POST[passwd]))
+        {
+            $sql = "select * from data_bases where id = '$db'";
+            $result =& $db->Execute($sql);
 
-  // we can't use the admin username
-  if($_POST[login] == $CONF[MYSQL_ADMIN_USER]) $row[count] = 1;
+            $row =& $result->FetchRow();
 
-  if($row[count] != 0) $error = "User $_POST[login] already exists";
-  else {
+            $sql = "grant select,insert,update,delete,create,drop,alter on $row[name].* to $_POST[login]@localhost identified by '$_POST[passwd]'";
 
-    if(preg_match('/^'.REGEX_PASSWORD.'$/',$_POST[passwd]) and valid_passwd($_POST[passwd])) {
+            if ($db->Execute($sql))
+            {
+                $sql = "insert into data_base_users set login = '$_POST[login]', db_id = '$db', passwd = '$_POST[passwd]'";
+                $db->Execute($sql);
 
-      $sql = "select * from data_bases where id = '$db'";
-      $result = mysql_query($sql);
-      
-      $row = mysql_fetch_array($result);
-      
-      $sql = "grant select,insert,update,delete,create,drop,alter on $row[name].* to $_POST[login]@localhost identified by '$_POST[passwd]'";
-      
-      if( mysql_query($sql) ) {
-	
-	$sql = "insert into data_base_users set login = '$_POST[login]', db_id = '$db', passwd = '$_POST[passwd]'";
-	mysql_query($sql);
-	
-	goto("databases.php?did=$did&db=$db");
-	
-      } else alert(mysql_error());
-
-    } else {
-
-      alert( __("Invalid password. Must only contain letters and numbers, must be atleast 5 characters, and not a dictionary word") );
-      $_POST[passwd] = "";
-
-    }
-
-  }
-
-}
+                goto("databases.php?did=$did&db=$db");
+            } 
+            else alert($db->ErrorMsg());
+        } 
+        else
+        {
+            alert(__("Invalid password. Must only contain letters and numbers, must be atleast 5 characters, and not a dictionary word"));
+            $_POST[passwd] = "";
+        } 
+    } 
+} 
 
 nav_top();
 
 $sql = "select * from data_bases where id = '$db'";
-$result = mysql_query($sql);
+$result =& $db->Execute($sql);
 
-$row = mysql_fetch_array($result);
+$row =& $result->FetchRow();
 
-print __('Adding a user for database') .' '. $row[name] . '<p>
+print __('Adding a user for database') . ' ' . $row['name'] . '<p>
 
 <form method="post">
 
-'. __('Login') .': <input type="text" name=login>
+' . __('Login') . ': <input type="text" name=login>
 <p>
-'. __('Password') .': <input type="password" name=passwd>
+' . __('Password') . ': <input type="password" name=passwd>
 <p>
 
-<input type="submit" value="'. __('Add User') .'">
+<input type="submit" value="' . __('Add User') . '">
 <input type="hidden" name=action value="add">
 <input type="hidden" name=did value="' . $did . '">
 <input type="hidden" name=db value="' . $db . '">

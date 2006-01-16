@@ -23,162 +23,154 @@ include "auth.php";
 
 $perms = array();
 
-if(have_domain_services()) $perms[] = 'domain';
-if(have_database_services()) $perms[] = 'database';
+if (have_domain_services()) $perms[] = 'domain';
+if (have_database_services()) $perms[] = 'database';
 
-if(have_service("mail")) $perms[] = 'email';
+if (have_service("mail")) $perms[] = 'email';
 
-if(have_service("dns")) $perms[] = 'dns_rec';
+if (have_service("dns")) $perms[] = 'dns_rec';
 
-if(have_service("web")) {
-  
-  //$perms[] = 'crontab';
-  $perms[] = 'host_cgi';
-  $perms[] = 'host_php';
-  $perms[] = 'host_ssl';
-  $perms[] = 'shell_user';
+if (have_service("web"))
+{ 
+    // $perms[] = 'crontab';
+    $perms[] = 'host_cgi';
+    $perms[] = 'host_php';
+    $perms[] = 'host_ssl';
+    $perms[] = 'shell_user';
+} 
 
-}
+if ($action == "update" and is_admin())
+{
+    $sql = "delete from user_permissions where uid = '$uid'";
+    $db->Execute($sql);
 
-if($action == "update" and is_admin()) {
-  
-  $sql = "delete from user_permissions where uid = '$uid'";
-  mysql_query($sql);
-  
-  foreach($perms as $perm) {
-    
-    $val = $_POST[$perm];
-    $tmp = $perm . "_max";
-    $lim = $_POST[$tmp];
-    
-    $sql = "insert into user_permissions set uid = '$uid', perm = '$perm', val = '$val', lim = '$lim'";
-    mysql_query($sql);
+    foreach($perms as $perm)
+    {
+        $val = $_POST[$perm];
+        $tmp = $perm . "_max";
+        $lim = $_POST[$tmp];
 
-  }  
-  
-  goto("users.php?uid=$uid");
-  
-}
+        $sql = "insert into user_permissions set uid = '$uid', perm = '$perm', val = '$val', lim = '$lim'";
+        $db->Execute($sql);
+    } 
 
-if(!$uid) goto("users.php");
+    goto("users.php?uid=$uid");
+} 
+
+if (!$uid) goto("users.php");
 
 nav_top();
 
-if(is_admin()) {
+if (is_admin())
+{
+    print '<form method="post" name=main>';
 
-  print '<form method="post" name=main>';
-
-  if($perms) {
-    
-    print '<table width=400>
+    if ($perms)
+    {
+        print '<table width=400>
 <tr><th>' . __('This user can') . ':</th></tr>
 <tr><td>';
-    
-    $i = 0;
-    
-    foreach($perms as $perm) {
-      
-      $have_perm = user_have_permission($uid, $perm);
-      
-      if($have_perm == 0) $have_perm = "";
-      
-      print '<input type="checkbox" name=' . $perm . ' value="yes" onclick="if(document.main.' . $perm . '.checked) document.main.' . $perm . '_max.select();"' . perm_checked($uid, $perm) . '> ' . __('Create') . ' ' . perm_into_word($perm) . '
+
+        $i = 0;
+
+        foreach($perms as $perm)
+        {
+            $have_perm = user_have_permission($uid, $perm);
+
+            if ($have_perm == 0) $have_perm = "";
+
+            print '<input type="checkbox" name=' . $perm . ' value="yes" onclick="if(document.main.' . $perm . '.checked) document.main.' . $perm . '_max.select();"' . perm_checked($uid, $perm) . '> ' . __('Create') . ' ' . perm_into_word($perm) . '
 <br>
 &nbsp;&nbsp;&nbsp;Limit <input type="text" name=' . $perm . '_max size=1 value="' . $have_perm . '"><p>';
-      
-    }
+        } 
 
-    print '</td></tr></table>';
+        print '</td></tr></table>';
+    } 
 
-  }
-
-?>
+    ?>
 
 <p>
 <?php e_('Note: A negative limit mean unlimited')?>
 <p>
 <input type="submit" value="<?php e_('Update')?>">
-<input type="hidden" name=uid value="<?php print $uid; ?>">
+<input type="hidden" name=uid value="<?php print $uid;
+    ?>">
 <input type="hidden" name=action value=update>
 </form>
 
 <?php
 
-} else {
+} 
+else
+{
+    foreach($perms as $perm)
+    {
+        $lim = user_have_permission($uid, $perm);
 
-  foreach($perms as $perm) {
+        switch ($perm)
+        {
+            case "domain":
 
-    $lim = user_have_permission($uid, $perm);
+                if ($lim) print __("You can add up to $lim domains");
+                else print __("You can't add domains");
+                break;
 
-    switch($perm) {
+            case "database":
 
-    case "domain":
+                if ($lim) print __("You can add up to $lim databases");
+                else print __("You can't add databases");
+                break;
 
-      if($lim) print __("You can add up to $lim domains");
-      else print __("You can't add domains");
-      break;
+            case "crontab": 
+                // NEED TO RE-DO CRONTAB MANAGEMENT
+                if ($lim) print __("You can add up to $lim cron jobs");
+                else print __("You can't add cron jobs");
+                break;
 
-    case "database":
+            case "email":
 
-      if($lim) print __("You can add up to $lim databases");
-      else print __("You can't add databases");
-      break;
+                if ($lim) print __("You can add up to $lim email addresses");
+                else print __("You can't add email addresses");
+                break;
 
-    case "crontab":
-      // NEED TO RE-DO CRONTAB MANAGEMENT
+            case "dns_rec":
 
-      if($lim) print __("You can add up to $lim cron jobs");
-      else print __("You can't add cron jobs");
-      break;
+                if ($lim) print __("You can add up to $lim DNS records");
+                else print __("You can't add DNS records");
+                break;
 
-    case "email":
+            case "host_cgi":
 
-      if($lim) print __("You can add up to $lim email addresses");
-      else print __("You can't add email addresses");
-      break;
+                if ($lim) print __("You can add cgi to hosting on up to $lim domains");
+                else print __("You can't add cgi to hosting on any domains");
+                break;
 
-    case "dns_rec":
+            case "host_php":
 
-      if($lim) print __("You can add up to $lim DNS records");
-      else print __("You can't add DNS records");
-      break;
+                if ($lim) print __("You can add php to hosting on up to $lim domains");
+                else print __("You can't add php to hosting on any domains");
+                break;
 
-    case "host_cgi":
+            case "host_ssl":
 
-      if($lim) print __("You can add cgi to hosting on up to $lim domains");
-      else print __("You can't add cgi to hosting on any domains");
-      break;
+                if ($lim) print __("You can add ssl to hosting on up to $lim domains");
+                else print __("You can't add ssl to hosting on any domains");
+                break;
 
-    case "host_php":
+            case "shell_user":
 
-      if($lim) print __("You can add php to hosting on up to $lim domains");
-      else print __("You can't add php to hosting on any domains");
-      break;
+                if ($lim) print __("You can have up to $lim shell users");
+                else print __("You can't add shell users");
+                break;
 
-    case "host_ssl":
+            default:
 
-      if($lim) print __("You can add ssl to hosting on up to $lim domains");
-      else print __("You can't add ssl to hosting on any domains");
-      break;
+                break;
+        } 
 
-    case "shell_user":
-      
-      if($lim) print __("You can have up to $lim shell users");
-      else print __("You can't add shell users");
-      break;
-
-    default:
-
-      break;
-
-    }
-
-    print '<p>';
-
-  }
-
-}
-
+        print '<p>';
+    } 
+} 
 
 nav_bottom();
 

@@ -24,22 +24,29 @@ include "auth.php";
 req_admin();
 
 $services = array();
-
 // get contents of $RC_ROOT/etc/services, explode on return character, split on the :, and chop off the .conf, to fill the package / service array
-
-if($action == "run") {
+if ($action == "run")
+{
+  // if the service to be stopped or restarted is mysql(d), then set our session with admin user/pass
+  // so we stay logged in even with the database down
+  if(
+     ereg('mysqld?',$_GET['service']) and
+     ($_GET['service_cmd'] == 'stop' or $_GET['service_cmd'] == 'restart')
+     )
+    {
+      $_SESSION['username'] = $CONF['MYSQL_ADMIN_USER'];
+      $_SESSION['password'] = $CONF['MYSQL_ADMIN_PASS'];
+    }
 
   // authenticate $_GET[service] as an allowed service
-
   // make sure $_GET[service_cmd] can only be start, stop, or restart
+  socket_cmd("service " . $_GET['service'] . " " . $_GET['service_cmd']);
+  
+  if (!$_SESSION['status_mesg']) $_SESSION['status_mesg'] = $_GET['service_cmd'] . ' command sucessfull for ' . $_GET['service'];
+  
+  goto($_SERVER[PHP_SELF]);
 
-  socket_cmd("service $_GET[service] $_GET[service_cmd]");
-
-  if(!$_SESSION['status_mesg']) $_SESSION['status_mesg'] = $_GET[service_cmd] . ' command sucessfull for ' . $_GET[service];
-
-  goto("$_SERVER[PHP_SELF]");
-
-}
+} 
 
 nav_top();
 
@@ -56,42 +63,40 @@ nav_top();
 </tr>
 <?php
 
-$services = get_all_services();
+$services = $server->get_all_services();
 
-foreach ($services as $val) {
+foreach ($services as $val)
+{
+    print '<tr><td>' . $val . '</td><td align=center>';
 
-  print '<tr><td>' . $val . '</td><td align=center>';
-  
-  $handle = popen("../sbin/wrapper is_service_running $val", "r");
-  
-  switch (trim(fread($handle, 5))) {
-    
-  case 'Yes':
-    
-    $running = '<img src="images/solidgr.gif" border=0>';
-    $start = '<img src="images/start_grey.gif" border=0>';
-    $stop = '<a href="services.php?action=run&service=' . $val . '&service_cmd=stop"><img src="images/stop.gif" border=0></a>';
-    
-    break;
-    
-  case 'No':
-    
-    $running = '<img src="images/solidrd.gif" border=0>';
-    $start = '<a href="services.php?action=run&service=' . $val . '&service_cmd=start"><img src="images/start.gif" border=0></a>';
-    $stop = '<img src="images/stop_grey.gif" border=0>';
-    
-    break;
-    
-  }
-  
-  pclose($handle);
-  
-  print $running . '</td>
+    $handle = popen("../sbin/wrapper is_service_running $val", "r");
+
+    switch (trim(fread($handle, 5)))
+    {
+        case 'Yes':
+
+            $running = '<img src="images/solidgr.gif" border=0>';
+            $start = '<img src="images/start_grey.gif" border=0>';
+            $stop = '<a href="services.php?action=run&service=' . $val . '&service_cmd=stop"><img src="images/stop.gif" border=0></a>';
+
+            break;
+
+        case 'No':
+
+            $running = '<img src="images/solidrd.gif" border=0>';
+            $start = '<a href="services.php?action=run&service=' . $val . '&service_cmd=start"><img src="images/start.gif" border=0></a>';
+            $stop = '<img src="images/stop_grey.gif" border=0>';
+
+            break;
+    } 
+
+    pclose($handle);
+
+    print $running . '</td>
 <td>' . $start . '</td>
 <td>' . $stop . '</td>
 <td align=center><a href="services.php?action=run&service=' . $val . '&service_cmd=restart"><img src="images/restart.gif" border=0></a></td></tr>';
-    
-}
+} 
 
 ?>
 

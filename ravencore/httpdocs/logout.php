@@ -19,14 +19,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 */
 
-// this is so that email users can get past the auth file, so they can logout
-$email_user_page = 1;
-
 include "auth.php";
 
-$sql = "delete from sessions where binary(session_id) = '$session_id'";
-mysql_query($sql);
+$session->destroy();
 
-goto("$_SERVER[HTTP_REFERER]");
+if( $server->db_panic )
+{
+  session_destroy();
+}
+
+goto($_SERVER['HTTP_REFERER']);
 
 ?>

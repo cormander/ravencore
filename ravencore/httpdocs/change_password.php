@@ -18,39 +18,55 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 */
-
 // if we're being included, don't call the auth.php file as we have alredy done so
-
-if($being_included != true) include "auth.php";
+if ($being_included != true) include "auth.php";
 
 req_admin();
 
-if($action == "change") {
+if ($action == "change")
+{
+    if ($_POST['old_pass'] != $CONF['MYSQL_ADMIN_PASS'])
+	{
+		alert(__("The password is incorrect!"));
+	}
+    else if (!valid_passwd($_POST['new_pass']))
+	{
+		alert(__("The new password must be greater than 4 characters and not a dictionary word"));
+	}
+    else
+    {
+      if( $server->db_panic )
+	{
+	  $_SESSION['password'] = $_POST['new_pass'];
+	}
+      else
+	{
+	  
+	  $db->Execute('use mysql') or die(__("Cannot select MySQL database"));
+	  
+	  $sql = "update user set Password = password('" . $_POST['new_pass'] . "') where User = '" . $CONF['MYSQL_ADMIN_USER'] . "'";
+	  $db->Execute($sql) or die(__("Cannot change database password"));
+	  
+	  $sql = "flush privileges";
+	  $db->Execute($sql) or die(__("Unable to flush database privileges"));
+	
+	}
 
-  if($_POST[old_pass] != $CONF[MYSQL_ADMIN_PASS]) alert( __("The password is incorrect!") );
-  else if(!valid_passwd($_POST[new_pass])) alert( __("The new password must be greater than 4 characters and not a dictionary word") );
-  else {
+        $handle = fopen("../.shadow", "w") or die(__("Cannot open .shadow file"));
 
-    mysql_select_db("mysql", $link) or die( __("Cannot select MySQL database") );
-    
-    $sql = "update user set Password = password('$_POST[new_pass]') where User = '$CONF[MYSQL_ADMIN_USER]'";
-    mysql_query($sql) or die( __("Cannot change database password") );
-    
-    $sql = "flush privileges";
-    mysql_query($sql) or die( __("Unable to flush database privileges") );
-    
-    $handle = fopen("../.shadow", "w") or die( __("Cannot open .shadow file") );
-    
-    fwrite($handle, "$_POST[new_pass]\n");
-    
-    fclose($handle);
+        fwrite($handle, $_POST['new_pass'] . "\n");
 
-    // if we are being included, send is to ourself. Otherwise, send us to the system page
-    if($being_included == true) goto($_SERVER[PHP_SELF]);
-    else goto("system.php");
-    
-  }
-
+        fclose($handle);
+        // if we are being included, send is to ourself. Otherwise, send us to the system page
+        if ($being_included == true)
+		{
+			goto($_SERVER['PHP_SELF']);
+		}
+        else
+		{
+			goto("system.php");
+		}
+    }
 }
 
 nav_top();
@@ -77,7 +93,7 @@ function validate_pw(f) {
 <table>
 <tr><th colspan="2"><?php
 // if our password is "ravencore", tell the user to change it
-print ($CONF[MYSQL_ADMIN_PASS] == "ravencore" ? __('Please change the password for') . ' ' . $CONF[MYSQL_ADMIN_USER] : __('Changing ') . $CONF[MYSQL_ADMIN_USER] . __(' password!') );
+print ($CONF['MYSQL_ADMIN_PASS'] == "ravencore" ? __('Please change the password for') . ' ' . $CONF['MYSQL_ADMIN_USER'] : __('Changing ') . $CONF[MYSQL_ADMIN_USER] . __(' password!'));
 
 ?></th></tr>
 <td><?php e_('Old Password')?>:</td>
