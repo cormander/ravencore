@@ -6,6 +6,7 @@ CREATE TABLE mail_users (
   passwd varchar(15) default NULL,
   spamassassin enum('true','false') default 'false',
   mailbox enum('true','false') default 'false',
+  spam_folder enum('true','false') default 'false',
   redirect enum('true','false') default 'false',
   redirect_addr blob,
   PRIMARY KEY  (id)

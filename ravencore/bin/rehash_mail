@@ -45,7 +45,7 @@ touch dovecot-passwd.$$
 
 # individual mail addresses
 
-for i in $($MYSQL_STR -e "select concat(m.id, ':', lcase(mail_name), ':', lcase(name), ':', mailbox, ':', m.passwd) from domains d, mail_users m where did = d.id and d.mail = 'on' order by name" | sed '1d'); do
+for i in $($MYSQL_STR -e "select concat(m.id, ':', lcase(mail_name), ':', lcase(name), ':', mailbox, ':', spam_folder, ':', m.passwd) from domains d, mail_users m where did = d.id and d.mail = 'on' order by name" | sed '1d'); do
 
 # separate the string into a temp variable so we don't have to make several calls to to the sed command
 
@@ -55,7 +55,8 @@ for i in $($MYSQL_STR -e "select concat(m.id, ':', lcase(mail_name), ':', lcase(
     mail_name=$(echo $tmp | awk '{print $2}')
     domain_name=$(echo $tmp | awk '{print $3}')
     mailbox=$(echo $tmp | awk '{print $4}')
-    mail_pass=$(echo $tmp | awk '{print $5}')
+    spam_folder=$(echo $tmp | awk '{print $5}')
+    mail_pass=$(echo $tmp | awk '{print $6}')
 
     email_addr="$mail_name@$domain_name"
 
@@ -65,10 +66,44 @@ for i in $($MYSQL_STR -e "select concat(m.id, ':', lcase(mail_name), ':', lcase(
     chown $VMAIL_UID:$VMAIL_GID $domain_name
     chown $VMAIL_UID:$VMAIL_GID $domain_name/$mail_name
 
+# chech for the imap .subscriptions
+    
+    subscriptions=$domain_name/$mail_name/.subscriptions
+    
+    if [ ! -f $subscriptions ]; then
+	
+	for dir in Sent Trash Drafts; do
+
+	    if [ ! -d $domain_name/$mail_name/.$dir ]; then
+		mkdir -p $domain_name/$mail_name/.$dir/{cur,new,tmp}
+		chown -R $VMAIL_UID:$VMAIL_GID $domain_name/$mail_name/.$dir
+		chmod -R 700 $domain_name/$mail_name/.$dir
+	    fi
+
+	    echo $dir >> $subscriptions
+	    
+	done
+	
+	chown $VMAIL_UID:$VMAIL_GID $subscriptions
+	chmod 600 $subscriptions
+	
+    fi
+
 # put this email in the virtual mailbox and transport tables
 
-    echo -e "$email_addr\t\t$domain_name/$mail_name/" >> vmailbox.$$
     echo -e "$email_addr\t\tvirtual:" >> vtransportmap.$$
+    echo -e "$email_addr\t\t$domain_name/$mail_name/" >> vmailbox.$$
+    case $spam_folder in
+	"true") echo -e "$mail_name+spam@$domain_name\t\t$domain_name/$mail_name/.Spam/" >> vmailbox.$$
+	    grep '^Spam$' $subscriptions &> /dev/null
+	    if [ $? -eq 1 ]; then
+		echo Spam >> $subscriptions
+		mkdir -p $domain_name/$mail_name/.Spam/{cur,new,tmp}
+		chown -R $VMAIL_UID:$VMAIL_GID $domain_name/$mail_name/.Spam
+		chmod -R 700 $domain_name/$mail_name/.Spam
+	    fi
+	    ;;
+    esac
 
 # check to see if this email should have any redirects
 
