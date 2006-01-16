@@ -15,7 +15,7 @@ $max_servers = 2;            # number of pre-forked children (2..15 is common)
 $daemon_user  = "amavis";     # (no default;  customary: vscan or amavis)
 $daemon_group = "amavis";     # (no default;  customary: vscan or amavis)
 
-$mydomain = '$_[HOSTNAME]';   # a convenient default for other settings
+$mydomain = $ENV{HOSTNAME};   # a convenient default for other settings
 
 $MYHOME = "$_[AMAVISD_HOME_DIR]";
 $TEMPBASE = "$MYHOME/tmp";   # working directory, needs to be created manually
@@ -31,7 +31,7 @@ $db_home   = "$MYHOME/db";
 # $lock_file = "$MYHOME/var/amavisd.lock";
 #NOTE: create directories $MYHOME/tmp, $MYHOME/var, $MYHOME/db manually
 
-@local_domains_maps = ( [".$mydomain"] );
+@local_domains_maps = ( ["."] );
 # @mynetworks = qw( 127.0.0.0/8 [::1] [FE80::]/10 [FEC0::]/10
 #                   10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 );
 
@@ -47,7 +47,7 @@ $enable_global_cache = 1;    # enable use of libdb-based cache if $enable_db=1
 $inet_socket_port = 10024;   # listen on this local TCP port(s) (see $protocol)
 # $unix_socketname = "$MYHOME/amavisd.sock";  # when using sendmail milter
 
-$sa_tag_level_deflt  = 2.0;  # add spam info headers if at, or above that level
+$sa_tag_level_deflt  = -99;  # add spam info headers if at, or above that level
 $sa_tag2_level_deflt = 6.31; # add 'spam detected' headers at that level
 $sa_kill_level_deflt = 6.31; # triggers spam evasive actions
 $sa_dsn_cutoff_level = 9;    # spam level beyond which a DSN is not sent
@@ -75,7 +75,7 @@ $mailfrom_to_quarantine = ''; # null return path; uses original sender if undef
 @addr_extension_spam_maps       = ('spam');
 @addr_extension_banned_maps     = ('banned');
 @addr_extension_bad_header_maps = ('badh');
-# $recipient_delimiter = '+';  # undef disables address extensions altogether
+$recipient_delimiter = '+';  # undef disables address extensions altogether
 # when enabling addr extensions do also Postfix/main.cf: recipient_delimiter=+
 
 $path = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/sbin:/usr/bin:/bin';
