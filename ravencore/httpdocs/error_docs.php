@@ -52,7 +52,7 @@ if ($action == "add")
             $sql = "insert into error_docs set did = '$did', code = '$_POST[code]', file = '$_POST[file]'";
             $db->Execute($sql);
 
-            socket_cmd("rehash_httpd $domain_name");
+            socket_cmd("rehash_httpd " . $d->name());
 
             goto("error_docs.php?did=$did");
         } 
@@ -63,7 +63,7 @@ else if ($action == "delete")
     $sql = "delete from error_docs where did = '$did' and code = '$_POST[code]'";
     $db->Execute($sql);
 
-    socket_cmd("rehash_httpd $domain_name");
+    socket_cmd("rehash_httpd " . $d->name());
 
     goto("error_docs.php?did=$did");
 } 

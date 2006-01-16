@@ -38,7 +38,7 @@ else if ($action == "hosting")
     $sql = "update domains set hosting = '$_POST[hosting]' where id = '$did'";
     $db->Execute($sql);
 
-    if ($db->Affected_Rows()) socket_cmd("rehash_httpd $domain_name");
+    if ($db->Affected_Rows()) socket_cmd("rehash_httpd " . $d->name());
 
     goto("domains.php?did=$did");
 } 

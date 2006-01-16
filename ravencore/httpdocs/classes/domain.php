@@ -155,7 +155,7 @@ class domain {
     global $db;
     
     // delete all the system users
-    $sql = "delete from sys_users where did = '" . $this->did . "'";
+    $sql = "delete from sys_users where id = '" . $this->info['suid'] . "'";
     $db->Execute($sql);
     
     foreach( $this->info['sys_users'] as $key => $val ) socket_cmd("ftp_del " . $val['login'] );

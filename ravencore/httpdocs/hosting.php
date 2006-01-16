@@ -52,7 +52,7 @@ if ($action == "edit")
     $sql .= " where id = '$did'";
     $db->Execute($sql); 
     // only mess with the filesystem if we affected the db
-    if ($db->Affected_Rows()) socket_cmd("rehash_httpd $domain_name");
+    if ($db->Affected_Rows()) socket_cmd("rehash_httpd " . $d->name());
 
     goto("domains.php?did=$did");
 } 
@@ -97,7 +97,7 @@ else if ($action == "add")
 
         $db->Execute($sql) or die($db->ErrorMsg()); 
         // build httpd for this domain
-        socket_cmd("rehash_httpd $domain_name"); 
+        socket_cmd("rehash_httpd " . $d->name()); 
         // do logrotation for the domain
         socket_cmd("rehash_logrotate");
 
@@ -106,9 +106,9 @@ else if ($action == "add")
 } 
 else if ($action == "delete")
 {
-    delete_hosting($did);
-
-    goto("domains.php?did=$did");
+  $d->delete_hosting();
+  
+  goto("domains.php?did=$did");
 } 
 
 nav_top();
