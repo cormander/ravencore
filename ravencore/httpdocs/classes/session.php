@@ -36,10 +36,19 @@ class session {
 
     if( ! $server->db_panic )
       {
+	if ( $CONF['LOCKOUT_TIME'] )
+	  {
+	    $lockout_time = $CONF['LOCKOUT_TIME'];
+	  }
+	else
+	  {
+	    $lockout_time = 300;
+	  }
+
 	// check the lockout to see if we have several failed attempts
 	$sql = "select count(*) as count from login_failure
                         where login = '" . $username . "' and
-                                ( ( to_days(date) * 24 * 60 * 60 ) + time_to_sec(date) + " . $CONF['LOCKOUT_TIME'] . " ) >
+                                ( ( to_days(date) * 24 * 60 * 60 ) + time_to_sec(date) + " . $lockout_time . " ) >
                                 ( ( to_days(now()) * 24 * 60 * 60 ) + time_to_sec(now() ) )";
 
 	$result =& $db->Execute($sql) or die($db->ErrorMsg());
@@ -260,7 +269,9 @@ class session {
 
     global $db;
 
-    $sql = "select u.id from users u, sessions s where where binary(s.login) = binary(u.login) and s.id = '" . $this->id . "' limit 1";
+    $sql = "select u.id from users u, sessions s where binary(s.login) = binary(u.login) and s.session_id = '" . $this->id . "' limit 1";
+    $result =& $db->Execute($sql);
+
     $row =& $result->FetchRow();
 
     return $row['id'];
