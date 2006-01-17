@@ -229,6 +229,11 @@ else
 } 
 
 ?> onclick="if(!this.checked) return confirm('<?php e_('Mail will not be stored on the server if you disable this option. Are you sure you wish to do this?')?>');"></td></tr>
+<?php
+
+if(have_service("amavisd"))
+{
+?>
 
 <tr><td>Spam Folder:</td><td><input type="checkbox" name="spam_folder" value="true"<?php
 
@@ -242,6 +247,10 @@ else
 } 
 
 ?>></td></tr>
+<?php
+}
+?>
+
 <tr><td valign="top"><?php e_('Redirect')?>: </td><td valign="top">
 <table style="border: 0px; margin: 0px;"><tr>
 <td valign="top" align="left"><input type="checkbox" name=redirect value="true"<?php
