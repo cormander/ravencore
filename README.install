@@ -7,15 +7,15 @@ but will work just fine on other systems such as Debian, Trustix, and Mandrake.
 
 Now, once you have downloaded the rpm package, go ahead and install it:
 
-  rpm -Uvh ravencore-0.1.1-1.noarch.rpm
+  rpm -Uvh ravencore-0.1.2-1.noarch.rpm
 
 Debian & Ubuntu users can install it with alien:
 
-  alien -i ravencore-0.1.1-1.noarch.rpm
+  alien -i ravencore-0.1.2-1.noarch.rpm
 
 Non-RPM distributions can do:
 
-  cd /; rpm2cpio /path/to/ravencore-0.1.1-1.noarch.rpm | cpio -id
+  cd /; rpm2cpio /path/to/ravencore-0.1.2-1.noarch.rpm | cpio -id
 
 NOTE: there are very few RPM dependancies, and many of the things which RavenCore requires to
 run are not required here, for reasons that I will explain in documentation at a later time.
