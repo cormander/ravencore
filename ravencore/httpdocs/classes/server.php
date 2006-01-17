@@ -448,7 +448,7 @@ ons.') ?>
 		// reset whether we have printed this conf file's name yet
 		$printed_header = false;
 		
-		$arr = $this->build_conf_array();
+		$arr = $this->build_conf_array("cat ../conf.d/$conf_file");
 		
 		foreach( $arr as $key => $val )
 		  {

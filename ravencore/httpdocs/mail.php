@@ -153,9 +153,15 @@ if ($did)
 <td><a href="edit_mail.php?did=' . $row_email[did] . '&mid=' . $row_email[id] . '" onmouseover="show_help(\'' . __('Edit') . ' ' . $row_email[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();">' . __('edit') . '</a></td>
 <td>' . $row_email[mail_name] . '@' . $row[name] . '</td>
 <td>';
-
-                if (@fsockopen("localhost", 143)) print '<a href="webmail.php?mid=' . $row_email[id] . '&did=' . $row_email[did] . '" target="_blank">' . __('Webmail') . '</a>';
-                else print '<a href="#" onclick="alert(\'' . __('Webmail is currently offline') . '\')" onmouseover="show_help(\'' . __('Webmail is currently offline') . '\');" onmouseout="help_rst();">' . __('Webmail') . ' ( ' . __('offline') . ' )</a>';
+		if ( $row_email[mailbox] == "true" )
+		  {
+		    if (@fsockopen("localhost", 143)) print '<a href="webmail.php?mid=' . $row_email[id] . '&did=' . $row_email[did] . '" target="_blank">' . __('Webmail') . '</a>';
+		    else print '<a href="#" onclick="alert(\'' . __('Webmail is currently offline') . '\')" onmouseover="show_help(\'' . __('Webmail is currently offline') . '\');" onmouseout="help_rst();">' . __('Webmail') . ' ( ' . __('offline') . ' )</a>';
+		  }
+		else
+		  {
+		    print '&nbsp;';
+		  }
 
                 print '</td>
 <td><a href=mail.php?did=' . $row[id] . '&mid=' . $row_email[id] . '&action=delete onmouseover="show_help(\'' . __('Delete') . ' ' . $row_email[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();" onclick="';
@@ -214,14 +220,14 @@ else
     if (is_admin())
     { 
         // admins get to see all domains
-        $sql = "select m.id as mid, d.id as did, m.mail_name, d.name, m.passwd from mail_users m, domains d where did = d.id";
+        $sql = "select m.id as mid, d.id as did, m.mailbox, m.mail_name, d.name, m.passwd from mail_users m, domains d where did = d.id";
         if ($_GET[search]) $sql .= " and ( m.mail_name like '%$_GET[search]%' or d.name like '%$_GET[search]%' or concat(m.mail_name, '@', d.name) like '%$_GET[search]%' )";
         $sql .= " order by mail_name";
     } 
     else
     { 
         // users only get to look at their own, so we look in the users table as well
-        $sql = "select m.id as mid, d.id as did, m.mail_name, d.name, m.passwd from mail_users m, domains d, users u where did = d.id and d.uid = u.id and m.did = d.id and u.id = '$uid'";
+        $sql = "select m.id as mid, d.id as did, m.mailbox, m.mail_name, d.name, m.passwd from mail_users m, domains d, users u where did = d.id and d.uid = u.id and m.did = d.id and u.id = '$uid'";
         if ($_GET[search]) $sql .= " and ( m.mail_name like '%$_GET[search]%' or d.name like '%$_GET[search]%' or concat(m.mail_name, '@', d.name) like '%$_GET[search]%' )";
         $sql .= " order by mail_name";
     } 
@@ -239,10 +245,17 @@ else
     {
         print '<tr><td><a href="edit_mail.php?did=' . $row[did] . '&mid=' . $row[mid] . '" onmouseover="show_help(\'' . __('Edit') . ' ' . $row[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();">' . $row[mail_name] . '@' . $row[name] . '</td><td>';
 
-        if (@fsockopen("localhost", 143)) print '<a href="webmail.php?mid=' . $row[mid] . '&did=' . $row[did] . '" target="_blank">' . __('Webmail') . '</a>';
-        else print '<a href="#" onclick="alert(\'' . __('Webmail is currently offline') . '\')" onmouseover="show_help(\'' . __('Webmail is currently offline') . '\');" onmouseout="help_rst();">' . __('Webmail') . ' ( ' . __('offline') . ' )</a>';
+	if ( $row[mailbox] == "true" )
+	  {
+	    if (@fsockopen("localhost", 143)) print '<a href="webmail.php?mid=' . $row[mid] . '&did=' . $row[did] . '" target="_blank">' . __('Webmail') . '</a>';
+	    else print '<a href="#" onclick="alert(\'' . __('Webmail is currently offline') . '\')" onmouseover="show_help(\'' . __('Webmail is currently offline') . '\');" onmouseout="help_rst();">' . __('Webmail') . ' ( ' . __('offline') . ' )</a>';
+	  }
+	else
+	  {
+	    print '&nbsp;';
+	  }
 
-        print '</td>
+	print '</td>
 <td><a href=mail.php?did=' . $row[did] . '&mid=' . $row[mid] . '&action=delete onmouseover="show_help(\'' . __('Delete') . ' ' . $row[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();" onclick="';
 
         if (!user_can_add($uid, "email") and !is_admin()) print 'return confirm(\'' . __('If you delete this email, you may not be able to add it again.\rAre you sure you wish to do this?') . '\');';
