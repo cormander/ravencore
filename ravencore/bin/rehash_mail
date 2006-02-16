@@ -48,16 +48,15 @@ touch dovecot-passwd.$$
 for i in $($MYSQL_STR -e "select concat(m.id, ':', lcase(mail_name), ':', lcase(name), ':', mailbox, ':', spam_folder, ':', m.passwd) from domains d, mail_users m where did = d.id and d.mail = 'on' order by name" | sed '1d'); do
 
 # separate the string into a temp variable so we don't have to make several calls to to the sed command
-
-    tmp=$(echo $i | sed 's/:/ /g')
-
-    mid=$(echo $tmp | awk '{print $1}')
-    mail_name=$(echo $tmp | awk '{print $2}')
-    domain_name=$(echo $tmp | awk '{print $3}')
-    mailbox=$(echo $tmp | awk '{print $4}')
-    spam_folder=$(echo $tmp | awk '{print $5}')
-    mail_pass=$(echo $tmp | awk '{print $6}')
-
+# buxfix - there IS the cut command guys! -spc
+    
+    mid=$(echo $i | cut -d: -f1)
+    mail_name=$(echo $i | cut -d: -f2)
+    domain_name=$(echo $i | cut -d: -f3)
+    mailbox=$(echo $i | cut -d: -f4)
+    spam_folder=$(echo $i | cut -d: -f5)
+    mail_pass=$(echo $i | cut -d: -f6)
+    
     email_addr="$mail_name@$domain_name"
 
     v_echo "Rebuilding configuration for $email_addr"
@@ -184,13 +183,14 @@ for i in $($MYSQL_STR -e "select concat(m.id, ':', lcase(mail_name), ':', lcase(
 
 done
 
-# handle catchalls
+# handle catchalls. we concat semicolons here because the relay_host might have a : character in it
 
-for i in $($MYSQL_STR -e "select concat(name,':',catchall,':',catchall_addr) from domains where mail = 'on' order by name" | sed '1d'); do
+for i in $($MYSQL_STR -e "select concat(name,';',catchall,';',catchall_addr,';',relay_host) from domains where mail = 'on' order by name" | sed '1d'); do
 
-    domain_name=$(echo $i | sed 's/:/ /g' | awk '{print $1}')
-    catchall=$(echo $i | sed 's/:/ /g' | awk '{print $2}')
-    catchall_addr=$(echo $i | sed 's/:/ /g' | awk '{print $3}')
+    domain_name=$(echo $i | cut -d\; -f1)
+    catchall=$(echo $i | cut -d\; -f2)
+    catchall_addr=$(echo $i | cut -d\; -f3)
+    relay_host=$(echo $i | cut -d\; -f4)
 
     case $catchall in
 	"send_to")
@@ -216,15 +216,27 @@ for i in $($MYSQL_STR -e "select concat(name,':',catchall,':',catchall_addr) fro
 	    echo -e "@$domain_name\t\t@$alias_addr" >> valiasmap.$$
             echo -e "$domain_name\t\tvirtual:" >> vtransportmap.$$
 	    ;;
+        "relay") # relay transport addition by spectro - slightly modified by cormander
+            echo -ne "$domain_name\t\trelay:" >> vtransportmap.$$
+# only add the [ ] around the relay_host if we want to force an MX lookup
+	    echo -e $relay_host >> vtransportmap.$$
+            ;;
+
 # we don't want to do anything with the default, *)
 
     esac
 
 done
 
+#
 # build the virtual domains table
+#
 
-for domain_name in $($MYSQL_STR -e "select name from domains where mail = 'on'" | sed '1d'); do
+# domains that have a catchall of relay are handeled in the vtransportmaps. Any email for the domain to 
+# go locally will be directed straight to virtual: , while the rest will go remote because it isn't in
+# the vmaildomains. If it was, it'll attempt to deliver those mails locally too, and give a reject message.
+
+for domain_name in $($MYSQL_STR -e "select name from domains where mail = 'on' and catchall != 'relay'" | sed '1d'); do
 
     echo -e "$domain_name\t\tplaceholder" >> vmaildomains.$$
 
