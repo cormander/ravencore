@@ -11,6 +11,7 @@ CREATE TABLE domains (
   catchall varchar(20) NOT NULL default 'bounce',
   catchall_addr varchar(120) default NULL,
   bounce_message varchar(255) NOT NULL default 'No mail goes to this address',
+  relay_host varchar(120) default NULL,
   alias_addr varchar(120) default NULL,
   www enum('true','false') NOT NULL default 'false',
   host_php enum('true','false') NOT NULL default 'false',

@@ -34,6 +34,16 @@ if [ ! -d /usr/libexec ]; then
 
 fi
 
+# make sure that whatever postfix is configured to group as, exists
+
+setgid_group=$($_postconf | grep setgid_group | awk '{print $3}')
+
+# check to see if it exists by the exit status of this command
+
+$_groupmod $setgid_group &> /dev/null
+
+[ $? -ne 0 ] && $_groupadd $setgid_group
+
 # make sure we have the the vmail user / group
 # check the group first, because in order to add the user, we need a valid existing gid
 

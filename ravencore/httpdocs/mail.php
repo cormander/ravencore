@@ -23,10 +23,38 @@ include "auth.php";
 
 if ($action == "update")
 {
-    if ($_POST[catchall] == "send_to" and !preg_match('/^' . REGEX_MAIL_NAME . '@' . REGEX_DOMAIN_NAME . '$/', $_POST[catchall_addr])) alert("Invalid email address for catchall");
+    if (
+	$_POST[catchall] == "send_to" and
+	!preg_match('/^' . REGEX_MAIL_NAME . '@' . REGEX_DOMAIN_NAME . '$/', $_POST[catchall_addr])
+	)
+      {
+	alert("Invalid email address for catchall");
+      }
+    /*
+
+Examples of allowable input for relay_host:
+
+ravencore.com
+ravencore.com:2525
+[ravencore.com]
+[ravencore.com]:2525
+192.168.1.115
+192.168.1.115:2525
+
+A domain name in [ ] means force MX host lookup
+
+    */
+    else if(
+	    $_POST[catchall] == "relay" and 
+	    !preg_match('/^\[?' . REGEX_DOMAIN_NAME . '\]?(:\d*)?$/', $_POST[relay_host]) and
+	    !is_ip(preg_replace('/:\d*$/','',$_POST[relay_host])) 
+	    )
+      {
+	alert("Relay to must be a hostname or IP address");
+      }
     else
     {
-        $sql = "update domains set catchall = '$_POST[catchall]', catchall_addr = '$_POST[catchall_addr]', bounce_message = '$_POST[bounce_message]', alias_addr = '$_POST[alias_addr]' where id = '$did'";
+        $sql = "update domains set catchall = '$_POST[catchall]', catchall_addr = '$_POST[catchall_addr]', bounce_message = '$_POST[bounce_message]', relay_host = '$_POST[relay_host]', alias_addr = '$_POST[alias_addr]' where id = '$did'";
 
         $db->Execute($sql);
 
@@ -95,7 +123,11 @@ if ($did)
             print '<br> <input type=radio name=catchall value=bounce';
             if ($row[catchall] == "bounce") print ' checked';
             print '> ' . __('Bounce with') . ': <input type=text name=bounce_message value="' . $row[bounce_message] . '"> <br>
-<input type=radio name="catchall" value="delete_it"';
+<input type=radio name=catchall value=relay';
+	    if ($row[catchall] == "relay") print ' checked';
+	    print '> ' . __('Relay to') . ': <input type=text name=relay_host value="' . $row[relay_host] . '"> <br> ';
+
+print '<input type=radio name="catchall" value="delete_it"';
             if ($row[catchall] == "delete_it") print ' checked';
             print '> ' . __('Delete it') . ' <br>';
 
@@ -207,8 +239,9 @@ else
         exit;
     } 
 
-    print '<a href="edit_mail.php" onmouseover="show_help(\'' . __('Create a new email account') . '\');" onmouseout="help_rst();">' . __('Add an email address') . '</a>
-<p>
+    if(user_can_add($uid, "email") or is_admin()) print '<a href="edit_mail.php" onmouseover="show_help(\'' . __('Create a new email account') . '\');" onmouseout="help_rst();">' . __('Add an email address') . '</a>';
+
+    print '<p>
 <form method="GET" name=search>
    ' . __('Search') . ': <input type=text name=search value="' . $_GET[search] . '">
 <input type=submit value="' . __('Go') . '" onclick="if(!document.search.search.value) { alert(\'' . __('Please enter in a search value!') . '\'); return false; }">';
