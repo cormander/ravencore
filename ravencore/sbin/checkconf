@@ -194,7 +194,7 @@ fi
 
 # make sure the servgrp exists
 
-$_groupmod -g 149 servgrp 2> /dev/null
+$_groupmod -g 149 servgrp &> /dev/null
 
 if [ $? -ne 0 ]; then
     
@@ -282,7 +282,7 @@ fi
 # make sure we have the rcadmin user / group
 # check the group first, because in order to add the user, we need a valid existing gid
 
-$_groupmod -g 147 rcadmin 2> /dev/null
+$_groupmod -g 147 rcadmin &> /dev/null
 
 [ $? -ne 0 ] && $_groupadd -g 147 rcadmin
 

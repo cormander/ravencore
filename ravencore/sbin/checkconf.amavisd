@@ -37,7 +37,7 @@ if [ ! -f $RC_ROOT/etc/postfix/master.cf/smtp.local ]; then
 # create the .local file by replacing "smtpd" with our content filter
     
     $_cat $RC_ROOT/etc/postfix/master.cf/smtp | \
-	$_sed 's/smtpd/smtpd  -o content_filter=smtp:[127.0.0.1]:10024/' > \
+	$_sed 's/smtpd/smtpd  -o content_filter=smtp:127.0.0.1:10024/' > \
 	$RC_ROOT/etc/postfix/master.cf/smtp.local
 
 # rebuild the master.cf file

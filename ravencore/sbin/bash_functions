@@ -221,8 +221,12 @@ rebuild_conf_file() {
     if [ -f $conf ]; then
 	
 	if [ -f $RC_ROOT/etc/$conf_basename.in ] && [ -n "$is_in" ]; then
+
+# .local support for the .in files
+	    dot_local=""
+	    [ -f $RC_ROOT/etc/$conf_basename.in.local ] && dot_local=.local
 	    
-	    $_cat $RC_ROOT/etc/$conf_basename.in | while read -r line; do
+	    $_cat $RC_ROOT/etc/$conf_basename.in$dot_local | while read -r line; do
 		
 # code to replace all $_[VAR_NAME] in the files with bash variables from the database
 		
