@@ -96,7 +96,7 @@ class domain {
 
     global $CONF, $db;
 
-    $d = new domain($did);
+    $d = new domain($this->did);
 
     $domain_name = $d->name();
 

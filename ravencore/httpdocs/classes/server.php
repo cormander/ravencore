@@ -259,7 +259,7 @@ t this:<p>
 	  {
 	    $CONF[$key] = $val;
 	  }
-	else if ( ! $CONF[$key] )
+	else if ( ! isset($CONF[$key]) )
 	  {
             $conf_not_complete = true;
 	  }

@@ -27,8 +27,16 @@ $locales = array();
 // first we scan the locales directory
 $d = dir($locale_dir);
 
-while (false !== ($entry = $d->read())) {
+// fill an array with the data
+while (false !== ($entry = $d->read())) $locales_sorted[] = $entry;
 
+// sort the data
+sort($locales_sorted);
+
+// walk down the array and pick out what exists
+foreach ( $locales_sorted as $entry )
+{
+  
   // if this element is a directory, and not an implied "." or ".."
   if(is_dir($locale_dir . $entry) and !ereg('^\.',$entry)) {
 
@@ -43,6 +51,7 @@ while (false !== ($entry = $d->read())) {
   }
 
 }
+
 
 
 function __( $string )

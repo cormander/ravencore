@@ -29,7 +29,7 @@ if ($action)
         alert(__("You must enter a name for this user"));
         $select = "name";
     } 
-    else if (!$_POST[login])
+    else if (is_admin() and ! $_POST[login])
     {
         alert(__("You must enter a login for this user"));
         $select = "login";
@@ -116,7 +116,7 @@ if ($action)
             if ($row[count] != 0) alert(__("The user login '$_POST[login]' already exists"));
             else
             {
-                $sql = "update users set name = '$_POST[name]', email = '$_POST[email]', login = '$_POST[login]', passwd = '$_POST[passwd]' where id = '$uid'";
+                $sql = "update users set name = '$_POST[name]', email = '$_POST[email]', passwd = '$_POST[passwd]' " . ( is_admin() ? ", login = '$_POST[login]'" : "" ). " where id = '$uid'";
                 $db->Execute($sql);
 
                 goto("users.php?uid=$uid");
@@ -152,9 +152,12 @@ else print $row_u[name];
 <tr><td>*<?php e_('Email Address')?>: </td><td><input type="text" name="email" value="<?php if ($_POST[email]) print $_POST[email];
 else print $row_u[email];
 ?>"></td></tr>
-<tr><td>*<?php e_('Login')?>: </td><td><input type="text" name="login" value="<?php if ($_POST[login]) print $_POST[login];
+<tr><td>*<?php e_('Login')?>: </td><td><?php
+
+if(is_admin()) print '<input type="text" name="login" value="' . ( $_POST[login] ? $_POST[login] : $row_u[login]) . '"></td></tr>';
 else print $row_u[login];
-?>"></td></tr>
+
+?>
 <tr><td>*<?php e_('Password')?>: </td><td><input type="password" name="passwd" value="<?php if ($_POST[passwd]) print $_POST[passwd];
 else/*if(is_admin())*/ print $row_u[passwd];
 ?>"></td></tr>

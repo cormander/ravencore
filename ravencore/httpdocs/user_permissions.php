@@ -107,6 +107,8 @@ else
     {
         $lim = user_have_permission($uid, $perm);
 
+	if($lim < 0) $lim = "unlimited";
+
         switch ($perm)
         {
             case "domain":

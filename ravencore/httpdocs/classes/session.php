@@ -287,6 +287,14 @@ class session {
     $sql = "delete from sessions where binary(session_id) = '" . $this->id . "'";
     $db->Execute($sql);
 
+    // we want to keep the language session variable
+
+    $lang = $_SESSION['lang'];
+
+    $_SESSION = NULL;
+
+    $_SESSION['lang'] = $lang;
+
   }
 
   // end the session and save the data

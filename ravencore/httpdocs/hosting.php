@@ -45,9 +45,9 @@ if ($action == "edit")
 
     $sql = "update domains set redirect_url = '$_POST[redirect_url]', www = '$_POST[www]', host_dir = '$_POST[dir]'";
 
-    if (user_can_add($uid, "php") or is_admin() or $_POST[host_php] == "false") $sql .= ", host_php = '$_POST[php]'";
-    if (user_can_add($uid, "cgi") or is_admin() or $_POST[host_cgi] == "false") $sql .= ", host_cgi = '$_POST[cgi]'";
-    if (user_can_add($uid, "ssl") or is_admin() or $_POST[host_ssl] == "false") $sql .= ", host_ssl = '$_POST[ssl]'";
+    if (user_can_add($uid, "host_php") or is_admin() or $_POST[host_php] == "false") $sql .= ", host_php = '$_POST[php]'";
+    if (user_can_add($uid, "host_cgi") or is_admin() or $_POST[host_cgi] == "false") $sql .= ", host_cgi = '$_POST[cgi]'";
+    if (user_can_add($uid, "host_ssl") or is_admin() or $_POST[host_ssl] == "false") $sql .= ", host_ssl = '$_POST[ssl]'";
 
     $sql .= " where id = '$did'";
     $db->Execute($sql); 

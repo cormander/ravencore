@@ -39,7 +39,7 @@ $conf_not_complete = false;
 include "functions.php";
 
 // A list of variables that are allowed to use the GET and POST methods
-$reg_glob_vars = array('uid', 'did', 'mid', 'action', 'db', 'dbu', 'page_type');
+$reg_glob_vars = array('uid', 'did', 'mid', 'action', 'dbid', 'dbu', 'page_type');
 
 foreach ($reg_glob_vars as $val)
 {
