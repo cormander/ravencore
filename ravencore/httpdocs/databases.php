@@ -24,28 +24,45 @@ include "auth.php";
 if ($action == "userdel")
 {
     $sql = "select * from data_base_users where id = '$dbu'";
-    $db->Execute($sql);
+    $result =& $db->Execute($sql);
 
     $row =& $result->FetchRow();
 
-    $db->Execute('use mysql') or die(__("Unable to use mysql database"));
+// Connect to the mysql database
+    $db2 =& ADONewConnection('mysql');
 
-    $sql = "delete from user where User = '$row[login]'";
+    $db2->SetFetchMode(ADODB_FETCH_ASSOC);
 
-    if ($db->Execute($sql))
-    {
-        $db->Execute('use ' . $CONF['MYSQL_ADMIN_DB']);
+    $dbConnect2 = $db2->Connect($CONF['MYSQL_ADMIN_HOST'], $CONF['MYSQL_ADMIN_USER'],
+			      $CONF['MYSQL_ADMIN_PASS'], "mysql");
 
-        $sql = "delete from data_base_users where id = '$dbu'";
-        $db->Execute($sql);
+    if ($dbConnect2)
+      {
+	
+	$sql = "delete from user where User = '$row[login]'";
+	
+	if ($db2->Execute($sql))
+	  {
 
-        goto("databases.php?did=$did&db=$db");
-    } 
-    else alert(__("Unable to delete the user $row[login]"));
+	    $db->Execute("flush privileges");
+	    
+	    $sql = "delete from data_base_users where id = '$dbu'";
+	    $db->Execute($sql);
+	    print $sql;
+	    goto("databases.php?did=$did&dbid=$dbid");
+
+	  }
+
+      } 
+    
+    // only get here on an error
+    
+    alert(__("Unable to delete the user ") . $row[login]);
+    
 } 
 else if ($action == "dbdel")
 {
-    $sql = "select * from data_bases where id = '$db'";
+    $sql = "select * from data_bases where id = '$dbid'";
     $result =& $db->Execute($sql);
 
     $row =& $result->FetchRow();
@@ -57,10 +74,10 @@ else if ($action == "dbdel")
 
         if ($db->Execute($sql))
         {
-            $sql = "delete from data_bases where id = '$db'";
+            $sql = "delete from data_bases where id = '$dbid'";
             $db->Execute($sql);
 
-            $sql = "select * from data_base_users where db_id = '$db'";
+            $sql = "select * from data_base_users where db_id = '$dbid'";
             $result =& $db->Execute($sql);
 
             $db->Execute('use mysql') or die(__("Unable to use mysql database"));
@@ -98,23 +115,23 @@ if (!$db and $did)
 
     while ($row =& $result->FetchRow())
     {
-        print '<tr><td><a href="databases.php?did=' . $did . '&db=' . $row[id] . '">' . $row[name] . '</a></td><td><a href="databases.php?action=dbdel&db=' . $row[id] . '&did=' . $did . '" onclick="return confirm(\'' . __('Are you sure you wish to delete this database?') . '\');">' . __('delete') . '</a></td></tr>';
+        print '<tr><td><a href="databases.php?did=' . $did . '&dbid=' . $row[id] . '">' . $row[name] . '</a></td><td><a href="databases.php?action=dbdel&dbid=' . $row[id] . '&did=' . $did . '" onclick="return confirm(\'' . __('Are you sure you wish to delete this database?') . '\');">' . __('delete') . '</a></td></tr>';
     } 
 
     if ($num != 0) print '</table>';
 } 
-else if ($db and $did)
+else if ($dbid and $did)
 {
     nav_top();
 
-    $sql = "select * from data_bases where id = '$db'";
+    $sql = "select * from data_bases where id = '$dbid'";
     $result =& $db->Execute($sql);
 
     $row =& $result->FetchRow();
 
-    print __('Users for the') . ' <a href="databases.php?did=' . $did . '">' . __('database') . '</a> ' . $row[name] . ' - <a href="add_db_user.php?did=' . $did . '&db=' . $db . '">' . __('Add a database user') . '</a><p>';
+    print __('Users for the') . ' <a href="databases.php?did=' . $did . '">' . __('database') . '</a> ' . $row[name] . ' - <a href="add_db_user.php?did=' . $did . '&dbid=' . $dbid . '">' . __('Add a database user') . '</a><p>';
 
-    $sql = "select * from data_base_users where db_id = '$db'";
+    $sql = "select * from data_base_users where db_id = '$dbid'";
     $result =& $db->Execute($sql);
 
     $num = $result->RecordCount();
@@ -125,8 +142,8 @@ else if ($db and $did)
     while ($row =& $result->FetchRow())
     {
         print '<tr><td>' . $row[login] . '</td>
-<td><a href="phpmyadmin.php?did=' . $did . '&dbu=' . $row[id] . '&db=' . $db . '" target=_blank>phpMyAdmin</a></td>
-<td><a href="databases.php?action=userdel&dbu=' . $row[id] . '&did=' . $did . '&db=' . $db . '" onclick="return confirm(\'' . __('Are you sure you wish to delete this database user?') . '\');">' . __('delete') . '</a></td></tr>';
+<td><a href="phpmyadmin.php?did=' . $did . '&dbu=' . $row[id] . '&dbid=' . $dbid . '" target=_blank>phpMyAdmin</a></td>
+<td><a href="databases.php?action=userdel&dbu=' . $row[id] . '&did=' . $did . '&dbid=' . $dbid . '" onclick="return confirm(\'' . __('Are you sure you wish to delete this database user?') . '\');">' . __('delete') . '</a></td></tr>';
     } 
 
     if ($num != 0) print '</table>';
@@ -176,7 +193,7 @@ else
 
     while ($row =& $result->FetchRow())
     {
-        print '<tr><td>' . $row['domain_name'] . '</td><td><a href="databases.php?db=' . $row['id'] . '&did=' . $row['did'] . '">' . $row[db_name] . '</a></td></tr>';
+        print '<tr><td>' . $row['domain_name'] . '</td><td><a href="databases.php?dbid=' . $row['id'] . '&did=' . $row['did'] . '">' . $row[db_name] . '</a></td></tr>';
     } 
 
     if ($num != 0) print '</table>';

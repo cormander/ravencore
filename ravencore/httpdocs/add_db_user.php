@@ -21,7 +21,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 include "auth.php";
 
-if (!$db or !$did) goto("users.php?user=$uid");
+if (!$dbid or !$did) goto("users.php?user=$uid");
 
 if ($action == "add")
 { 
@@ -33,12 +33,12 @@ if ($action == "add")
     // we can't use the admin username
     if ($_POST['login'] == $CONF['MYSQL_ADMIN_USER']) $row['count'] = 1;
 
-    if ($row['count'] != 0) $error = "User $_POST[login] already exists";
+    if ($row['count'] != 0) $_SESSION['status_mesg'] = $_POST[login] . __(" user already exists");
     else
     {
         if (preg_match('/^' . REGEX_PASSWORD . '$/', $_POST[passwd]) and valid_passwd($_POST[passwd]))
         {
-            $sql = "select * from data_bases where id = '$db'";
+            $sql = "select * from data_bases where id = '$dbid'";
             $result =& $db->Execute($sql);
 
             $row =& $result->FetchRow();
@@ -47,10 +47,10 @@ if ($action == "add")
 
             if ($db->Execute($sql))
             {
-                $sql = "insert into data_base_users set login = '$_POST[login]', db_id = '$db', passwd = '$_POST[passwd]'";
+                $sql = "insert into data_base_users set login = '$_POST[login]', db_id = '$dbid', passwd = '$_POST[passwd]'";
                 $db->Execute($sql);
 
-                goto("databases.php?did=$did&db=$db");
+                goto("databases.php?did=$did&dbid=$dbid");
             } 
             else alert($db->ErrorMsg());
         } 
@@ -64,7 +64,7 @@ if ($action == "add")
 
 nav_top();
 
-$sql = "select * from data_bases where id = '$db'";
+$sql = "select * from data_bases where id = '$dbid'";
 $result =& $db->Execute($sql);
 
 $row =& $result->FetchRow();
@@ -81,7 +81,7 @@ print __('Adding a user for database') . ' ' . $row['name'] . '<p>
 <input type="submit" value="' . __('Add User') . '">
 <input type="hidden" name=action value="add">
 <input type="hidden" name=did value="' . $did . '">
-<input type="hidden" name=db value="' . $db . '">
+<input type="hidden" name=dbid value="' . $dbid . '">
 
 </form>';
 

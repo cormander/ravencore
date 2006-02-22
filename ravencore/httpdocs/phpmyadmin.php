@@ -21,9 +21,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 include "auth.php";
 
-if (!$did or !$db or !$dbu) goto("users.php?uid=$uid");
+if (!$did or !$dbid or !$dbu) goto("users.php?uid=$uid");
 
-$sql = "select name, login, passwd from data_bases d, data_base_users u where db_id = d.id and d.id = '$db' and u.id = '$dbu' and did = '$did'";
+$sql = "select name, login, passwd from data_bases d, data_base_users u where db_id = d.id and d.id = '$dbid' and u.id = '$dbu' and did = '$did'";
 $result =& $db->Execute($sql);
 
 $row =& $result->FetchRow();
