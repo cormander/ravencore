@@ -3,6 +3,8 @@ _awk=awk
 
 _cat=cat
 
+_cd=cd
+
 _chkconfig=chkconfig
 
 _chmod=chmod
@@ -15,6 +17,8 @@ _cp=cp
 
 _crontab=crontab
 
+_cut=cut
+
 _basename=basename
 
 _diff=diff
@@ -24,6 +28,8 @@ _du=du
 _echo=echo
 
 _expr=expr
+
+_find=find
 
 _gcc=gcc
 
@@ -67,11 +73,17 @@ _sed=sed
 
 _sleep=sleep
 
+_sort=sort
+
 _sudo=sudo
 
 _tail=tail
 
 _touch=touch
+
+_tr=tr
+
+_uniq=uniq
 
 _useradd=useradd
 

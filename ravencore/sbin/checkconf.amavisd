@@ -30,20 +30,18 @@
 
 $_chown -R amavis:amavis /var/run/clamav
 
-# if we never ran, a .local file won't exist for the master.cf's smtp file
+# make sure we have our content filter
 
-if [ ! -f $RC_ROOT/etc/postfix/master.cf/smtp.local ]; then
+$_echo "smtp:127.0.0.1:10024" | $_diff $RC_ROOT/etc/postfix/main.cf/content_filter - &> /dev/null
 
-# create the .local file by replacing "smtpd" with our content filter
+if [ $? -ne 0 ]; then
+
+    $_echo "smtp:127.0.0.1:10024" > $RC_ROOT/etc/postfix/main.cf/content_filter
     
-    $_cat $RC_ROOT/etc/postfix/master.cf/smtp | \
-	$_sed 's/smtpd/smtpd  -o content_filter=smtp:127.0.0.1:10024/' > \
-	$RC_ROOT/etc/postfix/master.cf/smtp.local
-
 # rebuild the master.cf file
     
     rebuild_conf_file "$VMAIL_CONF_DIR/master.cf" postfix '\t'
-
+    
 fi
 
 # make sure the spamassassin pid is writable to vmail

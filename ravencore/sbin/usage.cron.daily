@@ -44,7 +44,7 @@ $_rm -f $FTP_LOG.1
 
 if [ -d $VHOST_ROOT ]; then
 
-    cd $VHOST_ROOT
+    $_cd $VHOST_ROOT
     
     for domain_name in `$_ls -1`; do
 	
@@ -62,7 +62,7 @@ fi
 
 if [ -d $VMAIL_ROOT ]; then
 
-    cd $VMAIL_ROOT
+    $_cd $VMAIL_ROOT
     
     for domain_name in `$_ls -1`; do
 	
@@ -79,7 +79,7 @@ fi
 
 if [ -d $MYSQL_DATA_DIR ]; then
 	
-    cd $MYSQL_DATA_DIR
+    $_cd $MYSQL_DATA_DIR
     
     for db_name in `$_ls -1`; do
 	

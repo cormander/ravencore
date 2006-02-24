@@ -22,7 +22,7 @@
 
 if [ ! -x $RC_ROOT/conf.d/mail.conf ]; then
 
-    echo "Not a mail server, exiting"
+    $_echo "Not a mail server, exiting"
     exit 1
 
 fi
@@ -30,40 +30,41 @@ fi
 
 if [ ! -d $VMAIL_ROOT ]; then
 
-    mkdir -p $VMAIL_ROOT
+    $_mkdir -p $VMAIL_ROOT
 
 fi
 
-cd $VMAIL_ROOT
+$_cd $VMAIL_ROOT
 
-touch vmaildomains.$$
-touch valiasmap.$$
-touch vmailbox.$$
-touch vtransportmap.$$
-touch login_maps.$$
-touch dovecot-passwd.$$
+$_touch vmaildomains.$$
+$_touch valiasmap.$$
+$_touch vmailbox.$$
+$_touch vtransportmap.$$
+$_touch login_maps.$$
+$_touch dovecot-passwd.$$
+$_touch relay_domains.$$
 
 # individual mail addresses
 
-for i in $($MYSQL_STR -e "select concat(m.id, ':', lcase(mail_name), ':', lcase(name), ':', mailbox, ':', spam_folder, ':', m.passwd) from domains d, mail_users m where did = d.id and d.mail = 'on' order by name" | sed '1d'); do
+for i in $($MYSQL_STR -e "select concat(m.id, ':', lcase(mail_name), ':', lcase(name), ':', mailbox, ':', spam_folder, ':', m.passwd) from domains d, mail_users m where did = d.id and d.mail = 'on' order by name" | $_sed '1d'); do
 
 # separate the string into a temp variable so we don't have to make several calls to to the sed command
 # buxfix - there IS the cut command guys! -spc
     
-    mid=$(echo $i | cut -d: -f1)
-    mail_name=$(echo $i | cut -d: -f2)
-    domain_name=$(echo $i | cut -d: -f3)
-    mailbox=$(echo $i | cut -d: -f4)
-    spam_folder=$(echo $i | cut -d: -f5)
-    mail_pass=$(echo $i | cut -d: -f6)
+    mid=$($_echo $i | $_cut -d: -f1)
+    mail_name=$($_echo $i | $_cut -d: -f2)
+    domain_name=$($_echo $i | $_cut -d: -f3)
+    mailbox=$($_echo $i | $_cut -d: -f4)
+    spam_folder=$($_echo $i | $_cut -d: -f5)
+    mail_pass=$($_echo $i | $_cut -d: -f6)
     
     email_addr="$mail_name@$domain_name"
 
     v_echo "Rebuilding configuration for $email_addr"
 
-    mkdir -p $domain_name/$mail_name
-    chown $VMAIL_UID:$VMAIL_GID $domain_name
-    chown $VMAIL_UID:$VMAIL_GID $domain_name/$mail_name
+    $_mkdir -p $domain_name/$mail_name
+    $_chown $VMAIL_UID:$VMAIL_GID $domain_name
+    $_chown $VMAIL_UID:$VMAIL_GID $domain_name/$mail_name
 
 # chech for the imap .subscriptions
     
@@ -74,32 +75,32 @@ for i in $($MYSQL_STR -e "select concat(m.id, ':', lcase(mail_name), ':', lcase(
 	for dir in Sent Trash Drafts; do
 
 	    if [ ! -d $domain_name/$mail_name/.$dir ]; then
-		mkdir -p $domain_name/$mail_name/.$dir/{cur,new,tmp}
-		chown -R $VMAIL_UID:$VMAIL_GID $domain_name/$mail_name/.$dir
-		chmod -R 700 $domain_name/$mail_name/.$dir
+		$_mkdir -p $domain_name/$mail_name/.$dir/{cur,new,tmp}
+		$_chown -R $VMAIL_UID:$VMAIL_GID $domain_name/$mail_name/.$dir
+		$_chmod -R 700 $domain_name/$mail_name/.$dir
 	    fi
 
-	    echo $dir >> $subscriptions
+	    $_echo $dir >> $subscriptions
 	    
 	done
 	
-	chown $VMAIL_UID:$VMAIL_GID $subscriptions
-	chmod 600 $subscriptions
+	$_chown $VMAIL_UID:$VMAIL_GID $subscriptions
+	$_chmod 600 $subscriptions
 	
     fi
 
 # put this email in the virtual mailbox and transport tables
 
-    echo -e "$email_addr\t\tvirtual:" >> vtransportmap.$$
-    echo -e "$email_addr\t\t$domain_name/$mail_name/" >> vmailbox.$$
+    $_echo -e "$email_addr\t\tvirtual:" >> vtransportmap.$$
+    $_echo -e "$email_addr\t\t$domain_name/$mail_name/" >> vmailbox.$$
     case $spam_folder in
-	"true") echo -e "$mail_name+spam@$domain_name\t\t$domain_name/$mail_name/.Spam/" >> vmailbox.$$
-	    grep '^Spam$' $subscriptions &> /dev/null
+	"true") $_echo -e "$mail_name+spam@$domain_name\t\t$domain_name/$mail_name/.Spam/" >> vmailbox.$$
+	    $_grep '^Spam$' $subscriptions &> /dev/null
 	    if [ $? -eq 1 ]; then
-		echo Spam >> $subscriptions
-		mkdir -p $domain_name/$mail_name/.Spam/{cur,new,tmp}
-		chown -R $VMAIL_UID:$VMAIL_GID $domain_name/$mail_name/.Spam
-		chmod -R 700 $domain_name/$mail_name/.Spam
+		$_echo Spam >> $subscriptions
+		$_mkdir -p $domain_name/$mail_name/.Spam/{cur,new,tmp}
+		$_chown -R $VMAIL_UID:$VMAIL_GID $domain_name/$mail_name/.Spam
+		$_chmod -R 700 $domain_name/$mail_name/.Spam
 	    fi
 	    ;;
     esac
@@ -118,7 +119,7 @@ for i in $($MYSQL_STR -e "select concat(m.id, ':', lcase(mail_name), ':', lcase(
 
 # now loop for redirects
 
-    for i in $($MYSQL_STR -e "select redirect_addr from mail_users where redirect = 'true' and id = '$mid'" | sed '1d'); do
+    for i in $($MYSQL_STR -e "select redirect_addr from mail_users where redirect = 'true' and id = '$mid'" | $_sed '1d'); do
 
 # if $alias_map is emtpy, we don't start with a comma
 
@@ -138,19 +139,19 @@ for i in $($MYSQL_STR -e "select concat(m.id, ':', lcase(mail_name), ':', lcase(
     
     if [ -n "$alias_map" ]; then
 
-	echo -e "$email_addr\t\t$alias_map" >> valiasmap.$$
+	$_echo -e "$email_addr\t\t$alias_map" >> valiasmap.$$
 
     fi
 
 # put this email in login_maps
 
-    echo -e "$email_addr\t\t$email_addr" >> login_maps.$$
+    $_echo -e "$email_addr\t\t$email_addr" >> login_maps.$$
 
 # smtp SASL authentication
 
 # check to see if users exists
 
-    sasldblistusers2 | grep "$mail_name@$domain_name" &> /dev/null
+    $_sasldblistusers2 | $_grep "$mail_name@$domain_name" &> /dev/null
 
     if [ $? -ne 0 ]; then
 	
@@ -169,57 +170,57 @@ for i in $($MYSQL_STR -e "select concat(m.id, ':', lcase(mail_name), ':', lcase(
 # set sasl passwd for users with a mailbox
     case $mailbox in
         true)
-	    echo $mail_pass | saslpasswd2 $sasl_action -p -u $domain_name $mail_name
+	    echo $mail_pass | $_saslpasswd2 $sasl_action -p -u $domain_name $mail_name
 	    ;;
     esac
 
 # build a random 2 letter "salt" string for use in the perl crypt fucntion in the docevat passwd-file below
 
-    salt_str=$(perl -e 'for($i=0;$i<2;$i++){print pack("C",int(rand(26))+65);}')
+    salt_str=$($_perl -e 'for($i=0;$i<2;$i++){print pack("C",int(rand(26))+65);}')
 
 # dovecot passwd-file authentication
 
-    echo $email_addr:$(perl -e "print crypt('$mail_pass','$salt_str');"):$VMAIL_UID:$VMAIL_GID::$VMAIL_ROOT/$domain_name/$mail_name:/bin/false >> dovecot-passwd.$$
+    $_echo $email_addr:$($_perl -e "print crypt('$mail_pass','$salt_str');"):$VMAIL_UID:$VMAIL_GID::$VMAIL_ROOT/$domain_name/$mail_name:/bin/false >> dovecot-passwd.$$
 
 done
 
 # handle catchalls. we concat semicolons here because the relay_host might have a : character in it
 
-for i in $($MYSQL_STR -e "select concat(name,';',catchall,';',catchall_addr,';',relay_host) from domains where mail = 'on' order by name" | sed '1d'); do
+for i in $($MYSQL_STR -e "select concat(name,';',catchall,';',catchall_addr,';',relay_host) from domains where mail = 'on' order by name" | $_sed '1d'); do
 
-    domain_name=$(echo $i | cut -d\; -f1)
-    catchall=$(echo $i | cut -d\; -f2)
-    catchall_addr=$(echo $i | cut -d\; -f3)
-    relay_host=$(echo $i | cut -d\; -f4)
+    domain_name=$($_echo $i | $_cut -d\; -f1)
+    catchall=$($_echo $i | $_cut -d\; -f2)
+    catchall_addr=$($_echo $i | $_cut -d\; -f3)
+    relay_host=$($_echo $i | $_cut -d\; -f4)
 
     case $catchall in
 	"send_to")
-	    echo -e "@$domain_name\t\t$catchall_addr" >> valiasmap.$$
-	    echo -e "$domain_name\t\tvirtual:" >> vtransportmap.$$
+	    $_echo -e "@$domain_name\t\t$catchall_addr" >> valiasmap.$$
+	    $_echo -e "$domain_name\t\tvirtual:" >> vtransportmap.$$
 	    ;;
 # for legacy support
 	"true")
-            echo -e "@$domain_name\t\t$catchall_addr" >> valiasmap.$$
-            echo -e "$domain_name\t\tvirtual:" >> vtransportmap.$$
+            $_echo -e "@$domain_name\t\t$catchall_addr" >> valiasmap.$$
+            $_echo -e "$domain_name\t\tvirtual:" >> vtransportmap.$$
             ;;
 	"bounce")
 # find their bounce message
-	    bounce_message=$($MYSQL_STR -e "select bounce_message from domains where name = '$domain_name'" | sed '1d')
-	    echo -e "$domain_name\t\terror:$bounce_message" >> vtransportmap.$$
+	    bounce_message=$($MYSQL_STR -e "select bounce_message from domains where name = '$domain_name'" | $_sed '1d')
+	    $_echo -e "$domain_name\t\terror:$bounce_message" >> vtransportmap.$$
 	    ;;
 	"delete_it")
-            echo -e "@$domain_name\t\tdevnull" >> valiasmap.$$
-            echo -e "$domain_name\t\tvirtual:" >> vtransportmap.$$
+            $_echo -e "@$domain_name\t\tdevnull" >> valiasmap.$$
+            $_echo -e "$domain_name\t\tvirtual:" >> vtransportmap.$$
 	    ;;
 	"alias_to")
-	    alias_addr=$($MYSQL_STR -e "select alias_addr from domains where name = '$domain_name'" | sed '1d')
-	    echo -e "@$domain_name\t\t@$alias_addr" >> valiasmap.$$
-            echo -e "$domain_name\t\tvirtual:" >> vtransportmap.$$
+	    alias_addr=$($MYSQL_STR -e "select alias_addr from domains where name = '$domain_name'" | $_sed '1d')
+	    $_echo -e "@$domain_name\t\t@$alias_addr" >> valiasmap.$$
+            $_echo -e "$domain_name\t\tvirtual:" >> vtransportmap.$$
 	    ;;
         "relay") # relay transport addition by spectro - slightly modified by cormander
-            echo -ne "$domain_name\t\trelay:" >> vtransportmap.$$
+            $_echo -ne "$domain_name\t\trelay:" >> vtransportmap.$$
 # only add the [ ] around the relay_host if we want to force an MX lookup
-	    echo -e $relay_host >> vtransportmap.$$
+	    $_echo -e $relay_host >> vtransportmap.$$
             ;;
 
 # we don't want to do anything with the default, *)
@@ -232,33 +233,86 @@ done
 # build the virtual domains table
 #
 
+sq_vlogin_file=$RC_ROOT/var/apps/squirrelmail/plugins/vlogin/data/domains/ravencore.vlogin.config.php
+
+$_cat <<EOF > $sq_vlogin_file
+<?php
+
+  // Do not edit this file manually, it'll get overwritten by RavenCore the next time
+  // an email account is updated.
+
+  // Global Variables, don't touch these unless you want to break the plugin
+  //
+  global \$notPartOfDomainName, \$numberOfDotSections, \$useSessionBased,
+         \$putHostNameOnFrontOfUsername, \$checkByExcludeList,
+         \$at, \$dot, \$dontUseHostName, \$perUserSettingsFile,
+         \$smHostIsDomainThatUserLoggedInWith, \$virtualDomains,
+         \$sendmailVirtualUserTable, \$virtualDomainDataDir,
+         \$allVirtualDomainsAreUnderOneHost, \$vlogin_debug, \$removeFromFront,
+         \$chopOffDotSectionsFromRight, \$chopOffDotSectionsFromLeft,
+         \$translateHostnameTable, \$pathToQmail, \$atConversion,
+         \$removeDomainIfGiven, \$alwaysAddHostName, \$reverseDotSectionOrder,
+         \$replacements, \$usernameReplacements, \$forceLowercase,
+         \$securePort, \$useDomainFromVirtDomainsArray,
+         \$usernameDomainIsHost, \$stripDomainFromUserSubstitution,
+         \$serviceLevelBackend, \$internalServiceLevelFile,
+         \$vlogin_dsn, \$sqlServiceLevelQuery;
+
+  \$virtualDomains = array(
+
+EOF
+
 # domains that have a catchall of relay are handeled in the vtransportmaps. Any email for the domain to 
 # go locally will be directed straight to virtual: , while the rest will go remote because it isn't in
 # the vmaildomains. If it was, it'll attempt to deliver those mails locally too, and give a reject message.
 
-for domain_name in $($MYSQL_STR -e "select name from domains where mail = 'on' and catchall != 'relay'" | sed '1d'); do
+for domain_name in $($MYSQL_STR -e "select name from domains where mail = 'on' and catchall != 'relay'" | $_sed '1d'); do
 
-    echo -e "$domain_name\t\tplaceholder" >> vmaildomains.$$
+    $_echo -e "$domain_name\t\tplaceholder" >> vmaildomains.$$
+    $_echo -e "\t\t'$domain_name' => array('org_name' => '$domain_name')," >> $sq_vlogin_file
 
 done
 
-mv -f vmaildomains.$$ $VMAIL_CONF_DIR/vmaildomains
-mv -f vmailbox.$$ $VMAIL_CONF_DIR/vmailbox
-mv -f vtransportmap.$$ $VMAIL_CONF_DIR/vtransportmap
-mv -f login_maps.$$ $VMAIL_CONF_DIR/login_maps
-mv -f valiasmap.$$ $VMAIL_CONF_DIR/valiasmap
+# build the list of domains this server is allowed to relay for
 
-mv -f dovecot-passwd.$$ /etc/dovecot-passwd
-chown dovecot:dovecot /etc/dovecot-passwd
-chmod 400 /etc/dovecot-passwd
+for domain_name in $($MYSQL_STR -e "select name from domains where mail = 'on' and catchall = 'relay'" | $_sed '1d'); do
 
-postmap $VMAIL_CONF_DIR/vmaildomains
-postmap $VMAIL_CONF_DIR/vmailbox
-postmap $VMAIL_CONF_DIR/vtransportmap
-postmap $VMAIL_CONF_DIR/login_maps
-postmap $VMAIL_CONF_DIR/valiasmap
+    $_echo -e "$domain_name\t\tplaceholder" >> relay_domains.$$
+    $_echo -e "\t\t'$domain_name' => array('org_name' => '$domain_name')," >> $sq_vlogin_file
+
+done
+
+$_cat <<EOF >> $sq_vlogin_file
+
+  );
+
+  \$vlogin_debug = 0;
+
+?>
+
+EOF
+
+$_mv -f vmaildomains.$$ $VMAIL_CONF_DIR/vmaildomains
+$_mv -f vmailbox.$$ $VMAIL_CONF_DIR/vmailbox
+$_mv -f vtransportmap.$$ $VMAIL_CONF_DIR/vtransportmap
+$_mv -f login_maps.$$ $VMAIL_CONF_DIR/login_maps
+$_mv -f valiasmap.$$ $VMAIL_CONF_DIR/valiasmap
+$_mv -f relay_domains.$$ $VMAIL_CONF_DIR/relay_domains
+
+$_mv -f dovecot-passwd.$$ /etc/dovecot-passwd
+$_chown dovecot:dovecot /etc/dovecot-passwd
+$_chmod 400 /etc/dovecot-passwd
+
+$_postmap $VMAIL_CONF_DIR/vmaildomains
+$_postmap $VMAIL_CONF_DIR/vmailbox
+$_postmap $VMAIL_CONF_DIR/vtransportmap
+$_postmap $VMAIL_CONF_DIR/login_maps
+$_postmap $VMAIL_CONF_DIR/valiasmap
+$_postmap $VMAIL_CONF_DIR/relay_domains
 
 # make sure our conf files are correctly set
 
 $RC_ROOT/sbin/checkconf.mail
+
+[ -x $RC_ROOT/conf.d/amavisd.conf ]&& $RC_ROOT/sbin/checkconf.amavisd
 

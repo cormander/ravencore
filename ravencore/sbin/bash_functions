@@ -252,7 +252,13 @@ rebuild_conf_file() {
 	    
 	elif [ -d $RC_ROOT/etc/$service/$conf_basename ]; then
 	    
-	    for i in `$_ls -1 $RC_ROOT/etc/$service/$conf_basename | $_grep -v '\.local$'`; do
+# look in the service config file directory, and get all the files, .local being the preference, and
+# using a .local file even if a base file doesn't exist for it
+
+# old code, doesn't account for .local files that don't have a base file
+#           for i in `$_ls -1 $RC_ROOT/etc/$service/$conf_basename | $_grep -v '\.local$'`; do
+
+	    for i in `$_echo $($_ls -1 $RC_ROOT/etc/$service/$conf_basename | $_grep -v '\.local$') $($_ls -1 $RC_ROOT/etc/$service/$conf_basename | $_grep '\.local$' | $_sed 's/\.local$//') | $_tr ' ' '\n' | $_sort | $_uniq`; do
 		
 		param_name="$RC_ROOT/etc/$service/$conf_basename/$i"
 		[ -f $param_name.local ] && param_name=$param_name.local
@@ -322,7 +328,7 @@ rebuild_conf_file() {
 		if [ -n "$INIT_RUNNING" ]; then
 		    
 		    $_echo "The config file $conf_basename for $service has been modified...rebuilding it and restarting $service"
-		    
+
 		    $INITD/$service restart
 		    
 		else

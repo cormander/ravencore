@@ -196,9 +196,9 @@ fi
 
 $_groupmod -g 149 servgrp &> /dev/null
 
-if [ $? -ne 0 ]; then
+if [ $? -ne 0 ] || [ ! -f "$RC_ROOT/var/run/httpd_user" ]; then
     
-    $_groupadd -g 149 servgrp
+    $_groupadd -g 149 servgrp 2> /dev/null
     
 # we need to figure out what user this system is configured to run apache as, so we can add it to servgrp
     
@@ -277,7 +277,11 @@ if [ $? -ne 0 ]; then
 
     fi
 
+    echo $httpd_user > $RC_ROOT/var/run/httpd_user
+
 fi
+
+httpd_user=$($_cat $RC_ROOT/var/run/httpd_user 2> /dev/null)
 
 # make sure we have the rcadmin user / group
 # check the group first, because in order to add the user, we need a valid existing gid
@@ -415,27 +419,29 @@ $_chown -R root:rcadmin $RC_ROOT
 $_chown root:root $RC_ROOT/sbin/*
 
 # shadow files, webmail files, and tmp files should be owned by rcadmin
-$_chown -R rcadmin:rcadmin $RC_ROOT/{.shadow,database.cfg,httpdocs/{webmail/data,filemanager/tmp},var/tmp}
+$_chown -R rcadmin:rcadmin $RC_ROOT/{.shadow,database.cfg,var/tmp}
 # but their directories should not be
-$_chown root:rcadmin $RC_ROOT/{httpdocs/{webmail/data,filemanager/tmp},var/tmp}
+$_chown root:rcadmin $RC_ROOT/var/tmp
 
 # directory permissions.. start by issuing everything 750
-$_chmod 750 $(find $RC_ROOT -type d)
+$_chmod 750 $($_find $RC_ROOT -type d)
 
-# files in sbin, etc, and httpdocs/webmail need to allow files that are readable to everyone, to be read
-$_chmod 751 $RC_ROOT/{.,sbin,etc,httpdocs/{.,webmail}}
+# files in sbin, etc, need to allow files that are readable to everyone, to be read
+$_chmod 751 $RC_ROOT/{.,sbin,etc,var/{.,apps}}
 
 # set sbin files to 500, with the exception of mailscan
 $_chmod 500 $RC_ROOT/{bin,sbin}/*
 $_chmod 555 $RC_ROOT/sbin/mailscan
 $_chmod 550 $RC_ROOT/bin/disp_chkconfig
 
-# spamassassin reads the .spam preferences in here
-$_chmod 771 $RC_ROOT/httpdocs/webmail/data
-$_chmod 770 $RC_ROOT/var/{tmp,run} $RC_ROOT/httpdocs/{webmail/data/default_pref,filemanager/tmp}
+$_chgrp servgrp $($_find $RC_ROOT/var/apps/squirrelmail -type d)
+$_chmod 751 $($_find $RC_ROOT/var/apps/squirrelmail -type d)
+
+$_chown -R rcadmin:servgrp $RC_ROOT/var/apps/squirrelmail/data
+$_chmod 771 $RC_ROOT/var/{tmp,run} $RC_ROOT/var/apps/{squirrelmail/data,phpwebftp/tmp}
 
 # make php files not world readable
-$_chmod 640 $RC_ROOT/httpdocs/*php
+$_chmod 640 $RC_ROOT/httpdocs/{*,*/*}php
 
 # make sure our database connect info stays safe
 $_chmod 600 $RC_ROOT/.shadow

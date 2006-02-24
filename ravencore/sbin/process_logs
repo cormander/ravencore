@@ -27,7 +27,7 @@ domain_name=$2
 
 # change directory in the the domain's logs directory
 
-cd $VHOST_ROOT/$domain_name/var/log
+$_cd $VHOST_ROOT/$domain_name/var/log
 
 # check to see if access_log.1 exists
 
