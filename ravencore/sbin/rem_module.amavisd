@@ -20,17 +20,20 @@
 
 . /etc/ravencore.conf || exit 1
 
-# loop through all the installed packages, by looking in the conf.d directory
+# check the contents of the content_filter
 
-for i in $($_ls $RC_ROOT/conf.d | $_sed 's/\.conf$//g'); do
-    
-# if this package is installed, and we have a checkconf script for it, and it's executable, run it
+$_echo "smtp:127.0.0.1:10024" | $_diff $RC_ROOT/etc/postfix/main.cf/content_filter - &> /dev/null
 
-    [ -x $RC_ROOT/conf.d/$i.conf ] && [ -x $RC_ROOT/sbin/checkconf.$i ] && $RC_ROOT/sbin/checkconf.$i
+# if they match
 
-# if this package is not installed, and we have an uninstall script for it, run it
+if [ $? -eq 0 ]; then
 
-    [ ! -x $RC_ROOT/conf.d/$i.conf ] && [ -x $RC_ROOT/sbin/rem_module.$i ] && $RC_ROOT/sbin/rem_module.$i
+# make the file blank
 
-done
+    $_echo "" > $RC_ROOT/etc/postfix/main.cf/content_filter
 
+# rebuild the master.cf file
+
+    rebuild_conf_file "$VMAIL_CONF_DIR/master.cf" postfix '\t'
+
+fi
