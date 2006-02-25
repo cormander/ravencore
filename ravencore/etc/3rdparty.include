@@ -1,0 +1,31 @@
+# squirrelmail configuration
+<IfDefine LOCAL_SQUIRRELMAIL>
+Alias /webmail var/apps/squirrelmail.local
+</IfDefine>
+<IfDefine !LOCAL_SQUIRRELMAIL>
+Alias /webmail var/apps/squirrelmail
+</IfDefine>
+
+# phpmyadmin configuration
+<IfDefine LOCAL_PHPMYADMIN>
+Alias /phpmyadmin var/apps/phpmyadmin.local
+</IfDefine>
+<IfDefine !LOCAL_PHPMYADMIN>
+Alias /phpmyadmin var/apps/phpmyadmin
+</IfDefine>
+
+# phpwebftp configuration
+<IfDefine LOCAL_PHPWEBFTP>
+Alias /filemanager var/apps/phpwebftp.local
+</IfDefine>
+<IfDefine !LOCAL_PHPWEBFTP>
+Alias /filemanager var/apps/phpwebftp
+</IfDefine>
+
+# phpsysinfo configuration
+<IfDefine LOCAL_PHPSYSINFO>
+Alias /sysinfo var/apps/phpsysinfo.local
+</IfDefine>
+<IfDefine !LOCAL_PHPSYSINFO>
+Alias /sysinfo var/apps/phpsysinfo
+</IfDefine>

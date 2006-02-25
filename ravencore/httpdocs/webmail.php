@@ -23,13 +23,32 @@ include "auth.php";
 
 if (!$did and !$mid) goto("users.php");
 
-$sql = "select concat(mail_name,'@',name) as login_username, passwd from mail_users m, domains d where d.id = m.did and m.did = '$did' and m.id = '$mid'";
+$sql = "select concat(lcase(mail_name),'@',lcase(name)) as login_username, passwd from mail_users m, domains d where d.id = m.did and m.did = '$did' and m.id = '$mid'";
 $result =& $db->Execute($sql);
 
 $row =& $result->FetchRow();
 
+// set our login values
+
 $_SESSION['login_username'] = $row['login_username'];
 $_SESSION['secretkey'] = $row['passwd'];
+
+// unset any current squirrelmail session, so our left frame will contain correct info
+setcookie("SQMSESSID",false);
+
+// make sure the default prefrence file exists, and if it doesn't, create it with correct permissions - 0660
+
+$data_dir = "../var/apps/squirrelmail/data/";
+
+if(!file_exists($data_dir . $row['login_username'] . ".pref"))
+{
+  @copy($data_dir . 'default_pref', $data_dir . $row['login_username'] . ".pref");
+  @chmod($data_dir . $row['login_username'] . ".pref",0660);
+  /*
+    TODO: write a script to run in socket_cmd here, to set permissions / ownership on all files in sq data dir
+  */
+
+}
 
 goto("webmail/src/redirect.php");
 

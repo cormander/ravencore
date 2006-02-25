@@ -343,6 +343,18 @@ if [ ! -f $RC_ROOT/etc/port_ssl.conf ]; then
 
 fi
 
+# check to see if we want to use .local directories for var/apps
+
+for i in $(ls $RC_ROOT/var/apps | grep -v awstats); do
+
+    if [ -d $RC_ROOT/var/apps/$i.local ]; then
+	
+# the app in all uppercase
+	OPTIONS="$OPTIONS -DLOCAL_"$(echo $i | perl -e 'print uc(<STDIN>);')
+
+    fi
+
+done
 
 # unset these enviroment variables so they don't get set in the apache enviroment
     
