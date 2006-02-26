@@ -44,11 +44,11 @@ if ($action == "userdel")
 	if ($db2->Execute($sql))
 	  {
 
-	    $db->Execute("flush privileges");
+	    $db2->Execute("flush privileges");
 	    
 	    $sql = "delete from data_base_users where id = '$dbu'";
 	    $db->Execute($sql);
-	    print $sql;
+
 	    goto("databases.php?did=$did&dbid=$dbid");
 
 	  }
@@ -94,7 +94,7 @@ else if ($action == "dbdel")
     } 
 } 
 
-if (!$db and $did)
+if (!$dbid and $did)
 {
     nav_top();
 

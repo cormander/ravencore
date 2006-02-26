@@ -251,7 +251,7 @@ class session {
 	  }
 
 	// update your idle
-	$sql = "update sessions set idle = now() where id = '" . $this->id . "'";
+	$sql = "update sessions set idle = now() where session_id = '" . $this->id . "'";
 	$db->Execute($sql);
 
       }

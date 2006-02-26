@@ -248,11 +248,7 @@ if( ! $server->db_panic )
   
   // If we have a $did, match it with the given $uid. If we fail, goto the user's main page
   
-  // TODO:
-  // Fix this. if we switch a domains' user, this stops it cold
-  //
-  
-  if ( $did and $u and ! $u->owns_domain($did) )
+  if ( $did and $u and ! $u->owns_domain($did) and !is_admin())
     {
     goto("users.php?uid=$uid");
     }

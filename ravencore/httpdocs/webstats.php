@@ -49,7 +49,7 @@ $_SERVER[QUERY_STRING] .= "&config=" . $domain_name . "&did=" . $did . "&Lang=" 
 // run awstats in a simulated CGI enviroment, and output the results to the web
 // fix the links too, by changeing references to "awstats.pl" to "webstats.php"
 print ereg_replace('<input type="submit" value=" ' . __('OK') . ' " class="aws_button" />', '<input type="submit" value=" OK " class="aws_button" /><input type="hidden" name="did" value="' . $did . '"',
-    shell_exec("export GATEWAY_INTERFACE=\"CGI/1.1\" QUERY_STRING=\"" . $_SERVER[QUERY_STRING] . "\"; " . $CONF[RC_ROOT] . "/var/awstats/wwwroot/cgi-bin/awstats.pl | sed 's/awstats.pl/webstats.php/g' | sed '1d' | sed '1d' | sed '1d' | sed '1d'")
+    shell_exec("export GATEWAY_INTERFACE=\"CGI/1.1\" QUERY_STRING=\"" . $_SERVER[QUERY_STRING] . "\"; " . $CONF[RC_ROOT] . "/var/apps/awstats/wwwroot/cgi-bin/awstats.pl | sed 's/awstats.pl/webstats.php/g' | sed '1d' | sed '1d' | sed '1d' | sed '1d'")
     );
 
 ?>

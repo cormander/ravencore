@@ -45,12 +45,13 @@ else if ($action == "hosting")
 else if ($action == "change")
 { 
     // only an admin can do this
-    if (!is_admin()) goto("users.php");
+  if (!is_admin()) goto("users.php");
 
-    $sql = "update domains set uid = '$_POST[uid]' where id = '$did'";
-    $db->Execute($sql);
+  $sql = "update domains set uid = '$_POST[uid]' where id = '$did'";
+  $db->Execute($sql);
+  
+  goto("domains.php?did=$did");
 
-    goto("domains.php?did=$did");
 } 
 
 if (!$did)

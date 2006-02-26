@@ -54,6 +54,9 @@ if ($action == "edit")
     // only mess with the filesystem if we affected the db
     if ($db->Affected_Rows()) socket_cmd("rehash_httpd " . $d->name());
 
+    // if this was an alias update, make sure we update the aliased domain too
+    if ($db->Affected_Rows() and $_POST[host_type] == "alias") socket_cmd("rehash_httpd " . $_POST[redirect_url]);
+
     goto("domains.php?did=$did");
 } 
 else if ($action == "add")
@@ -100,6 +103,8 @@ else if ($action == "add")
         socket_cmd("rehash_httpd " . $d->name()); 
         // do logrotation for the domain
         socket_cmd("rehash_logrotate");
+	// if this was an alias update, make sure we update the aliased domain too
+	if ($_POST[host_type] == "alias") socket_cmd("rehash_httpd " . $_POST[redirect_url]);
 
         goto("domains.php?did=$did");
     } 
@@ -229,8 +234,22 @@ else
 
         case "alias":
 
-            print __('This domain is an alias of') . ' <input type=text name=redirect_url value="';
-            if ($row[redirect_url]) print $row[redirect_url];
+	  print __('This domain is an alias of') . ' <select name=redirect_url>';
+
+	  foreach($u->info['domains'] as $dom_id)
+	    {
+
+	      // we can't have an alias to ourself
+	      if($dom_id == $did) continue;
+
+	      $d = new domain($dom_id);
+
+	      print '<option value="' . $d->name() . '"' . ($row[redirect_url] == $d->name() ? ' selected' : '' ) . '>' . $d->name() . '</option>';
+
+	      if ($row[redirect_url] == $d->name()) print ' selected';
+
+	    }
+
             print '"><p>'; 
             // If we have the $host_type value here, it means we need to add it rather then update it
             if ($_POST[host_type]) print '<input type=submit value=' . __('Add') . '> <input type=hidden name=action value=add>';
