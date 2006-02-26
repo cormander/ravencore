@@ -36,13 +36,13 @@ fi
 
 # make sure that whatever postfix is configured to group as, exists
 
-setgid_group=$($_postconf | grep setgid_group | awk '{print $3}')
+setgid_group=$($_postconf 2> /dev/null | grep setgid_group | awk '{print $3}')
 
 # check to see if it exists by the exit status of this command
 
 $_groupmod $setgid_group &> /dev/null
 
-[ $? -ne 0 ] && $_groupadd $setgid_group
+[ $? -ne 0 ] && [ -n "$setgid_group" ] && $_groupadd $setgid_group
 
 # make sure we have the the vmail user / group
 # check the group first, because in order to add the user, we need a valid existing gid
@@ -90,7 +90,7 @@ rebuild_conf_file "/usr/lib/sasl2/smtpd.conf" postfix ': '
 # something else. We "could" define it in our main.cf, but since we are not generating
 # this file completly, just use what the system already has there
 
-alias_database=$($_postconf | $_grep alias_database | $_sed 's/:/ /' | $_awk '{print $4}')
+alias_database=$($_postconf 2> /dev/null | $_grep alias_database | $_sed 's/:/ /' | $_awk '{print $4}')
 
 $_grep "^devnull:" $alias_database &> /dev/null
 
