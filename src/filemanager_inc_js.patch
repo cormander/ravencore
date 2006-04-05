@@ -1,0 +1,40 @@
+--- phpWebFTP/include/script.js	2005-08-06 15:27:50.000000000 -1000
++++ include/script.js	2005-07-27 13:34:59.000000000 -1000
+@@ -159,14 +159,31 @@
+   document.actionform.submit();
+ };
+ 
+-
+ function deleteFile()
+ {
+-	if (confirm("Really delete this Item ?\n"))
+-	{
+-		document.actionform.actionType.value = "deldir";
+-		document.actionform.submit();
+-	}
++if (confirm("Really delete this Item ?"))
++{
++document.actionform.actionType.value = "delfile";
++document.actionform.submit();
++}
++};
++
++function deleteDirectory()
++{
++if (confirm("Really delete this Item ?n"))
++{
++document.actionform.actionType.value = "deldir";
++document.actionform.submit();
++}
++};
++
++function deleteItem(){
++if (document.actionform.actionType.value == "get"){
++deleteFile();
++}
++else {
++deleteDirectory();
++}
+ };
+ 
+ function editFile()

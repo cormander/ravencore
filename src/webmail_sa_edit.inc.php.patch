@@ -1,0 +1,19 @@
+--- spamassassin/inc/edit.inc.php	2003-03-14 13:43:49.000000000 -1000
++++ inc/edit.inc.php	2005-07-24 19:34:01.000000000 -1000
+@@ -34,12 +34,14 @@
+ else { };
+ 
+ if(!$msg && $type == 'ef'){
+- if($entry == 'disable' && file_exists($spamproc)){ 
++ if($entry == 'disable'){// && file_exists($spamproc)){ 
++   chmod($spamfile,0600);
+ 	copy("$spamproc", "$spamproc.disable"); chmod("$spamproc.disable", 0644); 
+         unlink("$spamproc");
+ 	$msg = "Filter%20has%20been%20Disabled"; $type = 'gen';  }
+ 					
+- elseif($entry == 'enable' && file_exists("$spamproc.disable")){
++ elseif($entry == 'enable'){// && file_exists("$spamproc.disable")){
++   chmod ($spamfile,0644);
+ 	copy("$spamproc.disable", "$spamproc"); chmod("$spamproc", 0644); 
+ 	unlink("$spamproc.disable");
+ 	$msg = "Filter%20has%20been%20Enabled";  $type = 'gen'; }

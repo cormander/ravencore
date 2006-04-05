@@ -1,0 +1,33 @@
+--- phpWebFTP/index.php	2005-08-06 15:50:04.000000000 -1000
++++ index.php	2005-07-27 13:33:53.000000000 -1000
+@@ -376,8 +376,8 @@
+ 				<TD VALIGN=CENTER>&nbsp;<A CLASS=menu HREF="javascript:changeMode('<?=$newMode;?>')"><IMG SRC="img/mode.gif" HEIGHT=24 BORDER=0 ALIGN=CENTER></A></TD>
+ 				<TD VALIGN=CENTER><nobr><A CLASS=menu HREF="javascript:changeMode('<?=$newMode;?>')">&nbsp;<?=$lblChangeMode;?></A> </nobr></TD>
+ 
+-				<TD VALIGN=CENTER>&nbsp;<A CLASS=menu HREF="javascript:logOff()"><IMG SRC="img/logoff.gif" HEIGHT=24 BORDER=0 ALIGN=CENTER></A></TD>
+-				<TD VALIGN=CENTER><nobr><A CLASS=menu HREF="javascript:logOff()">&nbsp;<?=$lblLogOff;?></A> </nobr></TD>
++				
++				
+ 
+ 				<TD COLSPAN=6 VALIGN=TOP class=statusbar width="100%" VALIGN=CENTER ALIGN=RIGHT>
+ 					<?=directoryPath($currentDir, $server);?>
+@@ -386,8 +386,8 @@
+ </TABLE>
+ 				<?php } else { ?>
+ 				<TABLE CELLPADDING=0 CELLSPACING=0><TR>
+-				<TD VALIGN=CENTER>&nbsp;<A CLASS=menu HREF="javascript:logOff()"><IMG SRC="img/logoff.gif" HEIGHT=24 BORDER=0 ALIGN=CENTER></A> </TD>
+-				<TD VALIGN=CENTER>&nbsp;<A CLASS=menu HREF="javascript:logOff()"><?=$lblRetry;?></A> </TD>
++				
++				
+ 				</TR></TABLE>
+ 
+ 				<?php } ?>
+@@ -430,7 +430,7 @@
+ 								<TR>
+ 									<TD VALIGN=CENTER><IMG SRC="img/menu_delete.gif"></TD>
+ 									<TD VALIGN=CENTER>
+-										<A HREF='javascript:deleteFile()' class=leftmenulink><?=$lblDeleteFile;?></A>
++										<A HREF='javascript:deleteItem()' class=leftmenulink><?=$lblDeleteFile;?></A>
+ 									</TD>
+ 								</TR>
+ 

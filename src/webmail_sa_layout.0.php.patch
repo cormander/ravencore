@@ -1,0 +1,46 @@
+--- spamassassin/layouts/layout.0.php	2003-03-14 23:18:39.000000000 +0000
++++ layouts/layout.0.php	2005-08-25 18:30:37.183698216 +0100
+@@ -51,7 +51,8 @@
+ 
+ // Do we show the filter on/off link?
+ if($salo[to] == "1"){
+-if(file_exists($spamproc)){
++  //if(file_exists($spamproc)){
++if(fileperms($spamfile) & 0x0004){
+ $dis_link = "<a href=main.php?task=edit&type=ef&entry=disable title='Filtering is enabled, click to disable'><img src='images/grpaw.gif' alt='[enabled]' border=0></a>"; }
+ else { 
+ $dis_link =  "<a href=main.php?task=edit&type=ef&entry=enable title='Filtering is disabled, click to enable'><img src='images/redpaw.gif' alt='[disabled]' border=0></a>"; }
+@@ -77,7 +78,7 @@
+ if(chop($my_rs) == "1"){ echo "<tr><td style='border: thin solid $color[9];'>Subject Tag</td><td align=center style='border: thin solid $color[9];'> [<b> $my_st </b>] </td><td align=center style='border: thin solid $color[9];'><input type=text size=15 maxlength=15 name=entry[st] value=''></td></tr>\n"; }
+ echo "<tr><td style='border: thin solid $color[9];'>Defang Mime</td><td align=center style='border: thin solid $color[9];'> [<b> ".ucfirst($yn[chop($my_dm)])."</b> ] </td><td align=center style='border: thin solid $color[9];'>".ucfirst($altyn[chop($my_dm)])." <input type=checkbox name=entry[dm] value='".$altyn[chop($my_dm)]."'></td></tr>\n";
+ echo "<tr><td style='border: thin solid $color[9];'>Extended Reporting</td><td align=center style='border: thin solid $color[9];'> [<b> ".ucfirst($yn[chop($my_tr)])."</b> ] </td><td align=center style='border: thin solid $color[9];'>".ucfirst($altyn[chop($my_tr)])." <input type=checkbox name=entry[tr] value='".$altyn[chop($my_tr)]."'></td></tr>\n";
+-echo ("<tr><td style='border: thin solid $color[9];'>Spam Folder</td>
++/*echo ("<tr><td style='border: thin solid $color[9];'>Spam Folder</td>
+ <td align=center style='border: thin solid $color[9];'> [ <b>$sh_my_sf</b> ]</td>
+ <td align=center style='border: thin solid $color[9];'>
+ <select name='CHsf'>
+@@ -86,7 +87,7 @@
+ 
+ // Get a list of mailboxes
+ require_once(SM_PATH . 'functions/imap.php');
+-
++*/
+ # NEED to find a way to not allow an "unavailable" folder from showing up (aka directory in UW)
+ 
+ /* This seems to remove INBOX, Drafts and other speical folders
+@@ -103,6 +104,7 @@
+ 
+ */
+ 
++/*
+ $imapConnection = sqimap_login($username, $key, $imapServerAddress, $imapPort, 0);
+ $boxes = sqimap_mailbox_list($imapConnection);
+ sqimap_logout($imapConnection);
+@@ -117,6 +119,7 @@
+ echo "<option value=\"/dev/null\">Delete (perm)</option>"; }
+ echo "</select>";
+ echo "</td></tr>";
++*/
+ echo "<tr align=center bgcolor=$color[9]><td colspan=3 style='border: thin solid $color[9];'><input type=submit value='Change Settings' style='font-style:bold; background:$color[3] none; color:$color[4]'></td></tr>";
+ echo "</table></td></tr></table>";
+ echo "</form>";
