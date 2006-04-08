@@ -18,6 +18,14 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 */
+
+ //
+ // sometime later I'll use the native php gettext functions....
+ // and create the .po files with the GNU unix command:
+ // xgettext -k_ -kN_ -o messages.pot file.php
+ //
+
+
 $locale_dir = 'locales/';
 
 // include all of our installed language pack's info
@@ -60,8 +68,11 @@ function __( $string )
 
 	// Default - means english
 	// No translation needed
-	if ( $current_locale === 'default' || empty($current_locale) || $current_locale === 'en_US' )
-		return $string;
+	if ( empty($current_locale) || $current_locale === 'en_US' )
+	  {
+	    $current_locale = 'en_US';
+	    return $string;
+	  }
 	
 	// Locale is the same as locale in $trans array
 	if ( isset($trans[$current_locale]) )

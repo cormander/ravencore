@@ -1,4 +1,4 @@
-<?
+<?php
 
 // the $trans array key is first two letters as ISO 639 language code, underscore,
 // and the last two letters ISO 3166 country code.
