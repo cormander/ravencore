@@ -45,30 +45,23 @@ if [ $? -ne 0 ]; then
 fi
 
 # make sure the spamassassin pid is writable to vmail
-
-touch $SPAMD_PID_FILE &> /dev/null
-chown vmail:vmail $SPAMD_PID_FILE &> /dev/null
-chmod 640 $SPAMD_PID_FILE &> /dev/null
-
+#touch $SPAMD_PID_FILE &> /dev/null
+#chown vmail:vmail $SPAMD_PID_FILE &> /dev/null
+#chmod 640 $SPAMD_PID_FILE &> /dev/null
 # make sure that the spamassassin daemon has the correct runtime options
 # find the system's spamassassin daemon config file
-
-[ -f /etc/sysconfig/spamassassin ] && spamassassin_config=/etc/sysconfig/spamassassin
-[ -f /etc/default/spamassassin ] && spamassassin_config=/etc/default/spamassassin
-
+#[ -f /etc/sysconfig/spamassassin ] && spamassassin_config=/etc/sysconfig/spamassassin
+#[ -f /etc/default/spamassassin ] && spamassassin_config=/etc/default/spamassassin
 # if we found it
-
-[ -n "$spamassassin_config" ] && rebuild_conf_file $spamassassin_config "spamassassin" "="
+#[ -n "$spamassassin_config" ] && rebuild_conf_file $spamassassin_config "spamassassin" "="
 
 # do the same for clamd
 
-[ -f /etc/clamd.conf ] && clamd_conf=/etc/clamd.conf
-
-[ -n "$clamd_conf" ] && rebuild_conf_file $clamd_conf "clamd" " "
+[ -f $CLAMD_CONF_FILE ] && rebuild_conf_file $CLAMD_CONF_FILE "clamd" " "
 
 # now manage the amavisd.conf file
 
-rebuild_conf_file "/etc/amavisd.conf" "amavisd" ' = ' 1
+[ -f $AMAVISD_CONF_FILE ] && rebuild_conf_file $AMAVISD_CONF_FILE "amavisd" ' = ' 1
 
 # check for a local script to run, and run it if it is executeable
 

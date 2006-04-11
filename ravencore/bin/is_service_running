@@ -81,7 +81,9 @@ else
     
     [ -f $RC_ROOT/etc/pname.$service ] && service=$($_cat $RC_ROOT/etc/pname.$service)
     
-    $_pidof $service &> /dev/null
+# leave $service in quotes here, so the () characters in "amavisd (master)" doesn't fudge up the command
+
+    $_pidof "$service" &> /dev/null
 
     if [ $? -eq 0 ]; then
 
