@@ -42,26 +42,33 @@ setgid_group=$($_postconf 2> /dev/null | grep setgid_group | awk '{print $3}')
 
 $_groupmod $setgid_group &> /dev/null
 
-[ $? -ne 0 ] && [ -n "$setgid_group" ] && $_groupadd $setgid_group
+[ $? -ne 0 ] && [ -n "$setgid_group" ] && $_groupadd $USERADD_R $setgid_group
+
+# The system user mail will run as
+VMAIL_USER=vmail
 
 # make sure we have the the vmail user / group
 # check the group first, because in order to add the user, we need a valid existing gid
 
-$_groupmod -g 148 vmail 2> /dev/null
+$_groupmod vmail 2> /dev/null
 
 if [ $? -ne 0 ]; then
 
-    $_groupadd -g 148 vmail
+    $_groupadd $USERADD_R vmail
 
 fi
 
-$_usermod -u 148 vmail 2> /dev/null
+$_usermod -g vmail vmail 2> /dev/null
 
 if [ $? -ne 0 ]; then
 
-    $_useradd -u 148 -g 148 -d $VMAIL_ROOT -s /bin/false vmail
+    $_useradd $USERADD_R -g vmail -d $VMAIL_ROOT -s /bin/false vmail
 
 fi
+
+# The system uid and gid of the mail user
+VMAIL_UID=$($_id -u $VMAIL_USER 2> /dev/null)
+VMAIL_GID=$($_id -g $VMAIL_USER 2> /dev/null)
 
 # make sure the /etc/sasldb2 exists and is owned by postfix
 
@@ -80,9 +87,9 @@ rebuild_conf_file "$VMAIL_CONF_DIR/master.cf" postfix '\t'
 rebuild_conf_file "/usr/lib/sasl2/smtpd.conf" postfix ': '
 
 # dovecot 0.9x rebuilds this way
-[ $dovecot_v -eq 0 ] && rebuild_conf_file "/etc/dovecot.conf" dovecot ' = '
+[ $dovecot_v -eq 0 ] && rebuild_conf_file $DOVECOT_CONF_FILE dovecot ' = '
 # for now, use static config file
-[ $dovecot_v -eq 1 ] && rebuild_conf_file "/etc/dovecot.conf" dovecot ' = ' 1
+[ $dovecot_v -eq 1 ] && rebuild_conf_file $DOVECOT_CONF_FILE dovecot ' = ' 1
 
 # make sure "devnull" exists in the aliases file
 

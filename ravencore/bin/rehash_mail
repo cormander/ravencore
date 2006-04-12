@@ -34,6 +34,34 @@ if [ ! -d $VMAIL_ROOT ]; then
 
 fi
 
+# The system user mail will run as
+VMAIL_USER=vmail
+
+# make sure we have the the vmail user / group
+# check the group first, because in order to add the user, we need a valid existing gid
+
+$_groupmod vmail 2> /dev/null
+
+if [ $? -ne 0 ]; then
+
+    $_groupadd $USERADD_R vmail
+
+fi
+
+$_usermod -g vmail vmail 2> /dev/null
+
+if [ $? -ne 0 ]; then
+
+    $_useradd $USERADD_R -g vmail -d $VMAIL_ROOT -s /bin/false vmail
+
+fi
+
+# The system uid and gid of the mail user
+VMAIL_UID=$($_id -u $VMAIL_USER 2> /dev/null)
+VMAIL_GID=$($_id -g $VMAIL_USER 2> /dev/null)
+
+#
+
 $_cd $VMAIL_ROOT
 
 $_touch vmaildomains.$$
@@ -43,6 +71,20 @@ $_touch vtransportmap.$$
 $_touch login_maps.$$
 $_touch dovecot-passwd.$$
 $_touch relay_domains.$$
+
+# check to make sure that the /etc/sasldb2 file isn't corrupt
+
+if [ -f /etc/sasldb2 ]; then
+    
+# echo a blank ( no return caracter, no nothing ) into a diff with the file
+
+    $_echo -n | $_diff /etc/sasldb2 - &> /dev/null
+
+# if its a match, nuke it so it will be rebuilt by the sasl commands
+    
+    [ $? -eq 0 ] && $_rm -f /etc/sasldb2
+    
+fi
 
 # individual mail addresses
 
@@ -151,7 +193,7 @@ for i in $($MYSQL_STR -e "select concat(m.id, ':', lcase(mail_name), ':', lcase(
 
 # check to see if users exists
 
-    $_sasldblistusers2 | $_grep "$mail_name@$domain_name" &> /dev/null
+    $_sasldblistusers2 2> /dev/null | $_grep "$mail_name@$domain_name" &> /dev/null
 
     if [ $? -ne 0 ]; then
 	
@@ -315,4 +357,3 @@ $_postmap $VMAIL_CONF_DIR/relay_domains
 $RC_ROOT/sbin/checkconf.mail
 
 [ -x $RC_ROOT/conf.d/amavisd.conf ]&& $RC_ROOT/sbin/checkconf.amavisd
-
