@@ -1,0 +1,13 @@
+#
+# The format of this file is the distribution's name, followed by the full
+# path of files that exist only on that distribution, seperated by spaces
+#
+
+fedora /etc/fedora-release
+redhat /etc/redhat-release /etc/redhat_version
+debian /etc/debian_release /etc/debian_version
+suse /etc/SuSE-release /etc/UnitedLinux-release
+mandrake /etc/mandrake-release
+trustix /etc/trustix-release /etc/trustix-version
+slackware /etc/slackware-release /etc/slackware-version
+gentoo /etc/gentoo-release

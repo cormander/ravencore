@@ -1,0 +1,8 @@
+# Where everything having to do with email is based
+VMAIL_ROOT="/var/spool/virtual"
+
+# The path to the configuration files
+VMAIL_CONF_DIR="/etc/postfix"
+
+# Path for dovecot.conf
+DOVECOT_CONF_FILE="/etc/dovecot/dovecot.conf"

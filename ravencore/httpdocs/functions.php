@@ -81,10 +81,15 @@ function have_database_services()
 
 function have_service($service)
 {
-    global $CONF;
+    global $CONF, $server;
 
-    if (is_executable("$CONF[RC_ROOT]/conf.d/$service.conf")) return true;
-    else return false;
+    // since there are so many damn places that use this function I just made it an
+    // alias for the new one :P
+    return $server->module_enabled($service);
+
+    //if (is_executable("$CONF[RC_ROOT]/conf.d/$service.conf")) return true;
+    //else return false;
+
 }
 // A function that requires the existances of the webserver to load the page
 // Must use before you output any headers.
@@ -478,6 +483,11 @@ function nav_top()
     else print "RavenCore";
     print '</title>
 <meta http-equiv="Content-Type" content="text/html; charset=' . locale_getcharset() . '">
+<meta name="keywords" content="ravencore, open source, control panel, hosting panel, hosting control panel, hosting software, free, webhosting software" />
+<meta name="description" content="A Free and Open Source Hosting Control Panel for Linux" />
+<meta name="authors" content="RavenCore" />
+<meta name="owner" content="RavenCore" />
+<meta name="copywrite" content="Copyright 2005 Corey Henderson">
 <link rel="icon" href="/favicon.ico" type="image/x-icon">
 <link rel="shortcut icon" href="./favicon.ico" type="image/x-icon">
 <style type="text/css" media="screen">@import "./css/style.css";</style>

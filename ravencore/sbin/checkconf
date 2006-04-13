@@ -53,7 +53,7 @@ $_cat $RC_ROOT/var/run/version 2> /dev/null | $_diff $RC_ROOT/etc/version - &> /
 
 # first thing we want to do is check our module dependencies and mark them enabled or not
 
-for conf in $($_ls $RC_ROOT/conf.d); do
+for conf in $($_ls $RC_ROOT/conf.d | $_awk '/\.conf$/ {print}'); do
     
 # parse our conf name out
 
@@ -108,29 +108,7 @@ if [ -n "$first_time_run" ]; then
 
 # do dependency check
 
-    $_echo "Running dependency check...."
-
-    for i in $($_ls $RC_ROOT/conf.d); do
-
-	conf=$($_echo $i | $_sed 's/\.conf$//')
-
-	$_echo -n "checking $conf...."
-
-	if [ -x $RC_ROOT/conf.d/$conf.conf ]; then
-
-	    $_echo "ok"
-
-	else
-	    
-	    $_echo "failed"
-
-# a failed base configuration check is a fatal error
-
-	    [ $conf = "base" ] && $_echo "base configuration is missing dependencies... see above warnings for details. exiting installer!" && exit 1
-
-	fi
-
-    done
+    do_dependency_check
 
 # remove the install_complete so our interface will know to run all the rehash scripts when the conf is complete
 # remove the db_install so that we'll run that script
@@ -194,11 +172,11 @@ fi
 
 # make sure the servgrp exists
 
-$_groupmod -g 149 servgrp &> /dev/null
+$_groupmod servgrp &> /dev/null
 
 if [ $? -ne 0 ] || [ ! -f "$RC_ROOT/var/run/httpd_user" ]; then
     
-    $_groupadd -g 149 servgrp 2> /dev/null
+    $_groupadd $USERADD_R servgrp 2> /dev/null
     
 # we need to figure out what user this system is configured to run apache as, so we can add it to servgrp
     
@@ -264,7 +242,7 @@ if [ $? -ne 0 ] || [ ! -f "$RC_ROOT/var/run/httpd_user" ]; then
 
     fi
 
-    users_in_httpd_group=$($_grep "^$httpd_user:" /etc/group | $_sed 's/:/ /g' | $_awk '{print $4}')
+    users_in_httpd_group=$($_grep "^$httpd_user:" /etc/group | $_awk -F : '{print $4}')
 
 # if there are users, be sure to use a comma
     if [ -n "$users_in_httpd_group" ]; then
@@ -286,15 +264,15 @@ httpd_user=$($_cat $RC_ROOT/var/run/httpd_user 2> /dev/null)
 # make sure we have the rcadmin user / group
 # check the group first, because in order to add the user, we need a valid existing gid
 
-$_groupmod -g 147 rcadmin &> /dev/null
+$_groupmod rcadmin &> /dev/null
 
-[ $? -ne 0 ] && $_groupadd -g 147 rcadmin
+[ $? -ne 0 ] && $_groupadd $USERADD_R rcadmin
 
 # 
 
-$_usermod -u 147 -G servgrp rcadmin &> /dev/null
+$_usermod -G servgrp rcadmin &> /dev/null
 
-[ $? -ne 0 ] && $_useradd -M -u 147 -g 147 -G servgrp -d $RC_ROOT -s /bin/false rcadmin
+[ $? -ne 0 ] && $_useradd -M $USERADD_R -g rcadmin -G servgrp -d $RC_ROOT -s /bin/false rcadmin
 
 # check to see if our db_install script ran
 
@@ -475,6 +453,12 @@ if [ ! -x $RC_ROOT/sbin/wrapper ]; then
 # tell the user what we're doing
 
     $_echo -n "Installing system wrapper..."
+
+# make sure the C code has the right UID for rcadmin and directory for RC_ROOT
+
+    perl -pi -e "s/^#define RCADMIN_GID .*/#define RCADMIN_GID $($_id -g rcadmin)/" $RC_ROOT/sbin/wrapper.c
+
+    perl -pi -e "s|^#define RC_ROOT_BIN .*|#define RC_ROOT_BIN \"$RC_ROOT/bin\"|" $RC_ROOT/sbin/wrapper.c
 
 # attempt to compile the wrapper code
 

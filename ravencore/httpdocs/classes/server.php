@@ -11,7 +11,32 @@ class server {
 
     // Get our conf vars
     $this->read_db_conf();
-    
+
+    // find out what distribution of linux we are
+    $dist_map = file("../etc/dist.map");
+
+    foreach($dist_map as $distro)
+      {
+	$arr = explode(' ',$distro);
+
+	// the first one is the dist name, we maybe are this one
+	$maybe_this = trim(array_shift($arr));
+
+	// don't bother checking this if it's a # or a blank
+
+	if($maybe_this == '#' or $maybe_this == '') continue;
+
+	// walk down the rest of the array.. they are files to check for
+	foreach($arr as $file)
+	  {
+	    // if this file exists, we're this dist. finish off
+	    if(file_exists(trim($file)) and !$this->dist)
+	      $this->dist = $maybe_this;
+	    
+	  }
+
+      }
+
     // on installation, we won't have a default locale. Set it to the system EV
     // set our language
     if (isset($_REQUEST['lang']) or isset($_SESSION['lang']))
@@ -48,6 +73,9 @@ t this:<p>
                                 * Install the <b>perl-suidperl</b> package and restart ravencore<br />
                                 &nbsp;&nbsp;or<br />
                                 * Copy the wrapper binary from another server with ravencore installed into ravencore\'s sbin on this server');
+	
+	print shell_exec($CONF[RC_ROOT] . "/sbin/wrapper testsuid") . '<br><br>' . $CONF[RC_ROOT] . ' - asdf';
+	shell_exec($CONF[RC_ROOT] . "/sbin/wrapper testsuid") or die('trying');
 
 	nav_bottom();
 
@@ -154,13 +182,19 @@ t this:<p>
     else return false;
   }
 
+  // tell us if a module is "enabled" ( baiscally, is the conf file executable )
   function module_enabled($service)
   {
     global $CONF;
 
-    if (is_executable($CONF[RC_ROOT] . "/conf.d/" . $service . ".conf")) return true;
+    if (
+	is_executable($CONF[RC_ROOT] . "/conf.d/" . $service . ".conf")
+	and
+	!file_exists($CONF[RC_ROOT] . "/conf.d/" . $service . ".conf.ignore")
+	) return true;
     else return false;
   }
+
   // A function that requires the existances of the webserver to load the page
   // Must use before you output any headers.
   function req_module($service)
@@ -179,18 +213,22 @@ t this:<p>
 
   }
 
-  function build_conf_array($popen)
+  // this function takes an array of files, reads them, and parses for variable names we require
+  // the files in the given array must be a full or relative path to ravencore's httpdocs !
+  function build_conf_array($files)
   {
 
-    $handle = popen($popen, "r");
+    $conf_array = array();
 
-    $conf_data = '';
-
-    while (!feof($handle)) $conf_data .= fread($handle, 1024);
-
-    pclose($handle);
-    // Seperate the data line by line
-    $conf_array = explode("\n", $conf_data);
+    foreach($files as $file)
+      {
+	// check for .dist files here, and use it instead if it exists
+	if(file_exists($file . '.' . $this->dist)) $file .= '.' . $this->dist;
+	// check for .ignore files here, and skip this conf file if it exists
+	if(file_exists($file . '.ignore')) continue;
+	// merge the contents of this file with our array
+	$conf_array = array_merge($conf_array,file($file));
+      }
 
     $arr = array();
 
@@ -199,6 +237,7 @@ t this:<p>
         // Get rid of quotation marks
         $line = ereg_replace("\"", "", $line);
         $line = ereg_replace("\'", "", $line);
+	$line = trim($line);
         // If this looks like a bash shell variable, make it into a php variable. All conf
         // variables will be all upper case. If they are not, they won't get read in here.
         if (preg_match("/^[A-Z||_]*=/", $line))
@@ -208,6 +247,8 @@ t this:<p>
             $var_value = ereg_replace(".*=", "", $line);
             // Set the conf array with the name and value of this variable
             $arr[$var_name] = $var_value;
+
+	    //print $var_name . ' = ' . $var_value . '<br>';
           }
       }
 
@@ -219,11 +260,12 @@ t this:<p>
   function read_db_conf()
   {
     global $CONF;
-    // Open configuration files and read in all the data. We use popen because we cat out all
-    // of the files, for simplicity.
-    $CONF = $this->build_conf_array("cat {/etc/ravencore.conf,../database.cfg}");
+    // Open configuration files and read in all the data.
+    $CONF = $this->build_conf_array(array('/etc/ravencore.conf','../database.cfg'));
 
-    $CONF['MYSQL_ADMIN_PASS'] = shell_exec("/bin/cat ../.shadow");
+    // the password is stored seperatly
+    $passwd = file("../.shadow");
+    $CONF['MYSQL_ADMIN_PASS'] = $passwd[0];
     // Get rid of whitespace and return characters
     $CONF['MYSQL_ADMIN_PASS'] = trim($CONF['MYSQL_ADMIN_PASS']);
   }
@@ -247,11 +289,15 @@ t this:<p>
         // load the info into the global CONF array
         $CONF[$key] = $val;
       }
-    // Open configuration files and read in all the data. We use popen because we cat out all
-    // of the files, for simplicity.
-    // The php is the only place in which the server_type.conf is read, because the php is the
-    // only place where the value matters at this point.
-    $arr = $this->build_conf_array("cat \$(for i in `ls ../conf.d/`; do if [ -x ../conf.d/\$i ]; then echo ../conf.d/\$i; fi; done | tr '\n' ' ') ../etc/server_type.conf} 2> /dev/null");
+
+    // Open configuration files and read in all the data.
+    $d = opendir('../conf.d/');
+    while (($file = readdir($d)) !== false) {
+      if(is_executable('../conf.d/'.$file) and ereg('\.conf$',$file)) $files[] = '../conf.d/' . $file;
+    }
+    closedir($d);
+
+    $arr = $this->build_conf_array($files);
 
     foreach( $arr as $key => $val )
       {	
@@ -428,18 +474,14 @@ ons.') ?>
 
 	    $data = "";
 
-	    $handle = popen("for i in `ls ../conf.d/`; do if [ -x ../conf.d/\$i ]; then echo \$i; fi; done", "r");
+	    // get a list of services that are enabled
+	    $d = opendir('../conf.d/');
+	    while (($file = readdir($d)) !== false) {
+	      if(is_executable('../conf.d/'.$file) and ereg('\.conf$',$file)) $files[] = '../conf.d/' . $file;
+	    }
+	    closedir($d);
 
-	    while (!feof($handle))
-	      {
-		$data .= fread($handle, 1024);
-	      }
-
-	    pclose($handle);
-	    // Seperate the data line by line
-	    $conf_files = explode("\n", $data);
-
-	    foreach ($conf_files as $conf_file)
+	    foreach ($files as $conf_file)
 	      {
 		if (!$conf_file)
 		  {
@@ -447,8 +489,10 @@ ons.') ?>
 		  }
 		// reset whether we have printed this conf file's name yet
 		$printed_header = false;
+
+		// build the file's contents into an array
 		
-		$arr = $this->build_conf_array("cat ../conf.d/$conf_file");
+		$arr = $this->build_conf_array(array($conf_file));
 		
 		foreach( $arr as $key => $val )
 		  {
@@ -459,7 +503,7 @@ ons.') ?>
 			    // something of this category yet
 			    if ($action != "update_conf" and !$printed_header)
 			      {
-				print '<tr><th colspan=2 align=center>' . ereg_replace('\.conf$', "", $conf_file) . ' ' . __('configuration') . '</th></tr>';
+				print '<tr><th colspan=2 align=center>' . ereg_replace('\.\./conf\.d\/','',ereg_replace('\.conf.*$', "", $conf_file)) . ' ' . __('configuration') . '</th></tr>';
 				
 				$printed_header = true;
 			      }

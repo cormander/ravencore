@@ -46,6 +46,30 @@ for i in $($_ls $RC_ROOT/etc/cmd_maps.* | $_grep -v '\.base$'); do
     
 done
 
+# export our DIST variable, tells us which linux distribution we're running on
+
+for i in `$_grep -o ' /.*' $RC_ROOT/etc/dist.map`; do
+
+    if [ -f $i ]; then
+
+	export DIST=$($_grep $i $RC_ROOT/etc/dist.map | $_awk '{print $1}')
+
+	break
+
+    fi
+
+done
+
+# find out if our useradd command supports the '-r' switch
+
+$_useradd -h 2> /dev/stdout | $_grep '\-r' &> /dev/null
+
+if [ $? -eq 0 ]; then
+    USERADD_R="-r"
+else
+    USERADD_R=""
+fi
+
 # make sure paths and variables are correctly set
 
 for tmp in httpd:HTTPD init.d:INITD httpd_modules:HTTPD_MODULES; do
@@ -171,8 +195,10 @@ if [ -z "$GOT_CONF" ]; then
     if [ $conf_err -eq 1 ]; then
 	
 	logger -t ravencore "Unable to load all required settings from database, exiting."
+
+# only die with this error when we are not the init script
 	
-        exit 1
+        [ -z "$INIT_RUNNING" ] && exit 1
 	
     else 
 
@@ -187,13 +213,6 @@ fi
 # some defined variables that we can't change
 
 WEB_SERVER_GROUP=servgrp
-
-# The system user mail will run as
-VMAIL_USER=vmail
-
-# The system uid and gid of the mail user
-VMAIL_UID=148
-VMAIL_GID=148
 
 # A function to echo the given input, if verbose is set to 1
 
@@ -255,47 +274,69 @@ rebuild_conf_file() {
 # look in the service config file directory, and get all the files, .local being the preference, and
 # using a .local file even if a base file doesn't exist for it
 
+# first we find a list of the distros, to ignore files that end with .dist, seperated by the | character
+
+	    dist_list=$($_echo $($_awk ' ! /^#/ {print $1}' $RC_ROOT/etc/dist.map) | $_sed 's/ /|/g')
+	    
+# add ignore and local to the list, because we're not going to look at files
+# ending in .local or .ignore either
+	    
+	    dist_list="$dist_list|local|ignore"
+	    
 # old code, doesn't account for .local files that don't have a base file
 #           for i in `$_ls -1 $RC_ROOT/etc/$service/$conf_basename | $_grep -v '\.local$'`; do
 
-	    for i in `$_echo $($_ls -1 $RC_ROOT/etc/$service/$conf_basename | $_grep -v '\.local$') $($_ls -1 $RC_ROOT/etc/$service/$conf_basename | $_grep '\.local$' | $_sed 's/\.local$//') | $_tr ' ' '\n' | $_sort | $_uniq`; do
+	    for i in `$_echo $($_ls -1 $RC_ROOT/etc/$service/$conf_basename | $_awk " ! /\.($dist_list)$/") $($_ls -1 $RC_ROOT/etc/$service/$conf_basename | $_grep '\.local$' | $_sed 's/\.local$//') | $_tr ' ' '\n' | $_sort | $_uniq`; do
 		
 		param_name="$RC_ROOT/etc/$service/$conf_basename/$i"
-		[ -f $param_name.local ] && param_name=$param_name.local
 		
-		case `$_cat $param_name` in
-		    "")
-			$_echo -e "$i$seperator"
-			;;
+# skip this if there is a .ignore file for this directive
+
+		if [ ! -f $param_name.ignore ]; then
+
+# check to see if this directive has a customized file for this linux distro
 		    
-		    *)
-			$_cat $param_name | while read -r param_value; do
-			    
+		    [ -f $param_name.$DIST ] && param_name=$param_name.$DIST
+		    
+# use the .local file instead, if it exists
+		    
+		    [ -f $param_name.local ] && param_name=$param_name.local
+		    
+		    case `$_cat $param_name` in
+			"")
+			    $_echo -e "$i$seperator"
+			    ;;
+			
+			*)
+			    $_cat $param_name | while read -r param_value; do
+				
 # code to replace all $_[VAR_NAME] in the files with bash variables from the database
-			    
-			    for in_var_name in $($_echo $param_value | $_grep -o '\$_\[[_A-Z]*\]'); do
 				
+				for in_var_name in $($_echo $param_value | $_grep -o '\$_\[[_A-Z]*\]'); do
+				    
 # remove the $_[ and ] from the variable name
-				
-				in_var_name=$($_echo $in_var_name | $_sed 's/\$_\[//' | $_sed 's/\]//')
-				
+				    
+				    in_var_name=$($_echo $in_var_name | $_sed 's/\$_\[//' | $_sed 's/\]//')
+				    
 # evaluate it to get the bash variable value
-				
-				in_var_value=$(eval $_echo $($_echo \$$in_var_name))
-				
+				    
+				    in_var_value=$(eval $_echo $($_echo \$$in_var_name))
+				    
 # replace the variable with the bash value
+				    
+				    param_value=$($_echo -E $param_value | $_sed "s|\$_\[$in_var_name\]|$in_var_value|")
+				    
+				done
 				
-				param_value=$($_echo -E $param_value | $_sed "s|\$_\[$in_var_name\]|$in_var_value|")
+				$_echo -ne "$i"
+				$_echo -ne "$seperator"
+				$_echo -E "$param_value"
 				
 			    done
-			    
-			    $_echo -ne "$i"
-			    $_echo -ne "$seperator"
-			    $_echo -E "$param_value"
-			    
-			done
-			;;
-		esac
+			    ;;
+		    esac
+
+		fi # ! -f .ignore
 		
 	    done > $RC_ROOT/var/tmp/$conf_basename.$$
 	    
@@ -346,3 +387,36 @@ rebuild_conf_file() {
     fi
     
 }
+
+
+# 
+
+do_dependency_check()
+{
+
+    $_echo "Running dependency check...."
+
+    for i in $($_ls $RC_ROOT/conf.d | $_awk '/\.conf$/ {print}'); do
+
+        conf=$($_echo $i | $_sed 's/\.conf$//')
+
+        $_echo -n "checking $conf...."
+
+        if [ -x $RC_ROOT/conf.d/$conf.conf ]; then
+
+            $_echo "ok"
+
+        else
+
+            $_echo "failed"
+
+# a failed base configuration check is a fatal error
+
+            [ $conf = "base" ] && $_echo "base configuration is missing dependencies... see above warnings for details. exiting!" && exit 1
+
+        fi
+
+    done
+
+}
+
