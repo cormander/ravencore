@@ -26,12 +26,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <sys/stat.h>
 #include <unistd.h>
 
+// needed for the breaking out of the chroot()
+#include <fcntl.h>
+#include <string.h>
+
 // path to the location of the scripts we can execute
 #define RC_ROOT_BIN "/usr/local/ravencore/bin"
 // the size of the poss_cmd array
 #define CMD_STR_LIM 1024
 // the gid of the rcadmin group
-#define RCADMIN_GID 147
+#define RCADMIN_GID 152
 
 // global variable, the previous character passed thru the valid_input_char function
 char prev;
@@ -71,6 +75,69 @@ void valid_input_char(char c) {
   prev = c;
   
 }
+
+// a function to break out of a chroot() enviroment, if jailed in one. this must be called after
+// the process is set to run as root
+// thanks to: http://www.bpfh.net/computing/docs/chroot-break.html
+// -- but chroot() isn't implemented yet, so leave commented out
+
+/*
+#define TEMP_DIR "tmp"
+
+void chroot_break() {
+
+  int x;
+  int dir_fd;
+  struct stat sbuf;
+
+  if (stat(TEMP_DIR,&sbuf)<0) {
+    if (errno==ENOENT) {
+      if (mkdir(TEMP_DIR,0755)<0) {
+	fprintf(stderr,"Failed to create %s - %s\n", TEMP_DIR,
+		strerror(errno));
+	exit(1);
+      }
+    } else {
+      fprintf(stderr,"Failed to stat %s - %s\n", TEMP_DIR,
+	      strerror(errno));
+      exit(1);
+    }
+  } else if (!S_ISDIR(sbuf.st_mode)) {
+    fprintf(stderr,"Error - %s is not a directory!\n",TEMP_DIR);
+    exit(1);
+  }
+ 
+  if ((dir_fd=open(".",O_RDONLY))<0) {
+    fprintf(stderr,"Failed to open \".\" for reading - %s\n",
+	    strerror(errno));
+    exit(1);
+  }
+  
+  // Next we chroot() to the temporary directory
+
+  if (chroot(TEMP_DIR)<0) {
+    fprintf(stderr,"Failed to chroot to %s - %s\n",TEMP_DIR,
+	    strerror(errno));
+    exit(1);
+  }
+
+  if (fchdir(dir_fd)<0) {
+    fprintf(stderr,"Failed to fchdir - %s\n",
+	    strerror(errno));
+    exit(1);
+  }
+  close(dir_fd);
+
+  // change directory .. 32 times.. I highly doubt we'll need to do it more then that
+  for(x=0;x<32;x++) {
+    chdir("..");
+  }
+
+  // make our "root" directory where we are, which should be the real root directory of the system
+  chroot(".");
+
+}
+*/
 
 // start our process and recieve in our command line arguments
 int main(int argc, char *const argv[])
@@ -120,7 +187,15 @@ int main(int argc, char *const argv[])
 
   }
 
-  // get infomation about this command's file
+  // become root. we need the suid bit set for this to work
+  setgid(0);
+  setuid(0);
+
+  // now that we're root, we can break out of the chroot() jail, if it exists
+  // but since chroot() not implemented on ravencore webserver yet, comment it out
+  // chroot_break(); 
+
+  // get infomation about our incoming command's file
   if( lstat(poss_cmd, &f_info) != -1 ) {
 
     // the target MUST be owned by root and in the rcadmin group, otherwise it is DEFINATLY something we
@@ -139,10 +214,6 @@ int main(int argc, char *const argv[])
     exit(errno);
 
   }
-
-  // become root. we need the suid bit set for this to work
-  setgid(0);
-  setuid(0);
 
   // execute this command with the given arguments and a NULL enviroment
   execve(poss_cmd, argv+1, NULL);
