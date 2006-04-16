@@ -28,6 +28,16 @@ $result =& $db->Execute($sql);
 
 $row =& $result->FetchRow();
 
+// change session names so our variables carry over to phpmyadmin
+// we call it twice, to override any previous phpmyadmin session we were in
+
+for( $i = 0; $i < 2; $i++ )
+{
+  session_destroy();
+  session_name('phpMyAdmin');
+  session_start();
+}
+
 $_SESSION['name'] = $row[name];
 $_SESSION['login'] = $row[login];
 $_SESSION['passwd'] = $row[passwd];

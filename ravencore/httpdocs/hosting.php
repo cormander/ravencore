@@ -65,7 +65,7 @@ else if ($action == "add")
     $sql = "select count(*) as count from sys_users where login = '$_POST[login]'";
     $result =& $db->Execute($sql); 
     // open up our /etc/passwd file, and input only the usernames
-    $handle = popen("cat /etc/passwd | sed 's/:/ /' | awk '{print $1}'", "r");
+    $handle = popen("cat /etc/passwd | awk -F : '{print $1}'", "r");
 
     while (!feof($handle)) $ftp_data .= fread($handle, 1024);
 

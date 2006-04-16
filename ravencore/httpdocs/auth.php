@@ -174,8 +174,10 @@ if ($action == "login")
 
     // send ourself back to where we were upon login
     $url = $_SERVER['PHP_SELF'];
-    // only add the query string if it exists
-    if ($_SERVER['QUERY_STRING'])
+    // only add the query string if it exists, and if we don't have the 'cmd'
+    // variable ( which is normally reboot / shutdown, which we don't want to
+    // do upon login :)
+    if ($_SERVER['QUERY_STRING'] and !$_GET['cmd'])
     {
         $url .= '?' . $_SERVER['QUERY_STRING'];
     }

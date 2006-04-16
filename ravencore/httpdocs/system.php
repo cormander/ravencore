@@ -28,6 +28,9 @@ if ($_GET[cmd])
     socket_cmd("system $_GET[cmd]");
 
     alert(__("The system will now $_GET[cmd]"));
+
+    $session->destroy();
+ 
 } 
 
 nav_top();
