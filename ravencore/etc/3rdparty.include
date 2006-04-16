@@ -1,3 +1,6 @@
+# awstats icons
+Alias /icon var/apps/awstats/wwwroot/icon
+
 # squirrelmail configuration
 <IfDefine LOCAL_SQUIRRELMAIL>
 Alias /webmail var/apps/squirrelmail.local
@@ -29,3 +32,4 @@ Alias /sysinfo var/apps/phpsysinfo.local
 <IfDefine !LOCAL_PHPSYSINFO>
 Alias /sysinfo var/apps/phpsysinfo
 </IfDefine>
+

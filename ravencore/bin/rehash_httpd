@@ -550,28 +550,6 @@ for i in `$MYSQL_STR -e "select concat(lcase(name), ':::', redirect_url) from do
 
 done
 
-# add webmail alias to end of $vhosts files
-
-cat <<EOF >> $vhosts
-<VirtualHost *:80>
-        ServerName webmail
-        ServerAlias webmail.*
-        DocumentRoot $RC_ROOT/var/apps/squirrelmail
-        <IfModule mod_ssl.c>
-                SSLEngine off
-        </IfModule>
-        <Directory $RC_ROOT/var/apps/squirrelmail>
-        Options -Indexes
-        <IfModule sapi_apache2.c>
-                php_admin_flag engine on
-                php_admin_value open_basedir "$RC_ROOT/var/apps/squirrelmail"
-                php_admin_value upload_tmp_dir "$RC_ROOT/var/apps/squirrelmail/data"
-                php_admin_value session.save_path "$RC_ROOT/var/apps/squirrelmail/data"
-        </IfModule>
-        </Directory>
-</VirtualHost>
-EOF
-
 # remove legacy file
 $_rm -f /etc/httpd/conf.d/httpd-include.conf
 
