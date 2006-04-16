@@ -6,11 +6,13 @@ chown
 cp
 basename
 diff
+dirname
 echo
 grep
 groupadd
 groupmod
 head
+id
 ln
 ls
 mkdir

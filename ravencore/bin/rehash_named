@@ -257,4 +257,12 @@ fi
 
 v_echo "Restarting named"
 
-$INITD/named restart &> /dev/null
+# find the right bind init script
+
+case 0 in
+    "$([ -f $INITD/bind ]; $_echo $?)") init=bind;;
+    "$([ -f $INITD/bind9 ]; $_echo $?)") init=bind9;;
+    "$([ -f $INITD/named ]; $_echo $?)") init=named;;
+esac
+
+[ -n "$init" ] && $INITD/$init restart &> /dev/null

@@ -23,6 +23,8 @@ _basename=basename
 
 _diff=diff
 
+_dirname=dirname
+
 _du=du
 
 _echo=echo
@@ -44,6 +46,8 @@ _gunzip=gunzip
 _gzip=gzip
 
 _head=head
+
+_id=id
 
 _killall=killall
 

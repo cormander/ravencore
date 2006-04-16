@@ -33,10 +33,18 @@ $_cd $VHOST_ROOT/$domain_name/var/log
 
 if [ -f $log_file.1 ]; then
 
+# check to see if we have a .local for awstats
+
+    if [ -d $RC_ROOT/var/apps/awstats.local ]; then
+	_local=".local"
+    else
+	_local=""
+    fi
+
 # update AWStats on the access_log.1
 
     case $log_file in
-	"access_log") $RC_ROOT/var/awstats/tools/awstats_updateall.pl now -awstatsprog=$RC_ROOT/var/awstats/wwwroot/cgi-bin/awstats.pl -configdir=$VHOST_ROOT/$domain_name/conf/ &> /dev/null;;
+	"access_log") $RC_ROOT/var/apps/awstats$_local/tools/awstats_updateall.pl now -awstatsprog=$RC_ROOT/var/apps/awstats$_local/wwwroot/cgi-bin/awstats.pl -configdir=$VHOST_ROOT/$domain_name/conf/ &> /dev/null;;
     esac
 
 # the processed log probably already exists, so append log.1 to it. If it doesn't
