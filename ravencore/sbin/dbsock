@@ -1,0 +1,516 @@
+#!/usr/bin/perl
+#
+#                  RavenCore Hosting Control Panel
+#                Copyright (C) 2005  Corey Henderson
+#
+#     This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+
+use DBI;
+use Socket;
+use POSIX;
+use MIME::Base64;
+
+# TODO: use the ravencore etc file from the enviroment, and if it doesn't exist, default to /etc/ravencore.conf
+#$ENV{'RC_ETC'} = $ENV{'RC_ETC'} ? $ENV{'RC_ETC'} : "/etc/ravencore.conf";
+
+$ENV{'RC_ETC'} = "/etc/ravencore.conf";
+
+# get our base configuration file
+
+&read_conf_file($ENV{'RC_ETC'});
+
+#
+# TODO: write a subroutine for reading the database conf, and call it here
+#
+
+# now that we know where our root directory is, get our database configuration file
+
+&read_conf_file($CONF{'RC_ROOT'} . "/database.cfg");
+
+#
+# TODO: make sure we have certian variables here... we probably only need to check for RC_ROOT, but 
+# die with error if we don't have it, or if it doesn't exist on the filesystem
+#
+
+#
+# TODO: Have the parent process connect on startup, and write a routine to reconnect to the database
+#       if the connection is somehow broken ( like with a mysqld restart )
+#
+
+# define our socket to listen to
+
+my $socket = $CONF{'RC_ROOT'} . '/var/db.sock';
+
+# do some system stuff with the socket
+
+my $uaddr = sockaddr_un($socket);
+
+# create the socket as a UNIX domain socket
+
+socket(SERVER,PF_UNIX,SOCK_STREAM,0) || die "socket: $!";
+
+# turn on autoflush for STDOUT
+
+$| = 1;
+
+#
+
+unlink($socket);
+
+# bind this process to the socket 
+
+bind (SERVER, $uaddr) || die "bind: $!";
+
+# change the ownership and permissions on the socket so that only the ravencore webserver can
+# read / write to it. It's VERY important that these permissions are set BEFORE we start to
+# listen to the socket
+
+$rcadmin = "rcadmin";
+
+# chown only accepts numeric uid/gids, so get the $uid of rcadmin here
+
+$uid  = getpwnam($rcadmin);
+
+# group ownership set to root
+
+chown $uid, 0, $socket;
+
+# very strict file permissions on the socket
+
+chmod 0600, $socket;
+
+# begin to listen to the socket
+
+listen(SERVER,5) || die "listen: $!";
+
+# TODO: "daemonize" ourself... redirect STDIN, STDOUT, STDERR elsewhere
+#       and detach from the terminal process
+
+# before we enter our loop, define this signal to catch children processes' exit signals with
+# the REAPER function
+
+$SIG{CHLD} = \&REAPER;
+
+# set the $ETX, $EOT, and $NAK variables to thier respective bytes
+
+my $ETX = chr(3); # end of text
+my $EOT = chr(4); # end of transmission
+my $NAK = chr(21); # negative acknowledge
+
+# endlessly loop, waiting for a connection
+
+for ( $waitedpid = 0; accept(CLIENT,SERVER) || $waitedpid; $waitedpid = 0, close CLIENT)
+{
+
+# if $waitedpid still exists, then we're not ready to do the below, so skip
+
+    next if $waitedpid;
+
+# past this point, we have a connection from a client. fork into parent/child processes to handle the request
+    
+    my $pid;
+
+    if (!defined($pid = fork))
+    {
+# fatal error in fork()... there's something very bad happening with the system
+	print "cannot fork: $!\n";
+	next;
+    }
+    elsif ($pid)
+    {
+# i'm the parent... do basically nothing
+
+	next;
+
+    }
+# i'm the child... handle the data request
+
+# turn on autoflush on the CLIENT I/O handle, so output we send via print statements goes right away
+
+    select CLIENT;
+    $| = 1;
+    select STDOUT;
+
+# read in our database password. currently we have to do this each time we connect, because the password
+# might have changed since we first started, and a child process can't change a variable and have the
+# parent process know about it
+
+    open PASSWD, $CONF{'RC_ROOT'} . "/.shadow";
+    
+    $CONF{'MYSQL_ADMIN_PASS'} = <PASSWD>;
+    chomp $CONF{'MYSQL_ADMIN_PASS'};
+    
+    close PASSWD;
+    
+# connect to the database
+
+    my $db = DBI->connect('DBI:mysql:database='.$CONF{'MYSQL_ADMIN_DB'}.
+			  ';host='.$CONF{'MYSQL_ADMIN_HOST'}.
+			  ';port='.$CONF{'MYSQL_ADMIN_PORT'},
+			  $CONF{'MYSQL_ADMIN_USER'}, $CONF{'MYSQL_ADMIN_PASS'});
+
+#
+# TODO: redirect STDERR here to print to the client, maybe? Or perhaps redirect it to a function which
+# parses it, then redirects it to the client... not sure what I want to do yet
+#
+
+# read in the data from the client.... usually an SQL statement
+# we're in a while loop because we want to handle as many requests as is nessisary
+
+    while($query = &data_read(CLIENT))
+    {
+	
+# unset our data variable before we begin
+
+	$data = '';
+    
+# check what kind of input this is
+	
+	if($query =~ m/^auth /i)
+	{
+
+# set $pw equal to $query and then remove the "auth " part from the beginning, so you have just the password
+	    
+	    $pw = $query;
+	    $pw =~ s/^auth //i;
+
+# compare $pw to the MYSQL_ADMIN_PASS ( which comes from the .shadow file ). return "true" on success and
+# "false" on failure
+	    
+	    if($pw eq $CONF{'MYSQL_ADMIN_PASS'})
+	    {
+		$data = "true";
+	    }
+	    else
+	    {
+		$data = "false";
+	    }
+	    
+	}
+	elsif($query =~ m/^connect/i)
+	{
+# we're being asked if we have a database connection
+	    if( $db )
+	    {
+		$data = "true";
+	    }
+	    else
+	    {
+		$data = "false";
+	    }
+
+	}
+	elsif($query =~ m/^run /i)
+	{
+
+# make the $cmd variable contain the command to be run, by removing the "run " from the beginning
+	 
+	    $cmd = $query;
+	    $cmd =~ s/^run //i;
+   
+#
+# do some checking on $cmd here. basically disallow anything that could trick the shell
+# into running something it shouldn't
+#
+
+	    if(
+	       $cmd =~ m/\.\./ or
+	       $cmd =~ m/;/ or
+	       $cmd =~ m/&/ or
+	       $cmd =~ m/\$/ or
+	       $cmd =~ m/\`/ or
+	       $cmd =~ m/>/ or
+	       $cmd =~ m/</ or
+	       $cmd =~ m/\|/ or
+	       $cmd =~ m/\n/
+	       )
+	    {
+
+		&do_error('Unsafe command: ' . $cmd);
+
+	    }
+	    else
+	    {
+		
+		@args = split/ /, $cmd;
+		
+# make sure the command exists in the first place, and is executable
+		
+		if( -x $CONF{'RC_ROOT'} . '/bin/' . $args[0] )
+		{
+
+# TODO: check file permissions and ownership here... we don't want to run something that isn't owned by
+# root and something that is writeable
+		    
+# run it
+		    
+		    open CMD, $CONF{'RC_ROOT'} . '/bin/' . $cmd . '|';
+		    
+		    @output = <CMD>;
+		    
+		    close CMD;
+		    
+# only print output if it exists
+		    
+		    if( "@output" ) {
+			
+# turn the array into a string
+			
+			foreach (@output) { $data .= $_; }
+			
+# base64 encode the output, just in case it contains funny characters....
+			
+			$data = encode_base64($data);
+			
+		    }
+		
+		}
+		else
+		{
+		    &do_error('Unable to execute ' . $cmd);
+		}
+
+	    }
+		
+	}
+	else
+	{
+
+# if we get here, we're to run an SQL query
+# check to see if we have a database connection, and if not, issue an error and skip
+
+	    if( ! $db )
+	    {
+
+		&do_error("No database connection");
+		
+		print CLIENT $EOT;
+
+		next;
+		
+	    }
+
+# set some values to zero
+	    
+	    $rows_affected = 0;
+	    $insert_id = 0;
+
+# if this query is to change the password, do it here
+	    if($query =~ m/^passwd /i)
+	    {
+# parse out the info from the $query. the @xxx array catches any remaining elements if any
+		($x, $old, $new, @xxx) = split / /,$query;
+		
+		if($old eq $CONF{'MYSQL_ADMIN_PASS'})
+		{
+		    
+		    $db->do("SET PASSWORD FOR '" . $CONF{'MYSQL_ADMIN_USER'} . "'\@'" . $CONF{'MYSQL_ADMIN_HOST'} . "' = PASSWORD('" . $new . "')");
+		    
+		    if( $db->errstr )
+		    {
+			&do_error($db->errstr);
+		    }
+		    else
+		    {
+# the password change was successful. commit the password to the .shadow file and return true
+			open PASSWD, ">" . $CONF{'RC_ROOT'} . "/.shadow";
+			print PASSWD $new . "\n";
+			close PASSWD;
+			
+			$data = "true";
+
+		    }
+		    
+		}
+		else
+		{
+		    $data = "false";
+		}
+	    }
+# do the sql query, but the kind of query depends on what we do.
+# if it's NOT a "select" query (do a case in-sensative match) then we simply "do"
+# the query and get the $rows_affected and $insert_id data
+	    elsif($query !~ m/^select /i)
+	    {
+		
+		$rows_affected = $db->do($query);
+		
+		if ( $db->errstr )
+		{
+		    &do_error($db->errstr);
+		}
+		else
+		{
+		    $insert_id = $db->{ q{mysql_insertid}};
+		}
+		
+	    }
+	    else
+	    {
+		
+# on "select" queries, we're a little more involved... need to return the data we got :)
+		
+		$result = $db->prepare($query);
+		
+		$result->execute();
+		
+		if ( $db->errstr )
+		{
+		    &do_error($db->errstr);
+		}
+		else
+		{
+		    
+# fetch the data into a hash. That way, we have both the column name and the value
+		    while( $hash_ref = $result->fetchrow_hashref() )
+		    {
+			
+# data is in the following format:
+# name{value} (value is base64 encoded) followed by an ETX character (end of text)
+			foreach (keys %$hash_ref)
+			{
+			    $data .= $_ .'{' . encode_base64($hash_ref->{$_}) . '}' . $ETX;
+		    }
+			
+# end the string with a ETX character... end of string will always be two ETX's
+# unless there is no results, in which case, it doesn't matter
+			
+			$data .= $ETX;
+			
+		    }
+		    
+		    $result->finish();
+		    
+# gather our info. the PHP data_query will know how to parse this.
+		
+		    $data = $insert_id . $ETX . $ETX . $rows_affected . $ETX . $ETX . $data;
+	    
+		}
+
+	    }
+
+	}
+	
+# print the $data to the client along with a EOT character at the end, noting the end-of-data
+	
+	print CLIENT $data . $EOT;
+	
+    } # end while($query = &data_read(CLIENT))
+
+# force the socket to close
+    
+    close CLIENT;
+    
+# exit cleanly
+
+    POSIX::_exit 0;
+
+}
+
+
+# function to clean up zombies
+
+sub REAPER
+{
+    $SIG{CHLD} = \&REAPER;
+    $waitedpid = wait;
+#    print "reaped $waitedpid" . ($? ? " with exit $?" : '') . "\n";
+}
+
+# read a configuration file. files are always in format: NAME=VALUE
+
+sub read_conf_file()
+{
+
+    my $conf = shift;
+    
+    open CONF, $conf
+	or die "Unable to open configuration file: $conf\n";
+
+    while(<CONF>)
+    {
+	chomp $_;
+	
+	if($_ =~ m/^[A-Z0-9_]*=/)
+	{
+	    my $key = my $val = $_;
+	    
+	    $key =~ s/^([A-Z0-9_]*)=.*/\1/;
+	    $val =~ s/^([A-Z0-9_]*)=//;
+
+# remove starting and ending quotations
+  
+	    $val =~ s/^("|')//;
+	    $val =~ s/('|")$//;
+
+	    $CONF{$key} = $val;
+	    
+	}
+	
+    }
+    
+    close CONF;
+
+} # end sub read_conf_file()
+
+# read in a line of data. don't be fooled by the word "line", as it doesn't stop at a newline character, but
+# rather at an end-of-transmission character. the built in < > perl operators read until a newline character,
+# so we have to go about reading a different way
+
+sub data_read
+{
+
+# our first and only argument is the filehandle in which to read
+
+    my $h = shift;
+
+# initilize some local variables so they don't conflict with the rest of the script
+
+    my $data;
+    my $c;
+
+# $data .= $c; comes FIRST so that $data doesn't contain the $EOT character at the end
+# then we read in one byte, and get the return value of the read syscall
+# if the $ret is zero, then nothing was read. return with zero, or "false", so the program exists the loop
+# and forces the client connection to close.
+
+    do {
+
+	$data .= $c;
+
+	$ret = read $h, $c, 1;
+
+	if ( $ret == 0 ) { return 0; }
+
+    } while ( $c ne $EOT );
+
+# this is all done while the character read isn't an EOT (end-of-transmission) character. all input on the
+# socket up until the $EOT character will be base64 encoded, so decode it here as we return it
+
+    return decode_base64($data);
+
+}
+
+#
+
+sub do_error
+{
+
+    my $errstr = shift;
+
+    print CLIENT $NAK . $errstr;
+
+}
