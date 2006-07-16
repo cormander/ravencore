@@ -56,9 +56,9 @@ A domain name in [ ] means force MX host lookup
     {
         $sql = "update domains set catchall = '$_POST[catchall]', catchall_addr = '$_POST[catchall_addr]', bounce_message = '$_POST[bounce_message]', relay_host = '$_POST[relay_host]', alias_addr = '$_POST[alias_addr]' where id = '$did'";
 
-        $db->Execute($sql);
+        $db->data_query($sql);
 
-        if ($db->Affected_Rows()) socket_cmd("rehash_mail --all");
+        if ($db->data_rows_affected()) socket_cmd("rehash_mail --all");
 
         goto("mail.php?did=$did");
     } 
@@ -74,9 +74,9 @@ else if ($action == "delete")
 else if ($action == "toggle")
 {
     $sql = "update domains set mail = '$_POST[mail]' where id = '$did'";
-    $db->Execute($sql);
+    $db->data_query($sql);
 
-    if ($db->Affected_Rows()) socket_cmd("rehash_mail --all");
+    if ($db->data_rows_affected()) socket_cmd("rehash_mail --all");
 
     goto("mail.php?did=$did");
 } 
@@ -88,14 +88,14 @@ if ($did)
     nav_top();
 
     $sql = "select * from domains where id = '$did'";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $num = $result->RecordCount();
+    $num = $db->data_num_rows();
 
     if ($num == 0) print __("Domain does not exist");
     else
     {
-        $row =& $result->FetchRow();
+        $row = $db->data_fetch_array($result);
 
         print '<form method=post name=main>' . __('Mail for') . ' <a href="domains.php?did=' . $row[id] . '" onmouseover="show_help(\'' . __('Goto') . ' ' . $row[name] . '\');" onmouseout="help_rst();">' . $row[name] . '</a> ' . __('is') . ' ';
 
@@ -132,27 +132,27 @@ print '<input type=radio name="catchall" value="delete_it"';
             print '> ' . __('Delete it') . ' <br>';
 
             $sql = "select count(*) as count from domains where uid = '$uid'";
-            $result_count = $db->Execute($sql);
+            $result_count = $db->data_query($sql);
 
-            $row_c =& $result_count->FetchRow(); 
+	    $row_c = $db->data_fetch_array($result_count);
             // for domains with no user
             if ($row_c[count] == 0)
             {
                 print '<input type=radio name=catchall value=alias_to';
                 if ($row[catchall] == "alias_to") print ' checked';
-                print '> ' . __('Forwoard to that user') . ' @ <input type=text name=alias_addr value="' . $row[alias_addr] . '">'; 
+                print '> ' . __('Forward to that user') . ' @ <input type=text name=alias_addr value="' . $row[alias_addr] . '">'; 
                 // for users with more then one domain setup
             } 
             else if ($row_c[count] > 1)
             {
                 print '<input type=radio name=catchall value=alias_to';
                 if ($row[catchall] == "alias_to") print ' checked';
-                print '> ' . __('Forwoard to that user') . ' @ <select name=alias_addr>'; 
+                print '> ' . __('Forward to that user') . ' @ <select name=alias_addr>'; 
                 // all other domains for this user ( with mail turned on )
                 $sql = "select name from domains where uid = '$uid' and id != '$did' and mail = 'on'";
-                $result_alias = $db->Execute($sql);
+                $result_alias = $db->data_query($sql);
 
-                while ($row_a =& $result_alias->FetchRow())
+                while ($row_a = $db->data_fetch_array($result_alias))
                 {
                     print '<option value="' . $row_a[name] . '"';
                     if ($row[alias_addr] == $row_a[name]) print ' selected';
@@ -170,16 +170,16 @@ print '<input type=radio name="catchall" value="delete_it"';
 <p>';
 
             $sql = "select * from mail_users where did = '$row[id]' order by mail_name";
-            $result =& $db->Execute($sql);
+            $result = $db->data_query($sql);
 
-            $num = $result->RecordCount();
+            $num = $db->data_num_rows();
 
             if ($num == 0) print __('No mail for this domain.') . '<p>';
             else print '<table><tr><th colspan="100%">' . __('Mail for this domain') . ':</th></tr>';
 
             print "";
 
-            while ($row_email =& $result->FetchRow())
+            while ($row_email = $db->data_fetch_array($result))
             {
                 print '<tr>
 <td><a href="edit_mail.php?did=' . $row_email[did] . '&mid=' . $row_email[id] . '" onmouseover="show_help(\'' . __('Edit') . ' ' . $row_email[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();">' . __('edit') . '</a></td>
@@ -224,9 +224,9 @@ else
     $sql = "select count(*) as count from domains";
     if ($uid) $sql .= " where uid = '$uid'";
 
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $row =& $result->FetchRow();
+    $row = $db->data_fetch_array($result);
 
     if ($row[count] == 0)
     {
@@ -265,16 +265,16 @@ else
         $sql .= " order by mail_name";
     } 
 
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $num = $result->RecordCount();
+    $num = $db->data_num_rows();
 
     if ($num == 0 and !$_GET[search]) print __("There are no mail users setup");
     else if ($_GET[search]) print __('Your search returned') . ' <i><b>' . $num . '</b></i> ' . __('results') . '<p>';
 
     if ($num != 0) print '<table width="45%"><tr><th colspan="100%">' . __('Email Addresses') . '</th></tr>';
 
-    while ($row =& $result->FetchRow())
+    while ($row = $db->data_fetch_array($result))
     {
         print '<tr><td><a href="edit_mail.php?did=' . $row[did] . '&mid=' . $row[mid] . '" onmouseover="show_help(\'' . __('Edit') . ' ' . $row[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();">' . $row[mail_name] . '@' . $row[name] . '</td><td>';
 

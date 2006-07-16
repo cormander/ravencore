@@ -36,8 +36,8 @@ if (!user_can_add($uid, "email") and !is_admin() and $page_type == "add") goto("
 if ($action)
 {
     $sql = "select count(*) as count from mail_users where mail_name = '$_POST[name]' and did = '$did'";
-    $result =& $db->Execute($sql);
-    $row =& $result->FetchRow();
+    $result = $db->data_query($sql);
+    $row = $db->data_fetch_array($result);
 
     if ($row[count] != 0 and $page_type == "add") alert(__("That email address already exists"));
     else
@@ -82,7 +82,7 @@ if ($action)
 			  if ($page_type == "add") $sql = "insert into mail_users set mail_name = '$_POST[name]', did = '$did', passwd = '$_POST[passwd]', spam_folder = '$_POST[spam_folder]', mailbox = '$_POST[mailbox]', redirect = '$_POST[redirect]', redirect_addr = '$_POST[redirect_addr]'";
 			  else $sql = "update mail_users set passwd = '$_POST[passwd]', mailbox = '$_POST[mailbox]', spam_folder = '$_POST[spam_folder]', redirect = '$_POST[redirect]', redirect_addr = '$_POST[redirect_addr]' where id = '$mid'";
 
-                            $db->Execute($sql);
+                            $db->data_query($sql);
 
                             socket_cmd("rehash_mail --all");
 
@@ -119,9 +119,9 @@ nav_top();
 if ($did)
 {
     $sql = "select * from domains where id = '$did'";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $row_chk =& $result->FetchRow();
+    $row_chk = $db->data_fetch_array($result);
 
     if ($row_chk[mail] != "on")
     {
@@ -138,9 +138,9 @@ print '<script type="text/javascript"> var tmp=""</script>';
 if ($page_type == "edit")
 {
     $sql = "select * from mail_users where id = '$mid'";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $row_mail =& $result->FetchRow();
+    $row_mail = $db->data_fetch_array($result);
 
     $_POST[name] = $row_mail[mail_name];
 } 
@@ -176,16 +176,16 @@ $sql = "select id, name from domains where mail = 'on'";
 
 if ($uid) $sql .= " and uid = '$uid'";
 if ($did) $sql .= " and id = '$did'";
-$result =& $db->Execute($sql);
+$result = $db->data_query($sql);
 
-$num = $result->RecordCount();
+$num = $db->data_num_rows();
 
 if ($page_type == "add" and !$did) print "<select name=did>";
 else print "<input type=hidden name=did value=$did>";
 // If we're adding an email, print out a dropdown of domains
 if ($page_type == "add" and !$did)
 {
-    while ($row =& $result->FetchRow())
+  while ( $row = $db->data_fetch_array($result) )
     {
         print "<option value=$row[id]";
         if ($row[id] == $did) print " selected";
@@ -197,7 +197,7 @@ if ($page_type == "add" and !$did)
 else
 { 
     // normail edit just prints the domain name
-    $row =& $result->FetchRow();
+  $row = $db->data_fetch_array($result);
 
     print $row[name];
 } 

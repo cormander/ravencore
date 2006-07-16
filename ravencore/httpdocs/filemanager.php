@@ -24,9 +24,9 @@ include "auth.php";
 if (!$did) goto("users.php");
 
 $sql = "select login, passwd from sys_users s, domains d where d.id = '$did' and d.suid = s.id";
-$result =& $db->Execute($sql);
+$result = $db->data_query($sql);
 
-$row =& $result->FetchRow();
+$row = $db->data_fetch_array($result);
 
 $_SESSION['user'] = $row[login];
 $_SESSION['password'] = $row[passwd];

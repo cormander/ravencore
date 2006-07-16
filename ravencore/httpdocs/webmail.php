@@ -24,9 +24,9 @@ include "auth.php";
 if (!$did and !$mid) goto("users.php");
 
 $sql = "select concat(lcase(mail_name),'@',lcase(name)) as login_username, passwd from mail_users m, domains d where d.id = m.did and m.did = '$did' and m.id = '$mid'";
-$result =& $db->Execute($sql);
+$result = $db->data_query($sql);
 
-$row =& $result->FetchRow();
+$row = $db->data_fetch_array($result);
 
 // set our login values
 

@@ -28,9 +28,9 @@ if (!user_can_add($uid, "dns_rec") and !is_admin()) goto("users.php?uid=$uid");
 if ($action == "add")
 {
     $sql = "select count(*) as count from dns_rec where did = '$did' and name = '$_POST[name]' and type = '$_POST[type]' and target = '$_POST[target]'";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $row =& $result->FetchRow();
+    $row = $db->data_fetch_array($result);
 
     $domain_name = $d->name() . '.';
 
@@ -54,7 +54,7 @@ if ($action == "add")
                     if ($_POST['type'] == "SOA") $sql = "update domains set soa = '$_POST[target]' where id = '$did'";
                     else $sql = "insert into dns_rec set did = '$did', name = '$_POST[name]', type = '$_POST[type]', target = '$_POST[target]'";
 
-                    $db->Execute($sql);
+                    $db->data_query($sql);
 
                     socket_cmd("rehash_named --rebuild-conf --all");
 
@@ -66,13 +66,13 @@ if ($action == "add")
 } 
 
 $sql = "select * from domains where id = '$did'";
-$result =& $db->Execute($sql);
+$result = $db->data_query($sql);
 
-$num = $result->RecordCount();
+$num = $db->data_num_rows();
 
 if ($num == 0) goto("domains.php");
 
-$row =& $result->FetchRow();
+$row = $db->data_fetch_array($result);
 
 $domain_name = $row['name'];
 
@@ -108,9 +108,9 @@ switch ($_POST['type'])
         print __('Mail for') . ': <select name=name>';
 
         $sql = "select * from dns_rec where did = '$did' and type = 'A' order by name";
-        $result =& $db->Execute($sql);
+        $result = $db->data_query($sql);
 
-        while ($row =& $result->FetchRow())
+        while ($row = $db->data_fetch_array($result) )
         {
             $domain_name = $d->name();
 

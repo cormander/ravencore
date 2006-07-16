@@ -18,11 +18,13 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 */
+
 // Define our regular expressions. They don't contain ^ or $ in them, because they are used with
 // each other in some places. Be sure you supply ^ before the string, and $ after it:
 // eg: preg_match('/^'.REGEX.'$/')
 // preg_match('/^'.REGEX.'@'.REGEX2.'$/')
 // to get the full effectiveness of the regular expressions.
+
 define("REGEX_MAIL_NAME", '([a-zA-Z\d]+((\.||\-||_)[a-zA-Z\d]?)?)*[a-zA-Z\d]');
 define("REGEX_DOMAIN_NAME", '([a-zA-Z\d]+((\.||\-)[a-zA-Z\d]?)?)*[a-zA-Z\d]\.[a-zA-Z]+');
 define("REGEX_PASSWORD", '[a-zA-Z\d]*');
@@ -57,32 +59,29 @@ $session = new session();
 // set our server object
 $server = new server();
 
-// Connect to the database
-require_once './adodb/adodb.inc.php';
-$db =& ADONewConnection('mysql');
+// create our socket
 
-$db->SetFetchMode(ADODB_FETCH_ASSOC);
+$db = new dbsock;
 
-$dbConnect = $db->Connect($CONF['MYSQL_ADMIN_HOST'], $CONF['MYSQL_ADMIN_USER'],
-			  $CONF['MYSQL_ADMIN_PASS'], $CONF['MYSQL_ADMIN_DB']);
+// $socket_err will be set if there was an error connecting
 
-
-if (!$dbConnect)
+if ( $socket_err )
 {
-  /*
-    nav_top();
 
-    print __('Unable to get a database connection.');
+  nav_top();
 
-    nav_bottom();
+  print $socket_err;
+
+  nav_bottom();
 
   exit;
-  */
-
-  $server->db_panic();
 
 }
 
+if( ! $db->data_alive() )
+{
+  $server->db_panic();
+}
 
 // read our database configuration settings
 $server->read_conf();
@@ -108,7 +107,7 @@ if ($action == "login")
       if( ! $server->db_panic )
 	{      
 	  $sql = "insert into login_failure set date = now(), login = '" . $_POST['user'] . "'";
-	  $db->Execute($sql);
+	  $db->data_query($sql);
 	}
 
       $login_error = $session->login_error;

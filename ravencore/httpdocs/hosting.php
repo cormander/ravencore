@@ -28,9 +28,10 @@ if ($action == "edit")
     if (!$did) goto("domains.php");
 
     $sql = "select u.id, login, passwd, shell from sys_users u, domains d where d.suid = u.id and d.id = '$did'";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $row =& $result->FetchRow(); 
+    $row = $db->data_fetch_array($result);
+
     // only do this if we got a passwd value that is different from the current passwd
     if ($_POST[passwd] != $row[passwd] or $_POST[login_shell] != $row[shell])
     { 
@@ -38,7 +39,7 @@ if ($action == "edit")
         if (!user_can_add($uid, "shell_user") and !is_admin() and $row[shell] == $CONF[DEFAULT_LOGIN_SHELL]) $_POST[login_shell] = $CONF[DEFAULT_LOGIN_SHELL];
 
         $sql = "update sys_users set passwd = '$_POST[passwd]', shell = '$_POST[login_shell]' where id = '$row[id]'";
-        $db->Execute($sql);
+        $db->data_query($sql);
 
         socket_cmd("rehash_ftp $row[login]");
     } 
@@ -50,12 +51,12 @@ if ($action == "edit")
     if (user_can_add($uid, "host_ssl") or is_admin() or $_POST[host_ssl] == "false") $sql .= ", host_ssl = '$_POST[ssl]'";
 
     $sql .= " where id = '$did'";
-    $db->Execute($sql); 
+    $db->data_query($sql); 
     // only mess with the filesystem if we affected the db
-    if ($db->Affected_Rows()) socket_cmd("rehash_httpd " . $d->name());
+    if ($db->data_rows_affected()) socket_cmd("rehash_httpd " . $d->name());
 
     // if this was an alias update, make sure we update the aliased domain too
-    if ($db->Affected_Rows() and $_POST[host_type] == "alias") socket_cmd("rehash_httpd " . $_POST[redirect_url]);
+    if ($db->data_rows_affected() and $_POST[host_type] == "alias") socket_cmd("rehash_httpd " . $_POST[redirect_url]);
 
     goto("domains.php?did=$did");
 } 
@@ -63,7 +64,7 @@ else if ($action == "add")
 { 
     // get sys_users setup in db
     $sql = "select count(*) as count from sys_users where login = '$_POST[login]'";
-    $result =& $db->Execute($sql); 
+    $result = $db->data_query($sql); 
     // open up our /etc/passwd file, and input only the usernames
     $handle = popen("cat /etc/passwd | awk -F : '{print $1}'", "r");
 
@@ -80,12 +81,12 @@ else if ($action == "add")
         if ($_POST[host_type] == "physical")
         {
             $sql = "insert into sys_users set login = '$_POST[login]', passwd = '$_POST[passwd]'";
-            $db->Execute($sql) or die($db->ErrorMsg());
+            $db->data_query($sql);
 
-            $suid = $db->Insert_ID();
+            $suid = $db->data_insert_id();
 
             $sql = "update domains set suid = '$suid' where id = '$did'";
-            $db->Execute($sql) or die($db->ErrorMsg()); 
+            $db->data_query($sql);
             // when the rehash_ftp is fixed, we want to run it with just the new username, rather then the --all switch
             socket_cmd("rehash_ftp --all");
         } 
@@ -98,7 +99,7 @@ else if ($action == "add")
 
         $sql .= " where id = '$did'";
 
-        $db->Execute($sql) or die($db->ErrorMsg()); 
+        $db->data_query($sql);
         // build httpd for this domain
         socket_cmd("rehash_httpd " . $d->name()); 
         // do logrotation for the domain
@@ -119,14 +120,14 @@ else if ($action == "delete")
 nav_top();
 
 $sql = "select * from domains where id = '$did'";
-$result =& $db->Execute($sql);
+$result = $db->data_query($sql);
 
-$num = $result->RecordCount();
+$num = $db->data_num_rows();
 
 if ($num == 0) print __("Domain does not exist");
 else
 {
-    $row =& $result->FetchRow();
+  $row = $db->data_fetch_array($result);
 
     print '<form name=main method=POST>' . __('Name') . ': ' . $row[name];
 
@@ -159,9 +160,9 @@ else
             { 
                 // We cant edit the the FTP username w/o deleting hosting for the domain
                 $sql = "select login, passwd, shell from sys_users u, domains d where u.id = d.suid and d.id = '$did'";
-                $result_ftp = $db->Execute($sql);
+                $result_ftp = $db->data_query($sql);
 
-                $row_ftp =& $result_ftp->FetchRow();
+		$row_ftp = $db->data_fetch_array($result_ftp);
 
                 print __('FTP Username') . ': ' . $row_ftp[login] . '<p>';
                 print __('FTP Password') . ': <input type=password name=passwd value="' . $row_ftp[passwd] . '">';

@@ -26,7 +26,7 @@ req_admin();
 if ($action == "delete")
 {
     $sql = "delete from sessions where id = '$_POST[session]' and session_id != '$session_id'";
-    $db->Execute($sql);
+    $db->data_query($sql);
 
     goto($_SERVER[PHP_SELF]);
 } 
@@ -34,16 +34,16 @@ if ($action == "delete")
 nav_top();
 
 $sql = "select * from sessions";
-$result =& $db->Execute($sql);
+$result = $db->data_query($sql);
 
 print '<form method=post><table width=600><tr><th width=20%>' . __('Login') . '</th><th width=20%>' . __('IP Address') . '</th><th width=20%>' . __('Session Time') . '</th><th width=20%>' . __('Idle Time') . '</th><th width=20%>' . __('Delete') . '</th></tr>';
 
-while ($row =& $result->FetchRow())
+while ($row = $db->data_fetch_array($result))
 {
     $sql = "select ( ( to_days(now()) * 24 * 60 * 60 ) + time_to_sec(now() ) ) - ( ( to_days(created) * 24 * 60 * 60 ) + time_to_sec(created) ) as total, ( ( to_days(now()) * 24 * 60 * 60 ) + time_to_sec(now() ) ) - ( ( to_days(idle) * 24 * 60 * 60 ) + time_to_sec(idle) ) as idle from sessions where id = '$row[id]'";
-    $result_session = $db->Execute($sql);
+    $result_session = $db->data_query($sql);
 
-    $row_session =& $result_session->FetchRow();
+    $row_session = $db->data_fetch_array($result_session);
 
     print '<tr><td>';
 

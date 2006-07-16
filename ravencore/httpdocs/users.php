@@ -32,7 +32,7 @@ if ($action == "delete" and is_admin())
 else if ($action == "unlock" and is_admin())
 {
     $sql = "delete from login_failure where login = '$_GET[login]'";
-    $db->Execute($sql);
+    $db->data_query($sql);
 
     goto("users.php?uid=$uid");
 }
@@ -55,9 +55,9 @@ false; }">';
     $sql = "select * from users";
     if ($_GET['search']) $sql .= " where name like '%$_GET[search]%'";
     $sql .= " order by name";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $num = $result->RecordCount();
+    $num = $db->data_num_rows();
 
     if ($num == 0 and !$_GET['search']) print __('There are no users setup');
     else if ($_GET['search']) print __('Your search returned') . ' <i><b>' . $num . '</b></i> ' . __('results') . '.<p>';
@@ -70,7 +70,7 @@ false; }">';
         $total_space = 0;
         $total_traffic = 0;
 
-        while ($row =& $result->FetchRow())
+        while ($row = $db->data_fetch_array($result))
         {
 	  $u = new user($row['id']);
 
@@ -93,9 +93,9 @@ false; }">';
 else
 {
     $sql = "select * from users where id = '$uid'";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $num = $result->RecordCount();
+    $num = $db->data_num_rows();
 
     if ($num == 0)
 	{
@@ -103,13 +103,13 @@ else
 	}
     else
     {
-        $row =& $result->FetchRow();
+        $row = $db->data_fetch_array($result);
         // look in the login_failure table to see if this user is locked out
         $sql = "select count(*) as count from login_failure where login = '$row[login]' and ( ( to_days(date) * 24 * 60 * 60 ) + time_to_sec(date) + $CONF[LOCKOUT_TIME] ) > ( ( to_days(now()) * 24 * 60 * 60 ) + time_to_sec(now() ) )";
 
-        $result =& $db->Execute($sql);
+        $result = $db->data_query($sql);
 
-        $row_lock =& $result->FetchRow();
+        $row_lock = $db->data_fetch_array($result);
         // if they are locked out, provide a way to unlock it
         if (is_admin() and $row_lock[count] >= $CONF['LOCKOUT_COUNT']) print '<font color="red"><b>' . __('This user is locked out due to failed login attempts') . '</b></font> - <a href="users.php?action=unlock&login=' . $row[login] . '&uid=' . $row[id] . '">' . __('Unlock') . '</a>';
 
@@ -185,9 +185,9 @@ mainmenu.style.visibility=\'visible\'
 ';
 
         $sql = "select * from domains where uid = '$uid'";
-        $result =& $db->Execute($sql);
+        $result = $db->data_query($sql);
 
-        $num_domains = $result->RecordCount();
+        $num_domains = $db->data_num_rows();
 
         if ($num_domains == 0)
         {
@@ -201,7 +201,7 @@ mainmenu.style.visibility=\'visible\'
             print '<form name=main><div id="didsel" style="visibility: hidden;">
 <select name="did" onchange="if(did.value!=0) document.main.submit();"><option value=0>' . __('For which domain') . '?</option>';
 
-            while ($row_domain =& $result->FetchRow())
+            while ($row_domain = $db->data_fetch_array($result))
             {
                 print '<option value="' . $row_domain['id'] . '">' . $row_domain['name'] . '</option>';
             }

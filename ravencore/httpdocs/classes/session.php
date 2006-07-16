@@ -5,6 +5,8 @@ class session {
   function session()
   {
 
+    global $db;
+
     // make sure PHP was compiled with sessions enabled
     if (!function_exists("session_start"))
       {
@@ -51,9 +53,9 @@ class session {
                                 ( ( to_days(date) * 24 * 60 * 60 ) + time_to_sec(date) + " . $lockout_time . " ) >
                                 ( ( to_days(now()) * 24 * 60 * 60 ) + time_to_sec(now() ) )";
 
-	$result =& $db->Execute($sql) or die($db->ErrorMsg());
+	$result = $db->data_query($sql);
 	
-	$row =& $result->FetchRow();
+	$row = $db->data_fetch_array($result);
 	
 	if( $row['count'] >= $CONF['LOCKOUT_COUNT'] and $CONF['LOCKOUT_COUNT'])
 	  {
@@ -77,8 +79,9 @@ class session {
 	
 	// admin user auth
 
-	if ( $password != $CONF['MYSQL_ADMIN_PASS'] )
+	if ( ! $db->data_auth($password) )
 	  {
+
 	    // admin login faliure
 
 	    $this->login_error = __('Login failed.');
@@ -132,9 +135,9 @@ class session {
 	  }
 
         $sql = "select * from users where binary(login) = '" . $username . "' and binary(passwd) = '" . $password . "' limit 1";
-        $result =& $db->Execute($sql);
+        $result = $db->data_query($sql);
 
-        if ( $result->RecordCount() != 1 )
+        if ( $db->data_num_rows() != 1 )
 	  {
             $this->login_error = __('Login failure.');
 
@@ -151,7 +154,7 @@ class session {
     if( ! $server->db_panic )
       {
 	$sql = "insert into sessions set session_id = '" . $this->id . "', login = '" . $username . "', location = '" . $_SERVER['REMOTE_ADDR'] . "', created = now(), idle = now()";
-	$db->Execute($sql);
+	$db->data_query($sql);
       }
 
     syslog(LOG_INFO, "User " . $username . " logged in from " . $_SERVER[REMOTE_ADDR]);
@@ -180,17 +183,17 @@ class session {
 
     // an admin user was logged in with a db_panic, and now there is no db_panic
     if($_SESSION['username'] == $CONF['MYSQL_ADMIN_USER'] and
-       $_SESSION['password'] == $CONF['MYSQL_ADMIN_PASS'] and
-       ! $server->db_panic )
+       $db->data_auth($_SESSION['password']) and ! $server->db_panic )
       {
 
 	// give them a database session
         $sql = "insert into sessions set session_id = '" . $this->id . "', login = '" . $_SESSION['username'] . "', location = '" . $_SERVER['REMOTE_ADDR'] . "', created = now(), idle = now()";
-	$db->Execute($sql);
+	$db->data_query($sql);
 	
 	// remove their db_panic session
-	$_SESSION['username'] = $_SESSION['password'] = NULL;
-
+	unset($_SESSION['username']);
+	unset($_SESSION['password']);
+	
       }
        
     // if server is in db_panic mode, admin can still login    
@@ -199,7 +202,7 @@ class session {
 
         // admin user auth
 
-        if ( $_SESSION['username'] != $CONF['MYSQL_ADMIN_USER'] or $_SESSION['password'] != $CONF['MYSQL_ADMIN_PASS'] )
+        if ( $_SESSION['username'] != $CONF['MYSQL_ADMIN_USER'] or ! $db->data_auth($_SESSION['password']) )
           {
             // admin login faliure
 
@@ -217,25 +220,25 @@ class session {
 	
 	// remove old sessions
 	$sql = "delete from sessions where ( ( to_days(idle) * 24 * 60 * 60 ) + time_to_sec(idle) + " . $session_timeout . " ) < ( ( to_days(now()) * 24 * 60 * 60 ) + time_to_sec(now() ) )";
-	$db->Execute($sql);
+	$db->data_query($sql);
 	
 	$sql = "select * from sessions where binary(session_id) = '" . $this->id . "' limit 1";
-	$result =& $db->Execute($sql);
-	
-	if ( $result->RecordCount() != 1 )
+	$result = $db->data_query($sql);
+
+	if ( $db->data_num_rows() != 1 )
 	  {
-	    
+
 	    return false;
 	    
 	  }
-	
-	$row_session =& $result->FetchRow();
-	
+
+	$row_session = $db->data_fetch_array($result);
+
 	// make sure the remote addr didn't change
 	
 	if ($row_session['location'] != $_SERVER['REMOTE_ADDR'])
 	  {
-	    
+
 	    syslog(LOG_WARNING, "Session hijack attempt detected for user $row[login] from $_SERVER[REMOTE_ADDR]");
 
 	    // kill the session
@@ -252,7 +255,7 @@ class session {
 
 	// update your idle
 	$sql = "update sessions set idle = now() where session_id = '" . $this->id . "'";
-	$db->Execute($sql);
+	$db->data_query($sql);
 
       }
     
@@ -270,9 +273,9 @@ class session {
     global $db;
 
     $sql = "select u.id from users u, sessions s where binary(s.login) = binary(u.login) and s.session_id = '" . $this->id . "' limit 1";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $row =& $result->FetchRow();
+    $row = $db->data_fetch_array($result);
 
     return $row['id'];
 
@@ -282,10 +285,10 @@ class session {
   function destroy()
   {
 
-    global $db;
+    global $db, $CONF;
 
     $sql = "delete from sessions where binary(session_id) = '" . $this->id . "'";
-    $db->Execute($sql);
+    $db->data_query($sql);
 
     // we want to keep the language session variable
 
@@ -293,7 +296,22 @@ class session {
 
     $_SESSION = NULL;
 
+    // kill the session data file
+    
+    @unlink($CONF['RC_ROOT'] . '/var/tmp/sess_' . $this->id);
+
     $_SESSION['lang'] = $lang;
+
+    // destroy a phpMyAdmin session, if any
+
+    session_destroy();
+    session_name('phpMyAdmin');
+    session_start();
+
+    $_SESSION = NULL;
+    @unlink($CONF['RC_ROOT'] . '/var/tmp/sess_' . session_id());
+    
+    session_destroy();
 
   }
 

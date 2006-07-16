@@ -29,22 +29,21 @@ if ($action == "add")
 {
     $sql = "create database $_POST[name]";
 
-    if ($db->Execute($sql))
-    {
-        $sql = "insert into data_bases set name = '$_POST[name]', did = '$did'";
-        $db->Execute($sql);
+    $db->data_query($sql);
 
-        goto("databases.php?did=$did");
-    } 
-    else alert($db->ErrorMsg());
+    $sql = "insert into data_bases set name = '$_POST[name]', did = '$did'";
+    $db->data_query($sql);
+    
+    goto("databases.php?did=$did");
+
 } 
 
 nav_top();
 
 $sql = "select * from domains where id = '$did'";
-$result =& $db->Execute($sql);
+$result = $db->data_query($sql);
 
-$row =& $result->FetchRow();
+$row = $db->data_fetch_array($result);
 
 print '' . $lang['add_db_adding_a_database_for'] . ' ' . $row['name'] . '<p>
 

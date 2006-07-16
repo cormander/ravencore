@@ -24,9 +24,9 @@ include("auth.php");
 $domain_name = $d->name();
 // if this domain isn't setup for "physical" hosting, there are no webstats
 $sql = "select host_type from domains where id = '$did'";
-$result =& $db->Execute($sql);
+$result = $db->data_query($sql);
 
-$row =& $result->FetchRow();
+$row = $db->data_fetch_array($result);
 
 if ($row[host_type] != "physical")
 {

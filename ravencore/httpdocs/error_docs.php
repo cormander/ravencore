@@ -42,15 +42,15 @@ if ($action == "add")
     else
     {
         $sql = "select count(*) as count from error_docs where did = '$did' and code = '$_POST[code]'";
-        $result =& $db->Execute($sql);
+        $result = $db->data_query($sql);
 
-        $row =& $result->FetchRow();
+	$row = $db->data_fetch_array($result);
 
         if ($row[count] != 0) alert(__("You already have a $_POST[code] error document"));
         else
         {
             $sql = "insert into error_docs set did = '$did', code = '$_POST[code]', file = '$_POST[file]'";
-            $db->Execute($sql);
+            $db->data_query($sql);
 
             socket_cmd("rehash_httpd " . $d->name());
 
@@ -61,7 +61,7 @@ if ($action == "add")
 else if ($action == "delete")
 {
     $sql = "delete from error_docs where did = '$did' and code = '$_POST[code]'";
-    $db->Execute($sql);
+    $db->data_query($sql);
 
     socket_cmd("rehash_httpd " . $d->name());
 
@@ -71,16 +71,16 @@ else if ($action == "delete")
 nav_top();
 
 $sql = "select * from error_docs where did = '$did'";
-$result =& $db->Execute($sql);
+$result = $db->data_query($sql);
 
-$num = $result->RecordCount();
+$num = $db->data_num_rows();
 
 if ($num == 0) print __('No custom error documents setup.');
 else
 {
     print '<form method=POST>';
 
-    while ($row =& $result->FetchRow())
+    while ( $row = $db->data_fetch_array($result) )
     {
         print '<input type=radio name=code value=' . $row[code] . '> ' . $row[code] . ' - ' . $row[file] . '<br>';
     } 

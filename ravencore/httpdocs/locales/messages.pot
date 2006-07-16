@@ -1284,7 +1284,7 @@ msgstr ""
 
 #: mail.php:110
 #: mail.php:117
-msgid "Forwoard to that user"
+msgid "Forward to that user"
 msgstr ""
 
 #: mail.php:133

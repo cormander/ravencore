@@ -34,7 +34,7 @@ if ($action == "delete")
 		$sql = "delete from dns_rec where did = '$did' and id = '$_POST[delete]'";
 	}
 
-    $db->Execute($sql);
+    $db->data_query($sql);
 
     socket_cmd("rehash_named --rebuild-conf --all");
 
@@ -48,9 +48,9 @@ if (!$did)
     nav_top();
 
     $sql = "select * from domains where soa is not null and soa != ''";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $num = $result->RecordCount();
+    $num = $db->data_num_rows();
 
     if ($num == 0) print __('No DNS records setup on the server');
     else
@@ -58,14 +58,14 @@ if (!$did)
         print __('The following domains are setup for DNS') . '<p>
 <table><tr><th>' . __('Domain') . '</th><th>' . __('Records') . '</th></tr>';
 
-        while ($row =& $result->FetchRow())
+        while ( $row = $db->data_fetch_array($result) )
         {
             print '<tr><td><a href="dns.php?did=' . $row['id'] . '">' . $row['name'] . '</a></td>';
 
             $sql = "select count(*) as count from dns_rec where did = '$row[id]'";
-            $result_rec =& $db->Execute($sql);
+            $result_rec = $db->data_query($sql);
 
-            $row =& $result_rec->FetchRow();
+	    $row = $db->data_fetch_array($result_rec);
 
             print '<td align=center>' . $row['count'] . '</td></tr>';
         } 
@@ -78,9 +78,9 @@ else
     nav_top();
 
     $sql = "select * from domains where id = '$did' and soa is not null";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $num = $result->RecordCount();
+    $num = $db->data_num_rows();
 
     if ($num == 0) print '<form method=post action=add_dns.php name=main>
 ' . __('No SOA record setup for this domain') . ' - <a href="javascript:document.main.submit();">' . __('Add SOA record') . '</a>
@@ -89,7 +89,7 @@ else
 </form>';
     else
     {
-        $row =& $result->FetchRow();
+      $row = $db->data_fetch_array($result);
 
         $domain_name = $row[name];
 
@@ -104,18 +104,27 @@ else
 <p>';
 
         $sql = "select * from dns_rec where did = '$did' order by type, name, target";
-        $result =& $db->Execute($sql);
+        $result = $db->data_query($sql);
 
-        $num = $result->RecordCount();
+        $num = $db->data_num_rows();
 
         if ($num == 0) print __("No DNS records setup for this domain");
         else
         {
+
+	  // check to see if at least an A and a NS record exist.. if not, print a warning
+	  $sql = "select distinct type from dns_rec where did = '$did' and ( type = 'A' or type = 'NS' )";
+	  $result_type = $db->data_query($sql);
+	  $num = $db->data_num_rows();
+
+	  // need to have both or else...
+	  if($num != 2) print '<font color="red"><b>' . __("You need at least one A record and one NS record for your zone file to be created") . '</b></font>';
+
             print '<form method=post>';
 
             print '<table><tr><th>&nbsp;</th><th>' . __('Record Name') . '</th><th>' . __('Record Type') . '</th><th>' . __('Record Target') . '</th></tr>';
 
-            while ($row =& $result->FetchRow())
+            while ( $row = $db->data_fetch_array($result) )
             {
                 print '<tr><td><input type=radio name=delete value="' . $row[id] . '"></td><td>' . $row[name] . '</td><td>' . $row[type] . '</td><td>' . $row[target] . '</td></tr>';
             } 

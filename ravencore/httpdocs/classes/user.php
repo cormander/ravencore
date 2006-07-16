@@ -11,24 +11,24 @@ class user {
     // get all info from user table
 
     $sql = "select * from users where id = '" . $this->uid . "' limit 1";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $this->info =& $result->FetchRow();
+    $this->info = $db->data_fetch_array($result);
 
     // get all domains for this user
 
     $sql = "select * from domains where uid = '" . $this->uid . "'";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
     // get number of domains
 
-    $this->info['num_domains'] = $result->RecordCount();
+    $this->info['num_domains'] = $db->data_num_rows();
 
     // fill an array with domain ids
 
     $this->info['domains'] = array();
 
-    for ( $i = 0; $row =& $result->FetchRow(); $i++ )
+    for ( $i = 0; $row = $db->data_fetch_array($result); $i++ )
       {
 
         array_push($this->info['domains'], $row['id']);
@@ -119,11 +119,11 @@ class user {
 
     // remove this users permissions
     $sql = "delete from user_permissions where uid = '" . $this->uid . "'";
-    $db->Execute($sql);
+    $db->data_query($sql);
 
     // get rid of the user
     $sql = "delete from users where id = '" . $this->uid . "'";
-    $db->Execute($sql);
+    $db->data_query($sql);
 
   }
 

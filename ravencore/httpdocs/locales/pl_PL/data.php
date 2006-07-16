@@ -313,7 +313,7 @@ $trans['pl_PL'] = array(
 	'Send to' => 'Wy¶lij do',
 	'Bounce with' => 'Prze¶lij do',
 	'Delete it' => 'Usuñ',
-	'Forwoard to that user' => 'Przekieruj na tego u¿ytkownika',
+	'Forward to that user' => 'Przekieruj na tego u¿ytkownika',
 	'You need at least two domains in the account with mail turned on to be able to alias mail' => 'Musisz mieæ co najmniej 2 domeny na koncie z w³±czon± poczt± aby móc 
 	tworzyæ aliasy pocztowe',
 	'No mail for this domain.' => 'Brak poczty dla tej domeny.',

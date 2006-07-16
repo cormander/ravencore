@@ -28,7 +28,7 @@ $user = $_REQUEST[user];
 if ($action == "add")
 {
     $sql = "insert into crontab set minute = '$_POST[minute]', hour = '$_POST[hour]', dayofm = '$_POST[dayofm]', month = '$_POST[month]', dayofw = '$_POST[dayofw]', cmd = '$_POST[cmd]', user = '$_POST[user]'";
-    $db->Execute($sql);
+    $db->data_query($sql);
 
     socket_cmd("crontab_mng $_POST[user]");
 
@@ -37,7 +37,7 @@ if ($action == "add")
 else if ($action == "delete")
 {
     $sql = "delete from crontab where id = '$_POST[del_val]' and user = '$_POST[user]'";
-    $db->Execute($sql);
+    $db->data_query($sql);
 
     socket_cmd("crontab_mng $_POST[user]");
 
@@ -47,9 +47,9 @@ else if ($action == "delete")
 nav_top();
 
 $sql = "select distinct user from crontab order by user";
-$result =& $db->Execute($sql);
+$result = $db->data_query($sql);
 
-$num = $result->RecordCount();
+$num = $db->data_num_rows();
 
 if (!$_POST[user] or $num == 0)
 {
@@ -63,7 +63,7 @@ else
 {
     print "<form name=f method=get>" . __("User") . ": <select name=user onchange=\"document.f.submit()\"><option value=''>- - " . __("Choose a user") . " - -</option>";
 
-    while ($row =& $result->FetchRow())
+    while ( $row = $db->data_fetch_array($result) )
     {
         print "<option value=$row[user]";
         if ($user == $row[user]) print " selected";
@@ -78,9 +78,9 @@ print "<p>";
 if ($user)
 {
     $sql = "select * from crontab where user = '$user'";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $num = $result->RecordCount();
+    $num = $db->data_num_rows();
 
     if ($num == 0)
     {
@@ -92,7 +92,7 @@ if ($user)
     {
         print "<form method=post><table>";
 
-        while ($row =& $result->FetchRow())
+        while ( $row = $db->data_fetch_array($result) )
         {
             print "<tr><td><input type=radio name=del_val value=$row[id]></td><td>$row[minute]</td><td>$row[hour]</td><td>$row[dayofm]</td><td>$row[month]</td><td>$row[dayofw]</td><td>$row[cmd]</td></tr>";
         } 

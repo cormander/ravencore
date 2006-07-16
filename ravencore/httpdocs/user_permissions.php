@@ -42,7 +42,7 @@ if (have_service("web"))
 if ($action == "update" and is_admin())
 {
     $sql = "delete from user_permissions where uid = '$uid'";
-    $db->Execute($sql);
+    $db->data_query($sql);
 
     foreach($perms as $perm)
     {
@@ -51,7 +51,7 @@ if ($action == "update" and is_admin())
         $lim = $_POST[$tmp];
 
         $sql = "insert into user_permissions set uid = '$uid', perm = '$perm', val = '$val', lim = '$lim'";
-        $db->Execute($sql);
+        $db->data_query($sql);
     } 
 
     goto("users.php?uid=$uid");

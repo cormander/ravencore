@@ -59,44 +59,6 @@ class server {
 	exit;
       }
 
-    // make sure that perl-suidperl works. If it doesn't, it won't run, and "OK" won't be printed.
-    if (trim(shell_exec("../sbin/wrapper testsuid")) != "root")
-      {
-	nav_top();
-
-	print __('Your system is unable to set uid to root with the wrapper. This is required for ravencore to function. To correc
-t this:<p>
-                                Remove the file: <b>/usr/local/ravencore/sbin/wrapper</b><p>
-                                Then do one of the following:<p>
-                                * Install <b>gcc</b> and the package that includes <b>/usr/include/sys/types.h</b> and restart ravencore<br />
-                                &nbsp;&nbsp;or<br />
-                                * Install the <b>perl-suidperl</b> package and restart ravencore<br />
-                                &nbsp;&nbsp;or<br />
-                                * Copy the wrapper binary from another server with ravencore installed into ravencore\'s sbin on this server');
-	
-	print shell_exec($CONF[RC_ROOT] . "/sbin/wrapper testsuid") . '<br><br>' . $CONF[RC_ROOT] . ' - asdf';
-	shell_exec($CONF[RC_ROOT] . "/sbin/wrapper testsuid") or die('trying');
-
-	nav_bottom();
-
-	exit;
-      }
-
-    // check to see if we have mysql functions
-    if (!function_exists("mysql_connect"))
-      {
-	nav_top();
-
-	print __('Unable to call the mysql_connect function.
-                        Please install the php-mysql package or recompile PHP with mysql support, and restart the control panel.<p>
-                        If php-mysql is installed on the server, check to make sure that the mysql.so extention is getting loaded in your system\'s php.ini file');
-
-	nav_bottom();
-
-	exit;
-	
-      }
-
   }
 
   function db_panic()
@@ -262,12 +224,6 @@ t this:<p>
     global $CONF;
     // Open configuration files and read in all the data.
     $CONF = $this->build_conf_array(array('/etc/ravencore.conf','../database.cfg'));
-
-    // the password is stored seperatly
-    $passwd = file("../.shadow");
-    $CONF['MYSQL_ADMIN_PASS'] = $passwd[0];
-    // Get rid of whitespace and return characters
-    $CONF['MYSQL_ADMIN_PASS'] = trim($CONF['MYSQL_ADMIN_PASS']);
   }
 
   // A function to read in our database configuration variables
@@ -280,9 +236,9 @@ t this:<p>
 
     // get our settings from the database
     $sql = "select * from settings";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    while ($row =& $result->FetchRow())
+    while ($row = $db->data_fetch_array($result))
       {
         $key = $row['setting'];
         $val = $row['value'];
@@ -389,7 +345,7 @@ t this:<p>
     global $CONF, $db, $conf_not_complete, $action, $server;
 
     // make sure the admin password doesn't stay as "ravencore"
-    if (($CONF['MYSQL_ADMIN_PASS'] == 'ravencore') && is_admin() &&
+    if ( $db->data_auth('ravencore') && is_admin() &&
         ($_SERVER['PHP_SELF'] != '/change_password.php') &&
         ($_SERVER['PHP_SELF'] != '/logout.php'))
       {
@@ -530,7 +486,7 @@ ons.') ?>
 			  {
 			    // insert this into the database
 			    $sql = "insert into settings set setting = '" . $key . "', value = '" . $_POST[$key] . "'";
-			    $db->Execute($sql);
+			    $db->data_query($sql);
 			    
 			  }
 		  }

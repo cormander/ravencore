@@ -27,15 +27,14 @@ $services = array();
 // get contents of $RC_ROOT/etc/services, explode on return character, split on the :, and chop off the .conf, to fill the package / service array
 if ($action == "run")
 {
-  // if the service to be stopped or restarted is mysql(d), then set our session with admin user/pass
-  // so we stay logged in even with the database down
+  // if the service to be stopped or restarted is mysql(d), then we're not going to have a login session
+  // to the database... set a message to re-authenticate, because you'll be at the login screen.
   if(
      ereg('mysqld?',$_GET['service']) and
      ($_GET['service_cmd'] == 'stop' or $_GET['service_cmd'] == 'restart')
      )
     {
-      $_SESSION['username'] = $CONF['MYSQL_ADMIN_USER'];
-      $_SESSION['password'] = $CONF['MYSQL_ADMIN_PASS'];
+      //
     }
 
   // authenticate $_GET[service] as an allowed service
@@ -69,12 +68,12 @@ foreach ($services as $val)
 {
     print '<tr><td>' . $val . '</td><td align=center>';
 
-    $handle = popen("../sbin/wrapper is_service_running $val", "r");
+    $resp = $db->run_cmd("is_service_running " . $val);
 
-    switch (trim(fread($handle, 5)))
-    {
-        case 'Yes':
-
+    switch (trim($resp))
+      {
+      case 'Yes':
+	  
             $running = '<img src="images/solidgr.gif" border=0>';
             $start = '<img src="images/start_grey.gif" border=0>';
             $stop = '<a href="services.php?action=run&service=' . $val . '&service_cmd=stop"><img src="images/stop.gif" border=0></a>';
@@ -89,8 +88,6 @@ foreach ($services as $val)
 
             break;
     } 
-
-    pclose($handle);
 
     print $running . '</td>
 <td>' . $start . '</td>

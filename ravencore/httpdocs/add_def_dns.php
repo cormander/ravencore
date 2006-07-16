@@ -24,9 +24,9 @@ include "auth.php";
 if ($action == "add")
 {
     $sql = "select count(*) as count from dns_def where name = '$_POST[name]' and type = '$_POST[type]' and target = '$_POST[target]'";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $row =& $result->FetchRow();
+    $row = $db->data_fetch_array($result);
 
     if ($row['count'] != 0)
 	{
@@ -57,7 +57,7 @@ if ($action == "add")
 
                     $sql = "insert into dns_def set name = '$_POST[name]', type = '$_POST[type]', target = '$_POST[target]'";
 
-                    $db->Execute($sql);
+                    $db->data_query($sql);
 
                     goto("dns_def.php");
                 } 
@@ -77,9 +77,9 @@ switch ($_POST[type])
     case "SOA":
 
         $sql = "select count(*) as count from dns_def where type = 'SOA'";
-        $result =& $db->Execute($sql);
+        $result = $db->data_query($sql);
 
-        $row =& $result->FetchRow();
+	$row = $db->data_fetch_array($result);
 
         if ($row['count'] != 0)
         {

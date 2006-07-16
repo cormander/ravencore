@@ -36,9 +36,9 @@ if ($action == "delete")
 else if ($action == "hosting")
 {
     $sql = "update domains set hosting = '$_POST[hosting]' where id = '$did'";
-    $db->Execute($sql);
+    $db->data_query($sql);
 
-    if ($db->Affected_Rows()) socket_cmd("rehash_httpd " . $d->name());
+    if ($db->data_affected_rows()) socket_cmd("rehash_httpd " . $d->name());
 
     goto("domains.php?did=$did");
 } 
@@ -48,7 +48,7 @@ else if ($action == "change")
   if (!is_admin()) goto("users.php");
 
   $sql = "update domains set uid = '$_POST[uid]' where id = '$did'";
-  $db->Execute($sql);
+  $db->data_query($sql);
   
   goto("domains.php?did=$did");
 
@@ -61,9 +61,9 @@ if (!$did)
     if ($uid and is_admin())
     {
         $sql = "select * from users where id = '$uid'";
-        $result =& $db->Execute($sql);
+        $result = $db->data_query($sql);
 
-        $row_u =& $result->FetchRow();
+	$row_u = $db->data_fetch_array($result);
 
         print '' . __('Domains for') . ' ' . $row_u[name] . '<p>';
     } 
@@ -74,9 +74,9 @@ if (!$did)
     if ($_GET['search']) $sql .= " and name like '%" . $_GET['search'] . "%'";
 
     $sql .= " order by name";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $num_domains = $result->RecordCount();
+    $num_domains = $db->data_num_rows();
 
     if ($num_domains == 0 and !$_GET['search'])
     {
@@ -103,7 +103,7 @@ if (!$did)
         $total_space = 0;
         $total_traffic = 0;
 
-        while ($row =& $result->FetchRow())
+        while ( $row = $db->data_fetch_array($result) )
         {
 	  $d = new domain($row['id']);
 
@@ -128,14 +128,14 @@ else
 
     $sql = "select * from domains where id = '$did'";
     if (!is_admin()) $sql .= " and uid = '$uid'";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $num = $result->RecordCount();
+    $num = $db->data_num_rows();
 
     if ($num == 0) print __('Domain does not exist');
     else
     {
-        $row =& $result->FetchRow();
+      $row = $db->data_fetch_array($result);
 
         if (is_admin())
         {
@@ -144,13 +144,13 @@ else
             print '<form method="post">' . __('This domain belongs to') . ': <select name=uid>';
 
             $sql = "select * from users";
-            $result =& $db->Execute($sql);
+            $result = $db->data_query($sql);
 
-            $num = $result->RecordCount();
+            $num = $db->data_num_rows();
 
             print '<option value=0>' . __('No One') . '</option>';
 
-            while ($row_u =& $result->FetchRow())
+            while ( $row_u = $db->data_fetch_array($result) )
             {
                 print '<option value="' . $row_u['id'] . '"';
 
@@ -228,7 +228,7 @@ else
             else
             {
                 $sql = "delete from error_docs where did = '$did'";
-                $db->Execute($sql);
+                $db->data_query($sql);
             } 
         } 
 
@@ -239,9 +239,9 @@ else
             if ($row[mail] == "on")
             {
                 $sql = "select count(*) as count from mail_users where did = '$row[id]'";
-                $result =& $db->Execute($sql);
+                $result = $db->data_query($sql);
 
-                $row_count =& $result->FetchRow();
+		$row_count = $db->data_fetch_array($result);
 
                 print ' (' . $row_count[count] . ')';
             } 
@@ -253,9 +253,9 @@ else
         print '<a href="databases.php?did=' . $row[id] . '" onmouseover="show_help(\'' . __('View/Edit databases for this domain') . '\');" onmouseout="help_rst();">' . __('Databases') . '</a>';
 
         $sql = "select count(*) as count from data_bases where did = '$row[id]'";
-        $result =& $db->Execute($sql);
+        $result = $db->data_query($sql);
 
-        $row_count =& $result->FetchRow();
+	$row_count = $db->data_fetch_array($result);
 
         print ' (' . $row_count[count] . ')<p>';
 
@@ -266,9 +266,9 @@ else
             if ($row[soa])
             {
                 $sql = "select count(*) as count from dns_rec where did = '$row[id]'";
-                $result =& $db->Execute($sql);
+                $result = $db->data_query($sql);
 
-                $row_count =& $result->FetchRow();
+		$row_count = $db->data_fetch_array($result);
 
                 print ' (' . $row_count[count] . ')';
             } 

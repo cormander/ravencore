@@ -82,8 +82,8 @@ if ($action)
             req_admin(); 
             // The procedue to add a user. First check to see if the login provided is already in use
             $sql = "select count(*) as count from users where login = '$_POST[login]'";
-            $result =& $db->Execute($sql);
-            $row =& $result->FetchRow();
+            $result = $db->data_query($sql);
+	    $row = $db->data_fetch_array($result);
 
             if ($row[count] != 0)
             {
@@ -98,9 +98,9 @@ if ($action)
             { 
                 // Create the user
                 $sql = "insert into users set created = now(), name = '$_POST[name]', email = '$_POST[email]', login = '$_POST[login]', passwd = '$_POST[passwd]'";
-                $db->Execute($sql); 
+                $db->data_query($sql); 
                 // Grab the new user's ID number, so we can be sent to the next logical page
-                $uid = $db->Insert_ID(); 
+                $uid = $db->data_insert_id(); 
                 // We either go to permissions setup, or to the user display of this new user
                 if ($_POST[permissions]) goto("user_permissions.php?uid=$uid");
                 else goto("users.php?uid=$uid");
@@ -109,15 +109,15 @@ if ($action)
         else if ($action == "edit")
         {
             $sql = "select count(*) as count from users where id != '$uid' and login = '$login'";
-            $result =& $db->Execute($sql);
+            $result = $db->data_query($sql);
 
-            $row =& $result->FetchRow();
+	    $row = $db->data_fetch_array($result);
 
             if ($row[count] != 0) alert(__("The user login '$_POST[login]' already exists"));
             else
             {
                 $sql = "update users set name = '$_POST[name]', email = '$_POST[email]', passwd = '$_POST[passwd]' " . ( is_admin() ? ", login = '$_POST[login]'" : "" ). " where id = '$uid'";
-                $db->Execute($sql);
+                $db->data_query($sql);
 
                 goto("users.php?uid=$uid");
             } 
@@ -130,9 +130,9 @@ nav_top();
 if ($uid)
 {
     $sql = "select * from users where id = '$uid'";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $row_u =& $result->FetchRow();
+    $row_u = $db->data_fetch_array($result);
 } 
 // In this form, we print values for the input fields only if we get them as post or database variables.
 

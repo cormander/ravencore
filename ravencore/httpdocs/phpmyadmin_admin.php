@@ -23,23 +23,49 @@ include "auth.php";
 
 req_admin();
 
-$lang = $_SESSION['lang'];
-
-// change session names so our variables carry over to phpmyadmin
-// we call it twice, to override any previous phpmyadmin session we were in
-
-for( $i = 0; $i < 2; $i++ )
+if( $action == "phpmyadmin_login" )
 {
-  session_destroy();
-  session_name('phpMyAdmin');
-  session_start();
+
+  if( ! $db->data_auth($_POST['phpmyadmin_passwd']) )
+    {
+      $error = "Password incorrect";
+    }
+  else
+    {
+      
+      $lang = $_SESSION['lang'];
+      
+      // change session names so our variables carry over to phpmyadmin
+      // we call it twice, to override any previous phpmyadmin session we were in
+      
+      for( $i = 0; $i < 2; $i++ )
+	{
+	  session_destroy();
+	  session_name('phpMyAdmin');
+	  session_start();
+	}
+      
+      $_SESSION['login'] = $CONF['MYSQL_ADMIN_USER'];
+      $_SESSION['passwd'] = $_POST['phpmyadmin_passwd'];
+      $_SESSION['name'] = '';
+      $_SESSION['phpmyadmin_lang'] = $locales[$lang]['phpmyadmin'];
+      
+      goto("phpmyadmin/");
+      
+    }
+
 }
 
-$_SESSION['login'] = $CONF[MYSQL_ADMIN_USER];
-$_SESSION['passwd'] = $CONF[MYSQL_ADMIN_PASS];
-$_SESSION['name'] = '';
-$_SESSION['phpmyadmin_lang'] = $locales[$lang]['phpmyadmin'];
-
-goto("phpmyadmin/");
-
 ?>
+<center>
+<h1>phpMyAdmin</h1>
+<?php
+if($error) print '<b><font color="red">' . $error . '</font></b><br/>';
+?>
+<b>Please re-authenticate your <?=$CONF['MYSQL_ADMIN_USER']?> password:</b>
+<br />
+<form method="post">
+<input type="password" name="phpmyadmin_passwd"> <input type="submit" value="Submit">
+<input type="hidden" name="action" value="phpmyadmin_login">
+</form>
+</center>

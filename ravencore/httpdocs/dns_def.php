@@ -28,7 +28,7 @@ req_admin();
 if ($action == "delete")
 {
     $sql = "delete from dns_def where id = '$_POST[delete]'";
-    $db->Execute($sql);
+    $db->data_query($sql);
 
     goto("$_SERVER[PHP_SELF]");
 } 
@@ -36,16 +36,16 @@ if ($action == "delete")
 nav_top();
 
 $sql = "select * from dns_def order by type, name, target";
-$result =& $db->Execute($sql);
+$result = $db->data_query($sql);
 
-$num = $result->RecordCount();
+$num = $db->data_num_rows();
 
 if ($num == 0) print __("No default DNS records setup for this server");
 else
 {
     print '<h3>' . __('Default DNS for domains setup on this server') . '</h3><form method=post><table><tr><td>&nbsp;</td><td>' . _('Record Name') . '</td><td>' . __('Record Type') . '</td><td>' . __('Record Target') . '</td></tr>';
 
-    while ($row =& $result->FetchRow())
+    while ( $row = $db->data_fetch_array($result) )
     {
         print '<tr><td><input type=radio name=delete value="' . $row[id] . '"></td><td>' . $row[name] . '</td><td>' . $row[type] . '</td><td>' . $row[target] . '</td></tr>';
     } 

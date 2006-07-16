@@ -19,9 +19,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 */
 // We shouldn't call this script directly from the web
-if ($_SERVER[PHP_SELF] == "/login.php") goto("users.php");
+if($_SERVER['PHP_SELF'] == "/login.php") goto("users.php");
+
+if($_SERVER['PHP_SELF'] == "/ajax.php") 
+{
+  print 'hi
+<script>
+    window.location.reload( true );
+</script>
+';
+  exit;
+}
 // We should never be logout.php
-if ($_SERVER[PHP_SELF] == "/logout.php") goto("users.php");
+if ($_SERVER['PHP_SELF'] == "/logout.php") goto("users.php");
 // If we're in a subdirectory, send us back to the web root
 if (preg_match('/^\/.*\//', $_SERVER[PHP_SELF])) goto("/users.php");
 

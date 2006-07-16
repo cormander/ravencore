@@ -41,10 +41,10 @@ function update_parameter($type_id, $param, $value)
     global $db;
 
     $sql = "delete form parameters where type_id = '$type_id' and param = '$param'";
-    $db->Execute($sql);
+    $db->data_query($sql);
 
     $sql = "insert into parameters set type_id = '$type_id', param = '$param', value = '$value'";
-    $db->Execute($sql);
+    $db->data_query($sql);
 }
 // a basic password validation function
 function valid_passwd($passwd)
@@ -253,9 +253,9 @@ function user_can_add($uid, $perm)
     {
         case "domain":
             $sql = "select count(*) as count from domains where uid = '$uid'";
-            $result =& $db->Execute($sql);
+            $result = $db->data_query($sql);
 
-            $row =& $result->FetchRow();
+            $row = $db->data_fetch_array($result);
 
             if ($row[count] < $lim) return true;
             else return false;
@@ -264,9 +264,9 @@ function user_can_add($uid, $perm)
 
         case "database":
             $sql = "select count(*) as count from data_bases b, domains d where did = d.id and uid = '$uid'";
-            $result =& $db->Execute($sql);
+            $result = $db->data_query($sql);
 
-            $row =& $result->FetchRow();
+            $row = $db->data_fetch_array($result);
 
             if ($row[count] < $lim) return true;
             else return false;
@@ -279,9 +279,9 @@ function user_can_add($uid, $perm)
 
         case "email":
             $sql = "select count(*) as count from mail_users m, domains d where did = d.id and uid = '$uid'";
-            $result =& $db->Execute($sql);
+            $result = $db->data_query($sql);
 
-            $row =& $result->FetchRow();
+            $row = $db->data_fetch_array($result);
 
             if ($row[count] < $lim) return true;
             else return false;
@@ -290,9 +290,9 @@ function user_can_add($uid, $perm)
 
         case "dns_rec":
             $sql = "select count(*) as count from dns_rec r, domains d where did = d.id and uid = '$uid'";
-            $result =& $db->Execute($sql);
+            $result = $db->data_query($sql);
 
-            $row =& $result->FetchRow();
+            $row = $db->data_fetch_array($result);
 
             if ($row[count] < $lim) return true;
             else return false;
@@ -301,9 +301,9 @@ function user_can_add($uid, $perm)
 
         case "host_cgi":
             $sql = "select count(*) as count from domains where host_cgi = 'true' and uid = '$uid'";
-            $result =& $db->Execute($sql);
+            $result = $db->data_query($sql);
 
-            $row =& $result->FetchRow();
+            $row = $db->data_fetch_array($result);
 
             if ($row[count] < $lim) return true;
             else return false;
@@ -312,9 +312,9 @@ function user_can_add($uid, $perm)
 
         case "host_php":
             $sql = "select count(*) as count from domains where host_php = 'true' and uid = '$uid'";
-            $result =& $db->Execute($sql);
+            $result = $db->data_query($sql);
 
-            $row =& $result->FetchRow();
+            $row = $db->data_fetch_array($result);
 
             if ($row[count] < $lim) return true;
             else return false;
@@ -323,9 +323,9 @@ function user_can_add($uid, $perm)
 
         case "host_ssl":
             $sql = "select count(*) as count from domains where host_ssl = 'true' and uid = '$uid'";
-            $result =& $db->Execute($sql);
+            $result = $db->data_query($sql);
 
-            $row =& $result->FetchRow();
+            $row = $db->data_fetch_array($result);
 
             if ($row[count] < $lim) return true;
             else return false;
@@ -335,9 +335,9 @@ function user_can_add($uid, $perm)
         case "shell_user":
 
             $sql = "select count(*) as count from sys_users f, domains d where uid = '$uid' and shell != '$CONF[DEFAULT_LOGIN_SHELL]'";
-            $result =& $db->Execute($sql);
+            $result = $db->data_query($sql);
 
-            $row =& $result->FetchRow();
+            $row = $db->data_fetch_array($result);
 
             if ($row[count] < $lim) return true;
             else return false;
@@ -367,9 +367,9 @@ function user_have_permission($uid, $perm)
     global $db;
 
     $sql = "select val, lim from user_permissions where uid = '$uid' and perm = '$perm'";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $row =& $result->FetchRow();
+    $row = $db->data_fetch_array($result);
 
     if ($row[val] == "yes") return $row[lim];
     else return 0;
@@ -384,9 +384,9 @@ function user_have_domain($uid, $did)
     if (is_admin()) return true;
 
     $sql = "select count(*) as count from domains where uid = '$uid' and id = '$did'";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $row =& $result->FetchRow();
+    $row = $db->data_fetch_array($result);
 
     if ($row[count] == 1) return true;
     else return false;
@@ -416,12 +416,16 @@ function is_admin()
   return $session->admin_user;
 
 }
+
 // A function to run a system command as root
+
 function socket_cmd($cmd)
 {
-    global $CONF, $session_id;
+    global $CONF, $db, $session_id;
+
     // make sure the command is safe to run
     // all the eregs are 'd out because we get some warnings sometimes that will make us unable to redirect the page
+
     if (@ereg("\.\.", $cmd) or @ereg("^/", $cmd) or @ereg("\;", $cmd) or @ereg('\|', $cmd) or @ereg(">", $cmd) or @ereg("<", $cmd)) die("Fatal error, unsafe command: $cmd");
 
     /* This code is the start of controlling slave servers. socket_cmd will accept a new argument, which
@@ -445,8 +449,8 @@ curl_close($ch);
 
   */
 
-    $shell_output = shell_exec("../sbin/wrapper $cmd");
-
+    $shell_output = $db->run_cmd($cmd); //shell_exec("../sbin/wrapper $cmd");
+    
     if ($shell_output)
     {
         // if($CONF[SERVER_TYPE] == "master") {
@@ -493,6 +497,8 @@ function nav_top()
 <style type="text/css" media="screen">@import "./css/style.css";</style>
 <script type="text/javascript" src="js/help_menu.js">
 </script>
+<script src="js/ajax.js">
+</script>
 ';
     // If the alert() function was called at all, output its contents here. We do it in the
     // <head> section of the page so that you see the error message before the page reloads
@@ -535,9 +541,9 @@ function nav_top()
 	      print '<li class="menu"><a href="users.php" onmouseover="show_help(\'' . __('List control panel users') . '\');" onmouseout="help_rst();">' . __('Users') . ' (';
 	      
 	      $sql = "select count(*) as count from users";
-	      $result =& $db->Execute($sql);
+	      $result = $db->data_query($sql);
 	      
-	      $row =& $result->FetchRow();
+	      $row = $db->data_fetch_array($result);
 	      
 	      print $row[count];
 	      
@@ -548,9 +554,9 @@ function nav_top()
 		  print '<li class="menu"><a href="domains.php" onmouseover="show_help(\'' . __('List domains') . '\');" onmouseout="help_rst();">' . __('Domains') . ' (';
 		  
 		  $sql = "select count(*) as count from domains";
-		  $result =& $db->Execute($sql);
+		  $result = $db->data_query($sql);
 		  
-		  $row =& $result->FetchRow();
+		  $row = $db->data_fetch_array($result);
 		  
 		  print $row[count];
 		  
@@ -562,9 +568,9 @@ function nav_top()
 		  print '<li class="menu"><a href="mail.php" onmouseover="show_help(\'' . __('List email addresses') . '\');" onmouseout="help_rst();">' . __('Mail') . ' (';
 		  
 		  $sql = "select count(*) as count from mail_users";
-		  $result =& $db->Execute($sql);
+		  $result = $db->data_query($sql);
 		  
-		  $row =& $result->FetchRow();
+		  $row = $db->data_fetch_array($result);
 		  
 		  print $row[count];
 		  
@@ -576,9 +582,9 @@ function nav_top()
 		  print '<li class="menu"><a href="databases.php" onmouseover="show_help(\'' . __('List databases') . '\');" onmouseout="help_rst();">' . __('Databases') . ' (';
 		  
 		  $sql = "select count(*) as count from data_bases";
-		  $result =& $db->Execute($sql);
+		  $result = $db->data_query($sql);
 		  
-		  $row =& $result->FetchRow();
+		  $row = $db->data_fetch_array($result);
 		  
 		  print $row[count];
 		  
@@ -590,9 +596,9 @@ function nav_top()
 		  print '<li class="menu"><a href="dns.php" onmouseover="show_help(\'' . __('DNS for domains on this server') . '\');" onmouseout="help_rst();">' . __('DNS') . ' (';
 		
 		  $sql = "select count(*) as count from domains where soa is not null";
-		  $result =& $db->Execute($sql);
+		  $result = $db->data_query($sql);
 		  
-		  $row =& $result->FetchRow();
+		  $row = $db->data_fetch_array($result);
 		  
 		  print $row[count];
 		  

@@ -11,24 +11,24 @@ class domain {
     // get domain table info
 
     $sql = "select * from domains where id = '" . $this->did . "' limit 1";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
     
-    $this->info =& $result->FetchRow();
+    $this->info = $db->data_fetch_array($result);
 
     // get all of this domain's email addresses
 
     $sql = "select * from mail_users where did = '" . $this->did . "'";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
     // get number of email addresses
     
-    $this->info['num_emails'] = $result->RecordCount();    
+    $this->info['num_emails'] = $db->data_num_rows();    
 
     // fill an array with email addresses
 
     $this->info['emails'] = array();
 
-    for ( $i = 0; $row =& $result->FetchRow(); $i++ )
+    for ( $i = 0; $row = $db->data_fetch_array($result); $i++ )
       {
 	
 	$key = $row['id'];
@@ -40,17 +40,17 @@ class domain {
     // get all of this domains' sys users
 
     $sql = "select * from sys_users s, domains d where d.id = '" . $this->did . "' and s.id = d.suid";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
     
     // get number of sys users
 
-    $this->info['num_sys_users'] = $result->RecordCount();
+    $this->info['num_sys_users'] = $db->data_num_rows();
 
     // fill an array with sys users
 
     $this->info['sys_users'] = array();
 
-    for ( $i = 0; $row =& $result->FetchRow(); $i++ )
+    for ( $i = 0; $row = $db->data_fetch_array($result); $i++ )
       {
 
 	$key = $row['id'];
@@ -77,9 +77,9 @@ class domain {
     foreach($arr as $type)
       {
         $sql = "select * from domain_space where did = '" . $this->did . "' and type = '" . $type . "' and month(date) = '" . $month . "' and year(date) = '" . $year . "' order by date desc limit 1";
-        $result =& $db->Execute($sql);
+        $result = $db->data_query($sql);
 
-        $row =& $result->FetchRow();
+        $row = $db->data_fetch_array($result);
 
         $total += $row['bytes'];
 
@@ -117,9 +117,9 @@ class domain {
 	  else $prog_data = 0;
 
     $sql = "select sum(bytes) as traffic from domain_traffic t, domains d where did = d.id and month(date) = '" . $month . "' and year(date) = '" . $year . "' and d.id = '" . $this->did . "'";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $row =& $result->FetchRow();
+    $row = $db->data_fetch_array($result);
 
     $prog_data += $row['traffic'];
 
@@ -141,7 +141,7 @@ class domain {
     global $db;
 
     $sql = "delete from mail_users where did = '" . $this->did . "' and id = '" . $mid . "'";
-    $db->Execute($sql);
+    $db->data_query($sql);
 
     $this->info['emails'][$mid] = NULL;
 
@@ -156,12 +156,12 @@ class domain {
     
     // delete all the system users
     $sql = "delete from sys_users where id = '" . $this->info['suid'] . "'";
-    $db->Execute($sql);
+    $db->data_query($sql);
     
     foreach( $this->info['sys_users'] as $key => $val ) socket_cmd("ftp_del " . $val['login'] );
     
     $sql = "update domains set host_type = 'none' where id = '" . $this->did . "'";
-    $db->Execute($sql);
+    $db->data_query($sql);
     
     socket_cmd("domain_del " . $this->info['name'] );
     
@@ -174,11 +174,11 @@ class domain {
 
     // delete all the email
     $sql = "delete from mail_users where did = '" . $this->did . "'";
-    $db->Execute($sql);
+    $db->data_query($sql);
 
     // delete all the DNS records
     $sql = "delete from dns_rec where did = '" . $this->did . "'";
-    $db->Execute($sql);
+    $db->data_query($sql);
 
     $this->delete_hosting();
 
@@ -188,7 +188,7 @@ class domain {
 
     // delete the domain    
     $sql = "delete from domains where id = '" . $this->did . "'";
-    $db->Execute($sql);
+    $db->data_query($sql);
 
     // run the nessisary system calls
 

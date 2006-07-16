@@ -28,8 +28,8 @@ if ($action == "add")
 { 
     // Check to see that the domain isn't already setup on the server
     $sql = "select count(*) as count from domains where name = '$_POST[name]'";
-    $result =& $db->Execute($sql);
-    $row =& $result->FetchRow();
+    $result = $db->data_query($sql);
+    $row = $db->data_fetch_array($result);
 
     if ($row[count] != 0)
     {
@@ -55,9 +55,9 @@ if ($action == "add")
                 // If we get this far, we have a valid domain name to setup. Continue
                 // If we don't get a www post variable, set it to 'false' for db insert purposes
                 $sql = "insert into domains set name = '$_POST[name]', uid = '$uid', created = now()";
-                $db->Execute($sql);
+                $db->data_query($sql);
 
-                $did = $db->Insert_ID();
+                $did = $db->data_insert_id();
 
 		$d = new domain($did);
 
@@ -69,26 +69,26 @@ if ($action == "add")
                 { 
                     // First, we need the Start Of Authority record
                     $sql = "select * from dns_def where type = 'SOA'";
-                    $result =& $db->Execute($sql);
+                    $result = $db->data_query($sql);
 
-                    $row =& $result->FetchRow(); 
+		    $row = $db->data_fetch_array($result);
                     // Add the SOA to the new domain, if we got one
                     if ($row[target])
                     {
                         $sql = "insert into parameters set type_id = '$did', param = 'soa', value = '$row[target]'";
-                        $db->Execute($sql);
+                        $db->data_query($sql);
 
                         $sql = "update domains set soa = '$row[target]' where id = '$did'";
-                        $db->Execute($sql);
+                        $db->data_query($sql);
                     } 
                     // Get all other DNS records to setup
                     $sql = "select * from dns_def where type != 'SOA'";
-                    $result =& $db->Execute($sql);
+                    $result = $db->data_query($sql);
 
-                    while ($row =& $result->FetchRow())
+                    while ( $row = $db->data_fetch_array($result) )
                     {
                         $sql = "insert into dns_rec set did = '$did', name = '$row[name]', type = '$row[type]', target = '$row[target]'";
-                        $db->Execute($sql);
+                        $db->data_query($sql);
                     } 
 
                     socket_cmd("rehash_named --rebuild-conf --all");
@@ -125,18 +125,18 @@ nav_top();
 if (is_admin())
 {
     $sql = "select count(*) as count from users";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $row =& $result->FetchRow();
+    $row = $db->data_fetch_array($result);
 
     if ($row['count'] != 0)
     {
         print __('Control Panel User') . ': <select name="uid"><option value="">' . __('Select One') . '</option>';
 
         $sql = "select * from users";
-        $result =& $db->Execute($sql);
+        $result = $db->data_query($sql);
 
-        while ($row =& $result->FetchRow())
+        while ( $row = $db->data_fetch_array($result) )
         {
             print "<option value=\"$row[id]\"";
             if ($uid == $row[id]) print " selected";
@@ -165,9 +165,9 @@ if (have_service("web"))
 if (have_service("dns"))
 {
     $sql = "select * from dns_def";
-    $result =& $db->Execute($sql); 
+    $result = $db->data_query($sql); 
     // only display this option if we have default dns record setup
-    if ($result->RecordCount() > 0) print '<input type=checkbox name="dns" value="true" checked> ' . __('Add default DNS to this domain');
+    if ($db->data_num_rows() > 0) print '<input type=checkbox name="dns" value="true" checked> ' . __('Add default DNS to this domain');
 } 
 
 ?>

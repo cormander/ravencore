@@ -24,96 +24,81 @@ include "auth.php";
 if ($action == "userdel")
 {
     $sql = "select * from data_base_users where id = '$dbu'";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $row =& $result->FetchRow();
+    $row = $db->data_fetch_array($result);
 
 // Connect to the mysql database
-    $db2 =& ADONewConnection('mysql');
+    $db->use_database('mysql');
 
-    $db2->SetFetchMode(ADODB_FETCH_ASSOC);
-
-    $dbConnect2 = $db2->Connect($CONF['MYSQL_ADMIN_HOST'], $CONF['MYSQL_ADMIN_USER'],
-			      $CONF['MYSQL_ADMIN_PASS'], "mysql");
-
-    if ($dbConnect2)
-      {
-	
-	$sql = "delete from user where User = '$row[login]'";
-	
-	if ($db2->Execute($sql))
-	  {
-
-	    $db2->Execute("flush privileges");
-	    
-	    $sql = "delete from data_base_users where id = '$dbu'";
-	    $db->Execute($sql);
-
-	    goto("databases.php?did=$did&dbid=$dbid");
-
-	  }
-
-      } 
+    $sql = "delete from user where User = '$row[login]'";
     
-    // only get here on an error
+    $db->data_query($sql);
     
-    alert(__("Unable to delete the user ") . $row[login]);
+    $db->data_query("flush privileges");
+    
+    $db->use_database($CONF['MYSQL_ADMIN_DB']);
+    
+    $sql = "delete from data_base_users where id = '$dbu'";
+    $db->data_query($sql);
+    
+    goto("databases.php?did=$did&dbid=$dbid");
     
 } 
 else if ($action == "dbdel")
 {
     $sql = "select * from data_bases where id = '$dbid'";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $row =& $result->FetchRow();
+    $row = $db->data_fetch_array($result);
 
     if (!$row) $error = __("That database does not exist");
     else
     {
-        $sql = "drop database $row[name]";
+        $sql = "drop database " . $row['name'];
 
-        if ($db->Execute($sql))
-        {
-            $sql = "delete from data_bases where id = '$dbid'";
-            $db->Execute($sql);
+        $db->data_query($sql);
 
-            $sql = "select * from data_base_users where db_id = '$dbid'";
-            $result =& $db->Execute($sql);
+	$sql = "delete from data_bases where id = '$dbid'";
+	$db->data_query($sql);
 
-            $db->Execute('use mysql') or die(__("Unable to use mysql database"));
+	$sql = "select * from data_base_users where db_id = '$dbid'";
+	$result = $db->data_query($sql);
+	
+	$db->use_database('mysql');
+	
+	while ($row = $db->data_fetch_array($result))
+	  {
+	    $sql = "delete from user where User = '$row[login]'";
+	    $db->data_query($sql);
+	  } 
+	
+	goto("databases.php?did=$did");
 
-            while ($row =& $result->FetchRow())
-            {
-                $sql = "delete from user where User = '$row[login]'";
-                $db->Execute($sql);
-            } 
-
-            goto("databases.php?did=$did");
-        } 
-        else alert($db->ErrorMsg());
-    } 
+    }
+ 
 } 
 
 if (!$dbid and $did)
 {
     nav_top();
-
+    
     $sql = "select * from domains where id = '$did'";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $row =& $result->FetchRow();
+    $row = $db->data_fetch_array($result);
 
     if (user_can_add($user, "database") or is_admin()) print '<a href="add_db.php?did=' . $did . '">' . __('Add a Database') . '</a><br /><br />';
 
     $sql = "select * from data_bases where did = '$did'";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $num = $result->RecordCount();
+    $num = $db->data_num_rows();
 
     if ($num == 0) print __("No databases setup");
     else print '<table><tr><th colspan="2">' . __('Databases for') . ' <a href="domains.php?did=' . $did . '">' . $row[name] . '</a></th></tr>';
 
-    while ($row =& $result->FetchRow())
+    while ($row = $db->data_fetch_array($result))
     {
         print '<tr><td><a href="databases.php?did=' . $did . '&dbid=' . $row[id] . '">' . $row[name] . '</a></td><td><a href="databases.php?action=dbdel&dbid=' . $row[id] . '&did=' . $did . '" onclick="return confirm(\'' . __('Are you sure you wish to delete this database?') . '\');">' . __('delete') . '</a></td></tr>';
     } 
@@ -125,21 +110,21 @@ else if ($dbid and $did)
     nav_top();
 
     $sql = "select * from data_bases where id = '$dbid'";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $row =& $result->FetchRow();
+    $row = $db->data_fetch_array($result);
 
     print __('Users for the') . ' <a href="databases.php?did=' . $did . '">' . __('database') . '</a> ' . $row[name] . ' - <a href="add_db_user.php?did=' . $did . '&dbid=' . $dbid . '">' . __('Add a database user') . '</a><p>';
 
     $sql = "select * from data_base_users where db_id = '$dbid'";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $num = $result->RecordCount();
+    $num = $db->data_num_rows();
 
     if ($num == 0) print __("No users for this database") . "<p>";
     else print '<table><tr><th>User</th><th>&nbsp;</th><th>' . __('Delete') . '</th></tr>';
 
-    while ($row =& $result->FetchRow())
+    while ($row = $db->data_fetch_array($result))
     {
         print '<tr><td>' . $row[login] . '</td>
 <td><a href="phpmyadmin.php?did=' . $did . '&dbu=' . $row[id] . '&dbid=' . $dbid . '" target=_blank>phpMyAdmin</a></td>
@@ -173,9 +158,9 @@ else
 		$sql .= " where b.name like '%$_GET[search]%'";
 	}
     $sql .= " order by d.name, b.name";
-    $result =& $db->Execute($sql);
+    $result = $db->data_query($sql);
 
-    $num = $result->RecordCount();
+    $num = $db->data_num_rows();
 
     if ($num == 0 and !$_GET['search'])
 	{
@@ -191,7 +176,7 @@ else
 		print '<table><tr><th>' . __('Domain') . '</th><th>' . __('Database') . '</th></tr>';
 	}
 
-    while ($row =& $result->FetchRow())
+    while ($row = $db->data_fetch_array($result))
     {
         print '<tr><td>' . $row['domain_name'] . '</td><td><a href="databases.php?dbid=' . $row['id'] . '&did=' . $row['did'] . '">' . $row[db_name] . '</a></td></tr>';
     } 
