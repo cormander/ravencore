@@ -31,6 +31,9 @@ fi
 echo "Enter the hostname of a server with ravencore-database installed: "
 read host
 
+echo "Enter the port of a server with ravencore-database installed: "
+read port
+
 echo "Enter the database for ravencore on $host: "
 read database
 
@@ -45,8 +48,9 @@ mysql -h $host -u $user -p$pass -e "use $database" &> /dev/null
 if [ $? -eq 0 ]; then
     
     cat << EOF > $RC_ROOT/database.cfg
-MYSQL_ADMIN_USER="$user"
 MYSQL_ADMIN_HOST="$host"
+MYSQL_ADMIN_PORT="$port"
+MYSQL_ADMIN_USER="$user"
 MYSQL_ADMIN_DB="$database"
 EOF
 
