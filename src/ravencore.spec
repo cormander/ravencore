@@ -2,7 +2,7 @@
 
 Summary: RavenCore Hosting Control Panel
 Name: ravencore
-Version: 0.1.5
+Version: 0.2.0
 Release: 1
 Packager: Cormander
 URL: http://www.ravencore.com/
@@ -144,6 +144,7 @@ rm -rf $RPM_BUILD_ROOT
 %{rc_root}/sbin/checkconf.mail
 %{rc_root}/sbin/database_reconfig
 %{rc_root}/sbin/db_install
+%{rc_root}/sbin/dbsock
 %{rc_root}/sbin/logrotate.cron.hourly
 %{rc_root}/sbin/mailscan
 %{rc_root}/sbin/process_logs
@@ -154,7 +155,6 @@ rm -rf $RPM_BUILD_ROOT
 %{rc_root}/sbin/pwdchk.cron.hourly
 %{rc_root}/sbin/usage.cron.daily
 %{rc_root}/sbin/wrapper.c
-%{rc_root}/sbin/wrapper.pl
 
 %dir
 %{rc_root}/etc
@@ -162,6 +162,28 @@ rm -rf $RPM_BUILD_ROOT
 %{rc_root}/var
 
 %changelog
+* Sun Jul 16 2006 cormander <admin@ravencore.com>
+- version 0.2.0
+- upgraded phpmyadmin to 2.8.2
+- upgraded phpsysinfo to 2.5.2-rc3
+- upgraded squirrelmail to 1.4.7
+- added a new perl script called dbsock, which creates a socket and acts as the gobetween for php and mysql
+- added to main.cf config to supress the "NIS lookups disabled" message in maillog
+- added a warning to the dns page that you need at least one A and one NS record for your zonefile to exist
+- added a login page to re-authenticate the admin user for phpMyAdmin
+- changed permissions on the .shadow file so only root can see it, the new perl dbsock makes this possbile
+- made first_valid_uid in dovecot.conf.in to fix imap login for the dovecot 1.0.x beta folks
+- fixed the logout button so that it will destory the phpMyAdmin session data file, for security reasons
+- fixed the first_valid_uid for dovecot 1.x configuration file to use the dynamic value of vmail's uid
+- fixed the bug where "httpd" never showed as running, even if it was, on the services page
+- fixed the errors with being unable to delete databases / database users
+- fixed the debian installation bug where the "basename" command gives all sorts of errors
+- fixed the permissions on the files in squirrelmail/data to be set to rcadmin:servgrp with 660 permissions
+- fixed the vhosts.conf file so www is created for redirects, when it's supposed to
+- redid a LOT of php code to call the new dbsock php object
+- removed the adodb 3rd party program, the php dbsock object now takes care of all mysql calls
+- removed the wrapper program, the perl dbsock code now takes care of all commands
+
 * Sat Apr 15 2006 cormander <admin@ravencore.com>
 - version 0.1.5
 - upgraded adodb to 4.80

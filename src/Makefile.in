@@ -10,16 +10,15 @@ ETC_RAVENCORE=/etc/ravencore.conf
 
 # The current RavenCore version...
 
-VERSION=0.1.5
+VERSION=0.2.0
 
 # 3rd party program names and version numbers
 
-PHPMYADMIN=phpMyAdmin-2.8.0.3
-PHPSYSINFO=phpsysinfo-2.5.2-rc1
+PHPMYADMIN=phpMyAdmin-2.8.2
+PHPSYSINFO=phpsysinfo-2.5.2-rc3
 PHPWEBFTP=phpWebFTP30
 AWSTATS=awstats-6.5
-ADODB=adodb472
-SQUIRRELMAIL=squirrelmail-1.4.6
+SQUIRRELMAIL=squirrelmail-1.4.7
 
 # Squirrelmail plugins to install
 
@@ -63,9 +62,9 @@ build:
 	touch ravencore/sbin/ravencore.httpd
 	chmod 755 ravencore/sbin/ravencore.httpd
 
-# adodb install
-
-	tar -C ravencore/httpdocs -zxf src/$(ADODB).tgz
+# TODO: build / install third party apps in a seperate .sh file so it can be coded to be more
+#       modular
+#	./src/build_3rd_party.sh
 
 # awstats install
 
@@ -194,7 +193,7 @@ install:
 
 	mkdir -p $(DESTDIR)$(RC_ROOT)
 
-	cp -rp ravencore/* $(DESTDIR)$(RC_ROOT)
+	cp -rp --reply=y ravencore/* $(DESTDIR)$(RC_ROOT)
 
 # create symlinks
 
@@ -211,6 +210,6 @@ install:
 # we're done
 
 	@echo "make install done. Start RavenCore with:"
-	@echo "     /etc/init.d/ravencore start"
-	@echo "     or"
-	@echo "     $(RC_ROOT)/sbin/ravencore.init start"
+	@[ -f $(DESTDIR)/etc/init.d/ravencore ] && \
+		echo "     /etc/init.d/ravencore start" || \
+		echo "     $(RC_ROOT)/sbin/ravencore.init start"
