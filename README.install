@@ -2,44 +2,34 @@
 -- Installing RavenCore --
 --------------------------
 
-PLEASE NOTE: Most of the testing of RavenCore has been done on RedHat flavored Linux Distros,
-but will work just fine on other systems such as Debian, Trustix, and Mandrake.
+WARNING: RavenCore is designed to be installed on fresh systems. If your server already has
+a different control panel, or was configured manually to host domains, RavenCore WILL NOT
+detect them, and you will have lots of problems with those settings no longer being in place.
 
-Now, once you have downloaded the rpm package, go ahead and install it:
+Once you have downloaded the rpm package, go ahead and install it:
 
-  rpm -Uvh ravencore-0.1.4-1.noarch.rpm
+  rpm -Uvh ravencore-0.2.0-1.noarch.rpm
 
-Debian & Ubuntu users can install it with alien:
+Non-RPM distributions can install with the tarball:
 
-  alien -i ravencore-0.1.4-1.noarch.rpm
-
-Non-RPM distributions can do:
-
-  cd /; rpm2cpio /path/to/ravencore-0.1.4-1.noarch.rpm | cpio -id
-
-NOTE: there are very few RPM dependancies, and many of the things which RavenCore requires to
-run are not required here, for reasons that I will explain in documentation at a later time.
+  tar zxvf ravencore-0.2.0.tar.gz ; make build ; make install
 
 Here is a list of base packages you will need ( don't worry about version numbers, RavenCore
-is very flexable ):
+is very flexable )
 
 php
-php-mysql
 mysql ( sometimes called mysql-client )
 mysql-server
 httpd (apache)
 perl
 bash ( a system shell. comes pre-packaged on most systems )
 
-You need one of the following two installed:
+Here is a list of perl modules you will need:
 
-gcc
-perl-suidperl
-
-I recomend that you install gcc because the C wrapper is faster and more secure, but if you do
-not want to leave a compiler sitting on your server, perl-suidperl will work fine. Also note that
-some distributions do not come with suidperl enabled at all ( mandrake and trustix to name a few )
-so those users will either have to recompile perl with suid support or stick with gcc
+DBI
+POSIX
+Socket
+MIME::Base64
 
 Other packages that are needed for certian functions to work, but are not nessisary for RavenCore
 to be installed:
@@ -47,7 +37,7 @@ to be installed:
 mod_ssl ( SSL module for apache, needed to run RavenCore in SSL mode )
 openssl ( to generate SSL certs so RavenCore can run in SSL mode )
 php-imap ( so webmail works )
-sudo ( helps check to make sure the wrapper works on install / upgrade )
+php-mysql ( so phpMyAdmin works )
 
 RavenCore is being designed to work with modules, so it detects what software you have
 installed, and gives controls for them. So if certin things aren't installed, they will not appear
@@ -57,6 +47,7 @@ postfix	       ( mail server )
 dovecot	       ( POP3/IMAP server )
 vsftpd	       ( FTP server )
 bind	       ( DNS server )
+amavisd-new    ( Controls the anti-spam/virus software )
 spamassassin   ( Anti-spam for mail )
 clamd	       ( Anti-virus for mail )
 
@@ -65,29 +56,28 @@ from source, it's likely that RavenCore will not detect it, and you will have to
 On systems with online installers such as yum or apt-get, you should run it with all these packages,
 for example:
 
-yum install httpd php php-mysql mysql-server gcc mod_ssl openssl postfix dovecot vsftpd spamassassin bind
+yum install httpd php mysql-server mod_ssl openssl postfix dovecot vsftpd spamassassin bind
   or 
-apt-get install httpd php php-mysql mysql-server gcc mod_ssl openssl postfix dovecot vsftpd spamassassin bind
+apt-get install httpd php mysql-server mod_ssl openssl postfix dovecot vsftpd spamassassin bind
 
 Use "yum" or "up2date" for RedHat systems, "apt-get" for Debian systems, "yast" for SuSE, "swup" for Trustix,
 and "urpmi" for Mandrake.
 
 NOTE: Different distributions may call packages by slightly different names. For example, RedHat
 calls apache "httpd", while debian may call it "apache" or "apache2", and mandrake may call it
-"httpd2". RedHat calls php "php", and SuSE calls it either "php4" or "php5". There are probably
-some other differences not mentioned here.
+"httpd2". RedHat calls php "php", and SuSE calls it either "php4" or "php5". There are many
+other differences not mentioned here.
 
 So if you are unable to find a package, the website http://rpm.pbone.net/ is a good place to search
 
-RPMS for clamd can be found at http://clamav.net/ . CentOS and RHEL users can install the Fedora
-Core 3 clamav RPM and it will work just fine. ( the Fedora Core 4 RPM will not work with
-CentOS / RHEL )
+Dag Wieer's website (http://dag.wieers.com/) is a good website for redhat linux systems to get RPMs
+( RHEL, CentOS, Fedora )
 
 Now after you have all the desired packages installed, go ahead and start the control panel:
 
 service ravencore start
-
-If your system doesn't have the "service" command, start it directly with: /etc/init.d/ravencore start
+or
+/etc/init.d/ravencore start
 
 NOTE: This is where most of the install magic happens. It will figure out how to access the mysql
 server ( it will start it if it is not already running ), install the database, and make sure all of the
@@ -95,8 +85,7 @@ permissions are correct for the control panel to run. It will create SSL certifi
 to run in SSL mode.
 
 If you are upgrading RavenCore, this will check your database integrity and make changes to the
-tables if any need to be made since the last version. It will also make sure the wrapper program is
-at its latest version by recompiling it ( or in the case of perl-suidperl, copy over the new one )
+tables if any need to be made since the last version.
 
 NOTE: Logging into the control panel right after you upgrade is very important, even if there were no new
 configuration variables to add, because the last of the upgrade steps happen when you first login after
@@ -105,8 +94,10 @@ an upgrade.
 Once the install / upgrade process is completed, and the control panel is running, go to:
 
 http://your_ip:8000
+or
+https://your_ip:8080
 
-Now assuming you see a login screen, login with the following:
+Now you see a login screen, login with the following:
 
 username: admin
 password: ravencore

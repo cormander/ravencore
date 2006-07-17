@@ -1,0 +1,11 @@
+#
+# The format of this file is the distribution's name, followed by the name
+#  of the package manager command to install a given package, seperated by colons
+#
+
+fedora:yum -y install
+redhat:yum -y install:up2date -i
+debian:apt-get install
+suse:yast2 -i:yast -i
+mandrake:urmpi
+trustix:swup
