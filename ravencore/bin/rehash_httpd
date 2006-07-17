@@ -23,6 +23,7 @@
 
 # Grab the configuration file
 
+#. $RC_ETC 2> /dev/null || . /etc/ravencore.conf || exit 1
 . /etc/ravencore.conf || exit 1
 
 # check to make sure that this server is a webserver
@@ -531,14 +532,14 @@ for i in `$MYSQL_STR -e "select concat(lcase(name), ':::', redirect_url) from do
 
 # Does this domain support www alias
 
-    case $($MYSQL_STR -e "select www from domains where id = '$did'" | $_sed '1d') in
+    case $($MYSQL_STR -e "select www from domains where name = '$domain_name'" | $_sed '1d') in
 	true) www=1;;
     esac
     
     $_echo "<VirtualHost *:80>" >> $vhosts
     $_echo -e "\tServerName\t"$domain_name >> $vhosts
     if [ $www ]; then
-	$_echo -e "\tServerAlias  www."$domain_name":"$port >> $vhosts
+	$_echo -e "\tServerAlias  www."$domain_name >> $vhosts
     fi
     
     server_alias
@@ -549,6 +550,28 @@ for i in `$MYSQL_STR -e "select concat(lcase(name), ':::', redirect_url) from do
     $_echo "" >> $vhosts
 
 done
+
+# add webmail alias to end of $vhosts files
+
+cat << EOF >> $vhosts
+<VirtualHost *:80>
+        ServerName webmail
+        ServerAlias webmail.*
+        DocumentRoot $RC_ROOT/var/apps/squirrelmail
+        <IfModule mod_ssl.c>
+                SSLEngine off
+        </IfModule>
+        <Directory $RC_ROOT/var/apps/squirrelmail>
+        Options -Indexes
+        <IfModule sapi_apache2.c>
+                php_admin_flag engine on
+                php_admin_value open_basedir "$RC_ROOT/var/apps/squirrelmail"
+                php_admin_value upload_tmp_dir "$RC_ROOT/var/apps/squirrelmail/data"
+                php_admin_value session.save_path "$RC_ROOT/var/apps/squirrelmail/data"
+        </IfModule>
+        </Directory>
+</VirtualHost>
+EOF
 
 # remove legacy file
 $_rm -f /etc/httpd/conf.d/httpd-include.conf

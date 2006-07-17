@@ -21,7 +21,7 @@
 
 verbose=0
 
-# when ran from the wrapper we don't have a path. export it here
+# when ran from the socket we don't have a path. export it here
 export PATH="/sbin:/bin:/usr/sbin:/usr/bin"
 
 # make sure the $RC_ROOT directory exists
@@ -138,7 +138,7 @@ MYSQL_STR="$_mysql -h $MYSQL_ADMIN_HOST -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS
 
 # find the real name of the service script to start mysqld
 
-mysql_service=$($_basename /etc/init.d/mysql*)
+mysql_service=$($_basename $($_ls /etc/init.d/mysql* | $_head -n1))
 
 # function to die on mysql connect error, and log it to the system logger
 
@@ -236,6 +236,12 @@ rebuild_conf_file() {
     is_in=$4
 
     conf_basename=$($_basename $conf)
+
+#
+# TODO: append a header to each conf file, saying that it was created by ravencore
+#       on $x date, and that if you wan't to edit it, create a .local file and edit
+#       that instead
+#
 
     if [ -f $conf ]; then
 	

@@ -50,7 +50,7 @@ ret=$?
 # check to see if the init script said we're "stopped" or some variation of "not running"
 # this must be done before our "status" check
 
-is_stopped=$($_echo $status_output | grep '[stopped||not.*running]')
+is_stopped=$($_echo $status_output | $_awk '/stopped|not.*running/')
 
 # check to make sure the status command was recognized
 

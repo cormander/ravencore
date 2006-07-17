@@ -49,6 +49,8 @@ _head=head
 
 _id=id
 
+_kill=kill
+
 _killall=killall
 
 _ln=ln
@@ -74,6 +76,8 @@ _pidof=pidof
 _rm=rm
 
 _sed=sed
+
+_setsid=setsid
 
 _sleep=sleep
 

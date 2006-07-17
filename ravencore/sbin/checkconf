@@ -114,9 +114,8 @@ if [ -n "$first_time_run" ]; then
 # remove the db_install so that we'll run that script
 # remove the gpl_check so they can agree to the license, just incase the GPL version number changes
 # remove the version so we can copy the new one there
-# remove the wrapper, it'll be added back later in this script, from the newer version's code
 
-    $_rm -f $RC_ROOT/var/run/{install_complete,db_install,gpl_check,version} $RC_ROOT/sbin/wrapper
+    $_rm -f $RC_ROOT/var/run/{install_complete,db_install,gpl_check,version}
 
 # copy the new version to the run cache
 
@@ -396,8 +395,8 @@ $_chown -R root:rcadmin $RC_ROOT
 # sbin files should not be in the rcadmin group
 $_chown root:root $RC_ROOT/sbin/*
 
-# shadow files, webmail files, and tmp files should be owned by rcadmin
-$_chown -R rcadmin:rcadmin $RC_ROOT/{.shadow,database.cfg,var/tmp}
+# webmail files and tmp files should be owned by rcadmin
+$_chown -R rcadmin:rcadmin $RC_ROOT/{database.cfg,var/tmp}
 # but their directories should not be
 $_chown root:rcadmin $RC_ROOT/var/tmp
 
@@ -422,6 +421,7 @@ $_chmod 771 $RC_ROOT/var/{tmp,run} $RC_ROOT/var/apps/{squirrelmail/data,phpwebft
 $_chmod 640 $RC_ROOT/httpdocs/{*,*/*}php
 
 # make sure our database connect info stays safe
+$_chown root:root $RC_ROOT/.shadow
 $_chmod 600 $RC_ROOT/.shadow
 $_chmod 400 $RC_ROOT/database.cfg
 
@@ -430,59 +430,9 @@ $_touch $RC_ROOT/etc/vhosts.conf
 $_chgrp servgrp $RC_ROOT/etc/vhosts.conf
 $_chmod 440 $RC_ROOT/etc/vhosts.conf
 
-# check to see if the wrapper works correctly
-
-# check with sudo to see if the wrapper works as rcadmin ( some systems don't have sudo, they skip this step )
-
-if [ -x $_sudo ] && [ -x $RC_ROOT/sbin/wrapper ]; then
-
-# run the wrapper as rcadmin, forcing error to /dev/null . We'll know from stdout if we are working or not
-    case $($_sudo -u rcadmin $RC_ROOT/sbin/wrapper testsuid 2> /dev/null) in
-# if it returns root, then we're good to go. leave well enough alone
-	"root");;
-# if we didn't get root, then remove the wrapper ( the next step will add it back )
-	*)$_rm -f $RC_ROOT/sbin/wrapper;;
-    esac
-
-fi
-
-# if the wrapper is not executable, or is missing, attempt to install it
-
-if [ ! -x $RC_ROOT/sbin/wrapper ]; then
-
-# tell the user what we're doing
-
-    $_echo -n "Installing system wrapper..."
-
-# make sure the C code has the right UID for rcadmin and directory for RC_ROOT
-
-    perl -pi -e "s/^#define RCADMIN_GID .*/#define RCADMIN_GID $($_id -g rcadmin)/" $RC_ROOT/sbin/wrapper.c
-
-    perl -pi -e "s|^#define RC_ROOT_BIN .*|#define RC_ROOT_BIN \"$RC_ROOT/bin\"|" $RC_ROOT/sbin/wrapper.c
-
-# attempt to compile the wrapper code
-
-    $_gcc -o $RC_ROOT/sbin/wrapper $RC_ROOT/sbin/wrapper.c &> /dev/null
-
-# if we failed for whatever reason, use the perl wrapper code instead
-
-    if [ $? -ne 0 ]; then
-
-# we can test to see if perl has suid enabled the exit status of doing: perl -V | grep suid &> /dev/null
-# but for now, leave the control panel interface to handling this error
-
-	$_rm -f $RC_ROOT/sbin/wrapper
-	$_cp $RC_ROOT/sbin/wrapper.pl $RC_ROOT/sbin/wrapper
-	
-    fi
-    
-    $_echo "done"
-
-fi
-
-# make sure the wrapper has correct ownership / permissions
-$_chown root:rcadmin $RC_ROOT/sbin/wrapper
-$_chmod 4150 $RC_ROOT/sbin/wrapper
+# make sure the socket has correct permissions. we /dev/null the output, the socket might not be there
+$_chown rcadmin:root $RC_ROOT/var/db.sock &> /dev/null
+$_chmod 0600 $RC_ROOT/var/db.sock &> /dev/null
 
 # save our current umask state
 

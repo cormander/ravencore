@@ -23,6 +23,7 @@ perl
 pidof
 rm
 sed
+setsid
 sleep
 tail
 touch
