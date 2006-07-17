@@ -162,7 +162,7 @@ login_user = dovecot
 # to make sure that users can't log in as daemons or other system users.
 # Note that denying root logins is hardcoded to dovecot binary and can't
 # be done even if first_valid_uid is set to 0.
-first_valid_uid = 148
+first_valid_uid = $_[VMAIL_UID]
 #last_valid_uid = 0
 
 # Valid GID range for users, defaults to non-root/wheel. Users having

@@ -304,6 +304,11 @@ $_cat <<EOF > $sq_vlogin_file
 
 EOF
 
+#
+
+$_chown rcadmin:servgrp $RC_ROOT/var/apps/squirrelmail/data/* &> /dev/null
+$_chmod 660 rcadmin:servgrp $RC_ROOT/var/apps/squirrelmail/data/* &> /dev/null
+
 # domains that have a catchall of relay are handeled in the vtransportmaps. Any email for the domain to 
 # go locally will be directed straight to virtual: , while the rest will go remote because it isn't in
 # the vmaildomains. If it was, it'll attempt to deliver those mails locally too, and give a reject message.
