@@ -27,6 +27,7 @@ export GOT_CONF=1
 # define some of our connect variables
     
 MYSQL_ADMIN_HOST=localhost
+MYSQL_ADMIN_PORT=3306
 MYSQL_ADMIN_DB=ravencore
 CONNECT=0
 NEW_MYSQL_ADMIN_USER="admin"
@@ -520,13 +521,14 @@ $_echo "writting connect info to $RC_ROOT/database.cfg"
 
 $_cat <<EOF > $RC_ROOT/database.cfg
 MYSQL_ADMIN_HOST="$MYSQL_ADMIN_HOST"
+MYSQL_ADMIN_PORT="$MYSQL_ADMIN_PORT"
 MYSQL_ADMIN_USER="$MYSQL_ADMIN_USER"
 MYSQL_ADMIN_DB="$MYSQL_ADMIN_DB"
 EOF
 
 $_echo $MYSQL_ADMIN_PASS > $RC_ROOT/.shadow
 
-$_chown rcadmin:root $RC_ROOT/.shadow $RC_ROOT/database.cfg
+$_chown root:root $RC_ROOT/.shadow $RC_ROOT/database.cfg
 $_chmod 600 $RC_ROOT/.shadow
 $_chmod 400 $RC_ROOT/database.cfg
 

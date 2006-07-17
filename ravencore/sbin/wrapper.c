@@ -18,6 +18,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 */
 
+  //
+  // NOTE: this file is no longer in use, it simply exists to demonstrate how RavenCore
+  // used to function. Filesystem calls used to be made via a set uid wrapper, compiled
+  // from the following C code.
+  //
+
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>

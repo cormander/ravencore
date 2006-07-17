@@ -364,6 +364,7 @@ done
 
     if [ $found_init_func -eq 1 ]; then
 	
+	$_setsid initlog -c $RC_ROOT/sbin/dbsock &> /dev/null &
 	daemon $httpd $OPTIONS
 	RETVAL=$?
 	$_echo
@@ -371,6 +372,7 @@ done
 	
     else
 	
+	$_setsid initlog -c $RC_ROOT/sbin/dbsock &> /dev/null &
 	$httpd $OPTIONS
 	RETVAL=$?
 	
@@ -415,8 +417,10 @@ stop() {
 
     $_echo -n $"Stopping control panel: "
 
-    if [ $found_init_func -eq 1 ]; then
+    $_kill -9 $(ps aux | grep /usr/local/ravencore/sbin/dbsock | awk '{print $2}') &> /dev/null
 
+    if [ $found_init_func -eq 1 ]; then
+	
 	killproc $httpd
 	RETVAL=$?
 	$_echo
