@@ -21,7 +21,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 /*
 
-class dbsock
+class rcsock
 
 This class was coded as the client to the ravencore database socket. It writs SQL statements
 ( and a few other kinds of things ) to the socket, and reads the output. The purpose here is
@@ -42,14 +42,14 @@ the socket, as there are no common shell commands to do this (that I am aware of
 
 */
 
-class dbsock {
+class rcsock {
 
   // open the socket connection when the object is created
 
-  function dbsock()
+  function rcsock($socket)
   {
     
-    global $CONF, $socket_err;
+    global $socket_err;
 
     // set our socket variables...
 
@@ -57,7 +57,9 @@ class dbsock {
     $this->EOT = chr(4); // end of transmission
     $this->NAK = chr(21); // negative acknowledge
 
-    $socket = $CONF['RC_ROOT']."/var/db.sock";
+    list($major, $minor, $release) = explode('.',phpversion());
+
+    if($major == 5) $socket = 'unix://' . $socket;
 
     // open our socket...
 
@@ -230,8 +232,8 @@ class dbsock {
 	    // key{value} ( value is base64 encoded )
 	    // so the two below regex rules parse out the key / val appropriatly
  	    
-	    $key = preg_replace('|^([a-zA-Z0-9_]*)\{.*\}$|','\1',$item_data);
-	    $val = preg_replace('|^[a-zA-Z0-9_]*\{(.*)\}$|','\1',$item_data);
+	    $key = preg_replace('|^(.*)\{.*\}$|','\1',$item_data);
+	    $val = preg_replace('|^.*\{(.*)\}$|','\1',$item_data);
 
 	    // return the : characters back to newline, and decode the base64 of $val to get the real value
 
@@ -324,6 +326,6 @@ class dbsock {
     
   }
 
-} // end class dbsock 
+} // end class rcsock 
 
 ?>

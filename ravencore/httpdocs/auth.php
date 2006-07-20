@@ -61,7 +61,7 @@ $server = new server();
 
 // create our socket
 
-$db = new dbsock;
+$db = new rcsock($CONF['RC_ROOT'] . '/var/rc.sock');
 
 // $socket_err will be set if there was an error connecting
 
