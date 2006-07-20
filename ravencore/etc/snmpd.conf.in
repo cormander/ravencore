@@ -1,0 +1,12 @@
+com2sec local     127.0.0.1/32    ravencore
+
+group MyROGroup v1         local
+group MyROGroup v2c        local
+group MyROGroup usm        local
+
+view all    included  .1                               80
+
+access MyROGroup ""      any       noauth    exact  all    none   none
+
+syslocation $_[HOSTNAME]
+syscontact Me <mrtg@$_[HOSTNAME]>

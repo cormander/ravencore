@@ -103,6 +103,18 @@ print '<a href="change_password.php" onmouseover="show_help(\'' . __('Change the
 <a href="phpinfo.php" target=_blank onmouseover="show_help('<?php e_('View output from the phpinfo() function')?>');" onmouseout="help_rst();"><?php e_('PHP Info')?></a>
 </p>
 
+<?php
+
+if( have_service("mrtg") )
+{
+?>
+<p>
+<a href="mrtg.php" target=_blank onmouseover="show_help('<?php e_('MRTG')?>');" onmouseout="help_rst();"><?php e_('MRTG')?></a>
+</p>
+<?php
+}
+?>
+
 <hr>
 
 <a href="mail_queue.php"><?php e_('View Mail Queue')?></a>
