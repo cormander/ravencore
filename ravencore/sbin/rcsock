@@ -22,28 +22,7 @@ use DBI;
 use Socket;
 use POSIX;
 use MIME::Base64;
-
-# TODO: use the ravencore etc file from the enviroment, and if it doesn't exist, default to /etc/ravencore.conf
-#$ENV{'RC_ETC'} = $ENV{'RC_ETC'} ? $ENV{'RC_ETC'} : "/etc/ravencore.conf";
-
-$ENV{'RC_ETC'} = "/etc/ravencore.conf";
-
-# get our base configuration file
-
-&read_conf_file($ENV{'RC_ETC'});
-
-#
-# TODO: write a subroutine for reading the database conf, and call it here
-#
-
-# now that we know where our root directory is, get our database configuration file
-
-&read_conf_file($CONF{'RC_ROOT'} . "/database.cfg");
-
-#
-# TODO: make sure we have certian variables here... we probably only need to check for RC_ROOT, but 
-# die with error if we don't have it, or if it doesn't exist on the filesystem
-#
+use perl_functions;
 
 #
 # TODO: Have the parent process connect on startup, and write a routine to reconnect to the database
@@ -52,7 +31,7 @@ $ENV{'RC_ETC'} = "/etc/ravencore.conf";
 
 # define our socket to listen to
 
-my $socket = $CONF{'RC_ROOT'} . '/var/db.sock';
+my $socket = $CONF{'RC_ROOT'} . '/var/rc.sock';
 
 # do some system stuff with the socket
 
@@ -176,7 +155,9 @@ for ( $waitedpid = 0; accept(CLIENT,SERVER) || $waitedpid; $waitedpid = 0, close
 # unset our data variable before we begin
 
 	$data = '';
-    
+
+#	print $query . "\n";
+
 # check what kind of input this is
 	
 	if($query =~ m/^auth /i)
@@ -355,6 +336,10 @@ for ( $waitedpid = 0; accept(CLIENT,SERVER) || $waitedpid; $waitedpid = 0, close
 		else
 		{
 		    $insert_id = $db->{ q{mysql_insertid}};
+
+# this isn't a select statement, but we still return data in the same format
+
+		    $data = $insert_id . $ETX . $ETX . $rows_affected . $ETX . $ETX;
 		}
 		
 	    }
@@ -429,42 +414,6 @@ sub REAPER
     $waitedpid = wait;
 #    print "reaped $waitedpid" . ($? ? " with exit $?" : '') . "\n";
 }
-
-# read a configuration file. files are always in format: NAME=VALUE
-
-sub read_conf_file()
-{
-
-    my $conf = shift;
-    
-    open CONF, $conf
-	or die "Unable to open configuration file: $conf\n";
-
-    while(<CONF>)
-    {
-	chomp $_;
-	
-	if($_ =~ m/^[A-Z0-9_]*=/)
-	{
-	    my $key = my $val = $_;
-	    
-	    $key =~ s/^([A-Z0-9_]*)=.*/\1/;
-	    $val =~ s/^([A-Z0-9_]*)=//;
-
-# remove starting and ending quotations
-  
-	    $val =~ s/^("|')//;
-	    $val =~ s/('|")$//;
-
-	    $CONF{$key} = $val;
-	    
-	}
-	
-    }
-    
-    close CONF;
-
-} # end sub read_conf_file()
 
 # read in a line of data. don't be fooled by the word "line", as it doesn't stop at a newline character, but
 # rather at an end-of-transmission character. the built in < > perl operators read until a newline character,
