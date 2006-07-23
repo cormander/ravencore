@@ -80,15 +80,26 @@ pidfile=${PIDFILE-$RC_ROOT/var/run/ravencore.httpd.pid}
 lockfile=${LOCKFILE-/var/lock/subsys/ravencore.httpd}
 RETVAL=0
 
-# set $opt to whatever $2 is
-# right now, only parameter is "nossl"
+no_checkconf=0
 
-ssl_opt=$2
+# set $opt 
+
+for opt; do
+    case $opt in
+	"nossl") ssl_opt="nossl";;
+	"fast") no_checkconf=1;;
+    esac
+done
 
 # if the var/run/httpd.nossl exists, force ssl_opt to be nossl
 if [ -f $RC_ROOT/var/run/httpd.nossl ]; then
     ssl_opt="nossl"
 fi
+
+start_rcsock() {
+        $_setsid $RUN_CMD rcsock &> /dev/null &
+	sleep 1
+}
 
 # The semantics of these two functions differ from the way apachectl does
 # things -- attempting to start while running is a failure, and shutdown
@@ -113,23 +124,47 @@ start() {
 
     export INIT_RUNNING=1
 
+# start the rcsock so the checkconf scripts can use the data_query , but first make sure
+# rcsock isn't already running
+    
+    $_kill -9 $(ps aux | grep $RC_ROOT/sbin/rcsock | awk '{print $2}') &> /dev/null
+
+# only start rcsock if db_install has ran... otherwise, wait until after checkconf runs
+# to start it
+
+    if [ -f $RC_ROOT/var/run/db_install ]; then
+	start_rcsock
+	rcsock_wait=0
+    else
+	rcsock_wait=1
+    fi
 # check to make sure the ravencore.httpd binary is the same as /usr/sbin/httpd
 # among other things
 
-    $RC_ROOT/sbin/checkconf
+# only run checkconf if we don't specify the "fast" option
 
-    RETVAL=$?
+    if [ $no_checkconf -eq 0 ]; then
 
+	$RC_ROOT/sbin/checkconf
+	
+	RETVAL=$?
+	
 # the checkconf script exits with non zero status, then something fatal is wrong
-
-    if [ $RETVAL -ne 0 ]; then
-
-	$_echo "Unable to start control panel. checkconf script exited with non-zero status"
-	failure
-	$_echo
-	exit $RETVAL
+	
+	if [ $RETVAL -ne 0 ]; then
+	    
+	    $_echo "Unable to start control panel. checkconf script exited with non-zero status"
+	    failure
+	    $_echo
+	    exit $RETVAL
+	    
+	fi
 
     fi
+
+# start rcsock if we didn't before
+
+    [ $rcsock_wait -eq 1 ] && start_rcsock
 
 # check httpd version series. The result of this command will look like: 1.3 , 2.0 , etc
     httpd_v=$($httpd -v | $_sed '2d' | $_awk '{print $3}' | $_sed 's|.*/||' | $_sed 's/\./ /g' | $_awk '{print $1"."$2}')
@@ -359,12 +394,11 @@ done
 # unset these enviroment variables so they don't get set in the apache enviroment
     
     export INIT_RUNNING= GOT_CONF=
-    
+
 # start the control panel daemon
 
     if [ $found_init_func -eq 1 ]; then
 	
-	$_setsid initlog -c $RC_ROOT/sbin/dbsock &> /dev/null &
 	daemon $httpd $OPTIONS
 	RETVAL=$?
 	$_echo
@@ -372,7 +406,6 @@ done
 	
     else
 	
-	$_setsid initlog -c $RC_ROOT/sbin/dbsock &> /dev/null &
 	$httpd $OPTIONS
 	RETVAL=$?
 	
@@ -417,7 +450,7 @@ stop() {
 
     $_echo -n $"Stopping control panel: "
 
-    $_kill -9 $(ps aux | grep /usr/local/ravencore/sbin/dbsock | awk '{print $2}') &> /dev/null
+    $_kill -9 $(ps aux | grep $RC_ROOT/sbin/rcsock | awk '{print $2}') &> /dev/null
 
     if [ $found_init_func -eq 1 ]; then
 	

@@ -34,6 +34,10 @@ if [ ! -d $RC_ROOT ]; then
     
 fi
 
+#
+
+export RC_ROOT=$RC_ROOT
+
 # get our command variables
 
 . $RC_ROOT/etc/cmd_maps.base
@@ -136,6 +140,14 @@ MYSQL_ADMIN_PASS=$($_cat $RC_ROOT/.shadow)
 # This is the string which is used to connect to the database
 MYSQL_STR="$_mysql -h $MYSQL_ADMIN_HOST -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS $MYSQL_ADMIN_DB"
 
+# This is the NEW string which is used to connect to the database
+
+DATA_QUERY="$_perl -I $RC_ROOT/var/lib $RC_ROOT/sbin/data_query"
+
+# string to run commands in $RC_ROOT/bin with
+
+RUN_CMD="$_perl $RC_ROOT/sbin/run_cmd"
+
 # find the real name of the service script to start mysqld
 
 mysql_service=$($_basename $($_ls /etc/init.d/mysql* | $_head -n1))
@@ -150,24 +162,25 @@ mysql_die() {
 
 }
 
+# This tests the database connection with the defined information
+# if INIT_RUNNING is set, then we bypass this check as well, as our rc.sock won't exist yet
+
+[ -z "$GOT_CONF" ] && [ -z "$INIT_RUNNING" ] && [ -z "$($DATA_QUERY 'select now()')" ] && mysql_die
+
 # we export all our variables, so any subshells ran will have them. We only need to do this once
 
 # check for our GOT_CONF variable, if it exists, we can assume our conf variables are already set
 
-
 if [ -z "$GOT_CONF" ]; then
-    
-# This tests the database connection with the defined information
-    $MYSQL_STR -e "select now()" &> /dev/null || mysql_die 
 
 # get settings variables from database, and export them
     
-    for i in `$MYSQL_STR -e "select concat(setting,'=',value) from settings" | $_sed '1d'`; do
+    for i in $($DATA_QUERY "select concat(setting,'=',value) from settings"); do
 	
 	export $i
 	
     done
-    
+
 # set our error num to zero for our conf check
     
     conf_err=0
@@ -243,152 +256,151 @@ rebuild_conf_file() {
 #       that instead
 #
 
-    if [ -f $conf ]; then
+    $_mkdir -p $($_dirname $conf)
+    $_touch $conf
+    
+    if [ -f $RC_ROOT/etc/$conf_basename.in ] && [ -n "$is_in" ]; then
 	
-	if [ -f $RC_ROOT/etc/$conf_basename.in ] && [ -n "$is_in" ]; then
-
 # .local support for the .in files
-	    dot_local=""
-	    [ -f $RC_ROOT/etc/$conf_basename.in.local ] && dot_local=.local
+	dot_local=""
+	[ -f $RC_ROOT/etc/$conf_basename.in.local ] && dot_local=.local
+	
+	$_cat $RC_ROOT/etc/$conf_basename.in$dot_local | while read -r line; do
 	    
-	    $_cat $RC_ROOT/etc/$conf_basename.in$dot_local | while read -r line; do
-		
 # code to replace all $_[VAR_NAME] in the files with bash variables from the database
+	    
+	    for in_var_name in $($_echo $line | $_grep -o '\$_\[[_A-Z]*\]'); do
 		
-		for in_var_name in $($_echo $line | $_grep -o '\$_\[[_A-Z]*\]'); do
-		    
 # remove the $_[ and ] from the variable name
-		    
-		    in_var_name=$($_echo $in_var_name | $_sed 's/\$_\[//' | $_sed 's/\]//')
-		    
+		
+		in_var_name=$($_echo $in_var_name | $_sed 's/\$_\[//' | $_sed 's/\]//')
+		
 # evaluate it to get the bash variable value
-		    
-		    in_var_value=$(eval $_echo $($_echo \$$in_var_name))
-		    
+		
+		in_var_value=$(eval $_echo $($_echo \$$in_var_name))
+		
 # replace the variable with the bash value
-		    
-		    line=$($_echo -E $line | $_sed "s|\$_\[$in_var_name\]|$in_var_value|")
-		    
-		done
 		
-		$_echo -E "$line"
+		line=$($_echo -E $line | $_sed "s|\$_\[$in_var_name\]|$in_var_value|")
 		
-	    done > $RC_ROOT/var/tmp/$conf_basename.$$
+	    done
 	    
-	elif [ -d $RC_ROOT/etc/$service/$conf_basename ]; then
+	    $_echo -E "$line"
 	    
+	done > $RC_ROOT/var/tmp/$conf_basename.$$
+	
+    elif [ -d $RC_ROOT/etc/$service/$conf_basename ]; then
+	
 # look in the service config file directory, and get all the files, .local being the preference, and
 # using a .local file even if a base file doesn't exist for it
-
+	
 # first we find a list of the distros, to ignore files that end with .dist, seperated by the | character
-
-	    dist_list=$($_echo $($_awk ' ! /^#/ {print $1}' $RC_ROOT/etc/dist.map) | $_sed 's/ /|/g')
-	    
+	
+	dist_list=$($_echo $($_awk ' ! /^#/ {print $1}' $RC_ROOT/etc/dist.map) | $_sed 's/ /|/g')
+	
 # add ignore and local to the list, because we're not going to look at files
 # ending in .local or .ignore either
-	    
-	    dist_list="$dist_list|local|ignore"
-	    
+	
+	dist_list="$dist_list|local|ignore"
+	
 # old code, doesn't account for .local files that don't have a base file
 #           for i in `$_ls -1 $RC_ROOT/etc/$service/$conf_basename | $_grep -v '\.local$'`; do
-
-	    for i in `$_echo $($_ls -1 $RC_ROOT/etc/$service/$conf_basename | $_awk " ! /\.($dist_list)$/") $($_ls -1 $RC_ROOT/etc/$service/$conf_basename | $_grep '\.local$' | $_sed 's/\.local$//') | $_tr ' ' '\n' | $_sort | $_uniq`; do
-		
-		param_name="$RC_ROOT/etc/$service/$conf_basename/$i"
-		
+	
+	for i in `$_echo $($_ls -1 $RC_ROOT/etc/$service/$conf_basename | $_awk " ! /\.($dist_list)$/") $($_ls -1 $RC_ROOT/etc/$service/$conf_basename | $_grep '\.local$' | $_sed 's/\.local$//') | $_tr ' ' '\n' | $_sort | $_uniq`; do
+	    
+	    param_name="$RC_ROOT/etc/$service/$conf_basename/$i"
+	    
 # skip this if there is a .ignore file for this directive
-
-		if [ ! -f $param_name.ignore ]; then
-
+	    
+	    if [ ! -f $param_name.ignore ]; then
+		
 # check to see if this directive has a customized file for this linux distro
-		    
-		    [ -f $param_name.$DIST ] && param_name=$param_name.$DIST
-		    
+		
+		[ -f $param_name.$DIST ] && param_name=$param_name.$DIST
+		
 # use the .local file instead, if it exists
+		
+		[ -f $param_name.local ] && param_name=$param_name.local
+		
+		case `$_cat $param_name` in
+		    "")
+			$_echo -e "$i$seperator"
+			;;
 		    
-		    [ -f $param_name.local ] && param_name=$param_name.local
-		    
-		    case `$_cat $param_name` in
-			"")
-			    $_echo -e "$i$seperator"
-			    ;;
-			
-			*)
-			    $_cat $param_name | while read -r param_value; do
-				
+		    *)
+			$_cat $param_name | while read -r param_value; do
+			    
 # code to replace all $_[VAR_NAME] in the files with bash variables from the database
+			    
+			    for in_var_name in $($_echo $param_value | $_grep -o '\$_\[[_A-Z]*\]'); do
 				
-				for in_var_name in $($_echo $param_value | $_grep -o '\$_\[[_A-Z]*\]'); do
-				    
 # remove the $_[ and ] from the variable name
-				    
-				    in_var_name=$($_echo $in_var_name | $_sed 's/\$_\[//' | $_sed 's/\]//')
-				    
-# evaluate it to get the bash variable value
-				    
-				    in_var_value=$(eval $_echo $($_echo \$$in_var_name))
-				    
-# replace the variable with the bash value
-				    
-				    param_value=$($_echo -E $param_value | $_sed "s|\$_\[$in_var_name\]|$in_var_value|")
-				    
-				done
 				
-				$_echo -ne "$i"
-				$_echo -ne "$seperator"
-				$_echo -E "$param_value"
+				in_var_name=$($_echo $in_var_name | $_sed 's/\$_\[//' | $_sed 's/\]//')
+				
+# evaluate it to get the bash variable value
+				
+				in_var_value=$(eval $_echo $($_echo \$$in_var_name))
+				
+# replace the variable with the bash value
+				
+				param_value=$($_echo -E $param_value | $_sed "s|\$_\[$in_var_name\]|$in_var_value|")
 				
 			    done
-			    ;;
-		    esac
-
-		fi # ! -f .ignore
+			    
+			    $_echo -ne "$i"
+			    $_echo -ne "$seperator"
+			    $_echo -E "$param_value"
+			    
+			done
+			;;
+		esac
 		
-	    done > $RC_ROOT/var/tmp/$conf_basename.$$
+	    fi # ! -f .ignore
 	    
-	fi
+	done > $RC_ROOT/var/tmp/$conf_basename.$$
 	
+    fi
+    
 #
+    
+    if [ -f $RC_ROOT/var/tmp/$conf_basename.$$ ]; then
 	
-	if [ -f $RC_ROOT/var/tmp/$conf_basename.$$ ]; then
+	$_diff $conf $RC_ROOT/var/tmp/$conf_basename.$$ &> /dev/null
+	
+	if [ $? -ne 0 ]; then
 	    
-	    $_diff $conf $RC_ROOT/var/tmp/$conf_basename.$$ &> /dev/null
-	    
-	    if [ $? -ne 0 ]; then
-		
 # if the sys_orig file for the conf file doesn't exist,
-		if [ ! -f $conf.sys_orig ]; then
-		    
+	    if [ ! -f $conf.sys_orig ]; then
+		
 # then save the conf file as the sys_orig. This will preserve the system's origonal configuration
 # so when we uninstall ravencore, they will be moved back
-		    $_mv $conf $conf.sys_orig
-		    
+		$_mv $conf $conf.sys_orig
+		
 # tell ravencore that this sys_orig file was made by appending it to our sys_orig list
-		    $_echo "$service:$conf" >> $RC_ROOT/var/run/sys_orig_conf_files
-		    
-		fi
-		
-		$_rm -f $conf
-		
-		$_cp $RC_ROOT/var/tmp/$conf_basename.$$ $conf
-		
-		if [ -n "$INIT_RUNNING" ]; then
-		    
-		    $_echo "The config file $conf_basename for $service has been modified...rebuilding it and restarting $service"
-
-		    $INITD/$service restart
-		    
-		else
-		    
-		    $INITD/$service restart &> /dev/null
-		    
-		fi
+		$_echo "$service:$conf" >> $RC_ROOT/var/run/sys_orig_conf_files
 		
 	    fi
 	    
-	    $_rm -f $RC_ROOT/var/tmp/$conf_basename.$$
+	    $_rm -f $conf
+	    
+	    $_cp $RC_ROOT/var/tmp/$conf_basename.$$ $conf
+	    
+	    if [ -n "$INIT_RUNNING" ]; then
+		
+		$_echo "The config file $conf_basename for $service has been modified...rebuilding it and restarting $service"
+		
+		$INITD/$service restart
+		
+	    else
+		
+		$INITD/$service restart &> /dev/null
+		
+	    fi
 	    
 	fi
+	
+	$_rm -f $RC_ROOT/var/tmp/$conf_basename.$$
 	
     fi
     
