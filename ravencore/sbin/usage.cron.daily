@@ -30,9 +30,9 @@ for i in `$_awk '{print $8 ":" $9}' $FTP_LOG.1 | $_sed "s|$VHOST_ROOT||" | $_sed
     bytes=$($_echo $i | $_sed 's/:.*//')
     domain_name=$($_echo $i | $_sed 's/.*://')
     
-    did=$($MYSQL_STR -e "select id from domains where name = '$domain_name'" | $_sed '1d')
+    did=$($DATA_QUERY "select id from domains where name = '$domain_name'")
     
-    $MYSQL_STR -e "insert into domain_traffic set type = 'ftp', date = now(), did = '$did', bytes = '$bytes'"
+    $DATA_QUERY "insert into domain_traffic set type = 'ftp', date = now(), did = '$did', bytes = '$bytes'"
     
 done
 
@@ -52,9 +52,9 @@ if [ -d $VHOST_ROOT ]; then
 # Convert kbytes to bytes, healingamongnations ftp 858
 	bytes=$($_expr $($_echo $tmp | $_awk '{print $1}') "*" 1024)
 	
-	did=$($MYSQL_STR -e "select id from domains where name = '$domain_name'" | $_sed '1d')
+	did=$($DATA_QUERY "select id from domains where name = '$domain_name'")
 	
-	$MYSQL_STR -e "insert into domain_space set type = 'web', date = now(), did = '$did', bytes = '$bytes'"
+	$DATA_QUERY "insert into domain_space set type = 'web', date = now(), did = '$did', bytes = '$bytes'"
 	
     done
     
@@ -69,9 +69,9 @@ if [ -d $VMAIL_ROOT ]; then
 	tmp=$($_du -s $domain_name)
 	bytes=$($_expr $($_echo $tmp | $_awk '{print $1}') "*" 1024)
 	
-	did=$($MYSQL_STR -e "select id from domains where name = '$domain_name'" | $_sed '1d')
+	did=$($DATA_QUERY "select id from domains where name = '$domain_name'")
 	
-	$MYSQL_STR -e "insert into domain_space set type = 'mail', date = now(), did = '$did', bytes = '$bytes'"
+	$DATA_QUERY "insert into domain_space set type = 'mail', date = now(), did = '$did', bytes = '$bytes'"
 	
     done
 
@@ -86,9 +86,9 @@ if [ -d $MYSQL_DATA_DIR ]; then
 	tmp=$($_du -s $db_name)
 	bytes=$($_expr $($_echo $tmp | $_awk '{print $1}') "*" 1024)
 	
-	did=$($MYSQL_STR -e "select did from data_bases where name = '$db_name'" | $_sed '1d')
+	did=$($DATA_QUERY "select did from data_bases where name = '$db_name'")
 	
-	$MYSQL_STR -e "insert into domain_space set type = 'database', date = now(), did = '$did', bytes = '$bytes'"
+	$DATA_QUERY "insert into domain_space set type = 'database', date = now(), did = '$did', bytes = '$bytes'"
 	
     done
     

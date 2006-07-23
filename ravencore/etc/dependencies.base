@@ -12,6 +12,7 @@ grep
 groupadd
 groupmod
 head
+hostname
 id
 ln
 ls

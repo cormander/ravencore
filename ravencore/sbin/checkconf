@@ -95,7 +95,6 @@ for conf in $($_ls $RC_ROOT/conf.d | $_awk '/\.conf$/ {print}'); do
     
 done
 
-
 # check to see if we're running the first time after a fresh install or upgrade
 
 if [ -n "$first_time_run" ]; then
@@ -390,6 +389,10 @@ fi
 
 # set permissions and ownship of files in the ravencore root
 
+# get rid of the wrapper, if it's still there
+
+$_rm -f $RC_ROOT/sbin/wrapper
+
 # start by giving everything root:rcadmin
 $_chown -R root:rcadmin $RC_ROOT
 # sbin files should not be in the rcadmin group
@@ -430,9 +433,11 @@ $_touch $RC_ROOT/etc/vhosts.conf
 $_chgrp servgrp $RC_ROOT/etc/vhosts.conf
 $_chmod 440 $RC_ROOT/etc/vhosts.conf
 
+# remove the legacy socket
+$_rm -f $RC_ROOT/db.sock
 # make sure the socket has correct permissions. we /dev/null the output, the socket might not be there
-$_chown rcadmin:root $RC_ROOT/var/db.sock &> /dev/null
-$_chmod 0600 $RC_ROOT/var/db.sock &> /dev/null
+$_chown rcadmin:root $RC_ROOT/var/rc.sock &> /dev/null
+$_chmod 0600 $RC_ROOT/var/rc.sock &> /dev/null
 
 # save our current umask state
 
@@ -487,9 +492,9 @@ fi
 
 umask $old_umask
 
-# run other checkconf scripts
+# run other checkconf scripts, but only if we're a complete install
 
-$RC_ROOT/sbin/checkconf.cron.hourly
+[ -f $RC_ROOT/var/run/install_complete ] && $RC_ROOT/sbin/checkconf.cron.hourly
 
 # check to see if we need to restart ravencore
 

@@ -56,17 +56,17 @@ done
 
 mv -f ravencore.logrotate.$$ $RC_ROOT/etc/logrotate.conf
 
-for i in `$MYSQL_STR -e "select concat(id, ':', name) from domains where logrotate = 'on'" | sed '1d'`; do
+for i in $($DATA_QUERY "select concat(id, ':', name) from domains where logrotate = 'on'"); do
 
     did=$(echo $i | sed 's/:/ /g' | awk '{print $1}')
     domain_name=$(echo $i | sed 's/:/ /g' | awk '{print $2}')
     
-    log_rotate_num=$($MYSQL_STR -e "select log_rotate_num from domains where id = '$did'" | sed '1d')
-    log_mail_addr=$($MYSQL_STR -e "select log_mail_addr from domains where id = '$did'" | sed '1d')
-    log_when_rotate=$($MYSQL_STR -e "select log_when_rotate from domains where id = '$did'" | sed '1d')
-    log_rotate_size=$($MYSQL_STR -e "select log_rotate_size from domains where id = '$did'" | sed '1d')
-    log_compress=$($MYSQL_STR -e "select log_compress from domains where id = '$did'" | sed '1d')
-    log_rotate_size_ext=$($MYSQL_STR -e "select log_rotate_size_ext from domains where id = '$did'" | sed '1d')
+    log_rotate_num=$($DATA_QUERY "select log_rotate_num from domains where id = '$did'")
+    log_mail_addr=$($DATA_QUERY "select log_mail_addr from domains where id = '$did'")
+    log_when_rotate=$($DATA_QUERY "select log_when_rotate from domains where id = '$did'")
+    log_rotate_size=$($DATA_QUERY "select log_rotate_size from domains where id = '$did'")
+    log_compress=$($DATA_QUERY "select log_compress from domains where id = '$did'")
+    log_rotate_size_ext=$($DATA_QUERY "select log_rotate_size_ext from domains where id = '$did'")
 
     cd $VHOST_ROOT/$domain_name/conf/
 

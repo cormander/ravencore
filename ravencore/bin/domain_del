@@ -35,10 +35,10 @@ if [ -n "$domain_name" ]; then
     
 # Run the rehash scripts
 
-    $RC_ROOT/bin/rehash_httpd --all
+    $RUN_CMD rehash_httpd --all
     
-    $RC_ROOT/bin/rehash_mail --all
+    $RUN_CMD rehash_mail --all
 
-    $RC_ROOT/bin/rehash_logrotate
+    $RUN_CMD rehash_logrotate
     
 fi

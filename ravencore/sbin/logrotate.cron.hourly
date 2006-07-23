@@ -20,6 +20,11 @@
 
 . /etc/ravencore.conf || exit 1
 
+# code submitted by SubZero, export a TMPDIR for later use
+
+TMPDIR=$RC_ROOT/var/tmp
+export TMPDIR
+
 # This script is ran once an hour, but we want to rotate logs every other hour
 
 # Create a lock file
@@ -43,7 +48,7 @@ else
 
 # run the rehash_logorate script
 
-	$RC_ROOT/bin/rehash_logrotate
+	$RUN_CMD rehash_logrotate
 
     fi
 

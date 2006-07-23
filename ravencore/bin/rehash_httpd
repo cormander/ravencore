@@ -61,7 +61,7 @@ while [ "$1" ]; do
 
     case $1 in
 # Run mysql query to get a list of all domains with physical hosting
-	"--all") domain_list=$($MYSQL_STR -e "select lcase(name) from domains d, sys_users u where d.suid = u.id" | $_sed '1d');;
+	"--all") domain_list=$($DATA_QUERY "select lcase(name) from domains d, sys_users u where d.suid = u.id");;
 # Do a full restart of apache, assuming its already running
 	"--restart") restart_httpd=1;;
 # Turn on verbose output
@@ -96,13 +96,13 @@ echo_e() {
 
 server_alias() {
     
-    for i in `$MYSQL_STR -e "select lcase(name) from domains where host_type = 'alias' and redirect_url = '$domain_name'" | $_sed '1d'`; do
+    for i in $($DATA_QUERY "select lcase(name) from domains where host_type = 'alias' and redirect_url = '$domain_name'"); do
 	
 	echo_e "\tServerAlias  "$i
 
 	v_echo "$domain_name has server alias $i"
 
-	case $($MYSQL_STR -e "select www from domains where name = '$i'" | $_sed '1d') in
+	case $($DATA_QUERY "select www from domains where name = '$i'") in
 	    true)
 		echo_e "\tServerAlias  www."$i
 		v_echo "$domain_name has server alias www.$i"
@@ -241,7 +241,7 @@ mk_vrt() {
 	echo_e "\tSSLEngine on"
         echo_e "\tSSLVerifyClient none"
 
-	ssl_cert=$($MYSQL_STR -e "select value from parameters p inner join domains d on p.type_id = d.id where param = 'ssl_cert' and d.name = '$domain_name'" | $_sed '1d')
+	ssl_cert=$($DATA_QUERY "select value from parameters p inner join domains d on p.type_id = d.id where param = 'ssl_cert' and d.name = '$domain_name'")
 
 	if [ -f "$ssl_cert" ]; then
 	    echo_e "\tSSLCertificateFile $ssl_cert"
@@ -318,7 +318,7 @@ mk_vrt() {
     
 # Setup this domains error documents
 
-    for i in `$MYSQL_STR -e "select concat(code, ':', file) from error_docs where did = '$did'" | $_sed '1d'`; do
+    for i in $($DATA_QUERY "select concat(code, ':', file) from error_docs where did = '$did'" | $_sed '1d'); do
 
 	code=$($_echo $i | $_sed 's/:.*//')
 	file=$($_echo $i | $_sed 's/.*://')
@@ -375,7 +375,7 @@ for i in $domain_list; do
 
     v_echo "Rebuilding configuration for $i"
 
-    tmp=$($MYSQL_STR -e "select concat(d.id, ':', lcase(name), ':', lcase(login)) from domains d, sys_users u where d.suid = u.id and name = '$i'" | $_sed '1d')
+    tmp=$($DATA_QUERY "select concat(d.id, ':', lcase(name), ':', lcase(login)) from domains d, sys_users u where d.suid = u.id and name = '$i'")
 
 # if this domain doesn't exist in the database, echo error and go to the next element in the loop
 
@@ -406,7 +406,7 @@ for i in $domain_list; do
 
     if [ -z "$($_grep "^$ftp_user:" /etc/passwd)" ]; then
 
-	$RC_ROOT/bin/rehash_ftp $ftp_user
+	$RUN_CMD rehash_ftp $ftp_user
 
     fi
 
@@ -431,7 +431,7 @@ for i in $domain_list; do
 
 # Build the virtual host tag
 
-    case $($MYSQL_STR -e "select host_ssl from domains where id = '$did'" | $_sed '1d') in
+    case $($DATA_QUERY "select host_ssl from domains where id = '$did'") in
 	true)
 # use the mk_vrt function twice, one with ssl and one without
 	    mk_vrt 1
@@ -505,11 +505,13 @@ fi
 # Rebuild the vhosts.conf file
 
 $_echo "NameVirtualHost *:80" >> $vhosts
-$_echo "NameVirtualHost *:443" >> $vhosts
+
+# if we have no ssl domains, don't echo the 443 virtualhost
+[ $($DATA_QUERY "select count(*) from domains where host_ssl = 'true'") -ne 0 ] && $_echo "NameVirtualHost *:443" >> $vhosts
 
 v_echo "Rebuilding the vhosts.conf file"
 
-for i in `$MYSQL_STR -e "select lcase(name) from domains d, sys_users u where d.suid = u.id and host_type = 'physical' and hosting = 'on'" | $_sed '1d'`; do
+for i in $($DATA_QUERY "select lcase(name) from domains d, sys_users u where d.suid = u.id and host_type = 'physical' and hosting = 'on'"); do
     
 # Add this domain's include file to the master vhosts.conf
     
@@ -517,7 +519,7 @@ for i in `$MYSQL_STR -e "select lcase(name) from domains d, sys_users u where d.
     
 done
 
-for i in `$MYSQL_STR -e "select concat(lcase(name), ':::', redirect_url) from domains where host_type = 'redirect' and hosting = 'on'" | $_sed '1d'`; do
+for i in $($DATA_QUERY "select concat(lcase(name), ':::', redirect_url) from domains where host_type = 'redirect' and hosting = 'on'"); do
 
     domain_name=$($_echo $i | $_sed 's/:::.*//')
     redirect_url=$($_echo $i | $_sed 's/.*::://')
@@ -532,7 +534,7 @@ for i in `$MYSQL_STR -e "select concat(lcase(name), ':::', redirect_url) from do
 
 # Does this domain support www alias
 
-    case $($MYSQL_STR -e "select www from domains where name = '$domain_name'" | $_sed '1d') in
+    case $($DATA_QUERY "select www from domains where name = '$domain_name'") in
 	true) www=1;;
     esac
     

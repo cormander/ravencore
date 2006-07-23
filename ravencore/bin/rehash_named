@@ -55,7 +55,7 @@ while [ "$1" ]; do
 
     case $1 in
 # Run mysql query to get a list of all domains with physical hosting
-        "--all") domain_list=$($MYSQL_STR -e "select distinct d.name from domains d, dns_rec r where r.did = d.id and d.soa is not null" | $_sed '1d');;
+        "--all") domain_list=$($DATA_QUERY "select distinct d.name from domains d, dns_rec r where r.did = d.id and d.soa is not null");;
 #
 	"--rebuild-conf") rebuild_conf=1;;
 # Turn on verbose output
@@ -130,11 +130,11 @@ echo $num > num
 
 for domain_name in $domain_list; do
 
-    did=$($MYSQL_STR -e "select id from domains where name = '$domain_name'" | $_sed '1d')
+    did=$($DATA_QUERY "select id from domains where name = '$domain_name'")
     
 # Create this domain's SOA record
     
-    tmp=$($MYSQL_STR -e "select concat(name,':',soa) from domains where id = '$did'" | $_sed '1d')
+    tmp=$($DATA_QUERY "select concat(name,':',soa) from domains where id = '$did'")
     
     host_master=$($_echo $tmp | $_sed 's/:.*//')
     soa=$($_echo $tmp | $_sed 's/.*://')
@@ -153,7 +153,7 @@ EOFDOM
 
 # Loop through the records for this domain
 
-    for i in `$MYSQL_STR -e "select concat(name,':',type,':',target) from dns_rec where did = '$did' order by type, name, target" | $_sed '1d'`; do
+    for i in $($DATA_QUERY "select concat(name,':',type,':',target) from dns_rec where did = '$did' order by type, name, target"); do
 	
 	name=$($_echo $i | $_sed 's/:/ /g' | $_awk '{print $1}')
 	target=$($_echo $i | $_sed 's/:/ /g' | $_awk '{print $3}')
@@ -239,7 +239,7 @@ EOFNAMED
 
 # Loop through the domains on the server
     
-    for domain_name in `$MYSQL_STR -e "select distinct d.name from domains d, dns_rec r where r.did = d.id and d.soa is not null" | $_sed '1d'`; do
+    for domain_name in $($DATA_QUERY "select distinct d.name from domains d, dns_rec r where r.did = d.id and d.soa is not null"); do
 	
 	$_cat <<EOFNAMED >> /etc/named.conf
 zone "$domain_name" {

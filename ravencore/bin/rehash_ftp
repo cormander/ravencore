@@ -43,7 +43,7 @@ fi
 
 case $1 in
 # Run mysql query to get a list of all ftp users
-    "--all") user_list=$($MYSQL_STR -e "select lcase(login) from sys_users" | $_sed '1d');;
+    "--all") user_list=$($DATA_QUERY "select lcase(login) from sys_users");;
 # This is the ftp user we're going to add/modify
         *) user_list=$1;;
 esac
@@ -52,7 +52,7 @@ esac
 
 for sys_user in $user_list; do
 
-    tmp=$($MYSQL_STR -e "select concat(lcase(name), ':', passwd, ':', shell) from domains d, sys_users u where d.suid = u.id and login = '$sys_user'" | $_sed '1d')
+    tmp=$($DATA_QUERY "select concat(lcase(name), ':', passwd, ':', shell) from domains d, sys_users u where d.suid = u.id and login = '$sys_user'")
     domain_name=$($_echo $tmp | $_sed 's/:/ /g' | $_awk '{print $1}')
     passwd=$($_echo $tmp | $_sed 's/:/ /g' | $_awk '{print $2}')
     login_shell=$($_echo $tmp | $_sed 's/:/ /g' | $_awk '{print $3}')

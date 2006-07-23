@@ -36,17 +36,17 @@ fi
 
 cron_entry() {
 
-    minute=$($MYSQL_STR -e "select minute from crontab where id = '$1'" | sed '1d')
+    minute=$($DATA_QUERY "select minute from crontab where id = '$1'")
 
-    hour=$($MYSQL_STR -e "select hour from crontab where id = '$1'" | sed '1d')
+    hour=$($DATA_QUERY "select hour from crontab where id = '$1'")
 
-    dayofm=$($MYSQL_STR -e "select dayofm from crontab where id = '$1'" | sed '1d')
+    dayofm=$($DATA_QUERY "select dayofm from crontab where id = '$1'")
 
-    month=$($MYSQL_STR -e "select month from crontab where id = '$1'" | sed '1d')
+    month=$($DATA_QUERY "select month from crontab where id = '$1'")
 
-    dayofw=$($MYSQL_STR -e "select dayofw from crontab where id = '$1'" | sed '1d')
+    dayofw=$($DATA_QUERY "select dayofw from crontab where id = '$1'")
 
-    cmd=$($MYSQL_STR -e "select cmd from crontab where id = '$1'" | sed '1d')
+    cmd=$($DATA_QUERY "select cmd from crontab where id = '$1'")
 
 # Write this to a temp file
 
@@ -56,7 +56,7 @@ cron_entry() {
 
 # Get all crontab entries for this user
 
-for i in `$MYSQL_STR -e "select id from crontab where user = '$user'" | sed '1d'`; do
+for i in $($DATA_QUERY "select id from crontab where user = '$user'"); do
 
     cron_entry $i
     

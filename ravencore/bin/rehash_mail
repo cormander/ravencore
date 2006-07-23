@@ -88,7 +88,7 @@ fi
 
 # individual mail addresses
 
-for i in $($MYSQL_STR -e "select concat(m.id, ':', lcase(mail_name), ':', lcase(name), ':', mailbox, ':', spam_folder, ':', m.passwd) from domains d, mail_users m where did = d.id and d.mail = 'on' order by name" | $_sed '1d'); do
+for i in $($DATA_QUERY "select concat(m.id, ':', lcase(mail_name), ':', lcase(name), ':', mailbox, ':', spam_folder, ':', m.passwd) from domains d, mail_users m where did = d.id and d.mail = 'on' order by name"); do
 
 # separate the string into a temp variable so we don't have to make several calls to to the sed command
 # buxfix - there IS the cut command guys! -spc
@@ -161,7 +161,7 @@ for i in $($MYSQL_STR -e "select concat(m.id, ':', lcase(mail_name), ':', lcase(
 
 # now loop for redirects
 
-    for i in $($MYSQL_STR -e "select redirect_addr from mail_users where redirect = 'true' and id = '$mid'" | $_sed '1d'); do
+    for i in $($DATA_QUERY "select redirect_addr from mail_users where redirect = 'true' and id = '$mid'"); do
 
 # if $alias_map is emtpy, we don't start with a comma
 
@@ -228,7 +228,7 @@ done
 
 # handle catchalls. we concat semicolons here because the relay_host might have a : character in it
 
-for i in $($MYSQL_STR -e "select concat(name,';',catchall,';',catchall_addr,';',relay_host) from domains where mail = 'on' order by name" | $_sed '1d'); do
+for i in $($DATA_QUERY "select concat(name,';',catchall,';',catchall_addr,';',relay_host) from domains where mail = 'on' order by name"); do
 
     domain_name=$($_echo $i | $_cut -d\; -f1)
     catchall=$($_echo $i | $_cut -d\; -f2)
@@ -247,7 +247,7 @@ for i in $($MYSQL_STR -e "select concat(name,';',catchall,';',catchall_addr,';',
             ;;
 	"bounce")
 # find their bounce message
-	    bounce_message=$($MYSQL_STR -e "select bounce_message from domains where name = '$domain_name'" | $_sed '1d')
+	    bounce_message=$($DATA_QUERY "select bounce_message from domains where name = '$domain_name'")
 	    $_echo -e "$domain_name\t\terror:$bounce_message" >> vtransportmap.$$
 	    ;;
 	"delete_it")
@@ -255,7 +255,7 @@ for i in $($MYSQL_STR -e "select concat(name,';',catchall,';',catchall_addr,';',
             $_echo -e "$domain_name\t\tvirtual:" >> vtransportmap.$$
 	    ;;
 	"alias_to")
-	    alias_addr=$($MYSQL_STR -e "select alias_addr from domains where name = '$domain_name'" | $_sed '1d')
+	    alias_addr=$($DATA_QUERY "select alias_addr from domains where name = '$domain_name'")
 	    $_echo -e "@$domain_name\t\t@$alias_addr" >> valiasmap.$$
             $_echo -e "$domain_name\t\tvirtual:" >> vtransportmap.$$
 	    ;;
@@ -313,7 +313,7 @@ $_chmod 660 rcadmin:servgrp $RC_ROOT/var/apps/squirrelmail/data/* &> /dev/null
 # go locally will be directed straight to virtual: , while the rest will go remote because it isn't in
 # the vmaildomains. If it was, it'll attempt to deliver those mails locally too, and give a reject message.
 
-for domain_name in $($MYSQL_STR -e "select name from domains where mail = 'on' and catchall != 'relay'" | $_sed '1d'); do
+for domain_name in $($DATA_QUERY "select name from domains where mail = 'on' and catchall != 'relay'"); do
 
     $_echo -e "$domain_name\t\tplaceholder" >> vmaildomains.$$
     $_echo -e "\t\t'$domain_name' => array('org_name' => '$domain_name')," >> $sq_vlogin_file
@@ -322,7 +322,7 @@ done
 
 # build the list of domains this server is allowed to relay for
 
-for domain_name in $($MYSQL_STR -e "select name from domains where mail = 'on' and catchall = 'relay'" | $_sed '1d'); do
+for domain_name in $($DATA_QUERY "select name from domains where mail = 'on' and catchall = 'relay'"); do
 
     $_echo -e "$domain_name\t\tplaceholder" >> relay_domains.$$
     $_echo -e "\t\t'$domain_name' => array('org_name' => '$domain_name')," >> $sq_vlogin_file

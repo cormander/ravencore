@@ -47,6 +47,8 @@ _gzip=gzip
 
 _head=head
 
+_hostname=hostname
+
 _id=id
 
 _kill=kill

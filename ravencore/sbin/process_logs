@@ -65,7 +65,7 @@ fi
 # check to see if we have custom log rotation setup for this domain by checking both
 # the database and if they have a logrotate.conf file
 
-if [ $($MYSQL_STR -e "select count(name) from domains where logrotate = 'on' and name = '$domain_name'" | $_sed '1d') -eq 1 ] && [ -f ../conf/logrotate.conf ]; then
+if [ $($DATA_QUERY "select count(name) from domains where logrotate = 'on' and name = '$domain_name'") -eq 1 ] && [ -f ../conf/logrotate.conf ]; then
 
     $_logrotate ../conf/logrotate.conf
 

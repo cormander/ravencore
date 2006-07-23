@@ -99,17 +99,25 @@ rebuild_conf_file "/usr/lib/sasl2/smtpd.conf" postfix ': '
 
 alias_database=$($_postconf 2> /dev/null | $_grep alias_database | $_sed 's/:/ /' | $_awk '{print $4}')
 
-$_grep "^devnull:" $alias_database &> /dev/null
+#
 
-if [ $? -ne 0 ]; then
+if [ -n "$alias_database" ]; then
+
+    $_grep "^devnull:" $alias_database &> /dev/null
+
+#
     
-    $_echo -e "devnull:\t/dev/null" >> $alias_database
-    
+    if [ $? -ne 0 ]; then
+	
+	$_echo -e "devnull:\t/dev/null" >> $alias_database
+	
 # run newaliases so postfix sees the new user
 # some systems report info on stdout when ran, force it to /dev/null
 
-    $_newaliases 1> /dev/null
-
+	$_newaliases 1> /dev/null
+	
+    fi
+    
 fi
 
 # check for a local script to run, and run it if it is executeable
