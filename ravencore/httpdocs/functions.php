@@ -24,8 +24,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 $dir = dir('classes');
 
 while (false !== ($entry = $dir->read())) {  
-  // if this element is a directory, and not an implied "." or ".."
-  if( ! ereg('^\.',$entry) )
+  // if this element is a directory, an implied "." or "..", or doesn't end in .php, skip
+  if( ! ereg('^\.',$entry) and ereg('\.php$',$entry) )
     {
       include 'classes/' . $entry;
     }

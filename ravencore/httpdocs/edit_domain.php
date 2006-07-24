@@ -49,7 +49,7 @@ if ($action == "add")
     { 
         // Match the incoming string against the valid syntax of a domain/subdomain
         if (preg_match('/^' . REGEX_DOMAIN_NAME . '$/', $_POST[name]))
-        {
+	  {
             if (!preg_match('/^www\./', $_POST[name]))
             { 
                 // If we get this far, we have a valid domain name to setup. Continue
@@ -58,7 +58,7 @@ if ($action == "add")
                 $db->data_query($sql);
 
                 $did = $db->data_insert_id();
-
+		
 		$d = new domain($did);
 
                 $domain_name = $d->name();
@@ -90,7 +90,7 @@ if ($action == "add")
                         $sql = "insert into dns_rec set did = '$did', name = '$row[name]', type = '$row[type]', target = '$row[target]'";
                         $db->data_query($sql);
                     } 
-
+		    
                     socket_cmd("rehash_named --rebuild-conf --all");
                 } 
                 // If we have the hosting variable, send us to hosting setup, because most of the time
