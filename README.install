@@ -8,11 +8,11 @@ detect them, and you will have lots of problems with those settings no longer be
 
 Once you have downloaded the rpm package, go ahead and install it:
 
-  rpm -Uvh ravencore-0.2.0-1.noarch.rpm
+  rpm -Uvh ravencore-0.2.1-1.noarch.rpm
 
 Non-RPM distributions can install with the tarball:
 
-  tar zxvf ravencore-0.2.0.tar.gz ; make build ; make install
+  tar zxvf ravencore-0.2.1.tar.gz ; make build ; make install
 
 Here is a list of base packages you will need ( don't worry about version numbers, RavenCore
 is very flexable )

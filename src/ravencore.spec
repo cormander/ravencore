@@ -2,7 +2,7 @@
 
 Summary: RavenCore Hosting Control Panel
 Name: ravencore
-Version: 0.2.0
+Version: 0.2.1
 Release: 1
 Packager: Cormander
 URL: http://www.ravencore.com/
@@ -134,23 +134,27 @@ rm -rf $RPM_BUILD_ROOT
 %{rc_root}/conf.d/dns.conf.debian
 %{rc_root}/conf.d/mail.conf
 %{rc_root}/conf.d/mail.conf.debian
+%{rc_root}/conf.d/mrtg.conf
+%{rc_root}/conf.d/mrtg.conf.debian
 %{rc_root}/conf.d/mysql.conf
 %{rc_root}/conf.d/web.conf
 
-%{rc_root}/sbin/bash_functions
 %{rc_root}/sbin/checkconf
 %{rc_root}/sbin/checkconf.amavisd
 %{rc_root}/sbin/checkconf.cron.hourly
 %{rc_root}/sbin/checkconf.mail
+%{rc_root}/sbin/checkconf.mrtg
 %{rc_root}/sbin/database_reconfig
+%{rc_root}/sbin/data_query
 %{rc_root}/sbin/db_install
-%{rc_root}/sbin/dbsock
 %{rc_root}/sbin/logrotate.cron.hourly
 %{rc_root}/sbin/mailscan
 %{rc_root}/sbin/process_logs
 %{rc_root}/sbin/ravencore.cron
 %{rc_root}/sbin/ravencore.init
 %{rc_root}/sbin/ravencore.httpd
+%{rc_root}/sbin/rcsock
+%{rc_root}/sbin/run_cmd
 %{rc_root}/sbin/rem_module.amavisd
 %{rc_root}/sbin/pwdchk.cron.hourly
 %{rc_root}/sbin/usage.cron.daily
@@ -162,6 +166,24 @@ rm -rf $RPM_BUILD_ROOT
 %{rc_root}/var
 
 %changelog
+* Sun Jul 23 2006 cormander <admin@ravencore.com>
+- version 0.2.1
+- added a module to work with mrtg, if it's installed on the system
+- added a "fast" option to the init script, skips the checkconf step and just starts the ravencore websever
+- added script "data_query" which replaces the mysql command in bash scripts for cleaner and faster execution
+- added script "run_cmd" which will be called to run anything in $RC_ROOT/bin
+- changed the name of dbsock to rcsock, so the name doesn't confuse people into thinking it only does sql
+- changed the creation of rcsock to want the socket path on construct, instead of having $CONF a global array
+- made the old wrapper program be removed if it still exists
+- moved the bash_functions file to $RC_ROOT/var/lib and created a perl_functions.pm file in that directory
+- fixed a bug in the user phpmyadmin login which made the page come up blank instead of load the application
+- fixed a bug in the PHP rcsock where it would return nasty results on a concat command in the sql statement
+- fixed a bug in the data_insert_id function where the socket wasn't returning it when it was supposed to
+- fixed a bug with conf file creation when the file or directory doesn't exist in the first place
+- fixed reference to the socket for PHP5, it won't connect unless unix:// is prepended to the socket path
+- fixed the "[warn] NameVirtualHost *:443 has no VirtualHosts" warning
+- fixed the bug where if the postconf command fails, checkconf.mail freezes
+
 * Sun Jul 16 2006 cormander <admin@ravencore.com>
 - version 0.2.0
 - upgraded phpmyadmin to 2.8.2

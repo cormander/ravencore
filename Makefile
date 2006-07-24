@@ -10,7 +10,7 @@ ETC_RAVENCORE=/etc/ravencore.conf
 
 # The current RavenCore version...
 
-VERSION=0.2.0
+VERSION=0.2.1
 
 # 3rd party program names and version numbers
 
@@ -187,7 +187,7 @@ install:
 	echo -e "RC_ROOT=$(RC_ROOT)\n" >> $(DESTDIR)$(ETC_RAVENCORE)
 	echo "# When shell script run, they will load this" >> $(DESTDIR)$(ETC_RAVENCORE)
 	echo -en ". $$" >> $(DESTDIR)$(ETC_RAVENCORE)
-	echo "RC_ROOT/sbin/bash_functions" >> $(DESTDIR)$(ETC_RAVENCORE)
+	echo "RC_ROOT/var/lib/bash_functions" >> $(DESTDIR)$(ETC_RAVENCORE)
 
 # Install all the files
 
