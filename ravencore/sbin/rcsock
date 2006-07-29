@@ -24,10 +24,30 @@ use POSIX;
 use MIME::Base64;
 use perl_functions;
 
-#
-# TODO: Have the parent process connect on startup, and write a routine to reconnect to the database
-#       if the connection is somehow broken ( like with a mysqld restart )
-#
+# list DBI's available drivers
+
+@dbi_driver_names = DBI->available_drivers;
+
+# check to see if we have the 'mysql' driver for the DBI object installed
+
+$mysql_driver = 0;
+
+foreach(@dbi_driver_names)
+{
+    $mysql_driver = 1 if $_ eq 'mysql';
+}
+
+# if $mysql_driver is still set to 0 after this loop, then the driver wasn't found, and we can't
+# continue
+
+die "The mysql driver for the perl DBI object was not found. Perhaps the DBD::mysql perl module hasn't been fully installed? " unless $mysql_driver == 1;
+
+# set the $ETX, $EOT, $NAK and $CAN variables to thier respective bytes
+
+my $ETX = chr(3); # end of text
+my $EOT = chr(4); # end of transmission
+my $NAK = chr(21); # negative acknowledge
+my $CAN = chr(24); # cancel
 
 # define our socket to listen to
 
@@ -75,19 +95,28 @@ chmod 0600, $socket;
 
 listen(SERVER,5) || die "listen: $!";
 
-# TODO: "daemonize" ourself... redirect STDIN, STDOUT, STDERR elsewhere
-#       and detach from the terminal process
+# "daemonize" ourself by forking, and exiting if we're the parent. The child process will then
+# proceed to start a new session. We do this so that when we're started from the shell, we aren't
+# attached to the session that started us. If there is a fatal error before this point, the $?
+# error code will be set to non-zero, and we'll know there was something wrong
+
+defined(my $ppid = fork) or die "Can't fork: $!";
+exit if $ppid;
+setsid or die "Can't start a new session: $!";
 
 # before we enter our loop, define this signal to catch children processes' exit signals with
 # the REAPER function
 
 $SIG{CHLD} = \&REAPER;
 
-# set the $ETX, $EOT, and $NAK variables to thier respective bytes
+#
+# TODO: Handle other signals here for clean restart / shutdown
+#
 
-my $ETX = chr(3); # end of text
-my $EOT = chr(4); # end of transmission
-my $NAK = chr(21); # negative acknowledge
+#
+# TODO: Write our $$ (pid) to a file
+#       IF the pid file already exists, read it first and kill the process
+#
 
 # endlessly loop, waiting for a connection
 
@@ -104,18 +133,35 @@ for ( $waitedpid = 0; accept(CLIENT,SERVER) || $waitedpid; $waitedpid = 0, close
 
     if (!defined($pid = fork))
     {
-# fatal error in fork()... there's something very bad happening with the system
-	print "cannot fork: $!\n";
+# fatal error in fork()... there's something very bad happening with the system. usually out of memory
+
+# explicity tell &fatal_error not to exit, as we're not nessisarilly dead in the water. we might be able
+# to fork next time the server is called, so don't just die. This is probably the only time we should
+# set $noexit with a fatal_error call
+	$noexit = 1;
+
+	&fatal_error("cannot fork: $!");
+
+# unset the noexit
+	$noexit = 0;
+
+# go to the beginning of the loop so we can try again....
 	next;
+
     }
     elsif ($pid)
     {
-# i'm the parent... do basically nothing
+# i'm the parent... go back and wait for another connection
 
 	next;
 
     }
 # i'm the child... handle the data request
+# NOTE: any values changed past this point won't affect the parent process at all, since all of our
+# variables are copies of the originals
+
+# redirect anything printed to STDERR to instead call the &do_error function
+    $stderr = tie *STDERR, 'Redirect', \&do_error;
 
 # turn on autoflush on the CLIENT I/O handle, so output we send via print statements goes right away
 
@@ -123,28 +169,24 @@ for ( $waitedpid = 0; accept(CLIENT,SERVER) || $waitedpid; $waitedpid = 0, close
     $| = 1;
     select STDOUT;
 
+# unset our GOT_CONF variable so our bash script we run will get all their settings
+
+    $ENV{'GOT_CONF'} = ''; 
+
 # read in our database password. currently we have to do this each time we connect, because the password
 # might have changed since we first started, and a child process can't change a variable and have the
 # parent process know about it
 
-    open PASSWD, $CONF{'RC_ROOT'} . "/.shadow";
-    
-    $CONF{'MYSQL_ADMIN_PASS'} = <PASSWD>;
-    chomp $CONF{'MYSQL_ADMIN_PASS'};
-    
-    close PASSWD;
+    $passwd = &get_passwd;
     
 # connect to the database
 
     my $db = DBI->connect('DBI:mysql:database='.$CONF{'MYSQL_ADMIN_DB'}.
 			  ';host='.$CONF{'MYSQL_ADMIN_HOST'}.
 			  ';port='.$CONF{'MYSQL_ADMIN_PORT'},
-			  $CONF{'MYSQL_ADMIN_USER'}, $CONF{'MYSQL_ADMIN_PASS'});
+			  $CONF{'MYSQL_ADMIN_USER'}, $passwd, {RaiseError => 0});
 
-#
-# TODO: redirect STDERR here to print to the client, maybe? Or perhaps redirect it to a function which
-# parses it, then redirects it to the client... not sure what I want to do yet
-#
+    &destroy(\$passwd);
 
 # read in the data from the client.... usually an SQL statement
 # we're in a while loop because we want to handle as many requests as is nessisary
@@ -156,7 +198,12 @@ for ( $waitedpid = 0; accept(CLIENT,SERVER) || $waitedpid; $waitedpid = 0, close
 
 	$data = '';
 
-#	print $query . "\n";
+#
+# TODO: implement query logging. part of the whole reason why everything talks to the socket for data
+# queries and such, is so that there is a central point of logging... set different logging verbose levels,
+# so we'll know whather to report just insert/update/delete queries, just report commands, or report
+# ALL queries, directed to a logfile somewhere
+#
 
 # check what kind of input this is
 	
@@ -168,10 +215,12 @@ for ( $waitedpid = 0; accept(CLIENT,SERVER) || $waitedpid; $waitedpid = 0, close
 	    $pw = $query;
 	    $pw =~ s/^auth //i;
 
-# compare $pw to the MYSQL_ADMIN_PASS ( which comes from the .shadow file ). return "true" on success and
+# compare $pw to the &get_passwd ( which comes from the .shadow file ). return "true" on success and
 # "false" on failure
+
+	    $passwd = &get_passwd;
 	    
-	    if($pw eq $CONF{'MYSQL_ADMIN_PASS'})
+	    if($pw eq $passwd)
 	    {
 		$data = "true";
 	    }
@@ -179,6 +228,8 @@ for ( $waitedpid = 0; accept(CLIENT,SERVER) || $waitedpid; $waitedpid = 0, close
 	    {
 		$data = "false";
 	    }
+	    
+	    &destroy(\$passwd);
 	    
 	}
 	elsif($query =~ m/^connect/i)
@@ -192,6 +243,24 @@ for ( $waitedpid = 0; accept(CLIENT,SERVER) || $waitedpid; $waitedpid = 0, close
 	    {
 		$data = "false";
 	    }
+
+	}
+	elsif($query =~ m/^initial_passwd/i)
+	{
+# we're being asked if our password has been set. right now, this means it is set to "ravencore"
+
+	    $passwd = &get_passwd;
+
+	    if($passwd =~ m/^ravencore$/i)
+	    {
+		$data = "true";
+	    }
+	    else
+            {
+                $data = "false";
+            }
+
+            &destroy(\$passwd);
 
 	}
 	elsif($query =~ m/^run /i)
@@ -228,13 +297,34 @@ for ( $waitedpid = 0; accept(CLIENT,SERVER) || $waitedpid; $waitedpid = 0, close
 		
 		@args = split/ /, $cmd;
 		
-# make sure the command exists in the first place, and is executable
-		
-		if( -x $CONF{'RC_ROOT'} . '/bin/' . $args[0] )
-		{
+# get information about the command to run
+		($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks) = stat $CONF{'RC_ROOT'} . '/bin/' . $args[0];
 
-# TODO: check file permissions and ownership here... we don't want to run something that isn't owned by
-# root and something that is writeable
+# fix the mode into "readable" permissions
+		$mode = sprintf "%04o", $mode & 07777;
+
+		if( ! -f $CONF{'RC_ROOT'} . '/bin/' . $args[0] )
+		{
+# make sure the command exists in the first place
+		    &do_error('Unable to execute ' . $args[0] . ' : File does not exist');
+		}
+		elsif($uid != 0)
+		{
+# must be owned by root
+		    &do_error('Unable to execute ' . $args[0] . ' : Not owned by root');
+		}
+		elsif($gid != 0)
+		{
+# must not be in any other group
+		    &do_error('Unable to execute ' . $args[0] . ' : Not in the root system group');
+		}
+		elsif($mode ne "0500")
+		{
+# strict file permissions
+		    &do_error('Unable to execute ' . $args[0] . ' : Incorrect permissions. Must be set to 0500');
+		}
+		else
+		{
 		    
 # run it
 		    
@@ -258,10 +348,6 @@ for ( $waitedpid = 0; accept(CLIENT,SERVER) || $waitedpid; $waitedpid = 0, close
 			
 		    }
 		
-		}
-		else
-		{
-		    &do_error('Unable to execute ' . $cmd);
 		}
 
 	    }
@@ -295,16 +381,14 @@ for ( $waitedpid = 0; accept(CLIENT,SERVER) || $waitedpid; $waitedpid = 0, close
 # parse out the info from the $query. the @xxx array catches any remaining elements if any
 		($x, $old, $new, @xxx) = split / /,$query;
 		
-		if($old eq $CONF{'MYSQL_ADMIN_PASS'})
+		$passwd = &get_passwd;
+
+		if($old eq $passwd)
 		{
 		    
 		    $db->do("SET PASSWORD FOR '" . $CONF{'MYSQL_ADMIN_USER'} . "'\@'" . $CONF{'MYSQL_ADMIN_HOST'} . "' = PASSWORD('" . $new . "')");
 		    
-		    if( $db->errstr )
-		    {
-			&do_error($db->errstr);
-		    }
-		    else
+		    if( ! $db->errstr )
 		    {
 # the password change was successful. commit the password to the .shadow file and return true
 			open PASSWD, ">" . $CONF{'RC_ROOT'} . "/.shadow";
@@ -320,21 +404,21 @@ for ( $waitedpid = 0; accept(CLIENT,SERVER) || $waitedpid; $waitedpid = 0, close
 		{
 		    $data = "false";
 		}
+		
+		&destroy(\$passwd);
+
 	    }
 # do the sql query, but the kind of query depends on what we do.
-# if it's NOT a "select" query (do a case in-sensative match) then we simply "do"
+# if it's NOT a "select" or a "show" query (do a case in-sensative match) then we simply "do"
 # the query and get the $rows_affected and $insert_id data
-	    elsif($query !~ m/^select /i)
+	    elsif($query !~ m/^select/i and $query !~ m/^show/i)
 	    {
 		
 		$rows_affected = $db->do($query);
 		
-		if ( $db->errstr )
+		if ( ! $db->errstr )
 		{
-		    &do_error($db->errstr);
-		}
-		else
-		{
+
 		    $insert_id = $db->{ q{mysql_insertid}};
 
 # this isn't a select statement, but we still return data in the same format
@@ -352,11 +436,7 @@ for ( $waitedpid = 0; accept(CLIENT,SERVER) || $waitedpid; $waitedpid = 0, close
 		
 		$result->execute();
 		
-		if ( $db->errstr )
-		{
-		    &do_error($db->errstr);
-		}
-		else
+		if ( ! $db->errstr )
 		{
 		    
 # fetch the data into a hash. That way, we have both the column name and the value
@@ -412,6 +492,8 @@ sub REAPER
 {
     $SIG{CHLD} = \&REAPER;
     $waitedpid = wait;
+# TODO: once query logging is written, have it be prepended and appended with the child $pid
+# and the eventual exit code of the process
 #    print "reaped $waitedpid" . ($? ? " with exit $?" : '') . "\n";
 }
 
@@ -453,13 +535,51 @@ sub data_read
 
 }
 
-#
+# function that is called inside the child process, to handle error messages
 
 sub do_error
 {
-
-    my $errstr = shift;
+    my $errstr = "@_";
 
     print CLIENT $NAK . $errstr;
-
 }
+
+# function that is called if things have gone horribly wrong. Print all the appropriate
+# closing bytes to the client ( NAK for error, CAN for fatal error, and EOT so the client
+# knows we're done reporting ), and exit out with an error.
+
+sub fatal_error
+{
+    my $errstr = "@_";
+
+    print CLIENT $NAK . $errstr . $CAN . $EOT;
+
+    close CLIENT;
+
+# if $noexit is set, then don't exit. otherwise, default behavior is to exit
+
+    POSIX::_exit 1 unless $noexit == 1;
+    
+}
+
+# create our internal error redirection object
+# we can have this at the bottom of this code because the perl preprocessor loads it
+# before script execution
+
+package Redirect;
+
+sub TIEHANDLE
+{
+    my ($class, $in) = @_;
+    my $filehandle = $in;
+    bless $filehandle, $class;
+}
+
+sub PRINT
+{
+    my $filehandle = shift;
+    $filehandle->(@_);
+}
+
+# end this object
+1;

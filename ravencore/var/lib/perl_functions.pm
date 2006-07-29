@@ -19,6 +19,10 @@
 
 $ENV{'RC_ETC'} = ( $ENV{'RC_ETC'} ? $ENV{'RC_ETC'} : '/etc/ravencore.conf' );
 
+# make sure we are root
+
+die "Must be root" unless $< == 0;
+
 # get our base configuration file
 
 &read_conf_file($ENV{'RC_ETC'});
@@ -39,6 +43,32 @@ $ENV{'RC_ETC'} = ( $ENV{'RC_ETC'} ? $ENV{'RC_ETC'} : '/etc/ravencore.conf' );
 #
 # TODO: write a subroutine for reading the database conf, and call it here
 #
+
+# destroy the given value. must pass it as a reference, ex: &destroy(\$value);
+
+sub destroy
+{
+    my $val = shift;
+
+    undef $val;
+
+}
+
+# a function use to read the password out of the .shadow file
+
+sub get_passwd
+{
+
+    open PASSWD, $CONF{'RC_ROOT'} . "/.shadow";
+
+    my $passwd = <PASSWD>;
+    chomp $passwd;
+    
+    close PASSWD;
+
+    return $passwd;
+
+}
 
 # read a configuration file. files are always in format: NAME=VALUE
 
@@ -75,3 +105,4 @@ sub read_conf_file
     close CONF;
 
 } # end sub read_conf_file
+

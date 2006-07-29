@@ -96,8 +96,24 @@ if [ -f $RC_ROOT/var/run/httpd.nossl ]; then
     ssl_opt="nossl"
 fi
 
+#
+
 start_rcsock() {
-        $_setsid $RUN_CMD rcsock &> /dev/null &
+
+        $RUN_CMD rcsock
+
+# check to see if there was an error
+	if [ $? -ne 0 ]; then
+	    
+	    echo -n "Fatal error in launching the socket server"
+	    failure
+	    echo
+	    exit 1
+
+	fi
+
+# sleep for a second, giving some time for the server to bind to the socket
+
 	sleep 1
 }
 

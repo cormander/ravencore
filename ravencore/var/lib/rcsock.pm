@@ -77,7 +77,8 @@ sub do_raw_query
     {
 	$data =~ s/^$self->{NAK}//;
 
-	print $data;
+# TODO: find a better way to report the error...
+#	print STDERR $data;
 
 	return 0;
     }
