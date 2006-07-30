@@ -8,9 +8,9 @@ $locales['nl_NL'] = array(
 			   'date_format' => '',
 			   // the below are so we know how to pass this language to our 3rd party programs
 			   'filemanager' => 'dutch',
-			   'phpmyadmin' => 'du-utf-8',
+			   'phpmyadmin' => 'nl-utf-8',
 			   'sysinfo' => 'dutch',
-			   'awstats' => 'du'
+			   'awstats' => 'nl'
 			   );
 
 ?>

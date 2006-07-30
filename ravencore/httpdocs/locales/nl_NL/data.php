@@ -4,7 +4,7 @@
 // and the last two letters ISO 3166 country code.
 // ex: en_US  ru_RU  nb_NO  etc
 
-$trans['du_NL'] = array(
+$trans['nl_NL'] = array(
 
 	'Name' => 'Naam',
 	'Add Database' => 'Voeg Database toe',
