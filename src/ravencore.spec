@@ -2,7 +2,7 @@
 
 Summary: RavenCore Hosting Control Panel
 Name: ravencore
-Version: 0.2.1
+Version: 0.2.2
 Release: 1
 Packager: Cormander
 URL: http://www.ravencore.com/
@@ -125,7 +125,6 @@ rm -rf $RPM_BUILD_ROOT
 %{rc_root}/bin/rehash_named
 %{rc_root}/bin/service
 %{rc_root}/bin/system
-%{rc_root}/bin/testsuid
 
 %{rc_root}/conf.d/amavisd.conf
 %{rc_root}/conf.d/amavisd.conf.debian
@@ -156,7 +155,6 @@ rm -rf $RPM_BUILD_ROOT
 %{rc_root}/sbin/rcsock
 %{rc_root}/sbin/run_cmd
 %{rc_root}/sbin/rem_module.amavisd
-%{rc_root}/sbin/pwdchk.cron.hourly
 %{rc_root}/sbin/usage.cron.daily
 %{rc_root}/sbin/wrapper.c
 
@@ -166,6 +164,16 @@ rm -rf $RPM_BUILD_ROOT
 %{rc_root}/var
 
 %changelog
+* Sun Jul 30 2006 cormander <admin@ravencore.com>
+- version 0.2.2
+- added a hardcoded requirement that perl scripts be run as root
+- added a lot of error handling to rcsock, so users have a better idea whats going on when there are errors
+- rcsock now uses the perl fork and setsid functions to break away from the terminal by itself
+- removed the pwdchk.cron.hourly, as the initial login security method was changed
+- removed the testsuid script in the ravencore bin, as it is no longer needed
+- fixed the dutch language pack so that it is actually loaded when you select it
+- fixed the error introducted by rcsock where database settings wouldn't get loaded into the bash scripts
+
 * Sun Jul 23 2006 cormander <admin@ravencore.com>
 - version 0.2.1
 - added a module to work with mrtg, if it's installed on the system
