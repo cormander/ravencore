@@ -63,20 +63,7 @@ $server = new server();
 
 $db = new rcsock($CONF['RC_ROOT'] . '/var/rc.sock');
 
-// $socket_err will be set if there was an error connecting
-
-if ( $socket_err )
-{
-
-  nav_top();
-
-  print $socket_err;
-
-  nav_bottom();
-
-  exit;
-
-}
+//
 
 if( ! $db->data_alive() )
 {

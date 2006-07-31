@@ -56,6 +56,7 @@ class rcsock {
     $this->ETX = chr(3); // end of text
     $this->EOT = chr(4); // end of transmission
     $this->NAK = chr(21); // negative acknowledge
+    $this->CAN = chr(24); // cancel
 
     list($major, $minor, $release) = explode('.',phpversion());
 
@@ -70,7 +71,13 @@ class rcsock {
     if(!is_resource($this->sock))
       {
 
-	$socket_err = 'Unable to open socket: ' . $socket . '<br>Error code: ' . $errno . ' - ' . $errstr . '<p>Please restart the control panel';
+	nav_top();
+	
+	print 'Unable to open socket: ' . $socket . '<br>Error code: ' . $errno . ' - ' . $errstr . '<p>Please restart the control panel';
+
+	nav_bottom();
+
+	exit;
 
       }
     
@@ -79,6 +86,7 @@ class rcsock {
   // submit a query to the socket, and return the raw data that is the answer. This isn't always
   // an SQL query. This function should probably only be used within this object class.
   //   supported commands:
+  //     initial_passwd
   //     auth <password>
   //     run <command>
   //     use <database>
@@ -95,7 +103,7 @@ class rcsock {
     fwrite($this->sock, base64_encode($query) . $this->EOT);
 
     // flush our writting to the socket so we get an imidate reply on the data
-    
+
     fflush($this->sock);
 
     // read data until the EOT byte
@@ -109,25 +117,33 @@ class rcsock {
       $c = fgetc($this->sock);
       
     } while ( $c != $this->EOT );
-      
-    // check for an error on the data returned. if the first character in $data is a NAK byte,
+
+    // check for an error on the data returned.
+
+    // if the first character in $data is a NAK byte,
     // then we know there was trouble.... print the error and exit. We don't have to worry about
     // binary files fudging this up, because just about everything else is returned as a base64
     // encoded string
     
     if( preg_match('|^' . $this->NAK . '|', $data) )
       {
+
+	$data = str_replace($this->NAK,'',$data);
+
+	// this error is a fatal error if it ends with the CAN byte
+
+	if (  preg_match('|' . $this->CAN . '$|', $data) )
+	  {
+	    nav_top();
+	    print str_replace($this->CAN,'',$data);
+	    nav_bottom();
+	    exit;
+	  }
 	
-	print '<br/>
-<table>
-<tr>
-<td nowrap><b>ERROR on query:</b></td>
-<td>' . $query . '</td>
-</tr><tr>
-<td nowrap><b>Server responded with:</b></td>
-<td>' . str_replace($this->NAK,'',$data) . '</td>
-</tr>
-</table>';
+	// TODO: make this call a function instead. and whether or not headers are already sent, either 
+	// add this to the session or just output it right away. make this session an array rather then
+	// just a string, so we can clearly count the number of errors if we need to
+	$_SESSION['status_mesg'] = 'ERROR on query: ' . $query . '<br />Server responded with: ' . $data;
 	
 	// we don't want to return any data, so return false
 	
@@ -325,6 +341,10 @@ class rcsock {
     return $this->alive;
     
   }
+
+  //
+
+  function initial_passwd() { return $this->str_to_bool($this->do_raw_query('initial_passwd')); }
 
 } // end class rcsock 
 
