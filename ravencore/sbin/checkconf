@@ -396,7 +396,7 @@ $_rm -f $RC_ROOT/sbin/wrapper
 # start by giving everything root:rcadmin
 $_chown -R root:rcadmin $RC_ROOT
 # sbin files should not be in the rcadmin group
-$_chown root:root $RC_ROOT/sbin/*
+$_chown root:root $RC_ROOT/{bin,sbin}/*
 
 # webmail files and tmp files should be owned by rcadmin
 $_chown -R rcadmin:rcadmin $RC_ROOT/{database.cfg,var/tmp}
