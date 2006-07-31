@@ -359,6 +359,7 @@ $_postmap $VMAIL_CONF_DIR/relay_domains
 
 # make sure our conf files are correctly set
 
+[ -x $RC_ROOT/conf.d/amavisd.conf ]&& $RC_ROOT/sbin/checkconf.amavisd
+
 $RC_ROOT/sbin/checkconf.mail
 
-[ -x $RC_ROOT/conf.d/amavisd.conf ]&& $RC_ROOT/sbin/checkconf.amavisd
