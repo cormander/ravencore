@@ -80,6 +80,11 @@ $_chmod 600 /etc/sasldb2
 
 dovecot_v=$(dovecot --version 2> /dev/null | sed 's/\..*//')
 
+# copy header_checks
+[ -f $RC_ROOT/etc/postfix_header_checks.local ] && local=".local"
+$_cp -f $RC_ROOT/etc/postfix_header_checks$local $VMAIL_CONF_DIR/header_checks 2> /dev/null
+$_touch $VMAIL_CONF_DIR/header_checks
+
 # rebuild configuration files
 
 rebuild_conf_file "$VMAIL_CONF_DIR/main.cf" postfix ' = '

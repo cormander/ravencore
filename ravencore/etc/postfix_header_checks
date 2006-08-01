@@ -1,0 +1,49 @@
+/^(Content-Type:.*|\s+)charset\s*=\s*"?(Windows-1251)\?/		REJECT Probably a windows virus.
+/^From:(.*)Screen Saver /		REJECT Screensaver virus, die.
+/^Received:.*\.{50,}/							REJECT Bogus received address
+/^(Received|Message-Id|X-(Mailer|Sender)):.*\b(AutoMail|E-Broadcaster|Emailer Platinum|eMarksman|Extractor|e-Merge|from stealth[^.]|Global Messenger|GroupMaster|Mailcast|MailKing|Match10|MassE-Mail|massmail\.pl|News Breaker|Powermailer|Quick Shot|Ready Aim Fire|WindoZ|WorldMerge|Yourdora|Lite)\b/	REJECT You're using a mass mailer, therefore you're bounced.
+/^X-Mailer:.*\b(Aristotle|Avalanche|Blaster|Bomber|DejaVu|eMerge|Extractor|UltraMail|Sonic|Floodgate|GeoList|Mach10|MegaPro|Aureate|MultiMailer|Bluecom|Achi-Kochi Mail|Direct Email|Andrew's SuperCool Blastoise|MailerGear|Advanced Mass Sender|SpireMail|MailWorkZ|UltimDBMail|Mabry|Lite)\b/	REJECT No mass-mailers, please.
+/^received:.*xxxxxxxxxxxxxxxx/  					REJECT X-Rated Subject Line
+/^Received:(.*)hispeedmailer\.com/					REJECT Mass-mailer.  Die, spammer, die.
+/^From:(.*)cupid\@valentines-ecard\.com/				REJECT Potential Virus Content
+/^Return-Path:(.*)offers@/						REJECT We get too many offers.
+/^Subject:(.*)penis/							REJECT You said the p-word
+/^Subject:(.*)your password/						REJECT Die, spammer, die.
+/^Subject:(.*)Bigger Bust/						REJECT We've got big busts, already.
+/^Subject:(.*)adult/ 							REJECT X-Rated Subject Line
+/^Subject:(.*)AS SEEN ON T\.V/						REJECT We don't watch TV.
+/^Subject:(.*)barnyard/ 						REJECT No barnyard  please
+/^Subject:(.*)beast/ 							REJECT X-Rated Subject Line
+/^Subject:(.*)bitch/ 							REJECT X-Rated Subject Line
+/^Subject:(.*)bodies/ 							REJECT X-Rated Subject Line
+/^Subject:(.*)breast/ 							REJECT X-Rated Subject Line
+/^Subject:(.*)fuck/ 							REJECT X-Rated Subject Line
+/^Subject:(.*)galore/ 							REJECT X-Rated Subject Line
+/^Subject:(.*)gay/ 							REJECT X-Rated Subject Line
+/^Subject:(.*)porn/							REJECT X-Rated Subject Line
+/^Subject:(.*)slut/ 							REJECT X-Rated Subject Line
+/^Subject:(.*)HARDCORE/			              			REJECT X-Rated Subject Line
+/^Subject:(.*)teen/ 							REJECT X-Rated Subject Line
+/^Subject:(.*)xxx/ 							REJECT X-Rated Subject Line
+/^Subject:(.*)orgasms/ 							REJECT X-Rated Subject Line
+/^Subject:(.*)size does matter/						REJECT X-Rated Subject Line
+/^(To|From|Cc|Reply-To):.*@sexyfun.net/					REJECT X-Rated Subject Line
+/^Subject:(.*)\bdick\b/							REJECT X-Rated Subject Line
+/^Subject:(.*)viagra/ 							REJECT No thanks, we've got plenty.
+/^Subject:(.*)viaagra/ 							REJECT No thanks, we've got plenty.
+/^Subject:(.*)viiagra/ 							REJECT No thanks, we've got plenty.
+/^Subject:(.*)v1agra/ 							REJECT No thanks, we've got plenty.
+/^Subject:(.*)viagr@/ 							REJECT No thanks, we've got plenty.
+/^Subject:(.*)v1@gra/ 							REJECT No thanks, we've got plenty.
+/^Subject:(.*)viag*ra/ 							REJECT No thanks, we've got plenty.
+/^Subject:(.*)soma/ 							REJECT No thanks, we've got plenty.
+/^Subject:(.*)levitra/ 							REJECT No thanks, we've got plenty.
+/^Subject:(.*)ambien/ 							REJECT No thanks, we've got plenty.
+/^Subject:(.*)tramadol/							REJECT No thanks, we've got plenty.
+/^Subject:(.*)phentermine/						REJECT No thanks, we've got plenty.
+/^To:(.*)infomail@recurrent\.com/					REJECT Die, spammer, die.
+/^Subject:(.*)pen[i1]s/							REJECT You said the p-word
+/(.*)?\{6,\}/								REJECT Too many ?????
+/(.*)[X|x]\{3,\}/							REJECT Too many Xs
+/^(To|From|Cc|Reply-To|Subject):.*Free Cellular Phone/			REJECT We already have cell phones.
+/^(From|mailto):.*@pornopassprt.com/					REJECT no porn mail, please.
