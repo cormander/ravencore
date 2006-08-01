@@ -455,6 +455,10 @@ done
 
 	for i in $IP_ADDRESSES; do $_echo "http://"$i":8000/"; done
 
+	$_echo
+	$_echo "Be sure you set your admin password before you login, if you don't already have one."
+	$_echo "You can do this by running this as root: "$RC_ROOT"/sbin/run_cmd passwd"
+
     fi
 
     

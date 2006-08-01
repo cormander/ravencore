@@ -537,7 +537,7 @@ $_echo "Success!!"
 if [ -n "$reset_password" ]; then
 
     $_echo "**********"
-    $_echo "** NOTE ** We had to reset the $MYSQL_ADMIN_USER password to \"$MYSQL_ADMIN_PASS\" "
+    $_echo "** NOTE ** We had to reset the $MYSQL_ADMIN_USER password in order to gain access. "
     $_echo "**********"
 
 fi

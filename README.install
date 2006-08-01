@@ -91,16 +91,16 @@ NOTE: Logging into the control panel right after you upgrade is very important, 
 configuration variables to add, because the last of the upgrade steps happen when you first login after
 an upgrade.
 
+If this is your first time installing RavenCore, be sure you set your admin password before you login.
+You can do this by running this as root: /usr/local/ravencore/sbin/run_cmd passwd
+
 Once the install / upgrade process is completed, and the control panel is running, go to:
 
 http://your_ip:8000
 or
 https://your_ip:8080
 
-Now you see a login screen, login with the following:
-
-username: admin
-password: ravencore
+Now you see a login screen, login with the username "admin" and the password you set for it.
 
 Once you log in, new installations will require you to change the password. Must be atleast 5 characters,
 and not a dictionary word! ( and you can't keep ravencore as the password )

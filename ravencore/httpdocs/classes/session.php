@@ -76,6 +76,18 @@ class session {
       {
 	
       case $CONF['MYSQL_ADMIN_USER']:
+
+	// check to see if the admin password has been set - if not, return false and tell them to set it
+
+	if ( $db->initial_passwd() )
+	  {
+	    // TODO: update lang files with this string
+	    $this->login_error = __('You have not set your admin password yet. Please run the following command as root:');
+	    $this->login_error .= '<p>' . $CONF['RC_ROOT'] . '/sbin/run_cmd passwd';
+
+	    return false;
+ 
+	  }
 	
 	// admin user auth
 
