@@ -50,6 +50,47 @@ foreach (@ARGV)
     $cmd .= $_ . ' ';
 }
 
+# passwd doesn't go to the run_cmd, it goes to the passwd command :)
+
+if( $cmd eq "passwd " )
+{
+
+# turn off echo so the password won't show up on the screen
+
+    system "stty -echo";
+
+    print "Enter in a new password: ";
+
+    $passwd = <STDIN>;
+    chomp($passwd);
+
+    print "\nRe-enter the password: ";
+    
+    $passwd_again = <STDIN>;
+    chomp($passwd_again);
+
+# turn echo back on
+
+    system "stty echo";
+
+    print "\n";
+
+    &die_error("The passwords must match!") unless $passwd eq $passwd_again;
+
+    &die_error("Your password must be at least 5 characters long.") unless length($passwd) > 4;
+
+    &die_error("Your password must contain at least one digit.") unless $passwd =~ m/\d/;
+
+    &die_error("Your password must contain at least one alphabetical character.") unless $passwd =~ m/[a-zA-Z]/;
+
+    $db->change_passwd(&get_passwd, $passwd);
+
+    print "Success!!\n";
+
+    exit(0);
+
+}
+
 # run the command
 # TODO: check $cmd here. the socket does this, but might as well add a layer
 # of security here, too
@@ -57,3 +98,4 @@ foreach (@ARGV)
 # any out put of the command will be printed
 
 print $db->run_cmd($cmd);
+

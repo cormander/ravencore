@@ -186,6 +186,10 @@ for ( $waitedpid = 0; accept(CLIENT,SERVER) || $waitedpid; $waitedpid = 0, close
 			  ';port='.$CONF{'MYSQL_ADMIN_PORT'},
 			  $CONF{'MYSQL_ADMIN_USER'}, $passwd, {RaiseError => 0});
 
+# cache our "initial_passwd" response, since we have our $passwd in memory right now
+    if($passwd =~ m/^ravencore$/i) { $initial_passwd = "true" }
+    else { $initial_passwd = "false" }
+
     &destroy(\$passwd);
 
 # read in the data from the client.... usually an SQL statement
@@ -218,9 +222,7 @@ for ( $waitedpid = 0; accept(CLIENT,SERVER) || $waitedpid; $waitedpid = 0, close
 # compare $pw to the &get_passwd ( which comes from the .shadow file ). return "true" on success and
 # "false" on failure
 
-	    $passwd = &get_passwd;
-	    
-	    if($pw eq $passwd)
+	    if($pw eq &get_passwd)
 	    {
 		$data = "true";
 	    }
@@ -228,8 +230,6 @@ for ( $waitedpid = 0; accept(CLIENT,SERVER) || $waitedpid; $waitedpid = 0, close
 	    {
 		$data = "false";
 	    }
-	    
-	    &destroy(\$passwd);
 	    
 	}
 	elsif($query =~ m/^connect/i)
@@ -248,19 +248,23 @@ for ( $waitedpid = 0; accept(CLIENT,SERVER) || $waitedpid; $waitedpid = 0, close
 	elsif($query =~ m/^initial_passwd/i)
 	{
 # we're being asked if our password has been set. right now, this means it is set to "ravencore"
+# this is cached from before we started our loop
 
-	    $passwd = &get_passwd;
+	    $data = $initial_passwd;
 
-	    if($passwd =~ m/^ravencore$/i)
-	    {
-		$data = "true";
-	    }
-	    else
-            {
-                $data = "false";
-            }
+	}
+	elsif($query =~ m/^service_running /i)
+	{
+# is the given service running?
+# TODO: make this perl code, instead of having to call an external script
+            $service = $query;
+            $service =~ s/^service_running //i;
+	    
+	    open RUN, $CONF{'RC_ROOT'} . '/bin/is_service_running ' . $service;
+	    $data = <RUN>;
+	    close RUN;
 
-            &destroy(\$passwd);
+	    chomp($data);
 
 	}
 	elsif($query =~ m/^run /i)
@@ -381,9 +385,7 @@ for ( $waitedpid = 0; accept(CLIENT,SERVER) || $waitedpid; $waitedpid = 0, close
 # parse out the info from the $query. the @xxx array catches any remaining elements if any
 		($x, $old, $new, @xxx) = split / /,$query;
 		
-		$passwd = &get_passwd;
-
-		if($old eq $passwd)
+		if($old eq &get_passwd)
 		{
 		    
 		    $db->do("SET PASSWORD FOR '" . $CONF{'MYSQL_ADMIN_USER'} . "'\@'" . $CONF{'MYSQL_ADMIN_HOST'} . "' = PASSWORD('" . $new . "')");
@@ -405,8 +407,6 @@ for ( $waitedpid = 0; accept(CLIENT,SERVER) || $waitedpid; $waitedpid = 0, close
 		    $data = "false";
 		}
 		
-		&destroy(\$passwd);
-
 	    }
 # do the sql query, but the kind of query depends on what we do.
 # if it's NOT a "select" or a "show" query (do a case in-sensative match) then we simply "do"
@@ -448,7 +448,7 @@ for ( $waitedpid = 0; accept(CLIENT,SERVER) || $waitedpid; $waitedpid = 0, close
 			foreach (keys %$hash_ref)
 			{
 			    $data .= $_ .'{' . encode_base64($hash_ref->{$_}) . '}' . $ETX;
-		    }
+			}
 			
 # end the string with a ETX character... end of string will always be two ETX's
 # unless there is no results, in which case, it doesn't matter
@@ -462,7 +462,7 @@ for ( $waitedpid = 0; accept(CLIENT,SERVER) || $waitedpid; $waitedpid = 0, close
 # gather our info. the PHP data_query will know how to parse this.
 		
 		    $data = $insert_id . $ETX . $ETX . $rows_affected . $ETX . $ETX . $data;
-	    
+
 		}
 
 	    }
