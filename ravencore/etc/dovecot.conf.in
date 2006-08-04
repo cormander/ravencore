@@ -609,7 +609,7 @@ auth default {
   # Note that PAM can only be used to verify if user's password is correct,
   # so it can't be used as userdb. If you don't want to use a separate user
   # database (passwd usually), you can use static userdb.
-  passdb pam {
+  #passdb pam {
     # [-session] [cache_key=<key>] [<service name>]
     #
     # -session makes Dovecot open and immediately close PAM session. Some
@@ -629,7 +629,7 @@ auth default {
     # If service name is "*", it means the authenticating service name
     # is used, eg. pop3 or imap.
     #args = dovecot
-  }
+  #}
 
   # /etc/passwd or similar, using getpwnam()
   # In many systems nowadays this uses Name Service Switch, which is
