@@ -3,3 +3,4 @@
 /usr/sbin/httpd
 /usr/sbin/apache
 /usr/apache/bin/httpd
+/usr/libexec/apache
