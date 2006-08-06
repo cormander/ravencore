@@ -57,7 +57,7 @@ is_stopped=$($_echo $status_output | $_awk '/stopped|not.*running/')
 case $($_echo $status_output | $_grep "Usage: ") in
 # we're OK
     "") ;;
-# we can't do a "status" on this init script. set $is_stopped to bypass our "Yes", our
+# we can't do a "status" on this init script. set $is_stopped to bypass our "true", our
 # pidof check should see it running if it really is
     *) is_stopped="stopped"
 	;;
@@ -68,7 +68,7 @@ esac
 
 if [ $ret -eq 0 ] && [ -z "$is_stopped" ]; then
   
-    $_echo Yes
+    $_echo true
 
     exit 0
   
@@ -87,13 +87,13 @@ else
 
     if [ $? -eq 0 ]; then
 
-	$_echo Yes
+	$_echo true
 
 	exit 0
 	
     else
 
-	$_echo No
+	$_echo false
 
 	exit 1
 
