@@ -45,6 +45,17 @@ if [ ! -f $HTTPD ]; then
 
 fi
 
+# TODO: search for mime.types elsewhere and make a symlink
+# for now, just require that it exists
+
+if [ ! -f /etc/mime.types ]; then
+
+    $_echo "Fatal error: /etc/mime.types does not exist"
+
+    exit 1
+
+fi
+
 # check to see what version we are now, vs what version we were when we ran last time
 
 $_cat $RC_ROOT/var/run/version 2> /dev/null | $_diff $RC_ROOT/etc/version - &> /dev/null
@@ -412,7 +423,6 @@ $_chmod 751 $RC_ROOT/{.,sbin,etc,var/{.,apps}}
 # set sbin files to 500, with the exception of mailscan
 $_chmod 500 $RC_ROOT/{bin,sbin}/*
 $_chmod 555 $RC_ROOT/sbin/mailscan
-$_chmod 550 $RC_ROOT/bin/disp_chkconfig
 
 $_chgrp servgrp $($_find $RC_ROOT/var/apps/squirrelmail -type d)
 $_chmod 751 $($_find $RC_ROOT/var/apps/squirrelmail -type d)
