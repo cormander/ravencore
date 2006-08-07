@@ -2,7 +2,7 @@
 
 Summary: RavenCore Hosting Control Panel
 Name: ravencore
-Version: 0.2.2
+Version: 0.2.3
 Release: 1
 Packager: Cormander
 URL: http://www.ravencore.com/
@@ -164,6 +164,22 @@ rm -rf $RPM_BUILD_ROOT
 %{rc_root}/var
 
 %changelog
+* Sun Aug 06 2006 cormander <admin@ravencore.com>
+- version 0.2.3
+- upgraded phpmyadmin to 2.8.2.1
+- upgraded phpwebftp to 3.3b
+- added the "passwd" command so that root can easilly set admin's password on the command line
+- added the requirement to set the admin password after installation for security reasons
+- added header_checks to postfix main.cf to reject obvious spam
+- added several "my" statements in all of the perl scripts to keep variables from overwriting global ones
+- changed references to "localhost" to 127.0.0.1 so servers with "localhost" not in /etc/hosts will work
+- removed refrences to PAM authentication from dovecot 1.0 configuration file, as PAM isn't ever used there
+- fixed data duplication bug in the rcsock.pm client for data_query calls
+- fixed the "Startup Services" page in admin section, it wasn't showing anything on the page
+- fixed the "System Services" page in admin section, it wasn't showing the status of any service
+- fixed the bug with a user launching phpmyadmin and getting an error
+- fixed the bug where mail redirects with mailboxes sent duplicate messages when amavisd is enabled
+
 * Sun Jul 30 2006 cormander <admin@ravencore.com>
 - version 0.2.2
 - added a hardcoded requirement that perl scripts be run as root
