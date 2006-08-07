@@ -49,7 +49,7 @@ print '' . $lang['add_db_adding_a_database_for'] . ' ' . $row['name'] . '<p>
 
 <form method="post">
 
-' . __('Name') . '": <input type="text" name=name>
+' . __('Name') . ': <input type="text" name=name>
 
 <p>
 

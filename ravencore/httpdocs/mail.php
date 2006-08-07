@@ -187,7 +187,7 @@ print '<input type=radio name="catchall" value="delete_it"';
 <td>';
 		if ( $row_email[mailbox] == "true" )
 		  {
-		    if (@fsockopen("localhost", 143)) print '<a href="webmail.php?mid=' . $row_email[id] . '&did=' . $row_email[did] . '" target="_blank">' . __('Webmail') . '</a>';
+		    if (@fsockopen("127.0.0.1", 143)) print '<a href="webmail.php?mid=' . $row_email[id] . '&did=' . $row_email[did] . '" target="_blank">' . __('Webmail') . '</a>';
 		    else print '<a href="#" onclick="alert(\'' . __('Webmail is currently offline') . '\')" onmouseover="show_help(\'' . __('Webmail is currently offline') . '\');" onmouseout="help_rst();">' . __('Webmail') . ' ( ' . __('offline') . ' )</a>';
 		  }
 		else
@@ -280,7 +280,7 @@ else
 
 	if ( $row[mailbox] == "true" )
 	  {
-	    if (@fsockopen("localhost", 143)) print '<a href="webmail.php?mid=' . $row[mid] . '&did=' . $row[did] . '" target="_blank">' . __('Webmail') . '</a>';
+	    if (@fsockopen("127.0.0.1", 143)) print '<a href="webmail.php?mid=' . $row[mid] . '&did=' . $row[did] . '" target="_blank">' . __('Webmail') . '</a>';
 	    else print '<a href="#" onclick="alert(\'' . __('Webmail is currently offline') . '\')" onmouseover="show_help(\'' . __('Webmail is currently offline') . '\');" onmouseout="help_rst();">' . __('Webmail') . ' ( ' . __('offline') . ' )</a>';
 	  }
 	else

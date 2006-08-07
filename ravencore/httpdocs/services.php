@@ -72,7 +72,7 @@ foreach ($services as $val)
 
     switch (trim($resp))
       {
-      case 'Yes':
+      case 'true':
 	  
             $running = '<img src="images/solidgr.gif" border=0>';
             $start = '<img src="images/start_grey.gif" border=0>';
@@ -80,7 +80,7 @@ foreach ($services as $val)
 
             break;
 
-        case 'No':
+      default:
 
             $running = '<img src="images/solidrd.gif" border=0>';
             $start = '<a href="services.php?action=run&service=' . $val . '&service_cmd=start"><img src="images/start.gif" border=0></a>';

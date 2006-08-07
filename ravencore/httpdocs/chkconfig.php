@@ -30,7 +30,7 @@ if ($_GET[service] and $_GET[status])
 
 nav_top();
 
-system("../bin/disp_chkconfig");
+print $db->run_cmd("disp_chkconfig");
 
 nav_bottom();
 

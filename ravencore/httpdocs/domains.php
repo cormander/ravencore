@@ -35,12 +35,15 @@ if ($action == "delete")
 } 
 else if ($action == "hosting")
 {
-    $sql = "update domains set hosting = '$_POST[hosting]' where id = '$did'";
+    $sql = "update domains set hosting = '$_REQUEST[hosting]' where id = '$did'";
+	//echo $sql;
     $db->data_query($sql);
 
-    if ($db->data_affected_rows()) socket_cmd("rehash_httpd " . $d->name());
-
-    goto("domains.php?did=$did");
+    if ($db->data_rows_affected()) socket_cmd("rehash_httpd " . $d->name());
+//	echo "<pre>". print_r($_SERVER,1) . "</pre>";
+//	echo basename($_SERVER['HTTP_REFERER']);
+//	die();
+    goto(basename($_SERVER['HTTP_REFERER']));
 } 
 else if ($action == "change")
 { 
@@ -63,10 +66,13 @@ if (!$did)
         $sql = "select * from users where id = '$uid'";
         $result = $db->data_query($sql);
 
-	$row_u = $db->data_fetch_array($result);
+        $row_u = $db->data_fetch_array($result);
 
         print '' . __('Domains for') . ' ' . $row_u[name] . '<p>';
     } 
+
+    if(is_admin()) print '<a href="edit_domain.php" onmouseover="show_help(\'' . __('Add a domain to the server') . '\');" onmouseout="help_rst();">' . __('Add a Domain') . '</a><p>';
+
 
     $sql = "select * from domains where 1";
 
@@ -75,6 +81,19 @@ if (!$did)
 
     $sql .= " order by name";
     $result = $db->data_query($sql);
+	$page = "";
+	if(array_key_exists('page', $_REQUEST))
+	{
+		$page = $_REQUEST['page'];
+	}
+	if(trim($page)=="" || $page<=0)
+	{
+		$page = 1;
+	}
+	$CONF['DOMAINS_PER_PAGE'] = 20;
+	$intDomainsPerPage = (int)$CONF['DOMAINS_PER_PAGE'];
+	$sql .= "
+	LIMIT ".(($page-1)*$intDomainsPerPage).",".$intDomainsPerPage;
 
     $num_domains = $db->data_num_rows();
 
@@ -98,14 +117,134 @@ if (!$did)
 
     if ($num_domains != 0)
     {
+	    $result = $db->data_query($sql);
+
+		$pages = ceil($num_domains / $intDomainsPerPage);
+
+
+		$strContent = '<table class="overzicht">
+		<tr>
+			<th colspan="2">'. __('Found') . ' ' . $num_domains . ' ' . __('results').'</th>
+			<th colspan="4" style="text-align: right;">Page: ';
+
+			if($page>1)
+			{
+				$strContent .= '<a href="domains.php?page=' . ($page-1) .($_GET['search']!="" ? '&search='.$_GET['search'] : '' ). '"> &lt;&lt; </a>';
+			} else
+			{
+				$strContent .= ' &lt;&lt; ';
+			}
+			
+			$strContent .= '<select name="page" onchange="document.location=\'domains.php?page=\'+this.value'.($_GET['search']!="" ? '+\'&search='.$_GET['search'].'\'' : '' ).'">';
+
+			
+			for($i=1;$i<=$pages;$i++)
+			{
+				if ($i==$page)
+				{
+					$strContent .= '<option value="'.$i.'" selected="selected">'.$i.' </option>';
+				} else
+				{
+					$strContent .= '<option value="'.$i.'">'.$i.' </option>';
+					
+				}
+			}
+						
+			$strContent .= '</select>';
+			if($page<$pages)
+			{
+				$strContent .= '<a href="domains.php?page=' . ($page+1) .($_GET['search']!="" ? '&search='.$_GET['search'] : '' ). '"> &gt;&gt; </a>';
+			} else
+			{
+				$strContent .= ' &gt;&gt; ';
+			}
+			$strContent .= '</th>
+		</tr>
+		<tr>
+			<th style="width: 16px">' . __('Status') . '</th>
+			<th>' . __('Name') . '</th>
+			<th>' . __('Hosting') . '</th>
+			<th>' . __('Created') . '</th>
+			<th>' . __('Space usage') . '</th>
+			<th>' . __('Traffic usage') . '</th>
+		</tr>';
+
+		while ($row = $db->data_fetch_array($result))
+        {
+			$d = new domain($row['id']);
+
+            $space = $d->space_usage(date("m"), date("Y"));
+            $traffic = $d->traffic_usage(date("m"), date("Y")); 
+            // add to our totals
+            $total_space += $space;
+            $total_traffic += $traffic;
+
+			$helpMessage = '';
+
+			switch ($row['host_type'])
+			{
+				case "physical":
+					$helpMessage = __('Physical hosting') . ': ';
+					if ($row['host_php']) {	$helpMessage .= __('PHP') . ' '; };
+					if ($row['host_cgi']) {	$helpMessage .= __('CGI') . ' '; };
+					if ($row['host_ssl']) {	$helpMessage .= __('SSL') . ' '; };
+					if ($row['host_dir']) {	$helpMessage .= __('Directory indexing') . ' '; };
+					break;
+				case "redirect":
+					$helpMessage = __('Redirect to') . ' ' . $row['redirect_url']  ;
+					break;
+				case "alias":
+					$helpMessage = __('Alias of domain') . ' ' . $row['redirect_url']  ;
+					break;
+				case "none":
+					$helpMessage = __('No hosting');
+					break;
+			}
+
+			if ($row['hosting']=='on')
+			{
+				$strOnOffImage = '/images/solidgr.gif' ;
+				$strOnOffHelpText = __('Hosting') . ' ' . __('Status') . ': ' . __('On');
+				$strNewHosting = 'off';
+			} else
+			{
+				$strOnOffImage = '/images/solidrd.gif';
+				$strOnOffHelpText = __('Hosting') . ' ' . __('Status') . ': ' . __('Off');
+				$strNewHosting = 'on';
+			}
+
+            $strContent .= '<tr>
+				<td style="width: 16px; text-align: center" onmouseover="show_help(\'' . $strOnOffHelpText. '\');" onmouseout="help_rst();"><a href="domains.php?action=hosting&did='.$row['id'].'&hosting='.$strNewHosting.'"><img src="'.$strOnOffImage.'" height="12" width="12" border="0"></a></td>
+				<td><a href="domains.php?did=' . $row['id'] . '" onmouseover="show_help(\'' . __('View setup information for') . ' ' . $row['name'] . '\');" onmouseout="help_rst();">' . $row['name'] . '</a></td>
+				<td onmouseover="show_help(\'' . $helpMessage . '\');" onmouseout="help_rst();"><a href="hosting.php?did=' . $row['id'] . '">' . $row['host_type'] . '</a></td>
+				<td>' . $row['created'] . '</td>
+				<td align=right>' . $space . ' MB</td>
+				<td align=right>' . $traffic . ' MB</td>
+			</tr>';
+        } 
+
+		$strContent .= '
+		</table>
+		
+		';
+
+		print $strContent;
+
+
+
+
+
+
+
+/*
         print '<table><tr><th>' . __('Name') . '</th><th>' . __('Space usage') . '</th><th>' . __('Traffic usage') . '</th></tr>'; 
         // set our totals to zero
         $total_space = 0;
         $total_traffic = 0;
 
-        while ( $row = $db->data_fetch_array($result) )
+        while ($row =& $result->FetchRow())
         {
-	  $d = new domain($row['id']);
+			$d = new domain($row['id']);
 
             $space = $d->space_usage(date("m"), date("Y"));
             $traffic = $d->traffic_usage(date("m"), date("Y")); 
@@ -117,9 +256,12 @@ if (!$did)
         } 
 
         print '<tr><td>' . __('Totals') . '</td><td align=right>' . $total_space . ' MB</td><td align=right>' . $total_traffic . ' MB</td></tr></table><p>'; 
-        // print the link to add a domain if the user has permissions to
+
+*/
+        // print the link to add a domain if the user has permissions to\
+		/*
         if (!user_can_add($uid, "domain") and !is_admin()) print '' . __('You are at your limit for the number of domains you can have') . '<p>';
-        else print '<a href="edit_domain.php" onmouseover="show_help(\'' . __('Add a domain to the server') . '\');" onmouseout="help_rst();">' . __('Add a Domain') . '</a><p>';
+        else print '<a href="edit_domain.php" onmouseover="show_help(\'' . __('Add a domain to the server') . '\');" onmouseout="help_rst();">' . __('Add a Domain') . '</a><p>';*/
     } 
 } 
 else
@@ -135,7 +277,7 @@ else
     if ($num == 0) print __('Domain does not exist');
     else
     {
-      $row = $db->data_fetch_array($result);
+        $row = $db->data_fetch_array($result);
 
         if (is_admin())
         {
@@ -150,7 +292,7 @@ else
 
             print '<option value=0>' . __('No One') . '</option>';
 
-            while ( $row_u = $db->data_fetch_array($result) )
+            while ($row_u = $db->data_fetch_array($result))
             {
                 print '<option value="' . $row_u['id'] . '"';
 
@@ -241,7 +383,7 @@ else
                 $sql = "select count(*) as count from mail_users where did = '$row[id]'";
                 $result = $db->data_query($sql);
 
-		$row_count = $db->data_fetch_array($result);
+                $row_count = $db->data_fetch_array($result);
 
                 print ' (' . $row_count[count] . ')';
             } 
@@ -255,7 +397,7 @@ else
         $sql = "select count(*) as count from data_bases where did = '$row[id]'";
         $result = $db->data_query($sql);
 
-	$row_count = $db->data_fetch_array($result);
+        $row_count = $db->data_fetch_array($result);
 
         print ' (' . $row_count[count] . ')<p>';
 

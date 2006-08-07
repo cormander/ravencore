@@ -26,7 +26,7 @@ if (!$did or !$dbid or !$dbu) goto("users.php?uid=$uid");
 $sql = "select name, login, passwd from data_bases d, data_base_users u where db_id = d.id and d.id = '$dbid' and u.id = '$dbu' and did = '$did'";
 $result = $db->data_query($sql);
 
-$row = $db->data_fetch_row($result);
+$row = $db->data_fetch_array($result);
 
 // change session names so our variables carry over to phpmyadmin
 // we call it twice, to override any previous phpmyadmin session we were in

@@ -31,7 +31,7 @@ $row = $db->data_fetch_array($result);
 $_SESSION['user'] = $row[login];
 $_SESSION['password'] = $row[passwd];
 
-$_SESSION['server'] = "localhost";
+$_SESSION['server'] = "127.0.0.1";
 $_SESSION['language'] = $locales[$current_locale]['filemanager'];
 $_SESSION['port'] = 21;
 
