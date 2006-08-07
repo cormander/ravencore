@@ -1,3 +1,21 @@
+#
+#                  RavenCore Hosting Control Panel
+#                Copyright (C) 2005  Corey Henderson
+#
+#     This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
 
 #
 
@@ -54,6 +72,10 @@ sub do_raw_query
 
     my ($self, $query) = @_;
 
+    my $c;
+    my $ret;
+    my $data;
+
 # write to the socket
 
     print { $self->{socket} } encode_base64($query) . $self->{EOT};
@@ -107,22 +129,24 @@ sub data_query
 
     my ($self, $sql) = @_;
 
+    my @dat;
+
 # ask if we have a database connection.... if not, don't bother trying the data_query
     if ( ! $self->data_alive() ) { return 0 }
     
 # query the socket and get the data based on our question
 
-    $data = $self->do_raw_query($sql);
-
+    my $data = $self->do_raw_query($sql);
+#    print $data . "\n";
 # now we want to parse this raw data and load our array with it's peices
 # we got rows, and columns.... end of row will always be two ETX bytes
 
-    @rows = split/$self->{ETX}$self->{ETX}/, $data;
+    my @rows = split/$self->{ETX}$self->{ETX}/, $data;
 
 # the last element in this first array will always be blank, so remove it
     
 #    pop @rows;
-    
+
 # the first two elements in the array are special values
 # 1) insert_id , if any
     
@@ -141,44 +165,41 @@ sub data_query
 
 # walk down the rows, and split the column data into it's key => value pair
 
-    foreach $row_data (@rows)
+    foreach my $row_data (@rows)
       {
 	
 # columns seperated by the ETX byte
 	
-	  @item = split/$self->{ETX}/, $row_data;
+	  my @item = split/$self->{ETX}/, $row_data;
 
 # we don't do an array_pop here, because the last NUL was removed by the first explode
 # where the end-of-row one and the end-of-column ones were joined, which is why we split on two
 # the end of the string here is an actual value to consider in the array
 	
-	  $i = $self->{num_rows};
+	  my $i = $self->{num_rows};
 	  
 # walk down the raw column data, as we still have yet to split into key / val
 	
-	  foreach $item_data (@item)
+	  foreach my $item_data (@item)
 	  {
 	    
-# replace return characters with : characters, so our regular expressions below won't break;
-
-	      $item_data =~ s/\n/:/g;
-
 # data is returned in the following format:
 # key{value} ( value is base64 encoded )
 # so the two below regex rules parse out the key / val appropriatly
 	      
+	      my $key;
+	      my $val;
+
 	      $key = $val = $item_data;
 	      
-	      $key =~ s|^(.*)\{.*\}$|\1|;
-	      $val =~ s|^.*\{(.*)\}$|\1|;
-
-# return the : characters back to newline, and decode the base64 of $val to get the real value
-
-	      $val =~ s/:/\n/g;
+	      $key =~ s|^(.*)\{.*\}$|\1|s;
+	      $val =~ s|^.*\{(.*)\}$|\1|s;
 
 # add this has key => val hash to our dat array
 
 	      $dat[$i]{$key} = decode_base64($val);
+
+#	      print $key . " => " . $dat[$i]{$key} . "\n";
 	    
 	  } # end foreach
 	  
@@ -193,6 +214,17 @@ sub data_query
     return @dat;
 
 } # end sub data_query
+
+#
+
+sub service_running
+{
+
+    my ($self, $service) = @_;
+
+    return $self->str_to_bool($self->do_raw_query('service_running ' . $service));
+
+}
 
 # a function to run the given command as root, the file must be in $RC_ROOT/bin and must contain
 # special file permissions and ownership to run. this basically replaces the wrapper function.
