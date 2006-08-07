@@ -229,7 +229,7 @@ class rcsock {
 	
 	$item = explode($this->ETX, $row_data);
 
-	// we don't do an array_pop here, because the last NUL was removed by the first explode
+	// we don't do an array_pop here, because the last ETX was removed by the first explode
 	// where the end-of-row one and the end-of-column ones were joined, which is why we split on two
 	// the end of the string here is an actual value to consider in the array
 	
@@ -240,20 +240,16 @@ class rcsock {
 	foreach($item as $item_data)
 	  {
 	    
-	    // replace return characters with : characters, so our regular expressions below won't break;
-
-	    $item_data = str_replace("\n",":",$item_data);
-
 	    // data is returned in the following format:
 	    // key{value} ( value is base64 encoded )
 	    // so the two below regex rules parse out the key / val appropriatly
  	    
-	    $key = preg_replace('|^(.*)\{.*\}$|','\1',$item_data);
-	    $val = preg_replace('|^.*\{(.*)\}$|','\1',$item_data);
+	    $key = preg_replace('|^(.*)\{.*\}$|s','\1',$item_data);
+	    $val = preg_replace('|^.*\{(.*)\}$|s','\1',$item_data);
 
 	    // return the : characters back to newline, and decode the base64 of $val to get the real value
 
-	    $dat[$i][$key] = base64_decode(str_replace(":","\n",$val));
+	    $dat[$i][$key] = base64_decode($val);
 	    
 	  } // end foreach($item as $item_data)
 	
