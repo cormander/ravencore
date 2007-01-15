@@ -17,11 +17,8 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-*/
 
-/*
-
-class rcsock
+class rcclient
 
 This class was coded as the client to the ravencore database socket. It writs SQL statements
 ( and a few other kinds of things ) to the socket, and reads the output. The purpose here is
@@ -42,11 +39,11 @@ the socket, as there are no common shell commands to do this (that I am aware of
 
 */
 
-class rcsock {
+class rcclient {
 
   // open the socket connection when the object is created
 
-  function rcsock($socket)
+  function rcclient()
   {
     
     global $socket_err;
@@ -56,10 +53,15 @@ class rcsock {
     $this->ETX = chr(3); // end of text
     $this->EOT = chr(4); // end of transmission
     $this->NAK = chr(21); // negative acknowledge
+    $this->ETB = chr(23); // end of trans. block
     $this->CAN = chr(24); // cancel
+
+    // TODO: make this dynamic off of getcwd
+    $socket = '/usr/local/ravencore/var/rc.sock';
 
     list($major, $minor, $release) = explode('.',phpversion());
 
+    // php5 requires that "unix://" be prepended to the socket path
     if($major == 5) $socket = 'unix://' . $socket;
 
     // open our socket...
@@ -81,29 +83,32 @@ class rcsock {
 
       }
     
+    // RavenCore sessions are cookie based only. If there is no "RAVENCORE" $_COOKIE, then we don't have a session id,
+    // and we need to generate one (with the md5 sum of a very random number)
+    $this->session_id = ( $_COOKIE['RAVENCORE'] ? $_COOKIE['RAVENCORE'] : md5(uniqid(rand(), true)) );
+    
+    // set the session ID
+    session_id($this->session_id);
+    
+    // auth $session_id $ipaddress $username $password
+    $this->auth_resp = $this->do_raw_query('auth ' .
+					 $this->session_id . ' ' .
+					 $_SERVER['REMOTE_ADDR'] .
+					 ( $_POST['user'] ? ' ' . $_POST['user'] . ' ' . $_POST['pass'] : '' )
+					 );
+
   }
 
-  // submit a query to the socket, and return the raw data that is the answer. This isn't always
-  // an SQL query. This function should probably only be used within this object class.
-  //   supported commands:
-  //     initial_passwd
-  //     auth <password>
-  //     run <command>
-  //     use <database>
-  //     passwd <old password> <new password>
-  //     SQL statement (select, insert, update, delete)
-  //     connect ( tell us if we have a db connection )
+  // submit a query to the socket, and return the raw data that is the answer.
 
   function do_raw_query($query)
   {
 
     // submit the query to the socket, base64 encoded to be binary safe, and the EOT character tells
     // the socket that we're done transmitting this query
-
     fwrite($this->sock, base64_encode($query) . $this->EOT);
 
     // flush our writting to the socket so we get an imidate reply on the data
-
     fflush($this->sock);
 
     // read data until the EOT byte
@@ -115,6 +120,15 @@ class rcsock {
       $data .= $c;
       
       $c = fgetc($this->sock);
+
+      // if $c is litterally false, we got disconnected. probably a "too many connections" error
+      if( $c === false )
+	{
+	    nav_top();
+	    print $data;
+	    nav_bottom();
+	    exit;
+	}
       
     } while ( $c != $this->EOT );
 
@@ -124,14 +138,11 @@ class rcsock {
     // then we know there was trouble.... print the error and exit. We don't have to worry about
     // binary files fudging this up, because just about everything else is returned as a base64
     // encoded string
-    
-    if( preg_match('|^' . $this->NAK . '|', $data) )
+
+    if( preg_match('|^' . $this->NAK . '.*' . $this->ETB . '|', $data) )
       {
 
-	$data = str_replace($this->NAK,'',$data);
-
 	// this error is a fatal error if it ends with the CAN byte
-
 	if (  preg_match('|' . $this->CAN . '$|', $data) )
 	  {
 	    nav_top();
@@ -139,45 +150,26 @@ class rcsock {
 	    nav_bottom();
 	    exit;
 	  }
-	
+
+	$error = preg_replace('|^' . $this->NAK . '(.*)' . $this->ETB . '.*$|s','\1',$data);
+	$data = preg_replace('|^' . $this->NAK . '.*' . $this->ETB . '(.*)$|s','\1',$data);
+
 	// TODO: make this call a function instead. and whether or not headers are already sent, either 
 	// add this to the session or just output it right away. make this session an array rather then
 	// just a string, so we can clearly count the number of errors if we need to
-	$_SESSION['status_mesg'] = 'ERROR on query: ' . $query . '<br />Server responded with: ' . $data;
-	
-	// we don't want to return any data, so return false
-	
-	return false;
 
+	$_SESSION['status_mesg'] = 'ERROR on query: ' . $query . '<br />Server responded with: ' . $error;
+
+	
       }
     
     // return the raw response. whichever function calling do_raw_query will parse the data
     // as appropriate
-    
-    return $data;
+
+    return unserialize(base64_decode($data));
 
   }
   
-  // a function to convert a string to it's boolian... "true" becomes true, everything else
-  // becomes false
-
-  function str_to_bool($str)
-  {
-    
-    // remove any whitespace padding
-
-    $str = trim($str);
-
-    switch($str)
-      {
-      case "true":
-	return true;
-      default:
-	return false;
-      }
-    
-  }
-
   // query the database with $sql statement, and return the results to be retrieved with
   // data_fetch_array(). This returns an actual array of arrays, instead of a resource or
   // a pointer like most other database objects, so keep that in mind.
@@ -185,13 +177,8 @@ class rcsock {
   function data_query($sql)
   {
 
-    // if we don't have a database connection, don't bother doing the query
-
-    if ( ! $this->data_alive() ) return false;
-    
     // query the socket and get the data based on our question
-
-    $data = $this->do_raw_query($sql);
+    $data = $this->do_raw_query('sql ' . $sql);
 
     // now we want to parse this raw data and load our array with it's peices
     // we got rows, and columns.... end of row will always be two ETX bytes
@@ -199,20 +186,17 @@ class rcsock {
     $rows = explode($this->ETX.$this->ETX, $data);
 
     // the last element in this first array will always be blank, so remove it
-    
     array_pop($rows);
 
     // the first two elements in the array are special values
-    // 1) insert_id , if any
 
+    // 1) insert_id , if any
     $this->insert_id = array_shift($rows);
 
     // 2) rows_affected , if any
-
     $this->rows_affected = array_shift($rows);
 
-    // set our row count to zero
-    
+    // set our row count to zero    
     $this->num_rows = 0;
     
     // initlize our array... because if we have no data, we need the return value still
@@ -221,22 +205,18 @@ class rcsock {
     $dat = array();
 
     // walk down the rows, and split the column data into it's key => value pair
-    
     foreach($rows as $row_data)
       {
 	
 	// columns seperated by the ETX byte
-	
 	$item = explode($this->ETX, $row_data);
 
 	// we don't do an array_pop here, because the last ETX was removed by the first explode
 	// where the end-of-row one and the end-of-column ones were joined, which is why we split on two
 	// the end of the string here is an actual value to consider in the array
-	
 	$i = $this->num_rows;
 
 	// walk down the raw column data, as we still have yet to split into key / val
-	
 	foreach($item as $item_data)
 	  {
 	    
@@ -248,50 +228,25 @@ class rcsock {
 	    $val = preg_replace('|^.*\{(.*)\}$|s','\1',$item_data);
 
 	    // return the : characters back to newline, and decode the base64 of $val to get the real value
-
 	    $dat[$i][$key] = base64_decode($val);
 	    
 	  } // end foreach($item as $item_data)
 	
 	// increment the row number
-	
 	$this->num_rows++;
 	
       } // end foreach($rows as $row_data)
 
     // return the nested array
-
     return $dat;
 
   } // end function data_query($sql)
-
-  // a function to run the given command as root, the file must be in $RC_ROOT/bin and must contain
-  // special file permissions and ownership to run. this basically replaces the wrapper function.
-  // output returned from this doesn't nessisarily mean there was an error, we might have wanted to
-  // have data. so it's up to the code that calls this fuction to decide what to do with output, if any
-
-  function run_cmd($cmd)
-  {
-
-    // TODO: add some checking on $cmd here. we do this in the perl socket code as well, but it doesn't
-    // hurt to check at each layer
-
-    return base64_decode($this->do_raw_query('run ' . $cmd));
-
-  }
-
-  // authenticate the administrator password, returns true on success and false on failure
-
-  function data_auth($passwd)
-  {
-    return $this->str_to_bool($this->do_raw_query('auth ' . $passwd));
-  }
 
   // a function to change the current database in use
 
   function use_database($database)
   {
-    return $this->str_to_bool($this->do_raw_query('use ' . $database));
+    return $this->do_raw_query('use ' . $database);
   }
 
   // a function to change the admin password. returns true on success, false on failure
@@ -300,7 +255,7 @@ class rcsock {
 
   function change_passwd($old, $new)
   {
-    return $this->str_to_bool($this->do_raw_query('passwd ' . $old . ' ' . $new));
+    return $this->do_raw_query('passwd ' . $old . ' ' . $new);
   }
 
   // shift off and return the array of the current data query. array_shift returns FALSE if dat is empty.
@@ -321,27 +276,93 @@ class rcsock {
 
   function data_rows_affected() { return $this->rows_affected; }
 
-  // tell us if we have a database connection. the results of this function are cached,
-  // so we don't keep asking the socket for every single query. If the connection dies in the
-  // middle of a page load, an error will be issued via the do_raw_query call
+} // end class rcclient
 
-  function data_alive() {
-    
-    // if $this->alive is already set, don't bother asking again
+// create the class
+$rcdb = new rcclient;
 
-    if( ! $this->alive )
-      {
-	$this->alive = $this->str_to_bool($this->do_raw_query('connect'));
-      }
-    
-    return $this->alive;
-    
-  }
+// set our custom session handleing functions:
+// these make the php code NOT keep the session_id as a file readable by the webserver user. Instead, it provides a
+// method of storing session information (data, acess times, usernames, and the session id itself) in a root-read only
+// file. This way it becomes incredibly difficult for a hacker on the system (with webserver permissions - the rcadmin
+// user) to determine the session ID of a user, and thus, have their privileges. The only way to find out their session
+// information is either hacking that user's computer, intercepting their browser's communication (that should be over
+// ssl anyway), or via social engeneering - "hey, whats the ID of your ravencore session?" - LOL
 
-  //
+session_set_save_handler("session_open", "session_close", "session_read", "session_write", "session_dest", "session_gc");
 
-  function initial_passwd() { return $this->str_to_bool($this->do_raw_query('initial_passwd')); }
+// TODO: (in the future) add this session code to auto_prepend_file directive for ravencore -
+// so even phpmyadmin/squirrelmail/phpwebftp/etc use this code - no session data is ever stored
+// as the rcadmin user
 
-} // end class rcsock 
+function session_open($save_path, $session_name)
+{
+  // we don't need either of the above variables.. nor do we need to tell the socket
+  // to open the session file - it'll do that when then socket connection is established,
+  // so simply reutrn true
 
-?>
+  return true;
+}
+
+// close the session
+
+function session_close()
+{
+  // the socket closes the file when written to, so no need to do anything here
+  return true;
+}
+
+// ask the socket for data.. since the socket already knows who we are, we really don't even need to pass the $id to
+// it. the socket will already have the data in memory - it read it in the auth function - it'll have it cached and
+// just return whats there
+
+function session_read($id)
+{
+  global $rcdb;
+
+  $data = $rcdb->do_raw_query('session_read');
+
+  return ( $data ? $data : "" );
+}
+
+// tell the socket to store $sess_data
+
+function session_write($id, $sess_data)
+{
+  global $rcdb;
+
+  // open / write / close the file
+
+  return $rcdb->do_raw_query('session_write ' . $sess_data);
+
+  // TODO: return # of bytes written, or false
+
+  // TODO: don't allow session data to take up more then 512k of disk space on the filesystem.
+  // an admin session bypasses this check - if someone has admin access, the last thing we need to worry about
+  // is them taking up all the disk space with session files. add a "kill all sessions but my own" function
+  // server-side, only write up to a certian amount of data - if gone over, issue an error. Also, check the
+  // number of sessions - if over 512, then we have a TON of session files - issue error:
+  // "too many sessions"
+
+  // TODO: add an hourly cron to check all session files, and remove expired ones
+
+}
+
+// tell the socket to remove all data for this session
+
+function session_dest($id)
+{
+  global $rcdb;
+
+  $rcdb->do_raw_query('session_dest User logging out');
+
+  return true;
+}
+
+// TODO: can someone please tell me wtf this function is for ??? (got it off php.net)
+
+function session_gc($maxlifetime)
+{
+  return true;
+}
+

@@ -17,52 +17,122 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
+# package rcclient
+#
+# The method (coded in perl) to connect to the ravencore socket and submit queries and read data
 #
 
-package rcsock;
+package rcclient;
 
 use Socket;
 use MIME::Base64;
 
-#
+use rcfilefunctions;
+use serialize;
+
+# connect to the ravencore socket
 
 sub new
 {
 
-# inherit the classname from the above package statement, and tell us where the socket for this object is
+# inherit the classname from the above package statement, and tell us where the RC_ROOT is
 
-    my ($class, $socket) = @_;
-
-# connect to the socket here. if failed, die with error
-
-    socket(SOCK, PF_UNIX, SOCK_STREAM, 0) || die "socket: $!";
-    connect(SOCK, sockaddr_un($socket)) || die "connect: $!";
-
-# turn on autoflush
-
-    select SOCK;
-    $| = 1;
-    select STDOUT;
+    my ($class, $RC_ROOT) = @_;
 
 # initlize some of our variables
 
     my $self = {
-	ETX => chr(3),
-	EOT => chr(4),
-	NAK => chr(21),
+	ETX => chr(3), # end of text
+	EOT => chr(4), # end of transmission
+	NAK => chr(21), # end of transmission
+        ETB => chr(23), # end of trans. block
+        CAN => chr(24), # cancel
+	RC_ROOT => $RC_ROOT,
 	num_rows => undef,
 	insert_id => undef,
 	rows_affected => undef,
 	alive => undef,
-	socket => SOCK,
 	};
-
+    
 # bind the class name to this object and return the results
-
+    
     bless $self, $class;
+    
+# make sure we are root
+    $self->die_error("Must be root") unless $< == 0;
+
+# connect to the socket here. if failed, die with error
+    
+    socket($self->{socket}, PF_UNIX, SOCK_STREAM, 0) || $self->die_error("Unable to create socket: " . $!);
+    connect($self->{socket}, sockaddr_un($RC_ROOT . '/var/rc.sock')) || $self->die_error("Unable to connect to socket: " . $!);
+    
+# turn on autoflush
+
+    select $self->{socket};
+    $| = 1;
+    select STDOUT;
+
+# authenticate the administrator password for system access
+
+# generate a random session_id
+    my $session_id = $self->gen_random_id(32);
+
+# define our authentication file that will be looked for when we run auth_system
+# TODO: repackage the file_ functions in ravencore.pm to their own module and use the file_touch here
+    system('touch ' . $self->{RC_ROOT} . '/var/tmp/sessions/SYSTEM_' . $session_id);
+
+# normal auth would look something like this
+#    my $resp = $self->do_raw_query('auth ' . $session_id . ' ' . $ipaddress . ' ' . $username . ' ' . $password);
+# TODO: create a user-level shell API using this method
+
+    my $resp = $self->do_raw_query('auth_system ' . $session_id . ' ' . $self->get_passwd);
+    
+# if we got an authentication failure on the socket for some reason, die with the given error
+
+    if( $resp ne "1" )
+    {
+	print STDERR $resp . "\n";
+	exit 1;
+    }
 
     return $self;
+}
 
+# generate a random string of $x length
+# TODO: work on this a bit. it isn't a "truely random" string generator, but it works good enough for now
+# TODO: this is copied from ravencore.pm. put it in a seperate module on its own so both can use a single one
+
+sub gen_random_id
+{
+    my ($self, $x) = @_;
+
+    my $str;
+
+# $x item long string with randomly generated letters ( from a to Z ) and numbers
+    for(my $i=0; $i < $x; $i++)
+    {
+        my $c = pack("C",int(rand(26))+65);
+
+# 1/3rd chance that this will be a random digit instead
+        $c = int(rand(10)) if int(rand(3)) == 2;
+
+        $str .= (int(rand(3))==0?$c:lc($c));
+    }
+
+    return $str;
+
+} # end sub gen_random_id
+
+#
+
+sub get_passwd
+{
+    my ($self) = @_;
+
+    my $password = file_get_contents($self->{RC_ROOT} . '/.shadow');
+    chomp $password;
+
+    return $password;
 }
 
 # submit a query to the socket
@@ -88,40 +158,50 @@ sub do_raw_query
 
         $ret = read $self->{socket}, $c, 1;
 
-        if ( $ret == 0 ) { return 0; }
-	
+# if $ret is zero, the connection closed on us
+        return $self->die_error($data) if ! defined $ret;
+
     } while ( $c ne $self->{EOT} );
-      
-# check for error on the socket ... error starts with NAK byte
-# return false on error
 
-    if($data =~ m/^$self->{NAK}/)
+# check for error on the socket ... error starts with NAK byte and ends with ETB
+
+    if($data =~ m/^$self->{NAK}.*$self->{ETB}/)
     {
-	$data =~ s/^$self->{NAK}//;
+	my $error = $data;
 
-# TODO: find a better way to report the error...
-#	print STDERR $data;
+	$error =~ s/^$self->{NAK}(.*)$self->{ETB}.*$/$1/;
+	$data =~ s/^$self->{NAK}.*$self->{ETB}(.*)$/$1/;
 
-	return 0;
+	$self->do_error($error);
     }
 
-    return $data;
+    return unserialize(decode_base64($data));
 
 }
 
-# make "true" become true and everything else false
+#
 
-sub str_to_bool
+sub do_error
 {
+    my ($self, $msg) = @_;
 
-    my ($self, $str) = @_;
-    
-# TODO: remove any whitespace padding
+    $msg =~ s/^$self->{NAK}//;
 
-    if($str eq "true") { return 1 } else { return 0 }
+    print STDERR $msg . "\n";
 
 }
-    
+
+# call do_error and exit
+
+sub die_error
+{
+    my ($self, $msg) = @_;
+
+    $self->do_error($msg);
+
+    exit(1);
+}
+
 # mysql query equiv
   
 sub data_query
@@ -131,12 +211,9 @@ sub data_query
 
     my @dat;
 
-# ask if we have a database connection.... if not, don't bother trying the data_query
-    if ( ! $self->data_alive() ) { return 0 }
-    
 # query the socket and get the data based on our question
 
-    my $data = $self->do_raw_query($sql);
+    my $data = $self->do_raw_query('sql ' . $sql);
 #    print $data . "\n";
 # now we want to parse this raw data and load our array with it's peices
 # we got rows, and columns.... end of row will always be two ETX bytes
@@ -222,34 +299,8 @@ sub service_running
 
     my ($self, $service) = @_;
 
-    return $self->str_to_bool($self->do_raw_query('service_running ' . $service));
+    return $self->do_raw_query('service_running ' . $service);
 
-}
-
-# a function to run the given command as root, the file must be in $RC_ROOT/bin and must contain
-# special file permissions and ownership to run. this basically replaces the wrapper function.
-# output returned from this doesn't nessisarily mean there was an error, we might have wanted to
-# have data. so it's up to the code that calls this fuction to decide what to do with output, if any
-
-sub run_cmd
-{
-
-    my ($self, $cmd) = @_;
-
-# TODO: add some checking on $cmd here. we do this in the perl server socket code as well, but it
-# doesn't hurt to check at each layer
-
-    return decode_base64($self->do_raw_query('run ' . $cmd));
-
-}
-
-# authenticate the administrator password, returns true on success and false on failure
-
-sub data_auth
-{
-    my ($self, $passwd) = @_;
-    
-    return $self->str_to_bool($self->do_raw_query('auth ' . $passwd));
 }
 
 # a function to change the current database in use
@@ -258,19 +309,18 @@ sub use_database
 {
     my ($self, $database) = @_;
 
-    return $self->str_to_bool($self->do_raw_query('use ' . $database));
+    return $self->do_raw_query('use ' . $database);
 }
 
 # a function to change the admin password. returns true on success, false on failure
 # this only checks if the $old password is correct. it's up to the code that calls this to verify
 # things like password strength, length, etc.
 
-sub change_passwd
+sub passwd
 {
-
     my ($self, $old, $new) = @_;
     
-    return $self->str_to_bool($self->do_raw_query('passwd ' . $old . ' ' . $new));
+    return $self->do_raw_query('passwd ' . $old . ' ' . $new);
 }
 
 # shift off and return the hash of the current data query. return undef otherwise
@@ -291,29 +341,16 @@ sub data_insert_id { my ($self) = @_; return $self->{insert_id} }
 
 sub data_rows_affected { my ($self) = @_; return $self->{rows_affected} }
 
-# tell us if we have a database connection. the results of this function are cached,
-# so we don't keep asking the socket for every single query. If the connection dies in the
-# middle of a page load, an error will be issued via the do_raw_query call
+# oh no!! die with an error message!! :)
 
-sub data_alive
+sub die_error
 {
+    my ($self, $msg) = @_;
 
-    my ($self) = @_;
+    print $msg . "\n";
 
-# if DATA_QUERY_SHELL is in the enviroment, return true
-
-    if($ENV{DATA_QUERY_SHELL}) { return 1 }
-
-# if $alive is already set, don't bother asking again
-
-    if( ! $self->{alive} )
-      {
-	$self->{alive} = $self->str_to_bool($self->do_raw_query('connect'));
-      }
-    
-    return $self->{alive};
-    
-}
+    exit(1);
+} # end sub die_error
 
 #
 
