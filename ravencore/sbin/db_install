@@ -33,6 +33,33 @@ CONNECT=0
 NEW_MYSQL_ADMIN_USER="admin"
 NEW_MYSQL_ADMIN_PASS="ravencore"
 
+# bash commands
+_echo=echo
+_sleep=sleep
+_mysql=mysql
+_pidof=pidof
+_sed=sed
+_awk=awk
+_ls=ls
+_grep=grep
+_cat=cat
+_diff=diff
+_mysqldump=mysqldump
+_rm=rm
+_chmod=chmod
+_chown=chown
+_head=head
+_basename=basename
+_touch=touch
+
+#
+INITD=/etc/init.d
+
+# find the real name of the service script to start mysqld
+
+mysql_service=$($_basename $($_ls /etc/init.d/mysql* | $_head -n1))
+
+
 $_echo "Attempting to gain access to mysqld and install the ravencore database"
 $_sleep 1
 

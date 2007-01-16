@@ -1,4 +1,3 @@
-#!/bin/bash
 #
 #                  RavenCore Hosting Control Panel
 #                Copyright (C) 2005  Corey Henderson
@@ -20,24 +19,4 @@
 
 . /etc/ravencore.conf
 
-# make sure this script is being called via /etc/cron.x
-
-$_echo $0 | $_grep '^/etc/cron\.' &> /dev/null
-
-if [ $? -ne 0 ]; then
-
-    $_echo "This script must be called from an /etc/cron.x directory"
-
-    exit
-
-fi
-
-# loop through the scripts in the sbin that end with .cron.x , if any
-
-for i in `$_ls $RC_ROOT/sbin/*$($_echo $0 | $_sed 's|/etc/||' | $_sed 's|/.*||' 2> /dev/null)`; do
-
-# execute the cron script
-    [ -x $i ] && $i
-
-done
-
+$RC_ROOT/sbin/run_cmd checkconf

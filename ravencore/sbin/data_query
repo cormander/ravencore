@@ -22,11 +22,9 @@
 # clean up the shell scripts code, and have all SQL queries be pointed at the
 # socket, which enables logging of 100% of all sql queries, system wide
 
-use rcsock;
+use rcclient;
 
-$RC_ROOT = shift(@INC) . '/../..';
-
-$db = new rcsock($RC_ROOT. '/var/rc.sock');
+$rc = new rcclient('/usr/local/ravencore');
 
 # build our $sql query off of everything given on the command line
 
@@ -35,29 +33,18 @@ foreach (@ARGV)
     $sql .= $_ . ' ';
 }
 
-# tell our $db object we're running from the shell... skip the "connect" statement
-
-$ENV{DATA_QUERY_SHELL} = 1;
-
 # run the SQL query
-
-@result = $db->data_query($sql);
+@result = $rc->data_query($sql);
 
 # return the resutls if there are any
 
-while ( $row = $db->data_fetch_row(\@result) )
+while( $row = $rc->data_fetch_row(\@result) )
 {
 
-# we should only really ever have one value in the hash, because the data
-# is returned in random order, and all the calls to this script are made
-# with one result per row expected anyway, because the ones that need more
-# data in one query use the concat() statement and parse the results
-    
-    foreach (values(%$row))
+    foreach my $key (keys %$row)
     {
-	print $_ . "\t";
+	print $row->{$key} . "\t";
     }
     
     print "\n";
-    
 }

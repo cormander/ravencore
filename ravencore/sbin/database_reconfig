@@ -18,15 +18,7 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-RC_ROOT=$(grep "RC_ROOT=" /etc/ravencore.conf | sed 's/=/ /' | awk '{print $2}')
-
-if [ -z "$RC_ROOT" ]; then
-
-    echo "Unable to get the RC_ROOT variable, exiting"
-
-    exit 1
-
-fi
+. /etc/ravencore.conf || exit 1
 
 echo "Enter the hostname of a server with ravencore-database installed: "
 read host

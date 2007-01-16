@@ -26,31 +26,17 @@
 # config: /usr/local/ravencore/etc/ravencore.httpd.conf
 # pidfile: /usr/local/ravencore/var/run/ravencore.httpd.pid
 
-# if we are a new installation we don't want to require a database connection to get all
-# of our configuration settings, so bash_functions doesn't attempt to read the database
-# and stop us because we don't them them yet
-
-export GOT_CONF=1
-
 . /etc/ravencore.conf || exit 1
-
-# if our installation is infact complete, we will eventually need the database configuration,
-# so unset the GOT_CONF variable
-
-[ -f $RC_ROOT/var/run/install_complete ] && export GOT_CONF=
-
-# so our services.php page knows where init scripts are
-export INITD=$INITD
 
 # tells us if we found source function library for init scripts. Initilize it to zero
 
 found_init_func=0
 
 # Source function library for init scripts.
-if [ -f $INITD/functions ]; then
+if [ -f /etc/init.d/functions ]; then
 
     found_init_func=1
-    . $INITD/functions
+    . /etc/init.d/functions
 
 else
 
@@ -58,409 +44,74 @@ else
 
     success() {
 
-	$_echo "[ OK ]"
+	echo "[ OK ]"
 	
     }
 
     failure() {
 
-	$_echo "[ FAILED ]"
+	echo "[ FAILED ]"
 	
     }
 
 fi
 
-
-# This will prevent initlog from swallowing up a pass-phrase prompt if
-# mod_ssl needs a pass-phrase from the user.
-INITLOG_ARGS=""
-
-httpd=$RC_ROOT/sbin/ravencore.httpd
-pidfile=${PIDFILE-$RC_ROOT/var/run/ravencore.httpd.pid}
-lockfile=${LOCKFILE-/var/lock/subsys/ravencore.httpd}
 RETVAL=0
 
-no_checkconf=0
 
-# set $opt 
-
-for opt; do
-    case $opt in
-	"nossl") ssl_opt="nossl";;
-	"fast") no_checkconf=1;;
-    esac
-done
-
-# if the var/run/httpd.nossl exists, force ssl_opt to be nossl
-if [ -f $RC_ROOT/var/run/httpd.nossl ]; then
-    ssl_opt="nossl"
-fi
-
-#
-
-start_rcsock() {
-
-        $RUN_CMD rcsock
-
-# check to see if there was an error
-	if [ $? -ne 0 ]; then
-	    
-	    echo -n "Fatal error in launching the socket server"
-	    failure
-	    echo
-	    exit 1
-
-	fi
-
-# sleep for a second, giving some time for the server to bind to the socket
-
-	sleep 1
-}
-
-# The semantics of these two functions differ from the way apachectl does
-# things -- attempting to start while running is a failure, and shutdown
-# when not running is also a failure.  So we just do it the way init scripts
-# are expected to behave here.
 start() {
 
-# check to see that mysqld is running....
+# make sure ravencore ain't running    
+    kill -15 $(pidof rcserver) 2> /dev/null
 
-    if [ -z "$($_pidof mysqld)" ]; then
-	
-# mysqld isn't running.. attempt to start it
-# don't run this command if the script doesn't exist... to supress the error message
-	if [ -f $INITD/$mysql_service ]; then
-	    $INITD/$mysql_service start
-	fi
+    $RC_ROOT/sbin/run_cmd rcserver
 
-    fi
-
-# tell our checkconf script that the init script is running, so we don't try to restart
-# ravencore and go into an infinate loop
-
-    export INIT_RUNNING=1
-
-# start the rcsock so the checkconf scripts can use the data_query , but first make sure
-# rcsock isn't already running
+    RETVAL=$?
     
-    $_kill -9 $(ps aux | grep $RC_ROOT/sbin/rcsock | awk '{print $2}') &> /dev/null
+    echo -n $"Starting control panel: "
 
-# only start rcsock if db_install has ran... otherwise, wait until after checkconf runs
-# to start it
-
-    if [ -f $RC_ROOT/var/run/db_install ]; then
-	start_rcsock
-	rcsock_wait=0
-    else
-	rcsock_wait=1
-    fi
-# check to make sure the ravencore.httpd binary is the same as /usr/sbin/httpd
-# among other things
-
-# only run checkconf if we don't specify the "fast" option
-
-    if [ $no_checkconf -eq 0 ]; then
-
-	$RC_ROOT/sbin/checkconf
+    if [ $RETVAL -eq 0 ]; then
 	
-	RETVAL=$?
-	
-# the checkconf script exits with non zero status, then something fatal is wrong
-	
-	if [ $RETVAL -ne 0 ]; then
-	    
-	    $_echo "Unable to start control panel. checkconf script exited with non-zero status"
-	    failure
-	    $_echo
-	    exit $RETVAL
-	    
-	fi
+	success
 
-    fi
-
-# start rcsock if we didn't before
-
-    [ $rcsock_wait -eq 1 ] && start_rcsock
-
-# check httpd version series. The result of this command will look like: 1.3 , 2.0 , etc
-    httpd_v=$($httpd -v | $_sed '2d' | $_awk '{print $3}' | $_sed 's|.*/||' | $_sed 's/\./ /g' | $_awk '{print $1"."$2}')
+# check to see if we're a completed installation...
     
-# check to make sure the conf file exists for this version of apache
-    
-    if [ ! -f $RC_ROOT/etc/ravencore.httpd-$httpd_v.conf ]; then
-	
-	$_echo "Unable to load ravencore's httpd conf file: $RC_ROOT/etc/ravencore.httpd-$httpd_v.conf"
-	failure
-	$_echo
-	exit 1
-
-    fi
-
-# make sure the docroot.conf file is populated
-$_echo "DocumentRoot $RC_ROOT/httpdocs" > $RC_ROOT/etc/docroot.conf
-
-# make sure the port.conf file exists. if not, create it
-
-if [ ! -f $RC_ROOT/etc/port.conf ]; then
-
-    $_echo "Listen 8000" > $RC_ROOT/etc/port.conf
-
-fi
-
-# check to make sure our httpd_modules symlink is correct
-
-    if [ ! -L $RC_ROOT/etc/httpd_modules ]; then
-
-# make sure that the httpd_modules.path directory exists
-	
-	httpd_modules=$($_cat $RC_ROOT/var/run/httpd_modules.path 2> /dev/null)
-
-	if [ -d $httpd_modules ]; then
-
-# re-create the symlink
+	if [ ! -f $RC_ROOT/var/run/install_complete ]; then
 	    
-	    $_rm -f $RC_ROOT/etc/httpd_modules
-	    $_ln -s $httpd_modules $RC_ROOT/etc/httpd_modules
-
-	else
-
-# can't find the httpd modules directory. exit with error
-
-	    $_echo "Unable to determine the path to the httpd modules"
-	    failure
-	    $_echo
-	    exit 1
-
-	fi
-
-    fi
-
-# set our runtime options
-# conf file is different depending on the httpd version
-    OPTIONS="$OPTIONS -d $RC_ROOT -f etc/ravencore.httpd-$httpd_v.conf"
-
-# check for compiled-in modules, and include the ones that are not, that we need to function
-
-# get the list from the apache binary
-    compiled_modules=`$httpd -l`
-
-    for module in log_config setenvif mime negotiation dir actions alias include; do
-
-# if this module is not compiled in to the binary
-
-	if [ -z "$($_echo $compiled_modules | $_grep $module)" ]; then
-
-# check to see if the module exists, get the location from the ravencore.httpd conf file
-
-	    module_location=$($_grep $module $RC_ROOT/etc/ravencore.httpd-$httpd_v.conf | $_grep '\.so$' | $_awk '{print $3}')
-
-# if it doesn't exist, echo a warning
-
-	    if [ -n "$module_location" ] && [ ! -f $RC_ROOT/$module_location ]; then
-		
-		module_filename=$($_basename $module_location)
-
-		$_echo "WARNING: unable to find $module_filename for the apache $module module in:" $($_cat $RC_ROOT/var/run/httpd_modules.path) ". Excluding from configuration"
-		
-	    else
-		
-# only include the module if the file is found. this has apache give a different error message then we do,
-# and with that additional info it should be easier for the user to find an answer to what exactly is wrong
-
-		OPTIONS="$OPTIONS -D$module"
+	    echo
+	    echo "----------"
+	    echo
+	    echo "Thank You for using RavenCore!"
+	    echo
+	    echo "The install/upgrade process will not be completed until after you login to the control panel web interface as the admin user, and accept the license agreement (GPL)."
+	    echo
 	    
+# simple loop to get all IP addresses bound to a machine
+	    
+	    IP_ADDRESSES=$(for IFACE in `ifconfig | grep -v '^ ' | awk '{print $1}'`; do echo $(for i in `ifconfig | awk "/^\$IFACE/ {print \\$1}"`; do ifconfig $i | grep -o 'addr:[[:digit:]]\{1,3\}\.[[:digit:]]\{1,3\}\.[[:digit:]]\{1,3\}\.[[:digit:]]\{1,3\}' | sed 's/addr://'; done); done)
+	    
+	    for i in $IP_ADDRESSES; do echo "http://"$i":8000/"; done
+	    
+	    echo
+	    
+	    passwd=$(cat $RC_ROOT/.shadow 2> /dev/null)
+	    
+	    if [ "$passwd" = "ravencore" ]; then
+		
+		echo "NOTE: You have not yet set your admin password!"
+		echo "You can do this by running this as root: "$RC_ROOT"/sbin/run_cmd passwd"
+		
 	    fi
 
 	fi
 
-    done
-
-# check to see if the php and ssl apache modules lives in a strange place.
-# this will, in some cases, pick up the real file in the expected place.. but that's ok, linking a file
-# to itself won't cause anything bad to happen, and we just force the error'd output to /dev/null
-
-    for so in php ssl; do
-
-        lib_so=$($_ls "$HTTPD_MODULES"*/*$so*.so 2> /dev/null)
-	
-# if so, link it to our httpd_modules
-	
-        if [ -n "$lib_so" ]; then
-	    
-# force error output to /dev/null , because in some cases we're trying to link the file to itself
-            $_ln -s $lib_so $RC_ROOT/etc/httpd_modules 2> /dev/null
-	    
-        fi
-	
-    done
-    
-# only load PHP if we have it installed. That way, if we can't find PHP, we will successfully start up
-# without php configured at all, and our no_php.html will show up as the default index page of the control
-# panel, thus giving a more user-friendly (and less depressing) error message then a startup failure.
-
-# first check to see if we have a funky name for the php module, mod_php ( it's normally libphp )
-# we look through 4 and 5 because those are the supported versions
-
-    for num in 4 5; do
-
-# basically, if mod_php4.so exist but there isn't a libphp4.so, create a symlink
-	[ -f $RC_ROOT/etc/httpd_modules/mod_php$num.so ] && [ ! -f $RC_ROOT/etc/httpd_modules/libphp$num.so ] && \
-	    $_ln -s $RC_ROOT/etc/httpd_modules/mod_php$num.so $RC_ROOT/etc/httpd_modules/libphp$num.so
-
-    done
-
-# say we're starting up... this needs to come before the (no php) and (no ssl) echos
-
-    $_echo -n $"Starting control panel: "
-
-# php5 listed first, because on a test system with both php5 and php4 libs installed, mysql only worked with
-# php5 loaded
-
-    if [ -f $RC_ROOT/etc/httpd_modules/libphp5.so ]; then
-	
-	OPTIONS="$OPTIONS -DPHP5"
-	
-    elif [ -f $RC_ROOT/etc/httpd_modules/libphp4.so ]; then
-
-        OPTIONS="$OPTIONS -DPHP4"
-
-    else
-
-# couldn't find php. Obviously a bad thing :)
-
-	$_echo -n " (no php)"
-	
-    fi
-    
-# figure out what our ssl shared object file is ( usually mod_ssl.so or libssl.so )
-    ssl_file=$($_ls $RC_ROOT/etc/httpd_modules/*ssl.so 2> /dev/null | $_head -n 1)
-    
-# if we have ssl installed, enable it when we start the control panel
-    if [ -f "$ssl_file" ]; then
-# the user has the option to disable the ssl on the command line, or in $RC_ROOT/var/run/httpd.nossl
-	case $ssl_opt in
-	    "nossl") $_echo -n " (no ssl)";;
-	    *) 
-# if we are missing a cert or key file, don't attempt to start with ssl
-		if [ ! -f $RC_ROOT/etc/server.crt ] || [ ! -f $RC_ROOT/etc/server.key ]; then
-		    $_echo
-		    $_echo "WARNING: ssl cert and/or key file missing. Starting with no ssl"
-		else
-# if we have the openssl command, verify that the .crt file is OK
-		    if [ -x $_openssl ]; then
-			
-			$_openssl verify $RC_ROOT/etc/server.crt 2> /dev/stdout | $_grep OK &> /dev/null
-
-# exit status of grep will be non-zero if we didn't find an OK, which means the cert won't work
-
-			if [ $? -ne 0 ]; then
-			    
-			    $_echo
-			    $_echo "WARNING: Unable to verify the server.crt file. Starting without ssl"
-
-			else
-			    
-# the server.crt file appears to be OK. Start with SSL
-
-			    OPTIONS="$OPTIONS -DSSL"
-			    export RUN_SSL=1
-
-			fi
-			
-		    else
-
-# we get here if we don't have the openssl command. Assume that the server.crt file will work
-
-			OPTIONS="$OPTIONS -DSSL"
-			export RUN_SSL=1
-
-		    fi
-
-		fi
-		;;
-
-	esac
-	
-    else
-# notify us that we are not useing ssl, b/c it's not installed
-	$_echo -n " (no ssl)"
-    fi
-
-# if running in ssl, be sure we have the port_ssl.conf
-
-if [ ! -f $RC_ROOT/etc/port_ssl.conf ]; then
-
-    $_echo "Listen 8080" > $RC_ROOT/etc/port_ssl.conf
-
-fi
-
-# check to see if we want to use .local directories for var/apps
-
-for i in $(ls $RC_ROOT/var/apps | grep -v awstats); do
-
-    if [ -d $RC_ROOT/var/apps/$i.local ]; then
-	
-# the app in all uppercase
-	OPTIONS="$OPTIONS -DLOCAL_"$(echo $i | perl -e 'print uc(<STDIN>);')
-
-    fi
-
-done
-
-# unset these enviroment variables so they don't get set in the apache enviroment
-    
-    export INIT_RUNNING= GOT_CONF=
-
-# start the control panel daemon
-
-    if [ $found_init_func -eq 1 ]; then
-	
-	daemon $httpd $OPTIONS
-	RETVAL=$?
-	$_echo
-	[ $RETVAL = 0 ] && $_touch ${lockfile}
-	
     else
 	
-	$httpd $OPTIONS
-	RETVAL=$?
-	
-	if [ $RETVAL -eq 0 ]; then
-	    
-            success
-	    
-	else
-	    
-	    failure
-	    
-	fi
-	
-    fi
-
-# check to see if we're a completed installation...
-
-    if [ ! -f $RC_ROOT/var/run/install_complete ]; then
-
-	$_echo
-	$_echo "----------"
-	$_echo
-	$_echo "Thank You for using RavenCore!"
-	$_echo
-	$_echo "The install/upgrade process will not be completed until after you login to the control panel web interface as the admin user, and accept the license agreement (GPL)."
-	$_echo
-
-# simple loop to get all IP addresses bound to a machine
-
-	IP_ADDRESSES=$(for IFACE in `ifconfig | grep -v '^ ' | awk '{print $1}'`; do echo $(for i in `ifconfig | awk "/^\$IFACE/ {print \\$1}"`; do ifconfig $i | grep -o 'addr:[[:digit:]]\{1,3\}\.[[:digit:]]\{1,3\}\.[[:digit:]]\{1,3\}\.[[:digit:]]\{1,3\}' | sed 's/addr://'; done); done)
-
-	for i in $IP_ADDRESSES; do $_echo "http://"$i":8000/"; done
-
-	$_echo
-	$_echo "Be sure you set your admin password before you login, if you don't already have one."
-	$_echo "You can do this by running this as root: "$RC_ROOT"/sbin/run_cmd passwd"
+	failure
 
     fi
 
+    echo
     
     return $RETVAL
     
@@ -468,141 +119,23 @@ done
 
 stop() {
 
-    $_echo -n $"Stopping control panel: "
+    echo -n $"Stopping control panel: "
 
-    $_kill -9 $(ps aux | grep $RC_ROOT/sbin/rcsock | awk '{print $2}') &> /dev/null
-
-    if [ $found_init_func -eq 1 ]; then
-	
-	killproc $httpd
-	RETVAL=$?
-	$_echo
-	[ $RETVAL = 0 ] && $_rm -f ${lockfile} ${pidfile}
-
-    else
-
-	$_killall -9 $httpd &> /dev/null
-	RETVAL=$?
-
-	if [ $RETVAL -eq 0 ]; then
-	    
-	    success
-	    
-	else
-	    
-	    failure
-	    
-	fi
-
-    fi
-
-}
-startall() {
-
-    for i in `$_ls $RC_ROOT/etc/services.*`; do
-
-	tmp=$($_basename $i | $_sed 's/services\.//')
-
-	conf=$tmp.conf
-	for service in $($_cat $RC_ROOT/etc/services.$tmp); do
-	    
-	    if [ -f $RC_ROOT/conf.d/$conf ] && [ -x $INITD/$service ]; then
-		
-		$RC_ROOT/bin/is_service_running $service &> /dev/null
-	    
-		if [ $? -ne 0 ]; then
-		    
-		    $INITD/$service start
-		    
-		fi
-		
-	    fi
-	    
-	done
-
-    done
-
-# start ravencore, too, if we're not running
-
-    [ -z "$($_pidof ravencore.httpd)" ] && start
-
-}
-
-stopall() {
-
-    for i in `$_ls $RC_ROOT/etc/services.*`; do
-
-	tmp=$($_basename $i | $_sed 's/services\.//')
-
-	conf=$tmp.conf
-	for service in $($_cat $RC_ROOT/etc/services.$tmp); do
-	    
-	    if [ -f $RC_ROOT/conf.d/$conf ] && [ -x $INITD/$service ]; then
-		
-		$RC_ROOT/bin/is_service_running $service &> /dev/null
-		
-		if [ $? -eq 0 ]; then
-		    
-		    $INITD/$service stop
-		    
-		else
-		    
-		    $INITD/$service status
-		    
-		fi
-
-	    fi
-		
-	done
-
-    done
-
-# stop ravencore, too
-
-    stop
-
-}
-
-statusall() {
-
-    for i in `$_ls $RC_ROOT/etc/services.*`; do
-
-	tmp=$($_basename $i | $_sed 's/services\.//')
-
-	conf=$tmp.conf
-	for service in $($_cat $RC_ROOT/etc/services.$tmp); do
-	    
-	    if [ -f $RC_ROOT/conf.d/$conf ] && [ -x $INITD/$service ]; then
-		
-		$INITD/$service status
-
-	    fi
-
-	done
-
-    done
-
-# status of ravencore, too
-
-    $INITD/ravencore status
-
-}
-
-checkconf() {
-
-# unset this because we really do need a db connection
-
-    export GOT_CONF=
-
-    $_echo -n "Checking Configuration: "
-
-    $RC_ROOT/sbin/checkconf
+    kill -15 $(pidof rcserver) 2> /dev/null
 
     RETVAL=$?
+
+    if [ $RETVAL -eq 0 ]; then
+	
+	success
+	
+    else
+	
+	failure
+	
+    fi
     
-    [ $RETVAL -eq 0 ] && success || failure
-    
-    $_echo
+    echo
 
 }
 
@@ -615,31 +148,15 @@ case "$1" in
 	stop
 	;;
     status)
-        status $httpd
+        status rcserver
 	RETVAL=$?
 	;;
     restart)
 	stop
 	start
 	;;
-    startall)
-	startall
-	;;
-    stopall)
-	stopall
-	;;
-    restartall)
-	stopall
-	startall
-	;;
-    statusall)
-	statusall
-	;;
-    checkconf)
-	checkconf
-	;;
   *)
-	$_echo $"Usage: $prog {start|stop|restart|status|stopall|startall|restartall|statusall|checkconf}"
+	echo $"Usage: $prog {start|stop|restart|status}"
 	exit 1
 esac
 

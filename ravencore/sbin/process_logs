@@ -23,11 +23,19 @@
 # One input paramater, the domain name in which to process logs for
 
 log_file=$1
-domain_name=$2
+path_to_domain=$2
+
+#
+
+_cd=cd
+_rm=rm
+_cat=cat
+_logrotate=logrotate
+_touch=touch
 
 # change directory in the the domain's logs directory
 
-$_cd $VHOST_ROOT/$domain_name/var/log
+$_cd $path_to_domain/var/log
 
 # check to see if access_log.1 exists
 
@@ -44,7 +52,8 @@ if [ -f $log_file.1 ]; then
 # update AWStats on the access_log.1
 
     case $log_file in
-	"access_log") $RC_ROOT/var/apps/awstats$_local/tools/awstats_updateall.pl now -awstatsprog=$RC_ROOT/var/apps/awstats$_local/wwwroot/cgi-bin/awstats.pl -configdir=$VHOST_ROOT/$domain_name/conf/ &> /dev/null;;
+	"access_log")
+	    $RC_ROOT/var/apps/awstats$_local/tools/awstats_updateall.pl now -awstatsprog=$RC_ROOT/var/apps/awstats$_local/wwwroot/cgi-bin/awstats.pl -configdir=$path_to_domain/conf/;;# &> /dev/null;;
     esac
 
 # the processed log probably already exists, so append log.1 to it. If it doesn't
@@ -65,8 +74,8 @@ fi
 # check to see if we have custom log rotation setup for this domain by checking both
 # the database and if they have a logrotate.conf file
 
-if [ $($DATA_QUERY "select count(name) from domains where logrotate = 'on' and name = '$domain_name'") -eq 1 ] && [ -f ../conf/logrotate.conf ]; then
+#if [ $($DATA_QUERY "select count(name) from domains where logrotate = 'on' and name = '$domain_name'") -eq 1 ] && [ -f ../conf/logrotate.conf ]; then
+#
+#    $_logrotate ../conf/logrotate.conf
 
-    $_logrotate ../conf/logrotate.conf
-
-fi
+#fi

@@ -22,26 +22,21 @@ $RC_ROOT = ( $ENV{'RC_ROOT'} ? $ENV{'RC_ROOT'} : '/usr/local/ravencore' );
 
 #
 
-if( $ARGV[0] eq "rcsock" )
+if( $ARGV[0] eq "rcserver" )
 {
     chdir $RC_ROOT . '/var/lib';
     
-    exec $RC_ROOT . '/sbin/rcsock';
+    exec $RC_ROOT . '/sbin/rcserver';
 }
 
-# this file is called by shell scripts to run commands in $RC_ROOT/bin
-# it's a tiny bit slower because we have to connect to the rc.sock, instead of
-# just running the given command, but it makes all activity on the commands
-# auditable by the socket daemon
-
+# add the ravencore lib directory to the search path for perl modules
 unshift @INC, $RC_ROOT . '/var/lib';
 
-require rcsock;
-require perl_functions;
+# we require, instead of use, because "use" is pre-processed and we don't get a chance to look in our
+# RC_ROOT/var/lib directory.
+require rcclient;
 
-#
-
-$db = new rcsock($RC_ROOT. '/var/rc.sock');
+$rc = new rcclient($RC_ROOT);
 
 # build our $cmd off of everything given on the command line
 
@@ -50,52 +45,136 @@ foreach (@ARGV)
     $cmd .= $_ . ' ';
 }
 
-# passwd doesn't go to the run_cmd, it goes to the passwd command :)
+#
+chop $cmd;
 
-if( $cmd eq "passwd " )
+# user-friendly wrapper for the "passwd" command
+
+if( $cmd eq "passwd" )
 {
+    $| = 1;
 
-# turn off echo so the password won't show up on the screen
+    my $error;
 
-    system "stty -echo";
+# nested do/while loop, allowing the user to retype the password if they made a mistake, w/o having
+# to re-run the script
+    do
+    {
+	
+	$error = 0;
+	my $passwd = "";
+	my $passwd_again = "";
+	
+	print "Enter in a new password: ";
+	
+	system "stty", '-echo', '-icanon', 'eol', "\001";
+	
+	while( my $c = getc )
+	{
+	    last if $c eq "\n";
+	    print "*";
+	    $passwd .= $c;
+	}
+	chomp $passwd;
+	
+	system "stty", 'echo', 'icanon', 'eol', '^@';
+	
+	print "\n";
+	
+# confirm password
+	print "  Re-enter the password: ";
 
-    print "Enter in a new password: ";
+	system "stty", '-echo', '-icanon', 'eol', "\001";
+	
+	while( my $c = getc )
+	{
+	    last if $c eq "\n";
+	    print "*";
+	    $passwd_again .= $c;
+	}
+	chomp $passwd_again;
+	
+	system "stty", 'echo', 'icanon', 'eol', '^@';
+	
+	print "\n";
+	
+	if( $passwd ne $passwd_again )
+	{
+	    print "The passwords must match!\n\n";
+	    $error = 1;
+	}
 
-    $passwd = <STDIN>;
-    chomp($passwd);
+	if( $error == 0 )
+	{
+	    $error = 1;
+	    $error = 0 if $rc->passwd($rc->get_passwd . ' ' . $passwd);
+	}
 
-    print "\nRe-enter the password: ";
-    
-    $passwd_again = <STDIN>;
-    chomp($passwd_again);
-
-# turn echo back on
-
-    system "stty echo";
-
-    print "\n";
-
-    &die_error("The passwords must match!") unless $passwd eq $passwd_again;
-
-    &die_error("Your password must be at least 5 characters long.") unless length($passwd) > 4;
-
-    &die_error("Your password must contain at least one digit.") unless $passwd =~ m/\d/;
-
-    &die_error("Your password must contain at least one alphabetical character.") unless $passwd =~ m/[a-zA-Z]/;
-
-    $db->change_passwd(&get_passwd, $passwd);
+    } while( $error );
 
     print "Success!!\n";
-
-    exit(0);
-
+    
+    exit;
+    
 }
 
 # run the command
-# TODO: check $cmd here. the socket does this, but might as well add a layer
-# of security here, too
+# any output of the command will be printed
 
-# any out put of the command will be printed
+my $ret = $rc->do_raw_query($cmd);
 
-print $db->run_cmd($cmd);
+my $dat = &print_r($ret);
 
+print $dat . "\n" if $dat;
+
+# global variable for the print_r function
+$nest = 0;
+
+# look at the given variable, print it if it's string, and if it's a hash, walk down the hash and call
+# itself again on those values... effectivly giving a similiar functionality to the PHP print_r function
+
+sub print_r
+{
+    my $val = shift;
+
+    my $data;
+    
+    if( ref($val) eq "HASH" )
+    {
+	$nest++;
+	$data .= "\%HASH\n" . &x_t($nest-1). "[\n";
+
+	foreach my $b (keys %$val)
+	{
+	    $data .= &x_t($nest);
+
+	    $data .= $b . "=" . &print_r($val->{$b}) . "\n";
+	}
+	
+	$data .= &x_t($nest-1) . "]\n";
+
+	$nest--;
+    }
+    else
+    {
+	$data = $val;
+    }
+    
+    return $data;
+}
+
+# return X "\t" characters
+
+sub x_t
+{
+    my $x = shift;
+    
+    my $str;
+
+    for(my $i = 0; $i < ($x); $i++)
+    {
+	$str .= "\t";
+    }
+
+    return $str;
+}
