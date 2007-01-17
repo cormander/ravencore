@@ -2,7 +2,7 @@ AddType application/x-httpd-php .php
 
 DirectoryIndex index.php
 
-php_admin_flag safe_mode Off
+php_admin_flag safe_mode On
 php_admin_flag log_errors On
 php_admin_flag track_vars On
 php_admin_flag expose_php Off
@@ -18,7 +18,6 @@ php_admin_flag display_startup_errors Off
 
 php_admin_value session.auto_start 0
 php_admin_value session.name RAVENCORE
-php_admin_value session.save_handler files
 
 php_admin_value max_execution_time 120
 php_admin_value log_errors_max_len 1024
