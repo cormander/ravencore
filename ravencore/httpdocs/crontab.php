@@ -86,7 +86,7 @@ if ($user)
     {
         print __("No crontab for user $user");
 
-        exit;
+        rc_exit;
     } 
     else
     {

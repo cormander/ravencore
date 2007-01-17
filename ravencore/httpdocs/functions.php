@@ -19,22 +19,23 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 */
 
-// scan the classes dir and include all of the files
- 
-$dir = dir('classes');
-
-while (false !== ($entry = $dir->read())) {  
-  // if this element is a directory, an implied "." or "..", or doesn't end in .php, skip
-  if( ! ereg('^\.',$entry) and ereg('\.php$',$entry) )
-    {
-      include 'classes/' . $entry;
-    }
-}
-
 // get our locale functions
 include "functions/locale.php";
 
+// classes
+include "classes/domain.php";
+include "classes/user.php";
+
 //
+
+function rc_exit()
+{
+  session_write_close();
+  exit;
+}
+
+//
+
 function update_parameter($type_id, $param, $value)
 {
 
@@ -46,7 +47,9 @@ function update_parameter($type_id, $param, $value)
     $sql = "insert into parameters set type_id = '$type_id', param = '$param', value = '$value'";
     $db->data_query($sql);
 }
+
 // a basic password validation function
+
 function valid_passwd($passwd)
 {
     if (function_exists("pspell_new"))
@@ -61,8 +64,10 @@ function valid_passwd($passwd)
 
     return true;
 }
+
 // A function to tell us if we have any "domain" services, or in other words,
 // any service that requires the use of the domains table to function
+
 function have_domain_services()
 {
     // domain services as of version 0.0.1
@@ -70,9 +75,11 @@ function have_domain_services()
 
     return false;
 }
+
 // A function to tell us whether or not we have database services.
 // Right now it only looks for mysql, but this will in the future look for other db types
 // such as pgsql, mssql, etc
+
 function have_database_services()
 {
     if (have_service("mysql")) return true;
@@ -81,18 +88,17 @@ function have_database_services()
 
 function have_service($service)
 {
-    global $CONF, $server;
+    global $status;
 
-    // since there are so many damn places that use this function I just made it an
-    // alias for the new one :P
-    return $server->module_enabled($service);
+    if( $status['modules_enabled'][$service] )
+      return true;
 
-    //if (is_executable("$CONF[RC_ROOT]/conf.d/$service.conf")) return true;
-    //else return false;
-
+    return false;
 }
+
 // A function that requires the existances of the webserver to load the page
 // Must use before you output any headers.
+
 function req_service($service)
 {
     if (!have_service($service))
@@ -103,7 +109,7 @@ function req_service($service)
 
         nav_bottom();
 
-        exit;
+        rc_exit();
     }
 }
 
@@ -126,12 +132,13 @@ function delete_log($did, $log_file)
 
     $domain_name = $d->name();
 
-    socket_cmd("log_del $domain_name $log_file");
+    $db->do_raw_query("log_del $domain_name $log_file");
 }
 
 
 // A function to tell us whether or not given string is an ip address. I got the core
 // routines off of php.net, but made some of my own changes to make it return a bool value
+
 function is_ip($ip)
 {
     $ip = trim($ip);
@@ -146,51 +153,36 @@ function is_ip($ip)
     }
     return true;
 }
+
 // A function to queue a message to be output with a javascript alert
 // It must be called before the nav_top function
+
 function alert($message)
 {
     global $js_alerts;
 
     array_push($js_alerts, $message);
 }
+
 // A function to do a header to the given location. Must be called before output
 // goes to the browser. This function is used just about everywhere.
+
 function goto($url)
 {
-
-  global $session;
 
   // session variables may not be saved before the browser changes to the new page, so we need to
   // save them here
   
-  $session->end();
+  session_write_close();
   
   header("Location: $url");
   
-  exit;
+  rc_exit();
 
 }
-// A function to try to restart the mysql server if we failed to get a connection
-function mysql_panic()
-{
-    print __("Unable to connect to DB server! Attempting to restart mysql") . " <br><b>";
 
-    socket_cmd("mysql_restart");
-    // while we have a restart lockfile, hang
-    do
-    {
-        print ".<br>";
-
-        sleep(1);
-    }
-    while (file_exists("/tmp/mysql_restart.lock"));
-
-    print "</b>" . __("Restart command completed. Please refresh the page.") . "<p>" . __("If the problem persists, contact the system administrator");
-
-    exit;
-}
 // Returns the correct word assositated with a permission
+
 function perm_into_word($perm)
 {
     switch ($perm)
@@ -238,8 +230,10 @@ function perm_into_word($perm)
             break;
     }
 }
+
 // A function to find out if a user can add another item of the given permission
 // Returns false on failure, true on success
+
 function user_can_add($uid, $perm)
 {
     global $CONF, $db;
@@ -351,16 +345,20 @@ function user_can_add($uid, $perm)
             break;
     }
 }
+
 // A function to print " checked" if the user has that permission. We return it as a string,
 // rather then printing it here, because when used in a print statement, functions are called
 // before the print statement itself, and we don't want to print something like this:
 // "checked <input type=checkbox name=host_php value=true>"
+
 function perm_checked($uid, $perm)
 {
     if (user_have_permission($uid, $perm)) return " checked";
 }
+
 // A function to find out if a a user has a permission
 // Returns zero on no, and the number of allowed on true
+
 function user_have_permission($uid, $perm)
 {
 
@@ -374,8 +372,10 @@ function user_have_permission($uid, $perm)
     if ($row[val] == "yes") return $row[lim];
     else return 0;
 }
+
 // A function to find out if a domain id belongs to a user id
 // returns true if true, or if the user is an admin.
+
 function user_have_domain($uid, $did)
 {
 
@@ -391,7 +391,9 @@ function user_have_domain($uid, $did)
     if ($row[count] == 1) return true;
     else return false;
 }
+
 // A function to make a page require the user be an admin.
+
 function req_admin()
 {
     if (!is_admin())
@@ -402,7 +404,7 @@ function req_admin()
 
         nav_bottom();
 
-        exit;
+        rc_exit();
     }
 }
 
@@ -411,69 +413,18 @@ function req_admin()
 
 function is_admin()
 {
-  global $session;
+  global $status;
 
-  return $session->admin_user;
-
-}
-
-// A function to run a system command as root
-
-function socket_cmd($cmd)
-{
-    global $CONF, $db, $session_id;
-
-    // make sure the command is safe to run
-    // all the eregs are 'd out because we get some warnings sometimes that will make us unable to redirect the page
-
-    if (@ereg("\.\.", $cmd) or @ereg("^/", $cmd) or @ereg("\;", $cmd) or @ereg('\|', $cmd) or @ereg(">", $cmd) or @ereg("<", $cmd)) die("Fatal error, unsafe command: $cmd");
-
-    /* This code is the start of controlling slave servers. socket_cmd will accept a new argument, which
-     will be the server in which to target with the command to run. Commented out for now, because it
-     is not fully implemented yet.
-
-    $query = "user=$CONF[MYSQL_ADMIN_USER]&pass=$CONF[MYSQL_ADMIN_PASS]&action=login&socket_cmd=$cmd\r\n";
-
-$ch = curl_init("https://192.168.47.105:8000/");
-
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
-curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
-curl_setopt($ch, CURLOPT_HEADER, 0);
-curl_setopt($ch, CURLOPT_POST, 1);
-curl_setopt($ch, CURLOPT_POSTFIELDS, $query);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-
-$shell_output = curl_exec($ch);
-
-curl_close($ch);
-
-  */
-
-    $shell_output = $db->run_cmd($cmd); //shell_exec("../sbin/wrapper $cmd");
-    
-    if ($shell_output)
-    {
-        // if($CONF[SERVER_TYPE] == "master") {
-        $_SESSION['status_mesg'] = nl2br(rtrim($shell_output));
-
-        /*
-    } else {
-
-      print $shell_output;
-
-      exit;
-
-    }
-    */
-
-    }
+  return $status['is_admin'];
 }
 
 // A function that should be used at the top of every main page
+
 function nav_top()
 {
-  global $js_alerts, $page_title, $sock_error, $shell_output, $session, $db, $server;
+  global $js_alerts, $page_title, $shell_output, $db, $logged_in, $status;
 
+  // if the server has something to tell us, tell the user and unset the session variable
     if (isset($_SESSION['status_mesg']))
     {
         $status_mesg = $_SESSION['status_mesg'];
@@ -489,7 +440,7 @@ function nav_top()
 <meta http-equiv="Content-Type" content="text/html; charset=' . locale_getcharset() . '">
 <meta name="keywords" content="ravencore, open source, control panel, hosting panel, hosting control panel, hosting software, free, webhosting software" />
 <meta name="description" content="A Free and Open Source Hosting Control Panel for Linux" />
-<meta name="authors" content="RavenCore" />
+<meta name="authors" content="Cormander" />
 <meta name="owner" content="RavenCore" />
 <meta name="copywrite" content="Copyright 2005 Corey Henderson">
 <link rel="icon" href="/favicon.ico" type="image/x-icon">
@@ -503,16 +454,16 @@ function nav_top()
     // If the alert() function was called at all, output its contents here. We do it in the
     // <head> section of the page so that you see the error message before the page reloads
     if (sizeof($js_alerts) > 0)
-    {
+      {
         print '<script type="text/javascript">';
-
+	
         foreach($js_alerts as $alert) print 'alert("' . $alert . '");';
-
+	
         print '</script>';
-    }
-
+      }
+    
     print '</head><body>';
-
+    
     print '
 
 <div id="container">
@@ -527,28 +478,30 @@ function nav_top()
 </div>
 
 <div id="content">';
+
     // only show the top menu if we're logged in
-    if ($session->logged_in)
+    if ($logged_in == 1)
     {
+
         print '<ul>';
         // Admins get to see a whole lot more then normal users
         if (is_admin())
         {
 
-	  if( ! $server->db_panic )
+	  if( ! $status['db_panic'] )
 	    {
 	      
 	      print '<li class="menu"><a href="users.php" onmouseover="show_help(\'' . __('List control panel users') . '\');" onmouseout="help_rst();">' . __('Users') . ' (';
-	      
+
 	      $sql = "select count(*) as count from users";
 	      $result = $db->data_query($sql);
-	      
+
 	      $row = $db->data_fetch_array($result);
 	      
-	      print $row[count];
+	      print $row['count'];
 	      
 	      print ')</a></li>';
-	      
+
 	      if (have_domain_services())
 		{
 		  print '<li class="menu"><a href="domains.php" onmouseover="show_help(\'' . __('List domains') . '\');" onmouseout="help_rst();">' . __('Domains') . ' (';
@@ -558,7 +511,7 @@ function nav_top()
 		  
 		  $row = $db->data_fetch_array($result);
 		  
-		  print $row[count];
+		  print $row['count'];
 		  
 		  print ')</a></li>';
 		}
@@ -629,6 +582,7 @@ function nav_top()
 }
 
 // A function that should be used at the very bottom of every main page
+
 function nav_bottom()
 {
 

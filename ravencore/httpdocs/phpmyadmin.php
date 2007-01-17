@@ -28,20 +28,14 @@ $result = $db->data_query($sql);
 
 $row = $db->data_fetch_array($result);
 
-// change session names so our variables carry over to phpmyadmin
-// we call it twice, to override any previous phpmyadmin session we were in
+$lang = $_SESSION['lang'];
 
-for( $i = 0; $i < 2; $i++ )
-{
-  session_destroy();
-  session_name('phpMyAdmin');
-  session_start();
-}
+$_SESSION = array();
 
-$_SESSION['name'] = $row[name];
-$_SESSION['login'] = $row[login];
-$_SESSION['passwd'] = $row[passwd];
-$_SESSION['phpmyadmin_lang'] = $locales[$current_locale]['phpmyadmin'];
+$_SESSION['ravencore_name'] = $row[name];
+$_SESSION['ravencore_login'] = $row[login];
+$_SESSION['ravencore_passwd'] = $row[passwd];
+$_SESSION['ravencore_phpmyadmin_lang'] = $locales[$lang]['phpmyadmin'];
 
 goto("phpmyadmin/");
 

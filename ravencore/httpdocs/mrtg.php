@@ -17,7 +17,7 @@ if( $_GET['img'] )
 
   print $data;
 
-  exit;
+  rc_exit();
 
 }
 

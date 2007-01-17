@@ -26,7 +26,7 @@ req_admin();
 if( $action == "phpmyadmin_login" )
 {
 
-  if( ! $db->data_auth($_POST['phpmyadmin_passwd']) )
+  if( ! $db->do_raw_query('verify_passwd ' . $_POST['phpmyadmin_passwd']) )
     {
       $error = "Password incorrect";
     }
@@ -35,20 +35,12 @@ if( $action == "phpmyadmin_login" )
       
       $lang = $_SESSION['lang'];
       
-      // change session names so our variables carry over to phpmyadmin
-      // we call it twice, to override any previous phpmyadmin session we were in
-      
-      for( $i = 0; $i < 2; $i++ )
-	{
-	  session_destroy();
-	  session_name('phpMyAdmin');
-	  session_start();
-	}
-      
-      $_SESSION['login'] = $CONF['MYSQL_ADMIN_USER'];
-      $_SESSION['passwd'] = $_POST['phpmyadmin_passwd'];
-      $_SESSION['name'] = '';
-      $_SESSION['phpmyadmin_lang'] = $locales[$lang]['phpmyadmin'];
+      $_SESSION = array();
+
+      $_SESSION['ravencore_login'] = 'admin'; // TODO: FIX THIS, its just a quick hack to get it working
+      $_SESSION['ravencore_passwd'] = $_POST['phpmyadmin_passwd'];
+      $_SESSION['ravencore_name'] = '';
+      $_SESSION['ravencore_phpmyadmin_lang'] = $locales[$lang]['phpmyadmin'];
       
       goto("phpmyadmin/");
       

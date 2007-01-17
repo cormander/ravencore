@@ -58,7 +58,7 @@ A domain name in [ ] means force MX host lookup
 
         $db->data_query($sql);
 
-        if ($db->data_rows_affected()) socket_cmd("rehash_mail --all");
+        if ($db->data_rows_affected()) $db->do_raw_query("rehash_mail --all");
 
         goto("mail.php?did=$did");
     } 
@@ -76,7 +76,7 @@ else if ($action == "toggle")
     $sql = "update domains set mail = '$_POST[mail]' where id = '$did'";
     $db->data_query($sql);
 
-    if ($db->data_rows_affected()) socket_cmd("rehash_mail --all");
+    if ($db->data_rows_affected()) $db->do_raw_query("rehash_mail --all");
 
     goto("mail.php?did=$did");
 } 
@@ -187,8 +187,8 @@ print '<input type=radio name="catchall" value="delete_it"';
 <td>';
 		if ( $row_email[mailbox] == "true" )
 		  {
-		    if (@fsockopen("127.0.0.1", 143)) print '<a href="webmail.php?mid=' . $row_email[id] . '&did=' . $row_email[did] . '" target="_blank">' . __('Webmail') . '</a>';
-		    else print '<a href="#" onclick="alert(\'' . __('Webmail is currently offline') . '\')" onmouseover="show_help(\'' . __('Webmail is currently offline') . '\');" onmouseout="help_rst();">' . __('Webmail') . ' ( ' . __('offline') . ' )</a>';
+		    //if (@fsockopen("127.0.0.1", 143)) print '<a href="webmail.php?mid=' . $row_email[id] . '&did=' . $row_email[did] . '" target="_blank">' . __('Webmail') . '</a>';
+		    //else print '<a href="#" onclick="alert(\'' . __('Webmail is currently offline') . '\')" onmouseover="show_help(\'' . __('Webmail is currently offline') . '\');" onmouseout="help_rst();">' . __('Webmail') . ' ( ' . __('offline') . ' )</a>';
 		  }
 		else
 		  {
@@ -280,8 +280,8 @@ else
 
 	if ( $row[mailbox] == "true" )
 	  {
-	    if (@fsockopen("127.0.0.1", 143)) print '<a href="webmail.php?mid=' . $row[mid] . '&did=' . $row[did] . '" target="_blank">' . __('Webmail') . '</a>';
-	    else print '<a href="#" onclick="alert(\'' . __('Webmail is currently offline') . '\')" onmouseover="show_help(\'' . __('Webmail is currently offline') . '\');" onmouseout="help_rst();">' . __('Webmail') . ' ( ' . __('offline') . ' )</a>';
+	    //if (@fsockopen("127.0.0.1", 143)) print '<a href="webmail.php?mid=' . $row[mid] . '&did=' . $row[did] . '" target="_blank">' . __('Webmail') . '</a>';
+	    //else print '<a href="#" onclick="alert(\'' . __('Webmail is currently offline') . '\')" onmouseover="show_help(\'' . __('Webmail is currently offline') . '\');" onmouseout="help_rst();">' . __('Webmail') . ' ( ' . __('offline') . ' )</a>';
 	  }
 	else
 	  {

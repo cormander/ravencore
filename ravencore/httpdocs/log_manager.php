@@ -42,7 +42,7 @@ else if ($action == "compress" or $action == "decompress")
     if (ereg("\.\.", $_GET[log_file])) alert(__("Unable to $action log file"));
     else
     {
-        socket_cmd("log_compress --$action $domain_name $_GET[log_file]");
+        $db->do_raw_query("log_compress --$action $domain_name $_GET[log_file]");
 
         goto("log_manager.php?did=$did");
     } 
@@ -51,7 +51,7 @@ else if ($action == "toggle")
 {
     update_parameter($did, 'log_rotate', $_POST[toggle]);
 
-    socket_cmd("rehash_logrotate");
+    $db->do_raw_query("rehash_logrotate");
 
     goto("log_manager.php?did=$did");
 } 
@@ -76,7 +76,7 @@ else if ($action == "update")
     update_parameter($did, 'log_compress', $_POST[log_compress]);
     update_parameter($did, 'log_rotate_size_ext', $_POST[log_rotate_size_ext]);
 
-    socket_cmd("rehash_logrotate");
+    $db->do_raw_query("rehash_logrotate");
 
     goto("log_manager.php?did=$did");
 } 

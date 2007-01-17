@@ -84,7 +84,7 @@ if ($action)
 
                             $db->data_query($sql);
 
-                            socket_cmd("rehash_mail --all");
+                            $db->do_raw_query("rehash_mail --all");
 
                             goto("mail.php?did=$did");
                         } 

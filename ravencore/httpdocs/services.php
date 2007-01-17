@@ -27,19 +27,9 @@ $services = array();
 // get contents of $RC_ROOT/etc/services, explode on return character, split on the :, and chop off the .conf, to fill the package / service array
 if ($action == "run")
 {
-  // if the service to be stopped or restarted is mysql(d), then we're not going to have a login session
-  // to the database... set a message to re-authenticate, because you'll be at the login screen.
-  if(
-     ereg('mysqld?',$_GET['service']) and
-     ($_GET['service_cmd'] == 'stop' or $_GET['service_cmd'] == 'restart')
-     )
-    {
-      //
-    }
-
   // authenticate $_GET[service] as an allowed service
   // make sure $_GET[service_cmd] can only be start, stop, or restart
-  socket_cmd("service " . $_GET['service'] . " " . $_GET['service_cmd']);
+  $db->do_raw_query("service " . $_GET['service'] . " " . $_GET['service_cmd']);
   
   if (!$_SESSION['status_mesg']) $_SESSION['status_mesg'] = $_GET['service_cmd'] . ' command sucessfull for ' . $_GET['service'];
   
@@ -54,39 +44,35 @@ nav_top();
 <table>
 
 <tr>
-	<th><?php e_('Service')?></th>
-	<th><?php e_('Running')?></th>
-	<th><?php e_('Start')?></th>
-	<th><?php e_('Stop')?></th>
-	<th><?php e_('Restart')?></th>
+<th><?php e_('Service')?></th>
+<th><?php e_('Running')?></th>
+<th><?php e_('Start')?></th>
+<th><?php e_('Stop')?></th>
+<th><?php e_('Restart')?></th>
 </tr>
 <?php
 
-$services = $server->get_all_services();
+$services = $status['services'];
 
 foreach ($services as $val)
 {
     print '<tr><td>' . $val . '</td><td align=center>';
 
-    $resp = $db->run_cmd("is_service_running " . $val);
-
-    switch (trim($resp))
+    if( $db->do_raw_query("service_running " . $val) )
       {
-      case 'true':
-	  
+
             $running = '<img src="images/solidgr.gif" border=0>';
             $start = '<img src="images/start_grey.gif" border=0>';
             $stop = '<a href="services.php?action=run&service=' . $val . '&service_cmd=stop"><img src="images/stop.gif" border=0></a>';
 
-            break;
-
-      default:
-
-            $running = '<img src="images/solidrd.gif" border=0>';
-            $start = '<a href="services.php?action=run&service=' . $val . '&service_cmd=start"><img src="images/start.gif" border=0></a>';
-            $stop = '<img src="images/stop_grey.gif" border=0>';
-
-            break;
+      }
+    else
+      {
+	
+	$running = '<img src="images/solidrd.gif" border=0>';
+	$start = '<a href="services.php?action=run&service=' . $val . '&service_cmd=start"><img src="images/start.gif" border=0></a>';
+	$stop = '<img src="images/stop_grey.gif" border=0>';
+	
     } 
 
     print $running . '</td>

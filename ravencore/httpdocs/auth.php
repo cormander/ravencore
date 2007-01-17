@@ -29,19 +29,11 @@ define("REGEX_MAIL_NAME", '([a-zA-Z\d]+((\.||\-||_)[a-zA-Z\d]?)?)*[a-zA-Z\d]');
 define("REGEX_DOMAIN_NAME", '([a-zA-Z\d]+((\.||\-)[a-zA-Z\d]?)?)*[a-zA-Z\d]\.[a-zA-Z]+');
 define("REGEX_PASSWORD", '[a-zA-Z\d]*');
 
-// set our some of our php_admin_values that we can't define in the ravencore.httpd.conf
-error_reporting(E_ALL ^ E_NOTICE);
-
 // Initialize some variables
 $js_alerts = array();
-$CONF = array();
-$conf_not_complete = false;
-
-// Include our function file
-include "functions.php";
 
 // A list of variables that are allowed to use the GET and POST methods
-$reg_glob_vars = array('uid', 'did', 'mid', 'action', 'dbid', 'dbu', 'page_type');
+$reg_glob_vars = array('uid', 'did', 'mid', 'action', 'debug', 'dbid', 'dbu', 'page_type');
 
 foreach ($reg_glob_vars as $val)
 {
@@ -53,194 +45,210 @@ foreach ($reg_glob_vars as $val)
     }
 }
 
-// start our session
-$session = new session();
+// Include our function file
+include "functions.php";
 
-// set our server object
-$server = new server();
+//$db = new rcclient; // commented out because it's called in the rcclient.php file which is set to auto_prepend
+// $db is a common variable name... for compat with other apps, the rcclient is actually in $rcdb, but since
+// I don't want to bother to change all the current PHP code from $db -> $rcdb (yes, I'm lazy), just make $db
+// a reference to it..
+// I banged my head against my monitor for hours trying to get phpmyadmin to work with the ravencore custom
+// sessions via the socket.... this was one of the things that had to be figured out and changed.
+$db = \$rcdb;
 
-// create our socket
+session_start(); // session_read() is called here automatically
 
-$db = new rcsock($CONF['RC_ROOT'] . '/var/rc.sock');
+// after session_start, we set our language
 
-//
+if($_REQUEST['lang']) $_SESSION['lang'] = $_REQUEST['lang'];
 
-if( ! $db->data_alive() )
+// if no session variable for language, set it to the default locale
+if (!$_SESSION['lang'])
 {
-  $server->db_panic();
+  $_SESSION['lang'] = $db->do_raw_query('get_default_locale');
 }
-
-// read our database configuration settings
-$server->read_conf();
-
-if (!$_SESSION['lang'] and $CONF['DEFAULT_LOCALE'])
+// if we still don't have it (should never happen), set it to english
+if (!$_SESSION['lang'])
 {
-  locale_set($CONF['DEFAULT_LOCALE']);
+  $_SESSION['lang'] = 'en_US';
 }
+// set the locale
+locale_set($_SESSION['lang']);
 
-// set our locale if not already
-if (!$_SESSION['lang'] and !$CONF['DEFAULT_LOCALE'])
+// quick hack to tell the nav_top if we're logged in or not
+$logged_in = 0;
+
+// check if we're authenticated.
+if($db->auth_resp != 1)
 {
-  $_SESSION['lang'] = @ereg_replace('\..*', '', shell_exec('echo $LANG'));
-}
 
-// If we're trying to login, run the authentication
-if ($action == "login")
-{
+  $login_error = $db->auth_resp;
 
-  if( ! $session->do_auth($_POST['user'], $_POST['pass']) )
-    {
-
-      if( ! $server->db_panic )
-	{      
-	  $sql = "insert into login_failure set date = now(), login = '" . $_POST['user'] . "'";
-	  $db->data_query($sql);
-	}
-
-      $login_error = $session->login_error;
-      
-      syslog(LOG_WARNING, "Login failure for user " . $_POST['user'] . "from " . $_SERVER['REMOTE_ADDR']);
-      
-      include("login.php");
-      
-      exit;
-      
-    }
-
-  if ( ! $server->check_version() )
-    {
-      
-      // real
-      if ($_POST['user'] == $CONF['MYSQL_ADMIN_USER'])
-	{
-	  $_SESSION['status_mesg'] = __('Control panel is locked for users, because your "lock if outdated" setting is active, and we appear to be outdated.');
-	}
-      else
-	{
-	  $login_error = __('Login locked because control panel is outdated.');
-	  
-	  syslog(LOG_WARNING, "Control panel outdated");
-	  
-	  include("login.php");
-	  
-	  exit;
-	}
-    }
-
-    // slave server socket_cmd
-    if ($_POST['socket_cmd'])
-    {
-        if ($CONF['SERVER_TYPE'] == "slave")
-        {
-            socket_cmd(trim(urldecode($_POST['socket_cmd'])));
-
-            syslog(LOG_INFO, "Posted command '$_POST[socket_cmd]' from $_SERVER[REMOTE_ADDR]");
-
-            exit;
-        }
-        else
-        {
-            nav_top();
-
-            print __('API command failed. This server is configured as a master server.');
-
-            nav_bottom();
-
-            syslog(LOG_INFO, "API command attempted on master server from $_SERVER[REMOTE_ADDR]");
-
-            exit;
-        }
-    }
-
-    // send the admin user to the system page if the server is in panic mode
-    if($server->db_panic)
-      {
-	goto("system.php");
-      }
-
-    // send ourself back to where we were upon login
-    $url = $_SERVER['PHP_SELF'];
-    // only add the query string if it exists, and if we don't have the 'cmd'
-    // variable ( which is normally reboot / shutdown, which we don't want to
-    // do upon login :)
-    if ($_SERVER['QUERY_STRING'] and !$_GET['cmd'])
-    {
-        $url .= '?' . $_SERVER['QUERY_STRING'];
-    }
-
-    // only do a header redirect if we have no pending alerts
-    if (!$js_alerts)
-    {
-        goto($url);
-    }
-} // End auth login if
-
-// We can't proceed past this point if we are a slave server
-if ($CONF['SERVER_TYPE'] == 'slave')
-{
-    exit;
-}
-
-if( ! $session->found() )
-{
-  // No session found.
   include "login.php";
 
-  exit;
+  rc_exit();
+}
+			  
+// NOTE! Anything beyond this point is considered a logged in user
+  
+// read logged_in comment above. beyond this point we assume we are logged in
+$logged_in = 1;
+
+// if we're posting the gpl_agree, tell the server so
+if($action == "gpl_agree" && $_REQUEST['gpl_agree'] == "yes")
+{
+  $db->do_raw_query('gpl_agree');
+  goto($_SERVER['PHP_SELF']);
+}
+
+// if we're posting the update_conf, update conf with the incoming array
+if($action == "update_conf" and is_array($_REQUEST['CONF_UPDATE']))
+{
+  foreach( $_REQUEST['CONF_UPDATE'] as $key => $val )
+    {
+      if( $key and isset($val) )
+	{
+	  $db->do_raw_query('set_conf_var ' . $key . ' ' . $val);
+	}
+
+    }
+  goto($_SERVER['PHP_SELF']);
+}
+
+// ask for the current state of things. this needs to be done AFTER all post actions for this file
+// so that we have the latest and greatest info
+$status = $db->do_raw_query("session_status");
+
+$CONF = \$status['CONF'];
+
+// check to see if the GPL was accepted. if not, send us to that page
+if( ! $status['gpl_check'] and $_SERVER['PHP_SELF'] != '/logout.php' )
+{
+
+  nav_top();
+
+  if ($action == "gpl_agree")
+    {
+      print '<b><font color="red">' . __('You must agree to the GPL License to use RavenCore.') . '</font></b><p>';
+    }
+
+  print __('Please read the GPL License and select the "I agree" checkbox below') . '<hr><pre>';
+
+  $h = fopen("../LICENSE", "r");
+
+  fpassthru($h);
+
+  print __('The GPL License should appear in the frame below') . ': </pre>';
+
+?>
+<iframe src="GPL" width="675" height="250">
+</iframe>
+<p>
+<form method="post">
+   <input type="checkbox" name="gpl_agree" value="yes"> <?php echo __('I agree to these terms and conditions.') ?>
+
+<p>
+
+<input type="submit" value="Submit"> <input type="hidden" name="action" value="gpl_agree">
+</form>
+<?php
+
+   nav_bottom();
+
+  rc_exit();
 
 }
 
-if( ! $server->db_panic )
+// check to see if configuration is complete. if not, send us to the configuration page
+if( ! $status['config_complete'] and $_SERVER['PHP_SELF'] != '/logout.php' )
 {
-  
-  // create user object if this is not an admin user
-  
-  if( ! is_admin() )
+
+  nav_top();
+
+  print '<div align=center>' . __('Welcome, and thank you for using RavenCore!') . '</div>
+         <p>' . 
+    __('You installed and/or upgraded some packages that require new configuration settings.') . ' ' .
+    __('Please take a moment to review these settings. We recomend that you keep the default values, ') .
+    __('but if you know what you are doing, you may adjust them to your liking.')
+    . '
+      <div align=center>
+      <form method=post>
+      <input type=hidden name=action value="update_conf">
+      <table>';
+
+  foreach( $status['UNINIT_CONF'] as $key => $val )
     {
       
-      $uid = $session->get_user_id();
+      print '<tr><td>' . $key . ':</td>' .
+	'<td><input type="text" name="CONF_UPDATE[' . $key . ']" value="' . $val . '"></td></tr>';
 
-      $u = new user($uid);
-      
+    }
+
+  print '<tr><td colspan=2 align=right><input type="submit" value="' . __('Submit') . '"></td></tr></table></div>';
+  
+  nav_bottom();
+  
+  rc_exit();
+
+}
+
+// send the admin user to the system page if the database is in panic mode
+if($_SERVER['PHP_SELF'] != '/system.php' and $status['db_panic'] and $action == 'login')
+{
+  goto("/system.php");
+}
+
+// if the config is complete, and install_complete is zero, complete the install
+if( $status['config_complete'] and ! $status['install_complete'] )
+{
+  $db->do_raw_query('complete_install');
+}
+
+// logging in - redirect to pick up any session variables
+if($action == 'login')
+{
+  goto($_SERVER['PHP_SELF']);
+}
+
+if( ! $status['db_panic'] )
+{
+  // create user object if this is not an admin user  
+  if( ! is_admin() )
+    {
+      $uid = $status['user_data']['id'];
     }
   
-  // make sure the installation of the server is complete before we continue
-  
-  $server->install_checks();
-  
-  // NOTE! Anything beyond this point is considered a logged in user
+  // sanity check.. if we're not an admin and have no user id, there's a problem
+  if( ! is_admin() and ! $uid )
+    {
+      // TODO: die with a cleaner look
+      die("Unable to load page, no uid from session");
+    }
   
   if ( $uid )
     {
-      
       $u = new user($uid);
-      
     }
 
   if ( $did )
     {
-      
       $d = new domain($did);
-      
     }
   
   // If we have a $did and no $uid, we're an admin looking at a user's domain page. Get the $uid
   if (!$uid and $did)
     {
-      
       $u = new user($d->info['uid']);
       
       $uid = $u->uid;
-      
     }
   
   // If we have a $did, match it with the given $uid. If we fail, goto the user's main page
-  
   if ( $did and $u and ! $u->owns_domain($did) and !is_admin())
     {
-    goto("users.php?uid=$uid");
+      goto("users.php");
     }
   
-}
+} // end if( ! $status['db_panic'] )
 
 ?>

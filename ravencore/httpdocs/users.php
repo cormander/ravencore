@@ -39,6 +39,7 @@ else if ($action == "unlock" and is_admin())
 
 nav_top();
 
+
 // We don't have to worry about checking if we're an admin here, because
 // the $uid variable will always be set if we're a user
 if (!$uid)

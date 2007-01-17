@@ -21,13 +21,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 include "auth.php";
 
-$session->destroy();
+session_destroy();
 
-if( $server->db_panic )
-{
-  session_destroy();
-}
-
-goto($_SERVER['HTTP_REFERER']);
+goto($_SERVER['HTTP_REFERER'] . '?lang=' . $_SESSION['lang']);
 
 ?>

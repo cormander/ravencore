@@ -56,7 +56,7 @@ if ($action == "add")
 
                     $db->data_query($sql);
 
-                    socket_cmd("rehash_named --rebuild-conf --all");
+                    $db->do_raw_query("rehash_named --rebuild-conf --all");
 
                     goto("dns.php?did=$did");
                 } 
@@ -144,13 +144,13 @@ switch ($_POST['type'])
         print '<input type=hidden name=type value=PTR>
 ' . __('Reverse pointer records are not yet available');
         nav_bottom();
-        exit;
+        rc_exit();
 
         break;
     default:
         print __('Invalid DNS record type');
         nav_bottom();
-        exit;
+        rc_exit();
         break;
 } 
 

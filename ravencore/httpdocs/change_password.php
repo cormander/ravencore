@@ -25,37 +25,14 @@ req_admin();
 
 if ($action == "change")
 {
-  if (!valid_passwd($_POST['new_pass']))
-    {
-      alert(__("The new password must be greater than 4 characters and not a dictionary word"));
-    }
-  else
-    {
-      if( $server->db_panic )
-	{
-	  $_SESSION['password'] = $_POST['new_pass'];
-	}
-      
-      if ( $db->change_passwd($_POST['old_pass'], $_POST['new_pass']) )
-	{
-	  $_SESSION['status_mesg'] = 'Password change successful!';
-	}
-      else
-	{
-	  $_SESSION['status_mesg'] = 'Old password incorrect. Password not changed.';
-	}
 
-      // if we are being included, send is to ourself. Otherwise, send us to the system page
-      if ($being_included == true)
-	{
-	  unset($_SESSION['status_mesg']);
-	  goto($_SERVER['PHP_SELF']);
-	}
-        else
-	  {
-	    goto("system.php");
-	  }
+  if( $db->change_passwd($_POST['old_pass'], $_POST['new_pass']) )
+    {  
+      $_SESSION['status_mesg'] = 'Password change successful.';
+
+      goto("system.php");
     }
+
 }
 
 nav_top();
@@ -82,7 +59,7 @@ function validate_pw(f) {
 <table>
 <tr><th colspan="2"><?php
 // if our password is "ravencore", tell the user to change it
-print ( $db->data_auth("ravencore") ? __('Please change the password for') . ' ' . $CONF['MYSQL_ADMIN_USER'] : __('Changing ') . $CONF['MYSQL_ADMIN_USER'] . __(' password!'));
+print __('Changing admin password!');
 
 ?></th></tr>
 <td><?php e_('Old Password')?>:</td>

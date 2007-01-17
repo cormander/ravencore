@@ -23,14 +23,14 @@ include "auth.php";
 
 if ($_GET[service] and $_GET[status])
 {
-    socket_cmd("chkconfig --level 3 $_GET[service] $_GET[status]");
-
-    goto("$_SERVER[PHP_SELF]");
+  $db->do_raw_query("chkconfig --level 3 $_GET[service] $_GET[status]");
+  
+  goto("$_SERVER[PHP_SELF]");
 } 
 
 nav_top();
 
-print $db->run_cmd("disp_chkconfig");
+print $db->do_raw_query("disp_chkconfig");
 
 nav_bottom();
 

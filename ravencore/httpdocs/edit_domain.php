@@ -63,7 +63,7 @@ if ($action == "add")
 
                 $domain_name = $d->name();
 
-                if (have_service("mail")) socket_cmd("rehash_mail --all"); 
+                if (have_service("mail")) $db->do_raw_query("rehash_mail --all"); 
                 // Copy over server default DNS to this domain, if the option was checked
                 if ($_POST[dns])
                 { 
@@ -91,7 +91,7 @@ if ($action == "add")
                         $db->data_query($sql);
                     } 
 		    
-                    socket_cmd("rehash_named --rebuild-conf --all");
+                    $db->do_raw_query("rehash_named --rebuild-conf --all");
                 } 
                 // If we have the hosting variable, send us to hosting setup, because most of the time
                 // that is the next logical thing to do when adding a domain.

@@ -23,24 +23,30 @@ include "auth.php";
 
 req_admin();
 
-if ($_GET[cmd])
+if ($_GET['cmd'])
 {
-    socket_cmd("system $_GET[cmd]");
+  $db->do_raw_query("system " . $_GET['cmd']);
 
-    alert(__("The system will now $_GET[cmd]"));
-
-    $session->destroy();
+  alert(__("The system will now $_GET[cmd]"));
  
 } 
+
+if($status['db_panic'])
+{
+  $msg = "The database connection is down. Make sure the mysql server is running, and your admin password is the same as the mysql user\'s password.";
+  if($_SESSION['status_mesg']) $_SESSION['status_mesg'] .= '<br/>' . $msg;
+  else $_SESSION['status_mesg'] = $msg;
+
+}
 
 nav_top();
 
 ?>
 
-<table>
-<tr><th colspan="2"><?php e_('System')?></th></tr>
+<table class="listpad">
+<tr><th colspan="2" class="listpad"><?php e_('System')?></th></tr>
 <tr>
-<td width=300 valign=top>
+<td width=300 valign=top class="listpad">
 <a href="services.php" onmouseover="show_help('<?php e_('Stop/Start system services such as httpd, mail, etc')?>');" onmouseout="help_rst();"><?php e_('System Services')?></a>
 
 <p>
@@ -50,7 +56,7 @@ nav_top();
 <p>
 
 <?php
-if(! $server->db_panic )
+if(! $status['db_panic'] )
 {
 ?>
 <a href="sessions.php" onmouseover="show_help('<?php e_('View who is logged into the server, and where from')?>');" onmouseout="help_rst();"><?php e_('Login Sessions')?></a>
@@ -66,7 +72,7 @@ if (have_service("web"))
   // print '<p>';
 } 
 
-if ( have_service("dns") and ! $server->db_panic )
+if ( have_service("dns") and ! $status['db_panic'] )
 {
 
     ?>
@@ -82,7 +88,15 @@ print '<a href="change_password.php" onmouseover="show_help(\'' . __('Change the
 
 ?>
 
-</td><td valign=top>
+<p>
+
+<?php
+
+print '<a href="/debug.php">Debugging</a>';
+
+?>
+
+</td><td valign=top class="listpad">
 
 <p>
 <a href="phpmyadmin_admin.php" target=_blank onmouseover="show_help('<?php e_('Load phpMyAdmin for all with MySQL admin user')?>');" onmouseout="help_rst();"><?php e_('Admin MySQL Databases')?></a>
