@@ -158,12 +158,12 @@ class domain {
     $sql = "delete from sys_users where id = '" . $this->info['suid'] . "'";
     $db->data_query($sql);
     
-    foreach( $this->info['sys_users'] as $key => $val ) socket_cmd("ftp_del " . $val['login'] );
+    foreach( $this->info['sys_users'] as $key => $val ) $db->do_raw_query("ftp_del " . $val['login'] );
     
     $sql = "update domains set host_type = 'none' where id = '" . $this->did . "'";
     $db->data_query($sql);
     
-    socket_cmd("domain_del " . $this->info['name'] );
+    $db->do_raw_query("domain_del " . $this->info['name'] );
     
   }
 
@@ -192,9 +192,9 @@ class domain {
 
     // run the nessisary system calls
 
-    socket_cmd("rehash_named --rebuild-conf --all");
+    $db->do_raw_query("rehash_named --rebuild-conf --all");
 
-    socket_cmd("rehash_mail --all");
+    $db->do_raw_query("rehash_mail --all");
 
   }
 
