@@ -1,0 +1,4 @@
+# either tcp/ip address or socket path
+
+POSTGREY_SOCKET=inet:127.0.0.1:60000
+
