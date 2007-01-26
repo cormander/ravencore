@@ -8,11 +8,11 @@ detect them, and you will have lots of problems with those settings no longer be
 
 Once you have downloaded the rpm package, go ahead and install it:
 
-  rpm -Uvh ravencore-0.2.1-1.noarch.rpm
+  rpm -Uvh ravencore-0.3.0-1.noarch.rpm
 
 Non-RPM distributions can install with the tarball:
 
-  tar zxvf ravencore-0.2.1.tar.gz ; make build ; make install
+  tar zxvf ravencore-0.3.0.tar.gz ; make build ; make install
 
 Here is a list of base packages you will need ( don't worry about version numbers, RavenCore
 is very flexable )
@@ -24,12 +24,19 @@ httpd (apache)
 perl
 bash ( a system shell. comes pre-packaged on most systems )
 
-Here is a list of perl modules you will need:
+Here is a list of perl modules you will need for ravencore to run:
 
-DBI
 POSIX
 Socket
+DBI
+DBD::MySQL
+File::Basename
 MIME::Base64
+Sys::Syslog
+
+Here is a list of perl modules you don't need, but should have installed for certian functionality:
+
+Net::HTTP
 
 Other packages that are needed for certian functions to work, but are not nessisary for RavenCore
 to be installed:
@@ -38,27 +45,30 @@ mod_ssl ( SSL module for apache, needed to run RavenCore in SSL mode )
 openssl ( to generate SSL certs so RavenCore can run in SSL mode )
 php-imap ( so webmail works )
 php-mysql ( so phpMyAdmin works )
+net-snmp ( so mrtg has a source to get information )
 
 RavenCore is being designed to work with modules, so it detects what software you have
 installed, and gives controls for them. So if certin things aren't installed, they will not appear
 in the control panel :) ( postfix for mail, bind for DNS, etc )
 
 postfix	       ( mail server )
+postgrey       ( postfix greylisting )
 dovecot	       ( POP3/IMAP server )
 vsftpd	       ( FTP server )
 bind	       ( DNS server )
 amavisd-new    ( Controls the anti-spam/virus software )
 spamassassin   ( Anti-spam for mail )
 clamd	       ( Anti-virus for mail )
+mrtg           ( network usage graphing )
 
 NOTE: If at all possible, use your distribution's standard packages for software. If you did a "make install"
 from source, it's likely that RavenCore will not detect it, and you will have to manually tweak a configuration file.
 On systems with online installers such as yum or apt-get, you should run it with all these packages,
 for example:
 
-yum install httpd php mysql-server mod_ssl openssl postfix dovecot vsftpd spamassassin bind
+yum install httpd php mysql-server mod_ssl openssl postfix postgrey dovecot vsftpd spamassassin clamd amavisd-new bind mrtg
   or 
-apt-get install httpd php mysql-server mod_ssl openssl postfix dovecot vsftpd spamassassin bind
+apt-get install httpd php mysql-server mod_ssl openssl postfix postgrey dovecot vsftpd spamassassin clamd amavisd-new bind mrtg
 
 Use "yum" or "up2date" for RedHat systems, "apt-get" for Debian systems, "yast" for SuSE, "swup" for Trustix,
 and "urpmi" for Mandrake.
@@ -72,6 +82,10 @@ So if you are unable to find a package, the website http://rpm.pbone.net/ is a g
 
 Dag Wieer's website (http://dag.wieers.com/) is a good website for redhat linux systems to get RPMs
 ( RHEL, CentOS, Fedora )
+
+David Schweikert's website (http://isg.ee.ethz.ch/tools/postgrey/) is where you can get postgrey - if
+your online install program doesn't grab it automatically. He includes links to prepackaged RPMs for
+RedHat/Fedora, .deb's for Debian, ports for FreeBSD, etc
 
 Now after you have all the desired packages installed, go ahead and start the control panel:
 
@@ -91,8 +105,10 @@ NOTE: Logging into the control panel right after you upgrade is very important, 
 configuration variables to add, because the last of the upgrade steps happen when you first login after
 an upgrade.
 
-If this is your first time installing RavenCore, be sure you set your admin password before you login.
+If this is your first time installing RavenCore, you will need to set your admin password before you login.
 You can do this by running this as root: /usr/local/ravencore/sbin/run_cmd passwd
+
+The password you set are required to be at least 5 characters, contain a digit, and not be a dictionary word!
 
 Once the install / upgrade process is completed, and the control panel is running, go to:
 
@@ -101,9 +117,6 @@ or
 https://your_ip:8080
 
 Now you see a login screen, login with the username "admin" and the password you set for it.
-
-Once you log in, new installations will require you to change the password. Must be atleast 5 characters,
-and not a dictionary word! ( and you can't keep ravencore as the password )
 
 Then, read the terms of use ( RavenCore is under the GNU GPL License ) and state that you accept.
 

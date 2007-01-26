@@ -2,7 +2,7 @@
 
 Summary: RavenCore Hosting Control Panel
 Name: ravencore
-Version: 0.2.3
+Version: 0.3.0
 Release: 1
 Packager: Cormander
 URL: http://www.ravencore.com/
@@ -109,23 +109,6 @@ rm -rf $RPM_BUILD_ROOT
 %{rc_root}/LICENSE
 %{rc_root}/README.install
 
-%{rc_root}/bin/chkconfig
-%{rc_root}/bin/crontab_mng
-%{rc_root}/bin/disp_chkconfig
-%{rc_root}/bin/domain_del
-%{rc_root}/bin/ftp_del
-%{rc_root}/bin/is_service_running
-%{rc_root}/bin/log_compress
-%{rc_root}/bin/log_del
-%{rc_root}/bin/mail_del
-%{rc_root}/bin/rehash_ftp
-%{rc_root}/bin/rehash_httpd
-%{rc_root}/bin/rehash_logrotate
-%{rc_root}/bin/rehash_mail
-%{rc_root}/bin/rehash_named
-%{rc_root}/bin/service
-%{rc_root}/bin/system
-
 %{rc_root}/conf.d/amavisd.conf
 %{rc_root}/conf.d/amavisd.conf.debian
 %{rc_root}/conf.d/base.conf
@@ -136,27 +119,19 @@ rm -rf $RPM_BUILD_ROOT
 %{rc_root}/conf.d/mrtg.conf
 %{rc_root}/conf.d/mrtg.conf.debian
 %{rc_root}/conf.d/mysql.conf
+%{rc_root}/conf.d/postgrey.conf
+%{rc_root}/conf.d/postgrey.conf.debian
 %{rc_root}/conf.d/web.conf
 
-%{rc_root}/sbin/checkconf
-%{rc_root}/sbin/checkconf.amavisd
-%{rc_root}/sbin/checkconf.cron.hourly
-%{rc_root}/sbin/checkconf.mail
-%{rc_root}/sbin/checkconf.mrtg
 %{rc_root}/sbin/database_reconfig
 %{rc_root}/sbin/data_query
 %{rc_root}/sbin/db_install
-%{rc_root}/sbin/logrotate.cron.hourly
-%{rc_root}/sbin/mailscan
 %{rc_root}/sbin/process_logs
 %{rc_root}/sbin/ravencore.cron
 %{rc_root}/sbin/ravencore.init
 %{rc_root}/sbin/ravencore.httpd
-%{rc_root}/sbin/rcsock
+%{rc_root}/sbin/rcserver
 %{rc_root}/sbin/run_cmd
-%{rc_root}/sbin/rem_module.amavisd
-%{rc_root}/sbin/usage.cron.daily
-%{rc_root}/sbin/wrapper.c
 
 %dir
 %{rc_root}/etc
@@ -164,6 +139,42 @@ rm -rf $RPM_BUILD_ROOT
 %{rc_root}/var
 
 %changelog
+* Fri Jan 12 2007 cormander <admin@ravencore.com>
+- version 0.3.0
+- upgraded awstats to 6.6 final
+- upgraded squirrelmail to 1.4.9a
+- upgraded phpmyadmin to 2.9.2
+- upgraded phpsysinfo to 2.5.2
+- added Turkish and Italian language packs
+- updated the Spanish language pack
+- completly recoded most of the bash code into the new ravencore.pm and other perl modules in var/lib
+- included the repack_ravencore script in the tarball so if a future release needs to rebuild an old version,
+  it can do so without worrying about changes in it, because the one for that release can be used
+- removed all bash scripts from bin/ and sbin/, except db_install and ravencore.init
+- removed session.php and server.php, their coded is now in ravencore.pm
+- renamed rcsock as rcserver, renamed rcsock.pm as rcclient.pm, renamed rcsock.php as rcclient.php
+- completly rewrote auth.php and made several major changes to functions.php
+- made several additions to how data is submitted/read from the socket interface for safety and simplicity
+- the perl server now takes care of all server functions and commands, including authentication to login to
+  the control panel itself, to provide a far more secure operating enviroment
+- this version runs about 20x faster then the previous, due to the optimization the perl language provides
+- used session_set_save_handler in php to have session data written to/read from the socket interface, to be
+  stored in root read-only files to prevent session hyjacking
+- added rcclient.pm to php auto_prepend so that anything making a call to session_start() will use the custom
+  session functions on the socket interface
+- enabled php safe_mode in the webserver that runs the PHP control panel interface
+- changed directory permissions/ownership on all the directories, so that the rcadmin user can only view the
+  php files, read/write to the socket interface, and store files in var/tmp/, but absolutly nothing else
+- added a debugging link to the system page which gives an interface much like the sbin/run_cmd script
+- removed webmail link from mail.php, as access to squirrelmail via ravencore broke (apache access still works)
+
+* Sun Aug 13 2006 cormander <admin@ravencore.com>
+- version 0.2.4
+- upgraded squirrelmail to 1.4.8
+- added checking and auto-configuration of the postfix "postgrey" policy server
+- fixed a runtime bug with webstats.php
+- updated code for rcshadow.pm, almost done with it
+
 * Sun Aug 06 2006 cormander <admin@ravencore.com>
 - version 0.2.3
 - upgraded phpmyadmin to 2.8.2.1

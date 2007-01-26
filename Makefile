@@ -10,15 +10,15 @@ ETC_RAVENCORE=/etc/ravencore.conf
 
 # The current RavenCore version...
 
-VERSION=0.2.3
+VERSION=0.3.0
 
 # 3rd party program names and version numbers
 
-PHPMYADMIN=phpMyAdmin-2.8.2.1
-PHPSYSINFO=phpsysinfo-2.5.2-rc3
+PHPMYADMIN=phpMyAdmin-2.9.2-all-languages-utf-8-only
+PHPSYSINFO=phpsysinfo-2.5.2
 PHPWEBFTP=phpwebftp33
-AWSTATS=awstats-6.5
-SQUIRRELMAIL=squirrelmail-1.4.7
+AWSTATS=awstats-6.6
+SQUIRRELMAIL=squirrelmail-1.4.9a
 
 # Squirrelmail plugins to install
 
@@ -116,7 +116,7 @@ build:
 	mv ravencore/var/apps/$(SQUIRRELMAIL) ravencore/var/apps/squirrelmail
 
 # hack the redirect.php file for ravencore auto-logins by appending the real redirect.php file
-	./src/mk_webmail_redirect.sh
+#	./src/mk_webmail_redirect.sh
 
 # webmail config
 	cp --reply=y src/webmail_config.php ravencore/var/apps/squirrelmail/config/config.php
@@ -165,9 +165,6 @@ install:
 # Create the etc ravencore.conf file
 	echo "# RavenCore Root Directory" > $(DESTDIR)$(ETC_RAVENCORE)
 	echo -e "RC_ROOT=$(RC_ROOT)\n" >> $(DESTDIR)$(ETC_RAVENCORE)
-	echo "# When shell script run, they will load this" >> $(DESTDIR)$(ETC_RAVENCORE)
-	echo -en ". $$" >> $(DESTDIR)$(ETC_RAVENCORE)
-	echo "RC_ROOT/var/lib/bash_functions" >> $(DESTDIR)$(ETC_RAVENCORE)
 
 # Install all the files
 	mkdir -p $(DESTDIR)$(RC_ROOT)
