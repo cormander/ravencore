@@ -1,5 +1,6 @@
 passwd
 service
+system
 mailq
 service_running
 set_conf_var
@@ -7,3 +8,6 @@ gpl_agree
 complete_install
 verify_passwd
 unlock_user
+session_list
+session_remove
+mrtg

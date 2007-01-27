@@ -33,7 +33,7 @@ if ($_GET['cmd'])
 
 if($status['db_panic'])
 {
-  $msg = "The database connection is down. Make sure the mysql server is running, and your admin password is the same as the mysql user\'s password.";
+  $msg = "The database connection is down. Make sure the mysql server is running, the DBI module for perl is installed, and your admin password is the same as the mysql admin user's password.";
   if($_SESSION['status_mesg']) $_SESSION['status_mesg'] .= '<br/>' . $msg;
   else $_SESSION['status_mesg'] = $msg;
 
@@ -55,13 +55,9 @@ nav_top();
 
 <p>
 
-<?php
-if(! $status['db_panic'] )
-{
-?>
 <a href="sessions.php" onmouseover="show_help('<?php e_('View who is logged into the server, and where from')?>');" onmouseout="help_rst();"><?php e_('Login Sessions')?></a>
+
 <?php
-}
 
 print '<p>';
 

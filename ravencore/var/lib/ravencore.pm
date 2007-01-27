@@ -848,23 +848,6 @@ sub is_admin
     return 0;
 }
 
-#
-
-sub set_privs
-{
-    my ($self, $system) = @_;
-    
-# tie this session with client privs by default
-    @{$self->{cmd_privs}} = (@{$self->{cmd_privs}}, @{$self->{cmd_privs_client}});
-    
-# if this user is admin, tie it with admin privs
-    @{$self->{cmd_privs}} = (@{$self->{cmd_privs}}, @{$self->{cmd_privs_admin}}) if $self->is_admin;
-
-# if this user is a system user, tie it with system privs
-    @{$self->{cmd_privs}} = (@{$self->{cmd_privs}}, @{$self->{cmd_privs_system}}) if $system;
-
-}
-
 # is the given service running?
 
 sub service_running

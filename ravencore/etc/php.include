@@ -2,25 +2,37 @@ AddType application/x-httpd-php .php
 
 DirectoryIndex index.php
 
+# none of the php apps need safe_mode to be off
 php_admin_flag safe_mode On
+
+# error handling
+php_admin_flag display_errors On
 php_admin_flag log_errors On
 php_admin_flag track_vars On
-php_admin_flag expose_php Off
+php_admin_flag display_startup_errors Off
+php_admin_value log_errors_max_len 1024
+# E_ALL=8191 ; E_NOTICE=8 ; so E_ALL & ~E_NOTICE is 8183
+php_admin_value error_reporting 8183
+
+# so phpwebftp works
 php_admin_flag file_uploads On
-php_admin_flag display_errors Off
+
+# for security reasons
+php_admin_flag expose_php Off
 php_admin_flag allow_url_fopen Off
 php_admin_flag magic_quotes_gpc On
 php_admin_flag register_globals Off
 php_admin_flag magic_quotes_sybase Off
 php_admin_flag magic_quotes_runtime Off
-php_admin_flag session.cookie_secure Off
-php_admin_flag display_startup_errors Off
 
+# force auto-start to off
 php_admin_value session.auto_start 0
+
+# special cookie name for ravencore sessions
 php_admin_value session.name RAVENCORE
+php_admin_flag session.cookie_secure Off
 
 php_admin_value max_execution_time 120
-php_admin_value log_errors_max_len 1024
-php_admin_value error_reporting "E_ALL & ~E_NOTICE"
 
+# session.save_path, auto_prepend_file, and auto_append_file
 Include var/run/session.include

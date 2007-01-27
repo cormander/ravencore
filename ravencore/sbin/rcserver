@@ -127,12 +127,12 @@ my %child;
 
 # endlessly loop, waiting for a connection
 
-for ( $waitedpid = 0; accept($rc->{CLIENT},SERVER) || $waitedpid; $waitedpid = 0, close $rc->{CLIENT})
+for ( $waitedpid = 0; ($paddr = accept($rc->{CLIENT},SERVER)) || $waitedpid; $waitedpid = 0, close $rc->{CLIENT})
 {
 
-# if $waitedpid still exists, then we're not ready to do the below, so skip
-
-    next if $waitedpid;
+# if $waitedpid still exists and there is no packed address from the 'accept' call, then we're not ready to do
+# execute our code
+    next if $waitedpid and not $paddr;
 
     $rc->debug("client connected");
 
@@ -249,8 +249,15 @@ for ( $waitedpid = 0; accept($rc->{CLIENT},SERVER) || $waitedpid; $waitedpid = 0
 	print {$rc->{CLIENT}} $data . $rc->{EOT};
 	
     } # end while($query = $rc->data_read)
-    
-# TODO: call a destroy function for ravencore, to close any open files there may be
+
+# if session_read was called but seesion_write wasn't, call session_write. this should only happen if
+# exit() is called w/o calling session_write_close() first. This won't write any new data given to
+# $_SESSION on that particular page load, but it helps maintain current session data
+    if($rc->{client_request_hash}{session_read} && ! $rc->{client_request_hash}{session_write})
+    {
+	$rc->debug("session_read was called by client, but session_write was not. calling session_write");
+	$rc->session_write($rc->{session}{data});
+    }
 
 # force the socket to close    
     close $rc->{CLIENT};

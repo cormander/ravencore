@@ -25,42 +25,51 @@ req_admin();
 
 if ($action == "delete")
 {
-    $sql = "delete from sessions where id = '$_POST[session]' and session_id != '$session_id'";
-    $db->data_query($sql);
-
-    goto($_SERVER[PHP_SELF]);
+  $db->do_raw_query('session_remove ' . $_POST['session']);
+  goto($_SERVER['PHP_SELF']);
 } 
 
 nav_top();
 
-$sql = "select * from sessions";
-$result = $db->data_query($sql);
+$sessions = $db->do_raw_query('session_list');
 
-print '<form method=post><table width=600><tr><th width=20%>' . __('Login') . '</th><th width=20%>' . __('IP Address') . '</th><th width=20%>' . __('Session Time') . '</th><th width=20%>' . __('Idle Time') . '</th><th width=20%>' . __('Delete') . '</th></tr>';
+//print date('Y-m-d H:i:s','1169622595');
 
-while ($row = $db->data_fetch_array($result))
+//print '<pre>';print_r($sessions);exit;
+
+print '<form method=post>
+<table class="listpad" width=600><tr>
+<th class="listpad" width=20%>' . __('Login') . '</th>
+<th class="listpad" width=20%>' . __('IP Address') . '</th>
+<th class="listpad" width=20%>' . __('Session Time') . '</th>
+<th class="listpad" width=20%>' . __('Idle Time') . '</th>
+<th class="listpad" width=20%>' . __('Delete') . '</th></tr>';
+
+foreach ($sessions as $session_id => $row )
 {
-    $sql = "select ( ( to_days(now()) * 24 * 60 * 60 ) + time_to_sec(now() ) ) - ( ( to_days(created) * 24 * 60 * 60 ) + time_to_sec(created) ) as total, ( ( to_days(now()) * 24 * 60 * 60 ) + time_to_sec(now() ) ) - ( ( to_days(idle) * 24 * 60 * 60 ) + time_to_sec(idle) ) as idle from sessions where id = '$row[id]'";
-    $result_session = $db->data_query($sql);
+    print '<tr><td class="listpad">';
 
-    $row_session = $db->data_fetch_array($result_session);
+    if( $session_id == session_id() ) print '<b>' . $row['user'] . '</b>';
+    else print $row['user']; 
 
-    print '<tr><td>';
+    $time = date('i:s', mktime(0, 0, time() - $row['created'], 1, 1, 1));
+    $idle = date('i:s', mktime(0, 0, time() - $row['accessed'], 1, 1, 1));
 
-    if ($row[session_id] == $session_id) print '<b>' . $row[login] . '</b>';
-    else print $row[login]; 
-    // if the session is longer then an hour, make the date_disp contain the H
-    if ($row_session[total] > 3600) $date_disp = "H:i:s";
-    else $date_disp = "i:s";
+    // 'accessed' is updated after the page loads (session_write), so for this user's session, say 
+    // and idle time of zero
+    if( $session_id == session_id() ) $idle = '00:00';
+    
+    print '</td><td class="listpad">' . $row['ip'] . '</td>
+<td class="listpad">' . $time . '</td>
+<td class="listpad">' . $idle . '</td>
+<td class="listpad"><input type=radio name=session value="' . $session_id . '"';
 
-    print '</td><td>' . $row[location] . '</td><td>' . date($date_disp, mktime(0, 0, $row_session[total], 1, 1, 1)) . '</td><td>' . date('i:s', mktime(0, 0, $row_session[idle], 1, 1, 1)) . '</td><td><input type=radio name=session value="' . $row[id] . '"';
-
-    if ($row[session_id] == $session_id) print ' disabled';
+    if ($session_id == session_id()) print ' disabled';
 
     print '></td></tr>';
 } 
 
-print '<tr><td colspan=4></td><td><input type=hidden name=action value=delete><input type=submit value="' . __('Remove') . '"></td></tr></table></form>';
+print '<tr><td class="listpad" colspan=4></td><td class="listpad"><input type=hidden name=action value=delete><input type=submit value="' . __('Remove') . '"></td></tr></table></form>';
 
 nav_bottom();
 

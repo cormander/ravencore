@@ -83,7 +83,7 @@ sub auth
 	$self->{session}{accessed} = $now;
 
 	$self->set_privs;
-	
+
 # authentication successful
 	return 1;
     }
@@ -294,13 +294,41 @@ sub auth_user
     $result->finish();
 
 # success if %row exists
-    if( %row )
-    {
-# set some user info
-        %{$self->{session}{user_data}} = %row;
-        return 1;
-    }
+    return 1 if %row;
+
 # we only get here if we failed auth.. call the failed auth function
     return $self->auth_failure($username);
 
 } # end sub auth_user
+
+#
+
+sub set_privs
+{
+    my ($self, $system) = @_;
+
+# tie this session with client privs by default
+    @{$self->{cmd_privs}} = (@{$self->{cmd_privs}}, @{$self->{cmd_privs_client}});
+
+# if this user is admin, tie it with admin privs
+    @{$self->{cmd_privs}} = (@{$self->{cmd_privs}}, @{$self->{cmd_privs_admin}}) if $self->is_admin;
+
+# if this user is a system user, tie it with system privs
+    @{$self->{cmd_privs}} = (@{$self->{cmd_privs}}, @{$self->{cmd_privs_system}}) if $system;
+
+    if($self->{db_connected})
+    {
+# fill in user_data
+        my $sql = "select * from users where binary(login) = '" . $self->{session}{user} . "' limit 1";
+        my $result = $self->{dbi}->prepare($sql);
+
+        $result->execute();
+        my $row = $result->fetchrow_hashref;
+        $result->finish();
+
+# success if %row exists
+        $self->{session}{user_data} = $row if $row;
+
+    }
+
+}

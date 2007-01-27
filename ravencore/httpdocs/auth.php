@@ -48,15 +48,15 @@ foreach ($reg_glob_vars as $val)
 // Include our function file
 include "functions.php";
 
+session_start(); // session_read() is called here automatically
+
 //$db = new rcclient; // commented out because it's called in the rcclient.php file which is set to auto_prepend
 // $db is a common variable name... for compat with other apps, the rcclient is actually in $rcdb, but since
 // I don't want to bother to change all the current PHP code from $db -> $rcdb (yes, I'm lazy), just make $db
 // a reference to it..
 // I banged my head against my monitor for hours trying to get phpmyadmin to work with the ravencore custom
 // sessions via the socket.... this was one of the things that had to be figured out and changed.
-$db = \$rcdb;
-
-session_start(); // session_read() is called here automatically
+$db = &$rcdb;
 
 // after session_start, we set our language
 
@@ -119,7 +119,7 @@ if($action == "update_conf" and is_array($_REQUEST['CONF_UPDATE']))
 // so that we have the latest and greatest info
 $status = $db->do_raw_query("session_status");
 
-$CONF = \$status['CONF'];
+$CONF = &$status['CONF'];
 
 // check to see if the GPL was accepted. if not, send us to that page
 if( ! $status['gpl_check'] and $_SERVER['PHP_SELF'] != '/logout.php' )
@@ -222,7 +222,10 @@ if( ! $status['db_panic'] )
   if( ! is_admin() and ! $uid )
     {
       // TODO: die with a cleaner look
-      die("Unable to load page, no uid from session");
+      nav_top();
+      print "Unable to load page, no uid from session";
+      nav_bottom();
+      rc_exit();
     }
   
   if ( $uid )

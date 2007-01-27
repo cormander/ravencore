@@ -124,10 +124,15 @@ class rcclient {
       // if $c is litterally false, we got disconnected. probably a "too many connections" error
       if( $c === false )
 	{
-	    nav_top();
-	    print $data;
-	    nav_bottom();
-	    exit;
+
+	  // nav_top/bottom may not exist yet if we got a disconnect error before auth.php is executed
+	  if(function_exists('nav_top')) nav_top();
+
+	  print 'ERROR: Broken pipe on socket, or too many connections.';
+
+	  if(function_exists('nav_bottom')) nav_bottom();
+
+	  exit;
 	}
       
     } while ( $c != $this->EOT );
@@ -160,9 +165,8 @@ class rcclient {
 
 	$_SESSION['status_mesg'] = 'ERROR on query: ' . $query . '<br />Server responded with: ' . $error;
 
-	
       }
-    
+
     // return the raw response. whichever function calling do_raw_query will parse the data
     // as appropriate
 
@@ -278,9 +282,6 @@ class rcclient {
 
 } // end class rcclient
 
-// create the class
-$rcdb = new rcclient;
-
 // set our custom session handleing functions:
 // these make the php code NOT keep the session_id as a file readable by the webserver user. Instead, it provides a
 // method of storing session information (data, acess times, usernames, and the session id itself) in a root-read only
@@ -291,15 +292,16 @@ $rcdb = new rcclient;
 
 session_set_save_handler("session_open", "session_close", "session_read", "session_write", "session_dest", "session_gc");
 
-// TODO: (in the future) add this session code to auto_prepend_file directive for ravencore -
-// so even phpmyadmin/squirrelmail/phpwebftp/etc use this code - no session data is ever stored
-// as the rcadmin user
+//
 
 function session_open($save_path, $session_name)
 {
-  // we don't need either of the above variables.. nor do we need to tell the socket
-  // to open the session file - it'll do that when then socket connection is established,
-  // so simply reutrn true
+  global $rcdb;
+
+  // TODO: use $session_name on the socket to support third party apps' use of it
+
+  // create the class
+  $rcdb = new rcclient;
 
   return true;
 }

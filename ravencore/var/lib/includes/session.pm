@@ -31,7 +31,7 @@ sub session_status
     my %data;
 
 # user data from this session
-    $data{user_data} = %{$self->{session}{user_data}};
+    $data{user_data} = \%{$self->{session}{user_data}};
 
 # do we have a database connection?
     $data{db_panic} = 1;
@@ -142,14 +142,10 @@ sub session_read
             return "";
         }
 
-# read the session file data
-        my $data = file_get_contents($self->{session_file});
-
-# kill the return character - if any
-        chomp $data;
-
+# read the session file data...
 # in format: IP Address, created datetime, last accessed datetime, username, sess_data, separated by :
-        my ($ip,$created,$accessed,$user,$sess_data) = split /:/, $data, 5;
+        my ($ip,$created,$accessed,$user,$sess_data) = $self->session_read_file($self->{session_file});
+
 # cache our current time
         my $now = time;
 
@@ -170,6 +166,23 @@ sub session_read
     return;
 
 } # end sub session_read
+
+#
+
+sub session_read_file
+{
+    my ($self, $file) = @_;
+
+# read the session file data
+    my $data = file_get_contents($file);
+
+# kill the return character - if any
+    chomp $data;
+    
+# in format: IP Address, created datetime, last accessed datetime, username, sess_data, separated by :
+    return split /:/, $data, 5;
+
+}
 
 # write the given data to the session file, along with our other session information
 
@@ -216,3 +229,51 @@ sub session_dest
 # remove the session file
     unlink $self->{session_file};
 } # end sub session_dest
+
+# remove a given session
+
+sub session_remove
+{
+    my ($self, $session_id) = @_;
+
+# since we're removing a file, even tho only an admin can do this, check to make sure it's actually a session ID
+# and not something funky
+    return $self->do_error('Invalid session ID.') unless $session_id =~ /^[a-zA-Z0-9]*$/;
+
+    $self->debug('Session ID ' . $session_id . ' destroyed because: Deleted by admin');
+
+    unlink $self->{CONF}{RC_ROOT} . '/var/tmp/sessions/' . $session_id;
+}
+
+# list sessions
+
+sub session_list
+{
+    my ($self) = @_;
+   
+# for each session, we need to return: Login - IP Address - Session Time - Idle Time
+
+    my %session_list;
+
+    my @sessions = dir_list($self->{CONF}{RC_ROOT} . '/var/tmp/sessions');
+
+    foreach my $session_id (@sessions)
+    {
+# don't list system sessions... or anything not a normal session for that matter
+	next unless $session_id =~ /^[a-zA-Z0-9]*$/;
+
+        my ($ip,$created,$accessed,$user,$sess_data) = $self->session_read_file($self->{CONF}{RC_ROOT} . '/var/tmp/sessions/' . $session_id);
+
+# if there isn't user data for this session, then it's a non-ravencore php session, ignore it
+	next unless $user;
+
+	$session_list{$session_id}{ip} = $ip;
+	$session_list{$session_id}{created} = $created;
+	$session_list{$session_id}{accessed} = $accessed;
+	$session_list{$session_id}{user} = $user;
+
+    }
+
+    return \%session_list;
+
+}
