@@ -96,11 +96,11 @@ if (!$dbid and $did)
     $num = $db->data_num_rows();
 
     if ($num == 0) print __("No databases setup");
-    else print '<table><tr><th colspan="2">' . __('Databases for') . ' <a href="domains.php?did=' . $did . '">' . $row[name] . '</a></th></tr>';
+    else print '<table class="listpad"><tr><th  class="listpad"colspan="2">' . __('Databases for') . ' <a href="domains.php?did=' . $did . '">' . $row[name] . '</a></th></tr>';
 
     while ($row = $db->data_fetch_array($result))
     {
-        print '<tr><td><a href="databases.php?did=' . $did . '&dbid=' . $row[id] . '">' . $row[name] . '</a></td><td><a href="databases.php?action=dbdel&dbid=' . $row[id] . '&did=' . $did . '" onclick="return confirm(\'' . __('Are you sure you wish to delete this database?') . '\');">' . __('delete') . '</a></td></tr>';
+        print '<tr><td class="listpad"><a href="databases.php?did=' . $did . '&dbid=' . $row[id] . '">' . $row[name] . '</a></td><td class="listpad"><a href="databases.php?action=dbdel&dbid=' . $row[id] . '&did=' . $did . '" onclick="return confirm(\'' . __('Are you sure you wish to delete this database?') . '\');">' . __('delete') . '</a></td></tr>';
     } 
 
     if ($num != 0) print '</table>';
@@ -122,13 +122,13 @@ else if ($dbid and $did)
     $num = $db->data_num_rows();
 
     if ($num == 0) print __("No users for this database") . "<p>";
-    else print '<table><tr><th>User</th><th>&nbsp;</th><th>' . __('Delete') . '</th></tr>';
+    else print '<table class="listpad"><tr><th class="listpad">User</th><th class="listpad">&nbsp;</th><th class="listpad">' . __('Delete') . '</th></tr>';
 
     while ($row = $db->data_fetch_array($result))
     {
-        print '<tr><td>' . $row[login] . '</td>
-<td><a href="phpmyadmin.php?did=' . $did . '&dbu=' . $row[id] . '&dbid=' . $dbid . '" target=_blank>phpMyAdmin</a></td>
-<td><a href="databases.php?action=userdel&dbu=' . $row[id] . '&did=' . $did . '&dbid=' . $dbid . '" onclick="return confirm(\'' . __('Are you sure you wish to delete this database user?') . '\');">' . __('delete') . '</a></td></tr>';
+        print '<tr><td class="listpad">' . $row[login] . '</td>
+<td class="listpad"><a href="phpmyadmin.php?did=' . $did . '&dbu=' . $row[id] . '&dbid=' . $dbid . '" target=_blank>phpMyAdmin</a></td>
+<td class="listpad"><a href="databases.php?action=userdel&dbu=' . $row[id] . '&did=' . $did . '&dbid=' . $dbid . '" onclick="return confirm(\'' . __('Are you sure you wish to delete this database user?') . '\');">' . __('delete') . '</a></td></tr>';
     } 
 
     if ($num != 0) print '</table>';
@@ -173,12 +173,12 @@ else
 
     if ($num != 0)
 	{
-		print '<table><tr><th>' . __('Domain') . '</th><th>' . __('Database') . '</th></tr>';
+		print '<table class="listpad"><tr><th class="listpad">' . __('Domain') . '</th><th class="listpad">' . __('Database') . '</th></tr>';
 	}
 
     while ($row = $db->data_fetch_array($result))
     {
-        print '<tr><td>' . $row['domain_name'] . '</td><td><a href="databases.php?dbid=' . $row['id'] . '&did=' . $row['did'] . '">' . $row[db_name] . '</a></td></tr>';
+        print '<tr><td class="listpad">' . $row['domain_name'] . '</td><td class="listpad"><a href="databases.php?dbid=' . $row['id'] . '&did=' . $row['did'] . '">' . $row[db_name] . '</a></td></tr>';
     } 
 
     if ($num != 0) print '</table>';
