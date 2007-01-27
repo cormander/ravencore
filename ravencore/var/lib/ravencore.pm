@@ -244,23 +244,36 @@ sub new
     
 } # end sub new
 
-# function to tell the client some basic information on what they can do. for now, just list
-# the stuff they can run
+# function to tell the client some basic information on what they can do
 
 sub help
 {
-    my ($self) = @_;
+    my ($self, $query) = @_;
 
-# TODO: accept an argument, to print "help" on that particular function
+    my $data;
 
-    my $data = "RavenCore server help (basic). You have permission to run the following commands:\n\n";
-
-    foreach my $cmd ( @{$self->{cmd_privs}} )
+    if( $query eq "" )
     {
-	$data .= $cmd . "\n";
-    }
+	$data = "RavenCore server help. You have permission to run the following commands:\n\n";
 
-    $data .= "\nIn a future release, you'll be able to help <command> for more help on what it does\n";
+	foreach my $cmd ( @{$self->{cmd_privs}} )
+	{
+	    $data .= $cmd . "\n";
+	}
+	
+	$data .= "\nFor more information about a command, run: help <command>\n";
+    }
+    else
+    {
+
+	$data = file_get_contents($self->{CONF}{RC_ROOT} . '/docs/commands/' . basename($query));
+
+	if( $data eq "" )
+	{
+	    $data = "Sorry, there is currently no help for that command.";
+	}
+
+    }
 
     return $data;
 }

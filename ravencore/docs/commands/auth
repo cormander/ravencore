@@ -1,0 +1,10 @@
+
+auth session_id ipaddress [username password]
+
+Attempts authentication against the server, tieing a session id with the given user. If authentication was already successful, username and password need not be supplied if the session id stays the same for each additional connection to the server. The session will eventually expire if you wait too long to repeat a connection with that session id, and you will have to re-submit the username and password.
+
+If someone submits a session id and their ip address differs from the one used to create the session, the session will auto-expire to prevent session hyjacking.
+
+Session files are stored in a root read-only directory, so not even the user that runs the ravencore webserver has access to do a directory listing, which makes it practically impossible for a hacker to hyjack an existing session, even if they were able to run arbitrary shell commands.
+
+Once authenticated, your session is granted access to a certian set of commands, depending on your user level. Run "help" to get a list of commands you can run, after you authenticate yourself.

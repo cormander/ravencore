@@ -1,0 +1,8 @@
+
+auth_system session_id password
+
+Attempts authentication against the server, with special access privileges. The session file must exist before this command is called, and start with "SYSTEM_", which only the root user can do. The existance of the file is basically proof that the client is on the local machine and the root user, and the password is also checked for good measure (which the root user also has free access to).
+
+The session file is then removed by the auth_system command, which means you must-recreate the session file each time you connect to the socket, and with much preference, use a different session id each time. Because of this removal of the file, session data cannot be stored if you're authenticated with the auth_system command, but since it's meant to be used on run-once command line scripts, there isn't any need to keep session data.
+
+A session authenticated with auth_system is considered an admin user, and is actually granted some additional commands the admin user can't normally run. In addition to this, even if the admin user is locked out of the system (due to too many password failures), the auth_system command does not ever get locked out; the reason being is auth_system is immune to brute-force attacks because it requires the existance of a file only root can create, which will exist on the system for all but less then a second, and is just as random as any other session id.
