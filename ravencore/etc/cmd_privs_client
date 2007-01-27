@@ -7,3 +7,5 @@ rehash_ftp
 rehash_named
 mail_del
 webstats
+disp_chkconfig
+chkconfig

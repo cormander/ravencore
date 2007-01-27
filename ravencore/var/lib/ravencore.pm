@@ -2512,6 +2512,7 @@ sub disp_chkconfig
 # get our default runlevel
 # TODO: verify that this works
 	$runlevel=`grep ':initdefault:' /etc/inittab | sed 's/:/ /g' | awk '{print \$2}'`;
+#	chomp $runlevel;
     }
 
     $data  = "<h2>Services set to start on boot ( runlevel $runlevel ";
@@ -2531,7 +2532,7 @@ sub disp_chkconfig
     $data .= "<table cellpadding=0 cellspacing=0 border=1><tr>\n";
 
 #
-    open PROG, "chkconfig --list | grep '^[[:alpha:]]'";
+    open PROG, "chkconfig --list | grep '^[[:alpha:]]'|";
 
     while(<PROG>)
     {
@@ -2544,8 +2545,8 @@ sub disp_chkconfig
 
 	$data .= "<tr><td width=200>" . $s . "</td>";
 
-# is this going to be on or off?
-	my $status = $arg[$runlevel + 2];
+# is this thing going to be on or off?
+	my $status = $arg[$runlevel + 1];
 	$status =~ s/.*://;
 
 	my $new_status;
