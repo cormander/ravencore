@@ -122,7 +122,7 @@ if (!$did)
 		$pages = ceil($num_domains / $intDomainsPerPage);
 
 
-		$strContent = '<table class="overzicht">
+		$strContent = '<table class="listpad">
 		<tr>
 			<th colspan="2">'. __('Found') . ' ' . $num_domains . ' ' . __('results').'</th>
 			<th colspan="4" style="text-align: right;">Page: ';
@@ -161,73 +161,74 @@ if (!$did)
 			$strContent .= '</th>
 		</tr>
 		<tr>
-			<th style="width: 16px">' . __('Status') . '</th>
-			<th>' . __('Name') . '</th>
-			<th>' . __('Hosting') . '</th>
-			<th>' . __('Created') . '</th>
-			<th>' . __('Space usage') . '</th>
-			<th>' . __('Traffic usage') . '</th>
+			<th class="listpad" style="width: 16px">' . __('Status') . '</th>
+			<th class="listpad">' . __('Name') . '</th>
+			<th class="listpad">' . __('Hosting') . '</th>
+			<th class="listpad">' . __('Created') . '</th>
+			<th class="listpad">' . __('Space usage') . '</th>
+			<th class="listpad">' . __('Traffic usage') . '</th>
 		</tr>';
 
 		while ($row = $db->data_fetch_array($result))
-        {
-			$d = new domain($row['id']);
+		  {
+		    $d = new domain($row['id']);
+		    
+		    $space = $d->space_usage(date("m"), date("Y"));
+		    $traffic = $d->traffic_usage(date("m"), date("Y")); 
+		    // add to our totals
+		    $total_space += $space;
+		    $total_traffic += $traffic;
 
-            $space = $d->space_usage(date("m"), date("Y"));
-            $traffic = $d->traffic_usage(date("m"), date("Y")); 
-            // add to our totals
-            $total_space += $space;
-            $total_traffic += $traffic;
-
-			$helpMessage = '';
-
-			switch ($row['host_type'])
-			{
-				case "physical":
-					$helpMessage = __('Physical hosting') . ': ';
-					if ($row['host_php']) {	$helpMessage .= __('PHP') . ' '; };
-					if ($row['host_cgi']) {	$helpMessage .= __('CGI') . ' '; };
-					if ($row['host_ssl']) {	$helpMessage .= __('SSL') . ' '; };
-					if ($row['host_dir']) {	$helpMessage .= __('Directory indexing') . ' '; };
-					break;
-				case "redirect":
-					$helpMessage = __('Redirect to') . ' ' . $row['redirect_url']  ;
-					break;
-				case "alias":
-					$helpMessage = __('Alias of domain') . ' ' . $row['redirect_url']  ;
-					break;
-				case "none":
-					$helpMessage = __('No hosting');
-					break;
-			}
-
-			if ($row['hosting']=='on')
-			{
-				$strOnOffImage = '/images/solidgr.gif' ;
-				$strOnOffHelpText = __('Hosting') . ' ' . __('Status') . ': ' . __('On');
-				$strNewHosting = 'off';
-			} else
-			{
-				$strOnOffImage = '/images/solidrd.gif';
-				$strOnOffHelpText = __('Hosting') . ' ' . __('Status') . ': ' . __('Off');
-				$strNewHosting = 'on';
-			}
-
-            $strContent .= '<tr>
-				<td style="width: 16px; text-align: center" onmouseover="show_help(\'' . $strOnOffHelpText. '\');" onmouseout="help_rst();"><a href="domains.php?action=hosting&did='.$row['id'].'&hosting='.$strNewHosting.'"><img src="'.$strOnOffImage.'" height="12" width="12" border="0"></a></td>
-				<td><a href="domains.php?did=' . $row['id'] . '" onmouseover="show_help(\'' . __('View setup information for') . ' ' . $row['name'] . '\');" onmouseout="help_rst();">' . $row['name'] . '</a></td>
-				<td onmouseover="show_help(\'' . $helpMessage . '\');" onmouseout="help_rst();"><a href="hosting.php?did=' . $row['id'] . '">' . $row['host_type'] . '</a></td>
-				<td>' . $row['created'] . '</td>
-				<td align=right>' . $space . ' MB</td>
-				<td align=right>' . $traffic . ' MB</td>
+		    $helpMessage = '';
+		    
+		    switch ($row['host_type'])
+		      {
+		      case "physical":
+			$helpMessage = __('Physical hosting') . ': ';
+			if ($row['host_php']) {	$helpMessage .= __('PHP') . ' '; };
+			if ($row['host_cgi']) {	$helpMessage .= __('CGI') . ' '; };
+			if ($row['host_ssl']) {	$helpMessage .= __('SSL') . ' '; };
+			if ($row['host_dir']) {	$helpMessage .= __('Directory indexing') . ' '; };
+			break;
+		      case "redirect":
+			$helpMessage = __('Redirect to') . ' ' . $row['redirect_url']  ;
+			break;
+		      case "alias":
+			$helpMessage = __('Alias of domain') . ' ' . $row['redirect_url']  ;
+			break;
+		      case "none":
+			$helpMessage = __('No hosting');
+			break;
+		      }
+		    
+		    if ($row['hosting']=='on')
+		      {
+			$strOnOffImage = '/images/solidgr.gif' ;
+			$strOnOffHelpText = __('Hosting') . ' ' . __('Status') . ': ' . __('On');
+			$strNewHosting = 'off';
+		      }
+		    else
+		      {
+			$strOnOffImage = '/images/solidrd.gif';
+			$strOnOffHelpText = __('Hosting') . ' ' . __('Status') . ': ' . __('Off');
+			$strNewHosting = 'on';
+		      }
+		    
+		    $strContent .= '<tr>
+				<td class="listpad" style="width: 16px; text-align: center" onmouseover="show_help(\'' . $strOnOffHelpText. '\');" onmouseout="help_rst();"><a href="domains.php?action=hosting&did='.$row['id'].'&hosting='.$strNewHosting.'"><img src="'.$strOnOffImage.'" height="12" width="12" border="0"></a></td>
+				<td class="listpad"><a href="domains.php?did=' . $row['id'] . '" onmouseover="show_help(\'' . __('View setup information for') . ' ' . $row['name'] . '\');" onmouseout="help_rst();">' . $row['name'] . '</a></td>
+				<td class="listpad" onmouseover="show_help(\'' . $helpMessage . '\');" onmouseout="help_rst();"><a href="hosting.php?did=' . $row['id'] . '">' . $row['host_type'] . '</a></td>
+				<td class="listpad">' . $row['created'] . '</td>
+				<td class="listpad" align=right>' . $space . ' MB</td>
+				<td class="listpad" align=right>' . $traffic . ' MB</td>
 			</tr>';
-        } 
-
+		  } 
+		
 		$strContent .= '
 		</table>
 		
 		';
-
+		
 		print $strContent;
 
 
@@ -237,7 +238,7 @@ if (!$did)
 
 
 /*
-        print '<table><tr><th>' . __('Name') . '</th><th>' . __('Space usage') . '</th><th>' . __('Traffic usage') . '</th></tr>'; 
+        print '<table class="listpad"><tr><th class="listpad">' . __('Name') . '</th><th class="listpad">' . __('Space usage') . '</th><th class="listpad">' . __('Traffic usage') . '</th></tr>'; 
         // set our totals to zero
         $total_space = 0;
         $total_traffic = 0;
@@ -307,15 +308,15 @@ else
 </form>';
         } 
 
-        print '<table width="45%" style="float: left">
-<tr><th colspan="2">' . __('Info for') . ' ' . $row[name] . '</th></tr>
-<tr><td>' . __('Name') . ':</td><td>' . $row[name] . ' - <a href="domains.php?action=delete&did=' . $row[id] . '" onmouseover="show_help(\'' . __('Delete this domain off the server') . '\');" onmouseout="help_rst();" onclick="return confirm(\'' . __('Are you sure you wish to delete this domain') . '?\');">' . __('delete') . '</a></td></tr>';
+        print '<table class="listpad" width="45%" style="float: left">
+<tr><th class="listpad" colspan="2">' . __('Info for') . ' ' . $row[name] . '</th></tr>
+<tr><td class="listpad">' . __('Name') . ':</td><td class="listpad">' . $row[name] . ' - <a href="domains.php?action=delete&did=' . $row[id] . '" onmouseover="show_help(\'' . __('Delete this domain off the server') . '\');" onmouseout="help_rst();" onclick="return confirm(\'' . __('Are you sure you wish to delete this domain') . '?\');">' . __('delete') . '</a></td></tr>';
 
-        print '<tr><td>' . __('Created') . ':</td><td>' . $row[created] . '</td></tr>';
+        print '<tr><td class="listpad">' . __('Created') . ':</td><td class="listpad">' . $row[created] . '</td></tr>';
 
         if (have_service("web"))
         {
-            print '<tr><td><form method="post" name=status>' . __('Status') . ':</td><td>';
+            print '<tr><td class="listpad"><form method="post" name=status>' . __('Status') . ':</td><td class="listpad">';
 
             if ($row[hosting] == "on") print '' . __('ON') . ' <a href="javascript:document.status.submit();" onclick="return confirm(\'' . __('Are you sure you wish to turn off hosting for this domain') . '?\');" onmouseover="show_help(\'' . __('Turn OFF hosting for this domain') . '\');" onmouseout="help_rst();">*</a><input type=hidden name=hosting value="off">';
             else print '' . __('OFF') . ' <a href="javascript:document.status.submit();" onmouseover="show_help(\'' . __('Turn ON hosting for this domain') . '\');" onmouseout="help_rst();">*</a><input type=hidden name=hosting value="on">';
@@ -323,29 +324,29 @@ else
             print '<input type=hidden name=did value=' . $did . '>
 <input type=hidden name=action value=hosting>
 </form></td></tr>
-<tr><td>';
+<tr><td class="listpad">';
 
             switch ($row[host_type])
             {
                 case "physical":
-                    print '' . __('Physical Hosting') . ':</td><td><a href="hosting.php?did=' . $row[id] . '" onmouseover="show_help(\'' . __('View/Edit Physical hosting for this domain') . '\');" onmouseout="help_rst();">' . __('edit') . '</a>';
+                    print '' . __('Physical Hosting') . ':</td><td class="listpad"><a href="hosting.php?did=' . $row[id] . '" onmouseover="show_help(\'' . __('View/Edit Physical hosting for this domain') . '\');" onmouseout="help_rst();">' . __('edit') . '</a>';
                     break;
                 case "redirect":
-                    print '' . __('Redirect') . ':</td><td><a href="hosting.php?did=' . $row[id] . '" onmouseover="show_help(\'' . __('View/Edit where this domain redirects to') . '\');" onmouseout="help_rst();">' . __('edit') . '</a>';
+                    print '' . __('Redirect') . ':</td><td class="listpad"><a href="hosting.php?did=' . $row[id] . '" onmouseover="show_help(\'' . __('View/Edit where this domain redirects to') . '\');" onmouseout="help_rst();">' . __('edit') . '</a>';
                     break;
                 case "alias":
-                    print '' . __('Alias of') . ' ' . $row[redirect_url] . '</td><td> <a href="hosting.php?did=' . $row[id] . '" onmouseover="show_help(\'' . __('View/Edit what this domain is a server alias of') . '\');" onmouseout="help_rst();">' . __('edit') . '</a>';
+                    print '' . __('Alias of') . ' ' . $row[redirect_url] . '</td><td class="listpad"> <a href="hosting.php?did=' . $row[id] . '" onmouseover="show_help(\'' . __('View/Edit what this domain is a server alias of') . '\');" onmouseout="help_rst();">' . __('edit') . '</a>';
                     break;
                 default:
-                    print '' . __('No Hosting') . ':</td><td><a href="hosting.php?did=' . $row[id] . '" onmouseover="show_help(\'' . __('Setup hosting for this domain') . '\');" onmouseout="help_rst();">' . __('edit') . '</a>';
+                    print '' . __('No Hosting') . ':</td><td class="listpad"><a href="hosting.php?did=' . $row[id] . '" onmouseover="show_help(\'' . __('Setup hosting for this domain') . '\');" onmouseout="help_rst();">' . __('edit') . '</a>';
                     break;
             } 
 
             print '</td></tr></table>
 
-<table width="45%" style="float: right">
-<tr><th colspan=2>Options</th></tr>
-<tr><td>
+<table class="listpad" width="45%" style="float: right">
+<tr><th class="listpad" colspan=2>Options</th></tr>
+<tr><td class="listpad">
 ';
 
             if ($row[host_type] == "physical")
@@ -425,10 +426,10 @@ else
 
         if ($row[host_type] == "physical")
         {
-            print '<table width="45%" style="float: left;margin-top: 10px">
-<tr><th colspan="2">' . __('Domain Usage') . '</th></tr>
-<tr><td>' . __('Disk space usage') . ': </td><td>' . $d->space_usage(date("m"), date("Y")) . 'MB </td></tr>
-<tr><td>' . __('This month\'s bandwidth') . ': </td><td>' . $d->traffic_usage(date("m"), date("Y")) . 'MB</td></tr></table>';
+            print '<table class="listpad" width="45%" style="float: left;margin-top: 10px">
+<tr><th class="listpad" colspan="2">' . __('Domain Usage') . '</th></tr>
+<tr><td class="listpad">' . __('Disk space usage') . ': </td><td class="listpad">' . $d->space_usage(date("m"), date("Y")) . 'MB </td></tr>
+<tr><td class="listpad">' . __('This month\'s bandwidth') . ': </td><td class="listpad">' . $d->traffic_usage(date("m"), date("Y")) . 'MB</td></tr></table>';
         } 
     } 
 } 

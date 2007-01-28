@@ -56,18 +56,18 @@ if (!$did)
     else
     {
         print __('The following domains are setup for DNS') . '<p>
-<table><tr><th>' . __('Domain') . '</th><th>' . __('Records') . '</th></tr>';
+<table class="listpad"><tr><th class="listpad">' . __('Domain') . '</th><th class="listpad">' . __('Records') . '</th></tr>';
 
         while ( $row = $db->data_fetch_array($result) )
         {
-            print '<tr><td><a href="dns.php?did=' . $row['id'] . '">' . $row['name'] . '</a></td>';
+            print '<tr><td class="listpad"><a href="dns.php?did=' . $row['id'] . '">' . $row['name'] . '</a></td>';
 
             $sql = "select count(*) as count from dns_rec where did = '$row[id]'";
             $result_rec = $db->data_query($sql);
 
 	    $row = $db->data_fetch_array($result_rec);
 
-            print '<td align=center>' . $row['count'] . '</td></tr>';
+            print '<td class="listpad" align=center>' . $row['count'] . '</td></tr>';
         } 
 
         print '</table>';
@@ -122,14 +122,14 @@ else
 
             print '<form method=post>';
 
-            print '<table><tr><th>&nbsp;</th><th>' . __('Record Name') . '</th><th>' . __('Record Type') . '</th><th>' . __('Record Target') . '</th></tr>';
+            print '<table class="listpad"><tr><th class="listpad">&nbsp;</th><th class="listpad">' . __('Record Name') . '</th><th class="listpad">' . __('Record Type') . '</th><th class="listpad">' . __('Record Target') . '</th></tr>';
 
             while ( $row = $db->data_fetch_array($result) )
             {
-                print '<tr><td><input type=radio name=delete value="' . $row[id] . '"></td><td>' . $row[name] . '</td><td>' . $row[type] . '</td><td>' . $row[target] . '</td></tr>';
+                print '<tr><td class="listpad"><input type=radio name=delete value="' . $row[id] . '"></td><td class="listpad">' . $row[name] . '</td><td class="listpad">' . $row[type] . '</td><td class="listpad">' . $row[target] . '</td></tr>';
             } 
 
-            print '<tr><td colspan=4><input type=submit value="' . __('Delete Selected') . '"></tr>';
+            print '<tr><td class="listpad" colspan=4><input type=submit value="' . __('Delete Selected') . '"></tr>';
 
             print '<input type=hidden name=action value=delete>
 <input type=hidden name=did value="' . $did . '">

@@ -41,14 +41,14 @@ nav_top();
 
 ?>
 
-<table>
+<table class="listpad">
 
 <tr>
-<th><?php e_('Service')?></th>
-<th><?php e_('Running')?></th>
-<th><?php e_('Start')?></th>
-<th><?php e_('Stop')?></th>
-<th><?php e_('Restart')?></th>
+<th class="listpad"><?php e_('Service')?></th>
+<th class="listpad"><?php e_('Running')?></th>
+<th class="listpad"><?php e_('Start')?></th>
+<th class="listpad"><?php e_('Stop')?></th>
+<th class="listpad"><?php e_('Restart')?></th>
 </tr>
 <?php
 
@@ -56,7 +56,7 @@ $services = $status['services'];
 
 foreach ($services as $val)
 {
-    print '<tr><td>' . $val . '</td><td align=center>';
+    print '<tr><td class="listpad">' . $val . '</td><td class="listpad" align=center>';
 
     if( $db->do_raw_query("service_running " . $val) )
       {
@@ -76,9 +76,9 @@ foreach ($services as $val)
     } 
 
     print $running . '</td>
-<td>' . $start . '</td>
-<td>' . $stop . '</td>
-<td align=center><a href="services.php?action=run&service=' . $val . '&service_cmd=restart"><img src="images/restart.gif" border=0></a></td></tr>';
+<td class="listpad">' . $start . '</td>
+<td class="listpad">' . $stop . '</td>
+<td class="listpad" align=center><a href="services.php?action=run&service=' . $val . '&service_cmd=restart"><img src="images/restart.gif" border=0></a></td></tr>';
 } 
 
 ?>

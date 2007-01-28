@@ -65,7 +65,11 @@ false; }">';
     // else print 'A total of <i><b></b></i>';
     if ($num != 0)
     {
-        print '<table><tr><th>' . __('Name') . '</th><th>' . __('Domains') . '</th><th>' . __('Space usage') . '</th><th>' . __('Traffic usage') . '</th>
+        print '<table class="listpad"><tr>
+<th class="listpad">' . __('Name') . '</th>
+<th class="listpad">' . __('Domains') . '</th>
+<th class="listpad">' . __('Space usage') . '</th>
+<th class="listpad">' . __('Traffic usage') . '</th>
 </tr>';
         // set our totals to zero
         $total_space = 0;
@@ -83,10 +87,10 @@ false; }">';
             $total_traffic += $traffic;
             $total_domains += $domains;
 
-            print '<tr><td><a href="users.php?uid=' . $row[id] . '" onmouseover="show_help(\' ' . __('View user data for') . ' ' . $row[name] . '\');" onmouseout="help_rst();">' . $row[name] . '</a></td><td align=right>' . $domains . '</td><td align=right>' . $space . ' MB</td><td align=right>' . $traffic . ' MB</td></tr>';
+            print '<tr><td class="listpad"><a href="users.php?uid=' . $row[id] . '" onmouseover="show_help(\' ' . __('View user data for') . ' ' . $row[name] . '\');" onmouseout="help_rst();">' . $row[name] . '</a></td><td class="listpad" align=right>' . $domains . '</td><td class="listpad" align=right>' . $space . ' MB</td><td class="listpad" align=right>' . $traffic . ' MB</td></tr>';
         }
 
-        print '<tr><td>' . __('Totals') . '</td></td><td align=right>' . $total_domains . '</td><td align=right>' . $total_space . ' MB</td><td align=right>' . $total_traffic . ' MB</td></tr></table>';
+        print '<tr><td class="listpad">' . __('Totals') . '</td></td><td class="listpad" align=right>' . $total_domains . '</td><td class="listpad" align=right>' . $total_space . ' MB</td><td class="listpad" align=right>' . $total_traffic . ' MB</td></tr></table>';
     }
 
     print '<p><a href="edit_user.php" onmouseover="show_help(\' ' . __('Add a user to the control panel') . '\');" onmouseout="help_rst();">' . __('Add a Control Panel user') . '</a>';
@@ -115,38 +119,38 @@ else
         if (is_admin() and $row_lock[count] >= $CONF['LOCKOUT_COUNT']) print '<font color="red"><b>' . __('This user is locked out due to failed login attempts') . '</b></font> - <a href="users.php?action=unlock&login=' . $row[login] . '&uid=' . $row[id] . '">' . __('Unlock') . '</a>';
 
         print '
-            <table width="45%" style="float: left">
+            <table class="listpad" width="45%" style="float: left">
                 <tr>
-         <th colspan=2>' . __('Info for') . ' <strong>' . $row['name'] . '</strong></th>
+         <th colspan=2 class="listpad">' . __('Info for') . ' <strong>' . $row['name'] . '</strong></th>
                 </tr>
                 <tr>';
 
-        print '<td valign="top">' . __('Company') . ':</td>
-	 <td valign="top">' . $row['company'] . '&nbsp;</td>
+        print '<td class="listpad" valign="top">' . __('Company') . ':</td>
+	 <td class="listpad" valign="top">' . $row['company'] . '&nbsp;</td>
                 </tr>
                 <tr>';
 
-        print '<td valign="top">' . __('Created') . ':</td>
-	 <td valign="top">' . $row['created'] . '&nbsp;</td>
+        print '<td class="listpad" valign="top">' . __('Created') . ':</td>
+	 <td class="listpad" valign="top">' . $row['created'] . '&nbsp;</td>
                 </tr>
                 <tr>
-	 <td valign="top">' . __('Contact email') . ':</td>
-	 <td valign="top">' . $row['email'] . '&nbsp;</td>
+	 <td class="listpad" valign="top">' . __('Contact email') . ':</td>
+	 <td class="listpad" valign="top">' . $row['email'] . '&nbsp;</td>
 	        </tr>
                 <tr>
-	 <td valign="top">' . __('Login ID') . ':</td>
-	 <td valign="top">' . $row['login'] . '&nbsp;</td>
+	 <td class="listpad" valign="top">' . __('Login ID') . ':</td>
+	 <td class="listpad" valign="top">' . $row['login'] . '&nbsp;</td>
                 </tr>
                 <tr>
-	 <td colspan=2 valign="top">&nbsp;</td>
+	 <td class="listpad" colspan=2 valign="top">&nbsp;</td>
                 </tr>
                 <tr>
-	 <td valign="top"><a href="edit_user.php';
+	 <td class="listpad" valign="top"><a href="edit_user.php';
         // only the admin can see the uid
         if (is_admin()) print '?uid=' . $row[id] . '';
 
         print '" onmouseover="show_help(\'' . __('Edit account info') . '  \');" onmouseout="help_rst();">' . __('Edit account info') . '</a></td>
-         <td valign="top"><a href="user_permissions.php';
+         <td class="listpad" valign="top"><a href="user_permissions.php';
         // the admin sees the uid on this link
         if (is_admin()) print '?uid=' . $uid;
 
@@ -159,10 +163,10 @@ else
                 </tr>
             </table>
 
-	    <table width="45%" style="float: right">
-  	        <tr><th>' . __('Options') . '</th></tr>
+	    <table class="listpad" width="45%" style="float: right">
+  	        <tr><th class="listpad">' . __('Options') . '</th></tr>
                 <tr>
-	 <td valign="top" width="50%">
+	 <td class="listpad" valign="top" width="50%">
 
 <script type="text/javascript">
 
@@ -249,10 +253,10 @@ mainmenu.style.visibility=\'visible\'
             </tr>
             </table>
 
-<table width="45%" style="float: left; margin-top: 10px">
-<tr><th colspan=2>' . __('Domain usage') . '</th></tr>
-<tr><td>' . __('Space usage') . ':</td><td align=right>' . $u->space_usage(date("m"), date("Y")) . ' MB</td></tr>
-<tr><td>' . __('Traffic usage (This month)') . ':</td><td align=right>' . $u->traffic_usage(date("m"), date("Y")) . ' MB</td></tr></table>';
+<table width="45%" style="float: left; margin-top: 10px" class="listpad">
+<tr><th class="listpad" colspan=2>' . __('Domain usage') . '</th></tr>
+<tr><td class="listpad">' . __('Space usage') . ':</td><td class="listpad" align=right>' . $u->space_usage(date("m"), date("Y")) . ' MB</td></tr>
+<tr><td class="listpad">' . __('Traffic usage (This month)') . ':</td><td class="listpad" lign=right>' . $u->traffic_usage(date("m"), date("Y")) . ' MB</td></tr></table>';
     }
 }
 

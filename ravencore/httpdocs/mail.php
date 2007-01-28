@@ -175,16 +175,16 @@ print '<input type=radio name="catchall" value="delete_it"';
             $num = $db->data_num_rows();
 
             if ($num == 0) print __('No mail for this domain.') . '<p>';
-            else print '<table><tr><th colspan="100%">' . __('Mail for this domain') . ':</th></tr>';
+            else print '<table class="listpad"><tr><th class="listpad" colspan="100%">' . __('Mail for this domain') . ':</th></tr>';
 
             print "";
 
             while ($row_email = $db->data_fetch_array($result))
             {
                 print '<tr>
-<td><a href="edit_mail.php?did=' . $row_email[did] . '&mid=' . $row_email[id] . '" onmouseover="show_help(\'' . __('Edit') . ' ' . $row_email[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();">' . __('edit') . '</a></td>
-<td>' . $row_email[mail_name] . '@' . $row[name] . '</td>
-<td>';
+<td class="listpad"><a href="edit_mail.php?did=' . $row_email[did] . '&mid=' . $row_email[id] . '" onmouseover="show_help(\'' . __('Edit') . ' ' . $row_email[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();">' . __('edit') . '</a></td>
+<td class="listpad">' . $row_email[mail_name] . '@' . $row[name] . '</td>
+<td class="listpad">';
 		if ( $row_email[mailbox] == "true" )
 		  {
 		    //if (@fsockopen("127.0.0.1", 143)) print '<a href="webmail.php?mid=' . $row_email[id] . '&did=' . $row_email[did] . '" target="_blank">' . __('Webmail') . '</a>';
@@ -196,7 +196,7 @@ print '<input type=radio name="catchall" value="delete_it"';
 		  }
 
                 print '</td>
-<td><a href=mail.php?did=' . $row[id] . '&mid=' . $row_email[id] . '&action=delete onmouseover="show_help(\'' . __('Delete') . ' ' . $row_email[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();" onclick="';
+<td class="listpad"><a href=mail.php?did=' . $row[id] . '&mid=' . $row_email[id] . '&action=delete onmouseover="show_help(\'' . __('Delete') . ' ' . $row_email[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();" onclick="';
 
                 if (!user_can_add($uid, "email") and !is_admin()) print 'return confirm(\'' . __('If you delete this email, you may not be able to add it again.\rAre you sure you wish to do this?') . '\');';
                 else print 'return confirm(\'' . __('Are you sure you wish to delete this email?') . '\');';
@@ -272,11 +272,11 @@ else
     if ($num == 0 and !$_GET[search]) print __("There are no mail users setup");
     else if ($_GET[search]) print __('Your search returned') . ' <i><b>' . $num . '</b></i> ' . __('results') . '<p>';
 
-    if ($num != 0) print '<table width="45%"><tr><th colspan="100%">' . __('Email Addresses') . '</th></tr>';
+    if ($num != 0) print '<table class="listpad" width="45%"><tr><th class="listpad" colspan="100%">' . __('Email Addresses') . '</th></tr>';
 
     while ($row = $db->data_fetch_array($result))
     {
-        print '<tr><td><a href="edit_mail.php?did=' . $row[did] . '&mid=' . $row[mid] . '" onmouseover="show_help(\'' . __('Edit') . ' ' . $row[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();">' . $row[mail_name] . '@' . $row[name] . '</td><td>';
+        print '<tr><td class="listpad"><a href="edit_mail.php?did=' . $row[did] . '&mid=' . $row[mid] . '" onmouseover="show_help(\'' . __('Edit') . ' ' . $row[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();">' . $row[mail_name] . '@' . $row[name] . '</td><td class="listpad">';
 
 	if ( $row[mailbox] == "true" )
 	  {
@@ -289,7 +289,7 @@ else
 	  }
 
 	print '</td>
-<td><a href=mail.php?did=' . $row[did] . '&mid=' . $row[mid] . '&action=delete onmouseover="show_help(\'' . __('Delete') . ' ' . $row[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();" onclick="';
+<td class="listpad"><a href=mail.php?did=' . $row[did] . '&mid=' . $row[mid] . '&action=delete onmouseover="show_help(\'' . __('Delete') . ' ' . $row[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();" onclick="';
 
         if (!user_can_add($uid, "email") and !is_admin()) print 'return confirm(\'' . __('If you delete this email, you may not be able to add it again.\rAre you sure you wish to do this?') . '\');';
         else print 'return confirm(\'' . __('Are you sure you wish to delete this email?') . '\');';
