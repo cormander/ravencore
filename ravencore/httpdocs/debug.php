@@ -66,6 +66,10 @@ else if(ereg('^sql ', $debug))
     }
 
 }
+else if(ereg('^help', $debug))
+{
+  print '</pre><p>' . nl2br(htmlspecialchars($resp)) . '</p><pre>';
+}
 else
 {
   print htmlspecialchars($resp);
