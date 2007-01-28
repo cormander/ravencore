@@ -677,14 +677,21 @@ sub checkconf_cron
 
     foreach my $mod (keys %modules)
     {
-#        eval
-#        {
+# running a $func that doesn't exist shouldn't ever happen, but just in case, do an eval on it to catch
+# an "object method" error and prevent the child process from crashing
+        eval
+        {
+	    local $SIG{__DIE__};
+
             my $func = 'checkconf_' . $mod;
 
-            $self->$func($dbc);
-
             $self->debug("Running $func");
-#        };
+
+            $self->$func($dbc);
+        };
+
+# send error output if any
+	$self->do_error($@) if $@;
 
     }
 
