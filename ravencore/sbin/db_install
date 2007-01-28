@@ -29,6 +29,7 @@ export GOT_CONF=1
 MYSQL_ADMIN_HOST=localhost
 MYSQL_ADMIN_PORT=3306
 MYSQL_ADMIN_DB=ravencore
+MYSQL_ADMIN_PASS=$(cat $RC_ROOT/.shadow 2> /dev/null)
 CONNECT=0
 NEW_MYSQL_ADMIN_USER="admin"
 NEW_MYSQL_ADMIN_PASS="ravencore"
