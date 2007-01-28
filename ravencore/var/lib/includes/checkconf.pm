@@ -598,7 +598,7 @@ sub checkconf
 
 # make sure our database connect info stays safe
     file_chown('root:root', $self->{CONF}{RC_ROOT} . '/.shadow');
-    chmod 0600, $self->{CONF}{RC_ROOT} . '/.shadow';
+    chmod 0400, $self->{CONF}{RC_ROOT} . '/.shadow';
     chmod 0400, $self->{CONF}{RC_ROOT} . '/database.cfg';
 
 # make sure that the vhosts.conf file exists and is readable by rcadmin and apache, but no one else
