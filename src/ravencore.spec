@@ -2,7 +2,7 @@
 
 Summary: RavenCore Hosting Control Panel
 Name: ravencore
-Version: 0.3.0
+Version: 0.3.1
 Release: 1
 Packager: Cormander
 URL: http://www.ravencore.com/
@@ -134,12 +134,37 @@ rm -rf $RPM_BUILD_ROOT
 %{rc_root}/sbin/run_cmd
 
 %dir
+%{rc_root}/docs
 %{rc_root}/etc
 %{rc_root}/httpdocs
 %{rc_root}/var
 
 %changelog
-* Fri Jan 12 2007 cormander <admin@ravencore.com>
+* Sun Jan 28 2007 cormander <admin@ravencore.com>
+- version 0.3.1
+- fixed disp_chkconfig so that the "Startup Services" page now correctly loads
+- fixed rehash_ftp to correctly set system user's home_dir if the database field is empty
+- fixed the session user_data hash so that it's correctly populated when a non-admin user logs in
+- fixed the tables style on the pages by adding class="listpad" to table, th, and td tags
+- fixed the mrtg.php file to read fromm th socket since the rcadmin user no longer has read access to mrtg
+- fixed the "Login Sessions" to read the socket instead of the empty table
+- fixed the db_install script so it has the $MYSQL_ADMIN_PASS, it was missing since bash_functions was removed
+- fixed the httpd.conf file for domains when cgi is active, to match \.pl instead of .pl
+- fixed the "next if $waitedpid" call in rcserver to also check for the packed address returned by the "accept"
+  call, which fixes a "broken pipe" error in ravencore on older versions of perl
+- fixed rehash_httpd to properly include etc/vhosts.conf if it doesn't exist in the server's apache httpd.conf
+- fixed php variable references in auth.php from \$var to &$var (perl uses \, php uses &)
+- fixed "E_ALL & ~E_NOTICE" in php.include to the correct bit, since apache doesn't have those predefined vars
+- changed display_errors from Off to On in php.include since error_reporting was fixed
+- changed rcclient.php so that it only calls the class when session_start() is called, so that the object isn't
+  created if a page without sessions is loaded
+- removed the sessions table from the database
+- added check in rcserver to call session_write if the client called session_read but not session_write
+- added DBI perl module to the list of dynamically loaded modules, ravencore will now run without it; behaving
+  like the database was offline (only admin can login, and only options on the system page are available)
+- added checks for .ignore files in the conf.d, to force a module to not be included, even if it's installed
+
+* Thu Jan 25 2007 cormander <admin@ravencore.com>
 - version 0.3.0
 - upgraded awstats to 6.6 final
 - upgraded squirrelmail to 1.4.9a

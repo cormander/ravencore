@@ -30,7 +30,7 @@ BUILD_DIR=/var/tmp
 
 RPM_SOURCES=/usr/src/redhat/SOURCES
 
-v=0.3.0
+v=0.3.1
 
 if [ ! -d $RAVENCORE_SRC ] || [ ! -d $RC_ROOT ] || [ ! -d $BUILD_DIR ] || [ ! -d $RPM_SOURCES ]; then
     
@@ -78,7 +78,7 @@ rm -rf chroot .shadow database.cfg var/{rc.sock,apps,db.sock,log,run,tmp} conf.d
 
 echo "" > etc/postfix/main.cf/content_filter
 
-# reset the postgrey
+# unset the postgrey
 
 echo "permit_sasl_authenticated, permit_mynetworks, reject_unauth_destination" > etc/postfix/main.cf/smtpd_recipient_restrictions
 
@@ -91,6 +91,7 @@ if [ -n "$files" ]; then
     echo "Found .local files in \$RC_ROOT"
     echo $files
 
+    echo "exiting"
     exit 1
 
 fi
@@ -104,6 +105,7 @@ if [ -n "$files" ]; then
     echo "Found .ignore files in \$RC_ROOT"
     echo $files
 
+    echo "exiting"
     exit 1
 
 fi
