@@ -358,6 +358,11 @@ sub client_request
 # the first argument is the command (function) name to be called
     my $func = shift @args;
     
+# remember that we did this $func.. we have a hash for easy lookup, and an array to remember to order
+# in which they were called
+    $self->{client_request_hash}{$func} = 1;
+    push @{$self->{client_request_array}}, $func;
+
     my $ok_to_do = 0;
 
 # check to see if it is OK for this client to run this function    
@@ -380,10 +385,23 @@ sub client_request
 # remove $func from query
 	$query =~ s/^$func ?//;
 
+	my $ret;
+
 # recieve any returned data from the client into this variable. Note that if we want to pass a hash or an
 # array, we need to return them as a reference, ie: return \%{self->{CONF}};
 # otherwise, you'll get a very wierd string
-	my $ret = $self->$func($query);
+
+# running a $func that doesn't exist shouldn't ever happen (unless a non-existant function is put in the
+# cmd_privs ), so just in case, do an eval on it to catch an "object method" error and prevent the child
+# process from crashing
+        eval
+        {
+            local $SIG{__DIE__};
+	    $ret = $self->$func($query);
+	};
+
+# if there was an error caught, tell the client
+	$self->do_error($@) if $@;
 
 	$self->debug("End of function call " . $func);
 	$self->debug("Sent data: " . $ret);
@@ -704,6 +722,9 @@ sub module_list_enabled
 
     foreach my $mod (keys %modules)
     {
+# if there is a .ignore for this module, skip it
+	next if -f $self->{CONF}{RC_ROOT} . '/conf.d/' . $mod . '.conf.ignore';
+
 # if the executable bit is set on the file, it's an enabled module
 	if( -x $modules{$mod} )
 	{
@@ -730,6 +751,8 @@ sub die_error
 sub do_error
 {
     my ($self, $errstr) = @_;
+
+    chomp $errstr;
 
     $self->debug("ERROR: " . $errstr);
 
@@ -1042,9 +1065,21 @@ sub passwd
         if( $error == 0 )
         {
 # the password change was successful. commit the password to the .shadow file and return true
-	    file_write($self->{CONF}{RC_ROOT} . "/.shadow", $new . "\n");
+	    my $shadow_file = $self->{CONF}{RC_ROOT} . "/.shadow";
+
+	    chmod 0600, $shadow_file;
+	    file_write($shadow_file, $new . "\n");
+	    chmod 0400, $shadow_file;
 	    
 	    $self->debug("Password change successful.");
+
+# TODO:
+#	    if( ! $self->{db_connected} )
+#           {
+#               ... check to see if this new password actually connects us to the database
+#               ... if not, issue: do_error("Warning: unable to sync new password to mysql server");
+#           }
+
             return 1;
         }
 	
@@ -1148,6 +1183,13 @@ sub version_outdated
 {
     my ($self) = @_;
 
+# return 0 if unable to check
+    unless( $self->{perl_modules}{Net::HTTP} )
+    {
+	$self->debug("Unable to check ravencore version: Net::HTTP perl module not found");
+	return 0;
+    }
+
 # our running version
     my $version = file_get_contents($self->{CONF}{RC_ROOT} . '/etc/version');
     chomp($version);
@@ -1162,9 +1204,9 @@ sub version_outdated
 
     my $s;
 
-# eval this because we may not have the Net::HTTP module loaded
+# eval this because we want to timeout if the http connection takes too long
     eval {
-# trap the die signal and discard it, so nothing gets sent to the client if the next line fails
+# trap the die and alarm signals, so nothing gets sent to the client if the next few lines fail
 	local $SIG{__DIE__};
 	local $SIG{ALRM} = sub { die "alarm\n" };
 # set a timeout of 5 seconds to the connecting to ravencore.com
@@ -1354,11 +1396,11 @@ sub rehash_httpd
     
 # check to make sure we're included in the apache conf file
     
-    my $output = grep file_get_contents($self->{CONF}{httpd_config_file}), "Include " . $vhosts;
-
+    my $output = file_get_contents($self->{CONF}{httpd_config_file});
+    my $include_vhosts = 'Include ' . $vhosts;
 # if not, append to it
-    
-    if( $output eq "" ) { file_append($self->{CONF}{httpd_config_file}, "Include " . $vhosts) }
+
+    file_append($self->{CONF}{httpd_config_file}, $include_vhosts . "\n") unless $output =~ m|^$include_vhosts$|m;
 
 #
 # Rebuild the vhosts.conf file
@@ -1624,7 +1666,7 @@ sub make_virtual_host {
     {
 	$data .= "\t\tOptions +Includes +ExecCGI\n";
 	$data .= "\t<IfModule mod_perl.c>\n";
-	$data .= "\t<Files ~ (\.pl)>\n";
+	$data .= "\t<Files ~ (\\.pl)>\n";
 	$data .= "\t\tSetHandler perl-script\n";
 	$data .= "\t\tPerlHandler ModPerl::Registry\n";
 	$data .= "\t\tallow from all\n";
@@ -2051,7 +2093,7 @@ sub rehash_ftp
 # TODO: fix
 #    if($ARGV[0] eq "--all")
 #    {
-	$sql = "select * from sys_users";
+        $sql = "select s.login, s.passwd, s.shell, s.home_dir, d.name from sys_users s, domains d where suid = s.id";
 #    }
 #    else
 #    {
@@ -2068,7 +2110,6 @@ sub rehash_ftp
     {
 	
 # Just in case we didn't get a shell value, use the default. We need the quotes
-	
 	if( $row->{'shell'} eq "" )
 	{
 # TODO: Fix this
@@ -2076,17 +2117,23 @@ sub rehash_ftp
 	    
 	}
 	
+# if we don't have a home_dir, set it to default to VHOST_ROOT/domain
+	if( $row->{'home_dir'} eq "" )
+	{
+	    $row->{'home_dir'} = $self->{CONF}{VHOST_ROOT}. '/' . $row->{'name'};
+	}
+
 # ask if the user exists
 	if( $shadow->item_exists('user', $row->{'login'}) )
 	{
 # if so, edit it
 # $login,$passwd,$home_dir,$shell,$uid,$gid
-	    $shadow->edit_user($row->{'login'},$row->{'passwd'},$row->{'home_dir'},$row->{'shell'},'',getgrnam('servgrp'));
+	    $shadow->edit_user($row->{'login'},$row->{'passwd'},$row->{'home_dir'},$row->{'home_dir'},'',$shadow->{group}{'servgrp'}{'gid'});
 	}
 	else
 	{
 # else, add it
-	    $shadow->add_user($row->{'login'},$row->{'passwd'},$row->{'home_dir'},$row->{'shell'},'',getgrnam('servgrp'));
+	    $shadow->add_user($row->{'login'},$row->{'passwd'},$row->{'home_dir'},$row->{'home_dir'},'',$shadow->{group}{'servgrp'}{'gid'});
 	}
 	
     } # end while( $row = $result->fetchrow_hashref )
@@ -2818,11 +2865,43 @@ sub start_webserver
 sub unlock_user
 {
     my ($self, $user) = @_;
-    
+
     my $sql = "delete from login_failure where login = '" . $user . "'";
     $self->{dbi}->do($sql);
-    
+
     return;
+}
+
+#
+
+sub mrtg
+{
+    my ($self, $query) = @_;
+
+    my ($type, $image) = split / /, $query;
+
+    my $data;
+
+    if($type eq "html")
+    {
+
+	my @files = dir_list($self->{CONF}{RC_ROOT} . '/var/log/mrtg');
+
+	foreach my $file (@files)
+	{
+	    next unless $file =~ /\.html/;
+	    $data .= file_get_contents($self->{CONF}{RC_ROOT} . '/var/log/mrtg/' . $file);
+	    $data =~ s|SRC="([a-zA-Z0-9_\-\.]*)"|SRC="?img=$1"|ig;
+	}
+	
+    }
+    elsif($type eq "image")
+    {
+	$data = file_get_contents($self->{CONF}{RC_ROOT} . '/var/log/mrtg/' . basename($image));
+    }
+    
+    return $data;
+
 }
 
 1; # end package ravencore
