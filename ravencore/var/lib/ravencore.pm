@@ -30,7 +30,6 @@ package ravencore;
 # use perl libs
 
 use MIME::Base64; # to make our lives easier with encoding data accross the socket
-use DBI; # database stuff
 use File::Basename; # functions to make parsing a file to form our semaphore a lot easier
 # use File::Find; # so we can do recursive chmod/chown/etc calls.. unused, not implemented
 
@@ -102,22 +101,6 @@ sub new
 # bless the object    
     bless $self, $class;
 
-# check to see if we have the 'mysql' driver for the DBI object installed
-
-# list DBI's available drivers
-    my @dbi_driver_names = DBI->available_drivers;
-    
-    my $mysql_driver = 0;
-    
-    foreach(@dbi_driver_names)
-    {
-	$self->debug('DBI driver "' . $_ . '" found');
-	$mysql_driver = 1 if $_ eq 'mysql';
-    }
-    
-# if $mysql_driver is still set to 0 after this loop, then the driver wasn't found, and we can't continue
-    $self->fatal_error("The mysql driver for the perl DBI object was not found. Perhaps the DBD::MySQL perl module hasn't been fully installed?") unless $mysql_driver == 1;
-    
 # define our session set vars.. none to start with, for now
     %{$self->{session_set_vars}} = ();
     
@@ -171,9 +154,10 @@ sub new
 # for ravencore to function, but add additional functionality
 
 # Net::HTTP - retrieve remote http data for the version check
+# DBI - database interface
 # TODO: make this an array somewhere, maybe read as a file in RC_ROOT/etc
 
-    foreach my $mod ( ( 'Net::HTTP' ) )
+    foreach my $mod ( ( 'Net::HTTP', 'DBI' ) )
     {
 	my $found = 0;
 
@@ -191,8 +175,9 @@ sub new
 	    if( -f $path )
 	    {
 		require $path;
-		$self->debug("Including $mod");
+		$self->debug("Including $mod perl module");
 		$found = 1;
+		$self->{perl_modules}{$mod} = 1;
 		last;
 	    }
 	}
@@ -200,6 +185,32 @@ sub new
 	$self->do_error("Unable to load perl module $mod, not found") if $found == 0;
 
     }
+
+# if we have the DBI module loaded, check to see if we have the 'mysql' driver for the DBI object installed
+    if($self->{perl_modules}{DBI})
+    {
+	
+# list DBI's available drivers
+	my @dbi_driver_names = DBI->available_drivers;
+	
+	my $mysql_driver = 0;
+	
+	foreach(@dbi_driver_names)
+	{
+	    $self->debug('DBI driver "' . $_ . '" found');
+	    $mysql_driver = 1 if $_ eq 'mysql';
+	}
+	
+# if $mysql_driver is still set to 0 after this loop, then the driver wasn't found, and we can't continue
+	if( $mysql_driver == 0 )
+	{
+	    $self->do_error("The mysql driver for the perl DBI object was not found. Perhaps the DBD::mysql perl module hasn't been installed?");
+# having the DBI module is useless if the mysql driver isn't available, so remove it from our list
+	    delete $self->{perl_modules}{DBI};
+	}
+
+    }
+
 
 #
 # TODO: make sure we have certian variables here... we probably only need to check for RC_ROOT, but
@@ -304,14 +315,16 @@ sub database_connect
 {
     my ($self) = @_;
 
+    $self->{db_connected} = 0;
+
+    return unless $self->{perl_modules}{DBI};
+    
 # read in our database password. currently we have to do this each time we connect, because the password
 # might have changed since we first started, and a child process can't change a variable and have the
 # parent process know about it
 
     my $passwd = $self->get_passwd;
 
-    $self->{db_connected} = 0;
-    
 # connect to the database
     
     $self->{dbi} = DBI->connect('DBI:mysql:database='.$self->{CONF}{MYSQL_ADMIN_DB}.
