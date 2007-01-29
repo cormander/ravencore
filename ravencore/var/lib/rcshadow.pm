@@ -671,14 +671,11 @@ sub crypt_passwd
 # define our salt characters
     my $salt_chars='./abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
+    my $salt = substr($salt_chars,rand(length($salt_chars)),1) . substr($salt_chars,rand(length($salt_chars)),1);
+
 # run the crypt function with a random salt
-    my $ret = crypt($passwd,
-		    substr($salt_chars,rand(length($salt_chars)),1) .
-		    substr($salt_chars,rand(length($salt_chars)),1)
-		    );
-		    
-# return the crypt'd password
-    return $ret;
+    return crypt($passwd,$salt);
+
 } # end sub crypt_passwd
 
 # function to tell commit to rebuild the shadow files when called
@@ -726,7 +723,7 @@ sub add_user
     $self->{user}{$login}{'shell'} = $self->confirm_shell($shell, $uid);
     
 # crypt the password, if given
-    $self->{user}{$login}{'shadow_passwd'} = $self->crypt_passwd($passwd) unless ! $passwd;
+    $self->{user}{$login}{'shadow_passwd'} = $self->crypt_passwd($passwd) if $passwd;
 # if no $passwd was given, lock the account
     $self->{user}{$login}{'shadow_passwd'} = '!!' unless $self->{user}{$login}{'shadow_passwd'};
  
