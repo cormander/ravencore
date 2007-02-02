@@ -47,8 +47,12 @@ build:
 # unwrap ravencore
 	tar zxf ./src/ravencore.tar.gz
 
+# make sure /bin/bash exists
+	@if [ ! -f /bin/bash ] && [ -f /usr/local/bin/bash ]; then ln -s /usr/local/bin/bash /bin/bash; fi
+	@if [ ! -f /bin/bash ]; then exit 1; fi
+
 # Make our target directories
-	mkdir -p ravencore/var/{apps,log,run,tmp}
+	mkdir -p ravencore/var/apps ravencore/var/log ravencore/var/run ravencore/var/tmp
 
 # Tell us what version of RavenCore this is
 	echo $(VERSION) > ravencore/etc/version
@@ -73,7 +77,7 @@ build:
 
 # append index.php to the new one, removeing the first line: <?php
 	cat ravencore/var/apps/phpsysinfo/index.php | sed '1d' >> ravencore/var/apps/phpsysinfo/index.php.new
-	cp --reply=y ravencore/var/apps/phpsysinfo/index.php.new ravencore/var/apps/phpsysinfo/index.php
+	cp -f ravencore/var/apps/phpsysinfo/index.php.new ravencore/var/apps/phpsysinfo/index.php
 
 # move the conf file into place
 	mv -f ravencore/var/apps/phpsysinfo/config.php.new ravencore/var/apps/phpsysinfo/config.php
@@ -88,28 +92,30 @@ build:
 # phpwebftp install
 	unzip -qd ravencore/var/apps src/$(PHPWEBFTP).zip
 
+	mv ravencore/var/apps/phpWebFTP ravencore/var/apps/phpwebftp
+
 	echo -e '<?php\n\nchdir("../../../httpdocs");\ninclude("auth.php");\nchdir("../var/apps/phpwebftp");\n\n' > ravencore/var/apps/phpwebftp/config.inc.php.new
 
 # append to the new one, removeing the first line: <?php
 	cat ravencore/var/apps/phpwebftp/config.inc.php | sed '1d' >> ravencore/var/apps/phpwebftp/config.inc.php.new
 	mv -f ravencore/var/apps/phpwebftp/config.inc.php.new ravencore/var/apps/phpwebftp/config.inc.php
-	rm -rf ravencore/var/apps/phpwebftp/{CVS,*/CVS,*/*/CSV,tmp}
-
-# add norwegian language pack to filemanager
-	cp src/filemanager.norwegian.lang.php ravencore/var/apps/phpwebftp/include/language/norwegian.lang.php
+	rm -rf ravencore/var/apps/phpwebftp/CVS ravencore/var/apps/phpwebftp/*/CVS ravencore/var/apps/phpwebftp/*/*/CSV ravencore/var/apps/phpwebftp/tmp
 
 # link the tmp directory to our tmp
 	ln -s ../../tmp ravencore/var/apps/phpwebftp/tmp
 
-# fix the tmp directory in the config file
-	perl -pi -e 's| = "tmp/"| = "tmp"|' ravencore/var/apps/phpwebftp/config.inc.php
+# change the default language to english
+	perl -pi -e 's|defaultLanguage = "nl"|defaultLanguage = "en"|g' ravencore/var/apps/phpwebftp/config.inc.php
+
+# change maxFileSize
+	perl -pi -e 's|maxFileSize = 2000000|maxFileSize = 104857600|g' ravencore/var/apps/phpwebftp/config.inc.php
 
 # apply some patches, fix delete / rename bugs and remove the loggoff buttons
 #	patch -p0 ravencore/var/apps/phpwebftp/index.php < src/filemanager_index.patch
 #	patch -p0 ravencore/var/apps/phpwebftp/include/script.js < src/filemanager_inc_js.patch
 
 # add the locale charset to the filemanager
-	perl -pi -e "s|\</HEAD\>|<meta http-equiv=\"Content-Type\" content=\"text/html; charset='<?php print locale_getcharset(); ?>'\"></HEAD>|g" ravencore/var/apps/phpwebftp/index.php
+	perl -pi -e "s|\</HEAD\>|<meta http-equiv=\"Content-Type\" content=\"text/html; charset='<?php print locale_getcharset(); ?>'\"></HEAD>|gi" ravencore/var/apps/phpwebftp/index.php
 
 # squirrelmail install
 	tar -C ravencore/var/apps -zxf src/$(SQUIRRELMAIL).tar.gz
@@ -119,13 +125,13 @@ build:
 #	./src/mk_webmail_redirect.sh
 
 # webmail config
-	cp --reply=y src/webmail_config.php ravencore/var/apps/squirrelmail/config/config.php
+	cp -f src/webmail_config.php ravencore/var/apps/squirrelmail/config/config.php
 
 # get rid of the config_local.php file so we don't overwrite theirs
 	rm -f ravencore/var/apps/squirrelmail/config/config_local.php
 
 # default webmail user prefs
-	cp --reply=y src/webmail_default_pref ravencore/var/apps/squirrelmail/data/default_pref
+	cp -f src/webmail_default_pref ravencore/var/apps/squirrelmail/data/default_pref
 
 # install squirrelmail plugins
 	tar -C ravencore/var/apps/squirrelmail/plugins -zxf src/$(webmail_cp_plugin).tar.gz
@@ -138,7 +144,7 @@ build:
 		ravencore/var/apps/squirrelmail/plugins/vlogin/data/config.php
 
 # sent_confirmation config file
-	cp --reply=y src/webmail_sc_config.php ravencore/var/apps/squirrelmail/plugins/sent_confirmation/config.php
+	cp -f src/webmail_sc_config.php ravencore/var/apps/squirrelmail/plugins/sent_confirmation/config.php
 
 # put license stuff in the right places
 	cp LICENSE README.install ravencore/
@@ -163,26 +169,26 @@ install:
 	@echo "RavenCore etc conf file set to: $(ETC_RAVENCORE)"
 
 # Create the etc ravencore.conf file
-	echo "# RavenCore Root Directory" > $(DESTDIR)$(ETC_RAVENCORE)
-	echo -e "RC_ROOT=$(RC_ROOT)\n" >> $(DESTDIR)$(ETC_RAVENCORE)
+	@echo "# RavenCore Root Directory" > $(DESTDIR)$(ETC_RAVENCORE)
+	@echo -e "RC_ROOT=$(RC_ROOT)\n" >> $(DESTDIR)$(ETC_RAVENCORE)
 
 # Install all the files
 	mkdir -p $(DESTDIR)$(RC_ROOT)
 
-	cp -rp --reply=y ravencore/* $(DESTDIR)$(RC_ROOT)
+	cp -rp -f ravencore/* $(DESTDIR)$(RC_ROOT)
 
 # create symlinks
 	rm -f $(DESTDIR)/etc/cron.hourly/ravencore $(DESTDIR)/etc/cron.daily/ravencore $(DESTDIR)/etc/init.d/ravencore
 
-	[ -d $(DESTDIR)/etc/cron.hourly ] && ln -s $(RC_ROOT)/sbin/ravencore.cron $(DESTDIR)/etc/cron.hourly/ravencore
-	[ -d $(DESTDIR)/etc/cron.daily ] && ln -s $(RC_ROOT)/sbin/ravencore.cron $(DESTDIR)/etc/cron.daily/ravencore
-	[ -d $(DESTDIR)/etc/init.d ] && ln -s $(RC_ROOT)/sbin/ravencore.init $(DESTDIR)/etc/init.d/ravencore
+	@if [ -d $(DESTDIR)/etc/cron.hourly ]; then ln -s $(RC_ROOT)/sbin/ravencore.cron $(DESTDIR)/etc/cron.hourly/ravencore; fi
+	@if [ -d $(DESTDIR)/etc/cron.daily ]; then ln -s $(RC_ROOT)/sbin/ravencore.cron $(DESTDIR)/etc/cron.daily/ravencore; fi
+	@if [ -d $(DESTDIR)/etc/init.d ]; then ln -s $(RC_ROOT)/sbin/ravencore.init $(DESTDIR)/etc/init.d/ravencore; fi
 
 # logrotation, only install if the directory exists
-	[ -d $(DESTDIR)/etc/logrotate.d	] && ./src/mk_logrotate.sh $(RC_ROOT) > $(DESTDIR)/etc/logrotate.d/ravencore
+	@if [ -d $(DESTDIR)/etc/logrotate.d ]; then ./src/mk_logrotate.sh $(RC_ROOT) > $(DESTDIR)/etc/logrotate.d/ravencore; fi
 
 # we're done
 	@echo "make install done. Start RavenCore with:"
-	@[ -f $(DESTDIR)/etc/init.d/ravencore ] && \
-		echo "     /etc/init.d/ravencore start" || \
-		echo "     $(RC_ROOT)/sbin/ravencore.init start"
+	@if [ -f $(DESTDIR)/etc/init.d/ravencore ]; then \
+		echo "     /etc/init.d/ravencore start"; else \
+		echo "     $(RC_ROOT)/sbin/ravencore.init start"; fi
