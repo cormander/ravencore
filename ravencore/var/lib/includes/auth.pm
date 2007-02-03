@@ -52,7 +52,7 @@ sub auth
     $self->{session_id} = $session_id;
 
 # define our session file
-    $self->{session_file} = $self->{CONF}{RC_ROOT} . '/var/tmp/sessions/' . $self->{session_id};
+    $self->{session_file} = $self->{RC_ROOT} . '/var/tmp/sessions/' . $self->{session_id};
 
 # default session timeout to 600 if we don't have the config value yet
     my $session_timeout = ( $self->{CONF}{SESSION_TIMEOUT} ? $self->{CONF}{SESSION_TIMEOUT} : 600 );
@@ -130,7 +130,7 @@ sub auth
         if($self->is_admin($username))
         {
 # TODO: find out what happens to the session var if the admin actually failed to authenticate
-# set our session "status_mesg" variable for admin to see after they login
+# set our session "status_mesg" variable for admin to see after they login	    
             $self->session_set_var('status_mesg', 'Warning: Your version of RavenCore is out of date. Please visit www.ravencore.com and download/install the latest version.');
         }
         else
@@ -169,7 +169,7 @@ sub auth
     if($self->is_admin($username))
     {
 # check to see if the admin password has been set - if not, return false and tell them to set it
-        return 'You have not set your admin password yet. Please run the following command as root:<p>' . $self->{CONF}{RC_ROOT} . '/sbin/run_cmd passwd'
+        return 'You have not set your admin password yet. Please run the following command as root:<p>' . $self->{RC_ROOT} . '/sbin/run_cmd passwd'
 	    if $self->{initial_passwd};
 
 # TODO: set the db_panic value in session_info, giving a logical reason why as to the admin user only sees the
@@ -212,7 +212,7 @@ sub auth_admin
     }
 
 # return false ( a call to auth_fauluire returns false, and records the attempt )
-    return $self->auth_failure($self->{CONF}{MYSQL_ADMIN_USER});
+    return $self->auth_failure($self->{MYSQL_ADMIN_USER});
 
 } # end sub auth_admin
 
@@ -249,7 +249,7 @@ sub auth_system
     return 'Invalid session ID.' unless $session_id =~ /^[a-zA-Z0-9]*$/;
 
 # special session filename for system access
-    my $session_file = $self->{CONF}{RC_ROOT} . '/var/tmp/sessions/SYSTEM_' . $session_id;
+    my $session_file = $self->{RC_ROOT} . '/var/tmp/sessions/SYSTEM_' . $session_id;
 
 # the password must be correct AND our special session file must exist prior to authenticaton, the
 # system client must create the file
@@ -263,7 +263,7 @@ sub auth_system
     if($password eq $self->get_passwd)
     {
 # system is authenticated. we're an admin user
-        $self->{session}{user} = $self->{CONF}{MYSQL_ADMIN_USER};
+        $self->{session}{user} = $self->{MYSQL_ADMIN_USER};
 
 # set privs with the system flag
         $self->set_privs(1);

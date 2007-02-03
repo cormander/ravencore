@@ -30,9 +30,6 @@ sub session_status
 # hash to return
     my %data;
 
-# user data from this session
-    $data{user_data} = \%{$self->{session}{user_data}};
-
 # do we have a database connection?
     $data{db_panic} = 1;
     $data{db_panic} = 0 if $self->{db_connected};
@@ -59,11 +56,11 @@ sub session_status
     {
 	$modules{$mod} = $mod;
 # also add services
-	my @services = file_get_array($self->{CONF}{RC_ROOT} . '/etc/services.' . $mod );
+	my @services = file_get_array($self->{RC_ROOT} . '/etc/services.' . $mod );
 
 	foreach (@services)
 	{
-	    if( -f $self->{CONF}{INITD} . '/' . $_ && ! in_array($_, @{$data{services}}) )
+	    if( -f $self->{INITD} . '/' . $_ && ! in_array($_, @{$data{services}}) )
 	    {
 #		push @{$self->{services}}, $_;
 		push @{$data{services}}, $_;
@@ -80,6 +77,9 @@ sub session_status
 # uninit configuration
     $data{UNINIT_CONF} = \%{$self->{UNINIT_CONF}};
 
+# user data from this session
+    $data{user_data} = \%{$self->{session}{user_data}};
+
     return \%data;
 
 } # end sub session_status
@@ -90,7 +90,18 @@ sub session_set_var
 {
     my ($self, $var, $data) = @_;
 # the session_set_vars hash is written and deleted during session_read and session_write
-    $self->{session_set_vars}{$var} = $data;
+    if(ref($data) eq "HASH")
+    {
+	%{$self->{session_set_vars}{$var}} = $data;
+    }
+    elsif(ref($data) eq "ARRAY")
+    {
+	@{$self->{session_set_vars}{$var}} = $data;
+    }
+    else
+    {
+	$self->{session_set_vars}{$var} = $data;
+    }
 }
 
 # get all stored variables that are destined as a PHP session variable, returned as a serialize'd string
@@ -242,7 +253,7 @@ sub session_remove
 
     $self->debug('Session ID ' . $session_id . ' destroyed because: Deleted by admin');
 
-    unlink $self->{CONF}{RC_ROOT} . '/var/tmp/sessions/' . $session_id;
+    unlink $self->{RC_ROOT} . '/var/tmp/sessions/' . $session_id;
 }
 
 # list sessions
@@ -255,14 +266,14 @@ sub session_list
 
     my %session_list;
 
-    my @sessions = dir_list($self->{CONF}{RC_ROOT} . '/var/tmp/sessions');
+    my @sessions = dir_list($self->{RC_ROOT} . '/var/tmp/sessions');
 
     foreach my $session_id (@sessions)
     {
 # don't list system sessions... or anything not a normal session for that matter
 	next unless $session_id =~ /^[a-zA-Z0-9]*$/;
 
-        my ($ip,$created,$accessed,$user,$sess_data) = $self->session_read_file($self->{CONF}{RC_ROOT} . '/var/tmp/sessions/' . $session_id);
+        my ($ip,$created,$accessed,$user,$sess_data) = $self->session_read_file($self->{RC_ROOT} . '/var/tmp/sessions/' . $session_id);
 
 # if there isn't user data for this session, then it's a non-ravencore php session, ignore it
 	next unless $user;

@@ -92,7 +92,16 @@ sub new
 	NAK => chr(21), # negative acknowledge
 	ETB => chr(23), # end of trans. block
 	CAN => chr(24), # cancel
-	debug_flag => 0, # flag for debugging
+	debug_flag => 0, # flag for debugging, do not change it here!
+                         # you can activate debugging when you startup:
+	                 #    /etc/init.d/ravencore start debug
+	                 #    /etc/init.d/ravencore restart debug
+	                 # or at any time while running:
+	                 #    /etc/init.d/ravencore reload debug
+	                 # if you like to see debugging as it occurs, background a tail:
+	                 #    tail -f /usr/local/ravencore/var/log/rcserver &
+	                 # and to disable debugging while running, reload again (w/o debug):
+	                 #    /etc/init.d/ravencore reload
     };
     
 # TODO: FIX ME
@@ -105,13 +114,15 @@ sub new
     %{$self->{session_set_vars}} = ();
     
 # get our base configuration file
-    $self->read_conf_file($RC_ETC);
+    my %rcetc = $self->parse_conf_file($RC_ETC);
     
-# default value (database will override it, if it exists)
-    $self->{CONF}{MAX_CLIENT_CONNECTION} = 25;
+    foreach my $key (keys %rcetc)
+    {
+	$self->{$key} = $rcetc{$key};
+    }
 
-# variable telling us if we're at the terminal
-    $self->{term} = 0;
+# variable telling us if we're at the terminal, when we startup, we are
+    $self->{term} = 1;
 
 # map inertal functions to their respective security levels. anything not listed is non-accessable at all
 # by a direct call from a connected client
@@ -127,28 +138,14 @@ sub new
 
     foreach my $privs ( ('cmd_privs_unauth', 'cmd_privs_client', 'cmd_privs_admin', 'cmd_privs_system') )
     {
-	@{$self->{$privs}} = file_get_array($self->{CONF}{RC_ROOT} . '/etc/' . $privs);
+	@{$self->{$privs}} = file_get_array($self->{RC_ROOT} . '/etc/' . $privs);
     }
 
 # by default, we have unauth privs
     @{$self->{cmd_privs}} = @{$self->{cmd_privs_unauth}};
 
 # get the list of ravencore internal perl modules to include
-
-    my @pms = dir_list($self->{CONF}{RC_ROOT} . '/var/lib/includes');
-    
-    foreach my $pm (@pms)
-    {
-# only include this file if it ends in .pm
-# TODO: check file ownership/permissions, should be 0600 root:root
-	next unless $pm =~ /\.pm$/;
-	do $self->{CONF}{RC_ROOT} . '/var/lib/includes/' . $pm;
-# check for errors on the do statement, if there is a syntax error, it'll show up as a "Bad file
-# descriptor", but that's confusing and scary, so say something more optimistic
-	$self->do_error("Warning: $pm might not have completly loaded, it appears to have syntax errors") if $!;
-
-	$self->debug("Including " . $self->{CONF}{RC_ROOT} . '/var/lib/includes/' . $pm);
-    }
+    $self->load_internal_pm;
 
 # walk through a list of perl modules to include, if they exist on the system. These are not required
 # for ravencore to function, but add additional functionality
@@ -218,11 +215,11 @@ sub new
 #
 
 # define our PATH based off of our $ENV{PATH}
-    @{$self->{CONF}{PATH}} = split /:/, $ENV{PATH};
+    @{$self->{PATH}} = split /:/, $ENV{PATH};
 
 # find out what distribution of linux we are (dist)
 
-    my @dist_map = file_get_array($self->{CONF}{RC_ROOT} . '/etc/dist.map');
+    my @dist_map = file_get_array($self->{RC_ROOT} . '/etc/dist.map');
 # the etc/dist.map file is one distribution per line, first word is the name, and each string after it
 # seperated by a space is a file that is uniq to the distribution (that shouldn't exist on others).
 # it's a very basic way to tell what system this is, but it seems to work quite well
@@ -241,19 +238,57 @@ sub new
 # walk down the rest of the array.. they are files to check for
 	foreach my $file (@arr)
 	{
-# if this file exists, we're this dist... don't check again once the {CONF}{dist} is set
-            if( -f $file && !$self->{CONF}{dist})
+# if this file exists, we're this dist... don't check again once the {dist} is set
+            if( -f $file && !$self->{dist})
 	    {
-		$self->{CONF}{dist} = $maybe_this;
+		$self->{dist} = $maybe_this;
 	    }
 	    
 	}
 	
     }
 
+# figure out our $ostype
+    my $ostype = `uname`;
+    chomp $ostype;
+
+    if($ostype =~ /linux/i)
+    {
+	$self->{ostype} = 'linux';
+    }
+    elsif($ostype =~ /bsd/i)
+    {
+	$self->{ostype} = 'bsd';
+    }
+
+    $self->debug("ostype set to " . $self->{ostype});
+
     return $self;
     
 } # end sub new
+
+#
+
+sub load_internal_pm
+{
+    my ($self) = @_;
+
+    my @pms = dir_list($self->{RC_ROOT} . '/var/lib/includes');
+    
+    foreach my $pm (@pms)
+    {
+# only include this file if it ends in .pm
+# TODO: check file ownership/permissions, should be 0600 root:root
+	next unless $pm =~ /\.pm$/;
+	do $self->{RC_ROOT} . '/var/lib/includes/' . $pm;
+# check for errors on the do statement, if there is a syntax error, it'll show up as a "Bad file
+# descriptor", but that's confusing and scary, so say something more optimistic
+	$self->do_error("Warning: $pm might not have completly loaded, it appears to have syntax errors") if $!;
+
+	$self->debug("Including " . $self->{RC_ROOT} . '/var/lib/includes/' . $pm);
+    }
+
+}
 
 # function to tell the client some basic information on what they can do
 
@@ -277,7 +312,7 @@ sub help
     else
     {
 
-	$data = file_get_contents($self->{CONF}{RC_ROOT} . '/docs/commands/' . basename($query));
+	$data = file_get_contents($self->{RC_ROOT} . '/docs/commands/' . basename($query));
 
 	if( $data eq "" )
 	{
@@ -310,6 +345,10 @@ sub get_default_locale
 } # end sub get_default_locale
 
 # ... you guessed it, connect to the database!!!
+# RavenCore gets a  database connection on startup and passes a shared connection to the child processes.
+# If for some reason the passed connection is lost ( the mysql server restarts, the password changes, etc) 
+# then the ping will see that and reconnect manually, and also signalling the parent process to reget
+# the database connection
 
 sub database_connect
 {
@@ -318,6 +357,38 @@ sub database_connect
     $self->{db_connected} = 0;
 
     return unless $self->{perl_modules}{DBI};
+
+# test if we have the dbi object, and if so, ping it to see if it's still alive
+    if( $self->{dbi} )
+    {
+	$self->debug("Pinging inherited database connection");
+# see if our connection is still active
+	my $ret;
+
+# $self->{dbi} may exist, but it might not be a blessed reference, so eval the call to ping
+	eval {
+	    local $SIG{DIE} = '';
+	    $ret = $self->{dbi}->ping;
+	};
+
+# if so, return
+	if( $ret )
+	{
+	    $self->{db_connected} = 1;
+
+	    if($self->get_passwd =~ m/^ravencore$/i) { $self->{initial_passwd} = 1 }
+	    else { $self->{initial_passwd} = 0 }
+
+	    return;
+	}
+
+# if we get here, we have lost database connection...
+	$self->{db_connected} = 0;
+
+# attempt to reload the parent
+	$self->reload("Inherited database connection is no longer valid... trying to reload it");
+
+    }
     
 # read in our database password. currently we have to do this each time we connect, because the password
 # might have changed since we first started, and a child process can't change a variable and have the
@@ -327,12 +398,11 @@ sub database_connect
 
 # connect to the database
     
-    $self->{dbi} = DBI->connect('DBI:mysql:database='.$self->{CONF}{MYSQL_ADMIN_DB}.
-				';host='.$self->{CONF}{MYSQL_ADMIN_HOST}.
-				';port='.$self->{CONF}{MYSQL_ADMIN_PORT},
-				$self->{CONF}{MYSQL_ADMIN_USER}, $passwd, {RaiseError => 0,PrintError => 0})
-	or $self->do_error(DBI->errstr);
-    
+    $self->{dbi} = DBI->connect('DBI:mysql:database='.$self->{MYSQL_ADMIN_DB}.
+				';host='.$self->{MYSQL_ADMIN_HOST}.
+				';port='.$self->{MYSQL_ADMIN_PORT},
+				$self->{MYSQL_ADMIN_USER}, $passwd, {RaiseError => 0,PrintError => 0});
+
 # set internal variable of whether or not database is actually connected
     $self->{db_connected} = 1 if $self->{dbi}{Active};
 
@@ -344,7 +414,27 @@ sub database_connect
     if($passwd =~ m/^ravencore$/i) { $self->{initial_passwd} = 1 }
     else { $self->{initial_passwd} = 0 }
     
+    $self->get_db_conf;
+
 } # end sub database_connect
+
+# reload rcserver
+
+sub reload
+{
+    my ($self, $msg) = @_;
+    
+# tell our parent process to reload (if we are not the parent process)
+    if( $self->{ppid} ne $$ )
+    {
+	$self->debug($msg);
+	
+	kill "HUP", $self->{ppid};
+    }
+    
+    return;
+
+} # end sub reload
 
 # call an internal function based on a client's request
 
@@ -422,11 +512,19 @@ sub client_request
 
 sub debug
 {
-    my ($self, $d) = @_;
+    my ($self, $msg) = @_;
 
-    print $d . "\n" if $self->{debug_flag} == 1;
+    if( $self->{debug_flag} == 1 )
+    {
+# get the scalar return from local time, eg: Sun Feb  4 12:14:51 2007
+	my $time = localtime;
+# get rid of any trailling return character
+	chomp $msg;
+# translate return character to literal \n
+	$msg =~ s/\n/\\n/g;
+	print $time . " pid " . $$ . ": " . $msg . "\n";
+    }
 
-#    $self->session_set_var("debug", $d);
 } # end sub debug
 
 # a function use to read the password out of the .shadow file
@@ -437,7 +535,7 @@ sub get_passwd
 
 # since the .shadow file is read a lot and almost never written to, skip locking. it isn't going to be
 # devistating if we're reading it while it's written to once in a very blue moon
-    my $passwd = file_get_contents($self->{CONF}{RC_ROOT} . "/.shadow", 1);
+    my $passwd = file_get_contents($self->{RC_ROOT} . "/.shadow", 1);
     chomp $passwd;
 
     return $passwd;
@@ -559,18 +657,19 @@ sub get_db_conf
 
 # check to see if the GPL has been accepted
     $self->{gpl_check} = 0;
-    $self->{gpl_check} = 1 if -f $self->{CONF}{RC_ROOT} . '/var/run/gpl_check';
+    $self->{gpl_check} = 1 if -f $self->{RC_ROOT} . '/var/run/gpl_check';
 
 # are we a complete install?
     $self->{install_complete} = 0;
-    $self->{install_complete} = 1 if -f $self->{CONF}{RC_ROOT} . '/var/run/install_complete'; 
+    $self->{install_complete} = 1 if -f $self->{RC_ROOT} . '/var/run/install_complete'; 
 
 # no database connection - don't read the settings
     return unless $self->{db_connected};
     
-    $self->debug("Reading database settings, checking configuration");
+# remove the CONF hash so we don't inherit any previous variables
+    delete $self->{CONF};
 
-    my %dbc;
+    $self->debug("Reading database settings, checking configuration");
 
 # do an sql query to get all the configuration variables
     my $result = $self->{dbi}->prepare("select * from settings");
@@ -582,12 +681,14 @@ sub get_db_conf
 #
 	my $key = $row->{'setting'};
 # build our CONF hash
-	$dbc{$key} = $row->{'value'};
+	$self->{CONF}{$key} = $row->{'value'};
     }
 
     $result->finish;
 
 # check to make sure we have a value for each configuration variable of each enabled module
+
+    delete $self->{UNINIT_CONF};
 
 # walk down the list of our enabled modules    
     my %modules = $self->module_list_enabled;
@@ -600,12 +701,14 @@ sub get_db_conf
 	foreach my $key (keys %data)
 	{
 # if we are missing this variable
-	    if( ! exists $dbc{$key} )
+	    if( ! exists $self->{CONF}{$key} )
 	    {
 # our configuration is not complete
 		$self->{config_complete} = 0;
 # cache this in a list of uninitilized keys, with their default values
 		$self->{UNINIT_CONF}{$key} = $data{$key};
+# TODO: this should only show up on a higher debugging level
+		$self->debug("Missing CONF var: " . $key);
 	    }
 
 	}
@@ -615,8 +718,6 @@ sub get_db_conf
     $self->debug("Configuration is not complete") if ! $self->{config_complete};
 
 # done reading our configuration
-
-    return %dbc;
 
 } # end sub get_db_conf
 
@@ -663,7 +764,7 @@ sub webstats
     $ENV{GATEWAY_INTERFACE} = "CGI/1.1";
     $ENV{QUERY_STRING} = $str;
     
-    my $cmd = $self->{CONF}{RC_ROOT} . "/var/apps/awstats/wwwroot/cgi-bin/awstats.pl | sed 's/awstats.pl/webstats.php/g' | sed '1d' | sed '1d' | sed '1d' | sed '1d'";
+    my $cmd = $self->{RC_ROOT} . "/var/apps/awstats/wwwroot/cgi-bin/awstats.pl | sed 's/awstats.pl/webstats.php/g' | sed '1d' | sed '1d' | sed '1d' | sed '1d'";
 
     my $output = `$cmd 2> /dev/null`;
 
@@ -685,7 +786,7 @@ sub module_list
 
     my %modules, $mod;
 
-    my @confs = dir_list($self->{CONF}{RC_ROOT} . '/conf.d/*.conf');
+    my @confs = dir_list($self->{RC_ROOT} . '/conf.d/*.conf');
 
     foreach my $conf (@confs)
     {
@@ -697,13 +798,13 @@ sub module_list
 	$mod =~ s/\.conf//;
 
 # if a ".dist" file exists for this conf file, use it instead ( like .debian or .gentoo )
-	if( $self->{CONF}{dist} && -f $self->{CONF}{RC_ROOT} . '/conf.d/' . $conf . '.' . $self->{CONF}{dist} )
+	if( $self->{dist} && -f $self->{RC_ROOT} . '/conf.d/' . $conf . '.' . $self->{dist} )
 	{
-	    $conf .= '.' . $self->{CONF}{dist};
+	    $conf .= '.' . $self->{dist};
 	}
 
 # value is the full path to the referenced file
-	$modules{$mod} = $self->{CONF}{RC_ROOT} . '/conf.d/' . $conf;
+	$modules{$mod} = $self->{RC_ROOT} . '/conf.d/' . $conf;
 
     }
     
@@ -723,7 +824,7 @@ sub module_list_enabled
     foreach my $mod (keys %modules)
     {
 # if there is a .ignore for this module, skip it
-	next if -f $self->{CONF}{RC_ROOT} . '/conf.d/' . $mod . '.conf.ignore';
+	next if -f $self->{RC_ROOT} . '/conf.d/' . $mod . '.conf.ignore';
 
 # if the executable bit is set on the file, it's an enabled module
 	if( -x $modules{$mod} )
@@ -766,6 +867,8 @@ sub do_error
 # otherwise, spit it out on STDERR so the sys admin at the terminal can read it
 	print STDERR $errstr . "\n";
     }
+
+    return 0;
 
 } # end sub do_error
 
@@ -845,7 +948,11 @@ sub gpl_agree
     my ($self) = @_;
 
     $self->{gpl_check} = 1;
-    file_touch($self->{CONF}{RC_ROOT} . '/var/run/gpl_check');
+    file_touch($self->{RC_ROOT} . '/var/run/gpl_check');
+
+    $self->reload("GPL License has been agreed to");
+
+    sleep 2;
 }
 
 # this is called after an install/upgrade. rehash everything
@@ -864,11 +971,16 @@ sub complete_install
 
     $self->rehash_named("--all --rebuild-conf");
 
-    file_touch($self->{CONF}{RC_ROOT} . '/var/run/install_complete');
+    file_touch($self->{RC_ROOT} . '/var/run/install_complete');
 
     $self->{install_complete} = 1;
 
     $self->checkconf;
+
+    $self->reload("Installation complete");
+
+    sleep 2;
+
 }
 
 # is this an admin user?
@@ -880,7 +992,7 @@ sub is_admin
 # if we're not given a username, assume the session as the user to check
     $username = $self->{session}{user} unless $username;
 
-    return 1 if $username eq $self->{CONF}{MYSQL_ADMIN_USER};
+    return 1 if $username eq $self->{MYSQL_ADMIN_USER};
     return 0;
 }
 
@@ -894,7 +1006,7 @@ sub service_running
 # on most systems, but still has trouble on some distributions which do not
 # set correct or expected exit codes when they run.
 
-    my $init = $self->{CONF}{INITD} . '/' . $service;
+    my $init = $self->{INITD} . '/' . $service;
 
 # check to see if the init script exists
     return 0 unless -f $init;
@@ -906,16 +1018,17 @@ sub service_running
 #    my $ret = $?;
 #    print $stat . "- $init - $ret - $!\n";
 
-# check to see if the init script said we're "stopped" or "not running" or if its "dead"
-    if( $stat =~ /stopped/i or $stat =~ /not run/i or $stat =~ /dead/i )
-    {
-	return 0;
-    }
-
-#
-    if( $stat =~ /running/i )
+# check to see if $stat says running... must be done before the stopped check, amavisd
+# also has milter which can be stopped even when amavisd is actually running
+    if( $stat =~ /running/i or $stat =~ /enabled/i )
     {
 	return 1;
+    }
+
+# check to see if the init script said we're "stopped" or "not running" or etc...
+    if( $stat =~ /stopped/i or $stat =~ / not /i or $stat =~ /dead/i or $stat =~ /disabled/i )
+    {
+	return 0;
     }
 
 # exit status of 0 means running OK ( if we didn't find "Usage" in the script output )
@@ -924,24 +1037,19 @@ sub service_running
 #	return 1;
 #    }
 
-# if we get here, the init script doesn't support the status commend ( most likely on a debian server :P )
-# TODO: set the $self->{pname} hash on startup
-    $ret = `pidof $service`;
-    chomp $ret;
-    
-    return 1 unless $ret eq "";
+    return 1 if pidof($service);
 
 # search for different process names fro this service
-    my @pnames = file_get_array($self->{CONF}{RC_ROOT} . '/etc/pname.' . $service);
+    my @pnames = file_get_array($self->{RC_ROOT} . '/etc/pname.' . $service);
     
     foreach my $pname (@pnames)
     {
-	$ret = `pidof $pname`;
-	chomp $ret;
-	return 1 unless $ret eq "";
+	return 1 if pidof($service);
     }
 
-    return 0;
+# if we get here, no idea if it's running or not
+
+    return $self->do_error("Unable to determine the status of " . $service);
 
 } # end sub service_running
 
@@ -1053,7 +1161,7 @@ sub passwd
 	
 	if( $self->{db_connected} )
 	{
-	    $self->{dbi}->do("SET PASSWORD FOR '" . $self->{CONF}{MYSQL_ADMIN_USER} . "'\@'" . $self->{CONF}{MYSQL_ADMIN_HOST} . "' = PASSWORD('" . $new . "')");
+	    $self->{dbi}->do("SET PASSWORD FOR '" . $self->{MYSQL_ADMIN_USER} . "'\@'" . $self->{MYSQL_ADMIN_HOST} . "' = PASSWORD('" . $new . "')");
 	    if( $self->{dbi}->errstr )
 	    {
 		$error = 1;
@@ -1065,13 +1173,15 @@ sub passwd
         if( $error == 0 )
         {
 # the password change was successful. commit the password to the .shadow file and return true
-	    my $shadow_file = $self->{CONF}{RC_ROOT} . "/.shadow";
+	    my $shadow_file = $self->{RC_ROOT} . "/.shadow";
 
 	    chmod 0600, $shadow_file;
 	    file_write($shadow_file, $new . "\n");
 	    chmod 0400, $shadow_file;
 	    
 	    $self->debug("Password change successful.");
+
+	    $self->reload("Password change");
 
 # TODO:
 #	    if( ! $self->{db_connected} )
@@ -1191,7 +1301,7 @@ sub version_outdated
     }
 
 # our running version
-    my $version = file_get_contents($self->{CONF}{RC_ROOT} . '/etc/version');
+    my $version = file_get_contents($self->{RC_ROOT} . '/etc/version');
     chomp($version);
 
 # the last digit is the release number
@@ -1224,7 +1334,9 @@ sub version_outdated
     }
     
 # request the version file for this series
-    $s->write_request(GET => "/updates/" . $v, 'User-Agent' => "RavenCore/".$version);
+    $s->write_request(GET => "/updates/" . $v . '.txt', 'User-Agent' => "RavenCore/".$version);
+    $self->debug("http request sent to www.ravencore.com: GET /updates/$v.txt, User-Agent RavenCore/$version");
+
 # read the response headers
     my($code, $mess, %h) = $s->read_response_headers or return 0;
 
@@ -1261,14 +1373,11 @@ sub version_outdated
 
 sub rehash_httpd
 {
-    my ($self, $all, @domain_list) = @_;
+    my ($self, $query) = @_;
 
     my %modules = $self->module_list_enabled;
 
     return unless exists $modules{web};
-
-# TODO: check to make sure that this server is a webserver
-#&die_error("Not a webserver, exiting") unless -x $CONF{'RC_ROOT'} . '/conf.d/web.conf';
 
 # TODO: This script's usage output
 #    sub usage
@@ -1385,7 +1494,7 @@ sub rehash_httpd
     
 # set the vhosts file
     
-    my $vhosts = $self->{CONF}{RC_ROOT} . "/etc/vhosts.conf";
+    my $vhosts = $self->{RC_ROOT} . "/etc/vhosts.conf";
 
 # make sure that no other apache configuration denies access to the domains
     
@@ -1396,11 +1505,11 @@ sub rehash_httpd
     
 # check to make sure we're included in the apache conf file
     
-    my $output = file_get_contents($self->{CONF}{httpd_config_file});
+    my $output = file_get_contents($self->{httpd_config_file});
     my $include_vhosts = 'Include ' . $vhosts;
 # if not, append to it
 
-    file_append($self->{CONF}{httpd_config_file}, $include_vhosts . "\n") unless $output =~ m|^$include_vhosts$|m;
+    file_append($self->{httpd_config_file}, $include_vhosts . "\n") unless $output =~ m|^$include_vhosts$|m;
 
 #
 # Rebuild the vhosts.conf file
@@ -1454,8 +1563,8 @@ sub rehash_httpd
 
 # add webmail alias to end of $vhosts files
 
-    my $squirrelmail = $self->{CONF}{RC_ROOT} . "/var/apps/squirrelmail";
-    my $save_path = $self->{CONF}{RC_ROOT} . "/var/tmp";
+    my $squirrelmail = $self->{RC_ROOT} . "/var/apps/squirrelmail";
+    my $save_path = $self->{RC_ROOT} . "/var/tmp";
     
     $data .= qq~
 <VirtualHost *:80>
@@ -1481,11 +1590,11 @@ sub rehash_httpd
     
 # Test to be sure we can restart apache. Save the results to http_tmp
     
-    my $tmp_file = $self->{CONF}{RC_ROOT} . '/var/tmp/rehash_httpd.' . $$;
+    my $tmp_file = $self->{RC_ROOT} . '/var/tmp/rehash_httpd.' . $$;
 
     $self->debug("Checking apache conf file syntax");
     
-    my $ret = system($self->{CONF}{HTTPD} . ' -t &> ' . $tmp_file);
+    my $ret = system($self->{HTTPD} . ' -t &> ' . $tmp_file);
     
     if( $ret != 0 )
     {
@@ -1589,7 +1698,7 @@ sub make_virtual_host {
     if( ! -f $domain_root . "/conf/awstats." . $domain . ".conf" )
     {
 	
-	my $awstats_conf = file_get_contents($self->{CONF}{RC_ROOT} . "/etc/awstats.model.conf.in");
+	my $awstats_conf = file_get_contents($self->{RC_ROOT} . "/etc/awstats.model.conf.in");
 	
 # Run the needed substitution statements to edit the config file appropriatly
 	$awstats_conf =~ s|LogFile=".*"|LogFile="$domain_root/var/log/access_log.1"|;
@@ -1750,7 +1859,6 @@ sub rehash_mail
     my $vmailbox;
     my $valiasmap;
     my $login_maps;
-    my $relay_host;
 
     my $output;
 
@@ -1775,7 +1883,7 @@ sub rehash_mail
     
     my @sasl_users = `sasldblistusers2 2> /dev/null`;
     chomp @sasl_users;
-    
+
 # individual mail addresses
     
     my $sql = "select *, m.id as mid from domains d inner join mail_users m on m.did = d.id where d.mail = 'on' order by name";
@@ -1906,12 +2014,9 @@ sub rehash_mail
 	    $sasl_action = "";
 	}
 
-# set sasl passwd for users with a mailbox
-	if( $row->{'mailbox'} eq "true" )
-	{
-	    my $cmd = "echo " . $row->{'passwd'} . " | saslpasswd2 " . $sasl_action . " -p -u " . $row->{'name'} . " " . $row->{'mail_name'};
-	    $output .= `$cmd 2>&1`;
-	}
+# set sasl passwd
+	my $cmd = "echo " . $row->{'passwd'} . " | saslpasswd2 " . $sasl_action . " -p -u " . $row->{'name'} . " " . $row->{'mail_name'};
+	$output .= `$cmd 2>&1`;
 	
 # build a random 2 letter "salt" string for use in the perl crypt fucntion in the docevat passwd-file below
 	
@@ -1924,7 +2029,52 @@ sub rehash_mail
 	$dovecot_passwd .= $email_addr . ":" . crypt($row->{'passwd'},$salt_str) . ":" . $VMAIL_UID . ":" . $VMAIL_GID . "::" . $domain_root . "/" . $row->{'mail_name'} . ":/bin/false\n";
 	
     } # end while( $row = $result->fetchrow_hashref )
-    
+
+    $result->finish;
+
+#
+# stop spam from going off-server via a redirect
+#
+    my @redir_emails;
+
+    my $sql = "select lcase(redirect_addr) as redirect_addr from mail_users where redirect = 'true'";
+    my $result = $self->{dbi}->prepare($sql);
+
+    $result->execute;
+#
+    while( my $row = $result->fetchrow_hashref )
+    {
+	
+# each email is seperated by a comma
+	my @email_list = split /,/, $row->{'redirect_addr'};
+
+	foreach my $email (@email_list)
+	{
+# a single email can show up many times, only add it to the list if it isn't there
+	    push @redir_emails, $email unless in_array($email, @redir_emails);
+	}
+
+    }
+
+    $result->finish;
+
+# add the redir_emails to the $valiasmap
+    foreach my $email (@redir_emails)
+    {
+#
+	my $spam = $email;
+	my $badh = $email;
+
+	$spam =~ s/@/+spam@/;
+	$badh =~ s/@/+badh@/;
+
+# send spam to /dev/null
+	$valiasmap .= $spam . "\t\tdevnull\n";
+# send +badh w/o the +badh
+	$valiasmap .= $badh . "\t\t" . $email . "\n";
+
+    }
+
 # handle catchalls. we concat semicolons here because the relay_host might have a : character in it
     my $sql = "select * from domains where mail = 'on' order by name";
     my $result = $self->{dbi}->prepare($sql);
@@ -1956,9 +2106,9 @@ sub rehash_mail
 	}
 	elsif( $row->{'catchall'} eq "relay") # relay transport addition by spectro - slightly modified by cormander
 	{
-	    $vtransportmap .= $row->{'name'} . "\t\trelay:\n";
+	    $vtransportmap .= $row->{'name'} . "\t\trelay:";
 # only add the [ ] around the relay_host if we want to force an MX lookup
-	    $vtransportmap .= $relay_host . "\n";
+	    $vtransportmap .= $row->{'relay_host'} . "\n";
 	}
 	
     } # end while( my $row = $result->fetchrow_hashref )
@@ -2030,13 +2180,13 @@ sub rehash_mail
 
 #
 
-    my $sq_vlogin_file = $self->{CONF}{RC_ROOT} . "/var/apps/squirrelmail/plugins/vlogin/data/domains/ravencore.vlogin.config.php";
+    my $sq_vlogin_file = $self->{RC_ROOT} . "/var/apps/squirrelmail/plugins/vlogin/data/domains/ravencore.vlogin.config.php";
     
     file_write($sq_vlogin_file, $data);
     
-    file_chown("rcadmin:servgrp", $self->{CONF}{RC_ROOT} . "/var/apps/squirrelmail/data");
-    file_chmod_r(660, $self->{CONF}{RC_ROOT} . "/var/apps/squirrelmail/data");
-    chmod 0771, $self->{CONF}{RC_ROOT} . "/var/apps/squirrelmail/data";
+    file_chown("rcadmin:servgrp", $self->{RC_ROOT} . "/var/apps/squirrelmail/data");
+    file_chmod_r(660, $self->{RC_ROOT} . "/var/apps/squirrelmail/data");
+    chmod 0771, $self->{RC_ROOT} . "/var/apps/squirrelmail/data";
     
 #
     
@@ -2060,10 +2210,7 @@ sub rehash_mail
     
 } # end sub rehash_mail
 
-# TODO:
-# make sure our conf files are correctly set
-#[ -x $RC_ROOT/conf.d/amavisd.conf ]&& $RC_ROOT/sbin/checkconf.amavisd
-#$RC_ROOT/sbin/checkconf.mail
+#
 
 sub rehash_ftp
 {
@@ -2073,6 +2220,8 @@ sub rehash_ftp
     my %modules = $self->module_list_enabled;
 
     return unless exists $modules{web};
+
+    return unless $self->{db_connected};
 
 # TODO: We must have one argument to run
 #    my $c = "";
@@ -2086,7 +2235,7 @@ sub rehash_ftp
 #    }
 
 # create our shadow object
-    my $shadow = new rcshadow;
+    my $shadow = new rcshadow($self->{ostype});
 
     my $sql;
     
@@ -2109,31 +2258,23 @@ sub rehash_ftp
     while( my $row = $result->fetchrow_hashref )
     {
 	
-# Just in case we didn't get a shell value, use the default. We need the quotes
-	if( $row->{'shell'} eq "" )
-	{
-# TODO: Fix this
-	    my $login_shell = $self->{CONF}{DEFAULT_LOGIN_SHELL};
-	    
-	}
+# Just in case we didn't get a shell value, use the default
+	$row->{'shell'} = $self->{CONF}{DEFAULT_LOGIN_SHELL} unless $row->{'shell'};
 	
 # if we don't have a home_dir, set it to default to VHOST_ROOT/domain
-	if( $row->{'home_dir'} eq "" )
-	{
-	    $row->{'home_dir'} = $self->{CONF}{VHOST_ROOT}. '/' . $row->{'name'};
-	}
-
+	$row->{'home_dir'} = $self->{CONF}{VHOST_ROOT}. '/' . $row->{'name'} unless $row->{'home_dir'};
+	
 # ask if the user exists
 	if( $shadow->item_exists('user', $row->{'login'}) )
 	{
 # if so, edit it
 # $login,$passwd,$home_dir,$shell,$uid,$gid
-	    $shadow->edit_user($row->{'login'},$row->{'passwd'},$row->{'home_dir'},$row->{'home_dir'},'',$shadow->{group}{'servgrp'}{'gid'});
+	    $shadow->edit_user($row->{'login'},$row->{'passwd'},$row->{'home_dir'},$row->{'shell'},'',$shadow->{group}{'servgrp'}{'gid'});
 	}
 	else
 	{
 # else, add it
-	    $shadow->add_user($row->{'login'},$row->{'passwd'},$row->{'home_dir'},$row->{'home_dir'},'',$shadow->{group}{'servgrp'}{'gid'});
+	    $shadow->add_user($row->{'login'},$row->{'passwd'},$row->{'home_dir'},$row->{'shell'},'',$shadow->{group}{'servgrp'}{'gid'});
 	}
 	
     } # end while( $row = $result->fetchrow_hashref )
@@ -2176,16 +2317,16 @@ sub service
 # fi
 
 # check to see the init script for this service exists
-    if( -x $self->{CONF}{INITD} . '/' . $service )
+    if( -x $self->{INITD} . '/' . $service )
     {
 # call the system service
 	if($self->{term})
 	{
-	    $ret = system($self->{CONF}{INITD} . '/' . $service . ' ' . $cmd);	    
+	    $ret = system($self->{INITD} . '/' . $service . ' ' . $cmd);	    
 	}
 	else
 	{
-	    $ret = system($self->{CONF}{INITD} . '/' . $service . ' ' . $cmd . ' &> /dev/null');
+	    $ret = system($self->{INITD} . '/' . $service . ' ' . $cmd . ' &> /dev/null');
 	}
 
 # check to see if we suceeded. If we try to stop a stopped service, we're going to fail, so we explicity ignore
@@ -2213,12 +2354,12 @@ sub rehash_logrotate
 
     return unless exists $modules{web};
 
-# TODO: find a way to do this in perl
+#
     my $dir = $self->{CONF}{VHOST_ROOT};
     my $stuff = `ls -1 $dir/*/var/log/*_log 2> /dev/null`;
     my @logs = split /\n/, $stuff;
     
-# TODO: make sure this is always blank
+# last line is always blank
     pop @logs;
 
     my $data;
@@ -2239,7 +2380,7 @@ $log {
 	rotate 1
 	nomail
 	postrotate
-	$self->{CONF}{RC_ROOT}/sbin/process_logs $logb $domain_name
+	$self->{RC_ROOT}/sbin/process_logs $logb $domain_name
 	endscript
 }
 ";
@@ -2285,7 +2426,7 @@ $log {
 #    echo_e "\t$compress\n\n}"
 
 # write the file
-    file_write($self->{CONF}{RC_ROOT} . '/etc/logrotate.conf', $data);
+    file_write($self->{RC_ROOT} . '/etc/logrotate.conf', $data);
 
 } # end sub rehash_logrotate
 
@@ -2293,39 +2434,51 @@ $log {
 
 sub rehash_named
 {
-    my ($self, $rebuild_conf, $all, @domain_list) = @_;
+    my ($self, $query) = @_;
 
     my %modules = $self->module_list_enabled;
 
     return unless exists $modules{dns};
 
+    return unless $self->{db_connected};
+
+# Some checks
+    return $self->do_error("NAMED_ROOT not defined") unless $self->{CONF}{NAMED_ROOT};
+    return $self->do_error("NAMED_CONF_FILE not defined") unless $self->{CONF}{NAMED_CONF_FILE};
+
+# if the directory doesn't exist, exit
+    return $self->do_error("The directory " . $self->{CONF}{NAMED_ROOT} . " does not exist") unless -d $self->{CONF}{NAMED_ROOT};
+
+# search for the checkzone command
+    my $checkzone = find_in_path('named-checkzone');
+    $checkzone = find_in_path('checkzone') unless $checkzone;
+    
+    return $self->do_error("Unable to find the bind server checkzone binary") unless $checkzone;
+
+# TODO: parse $query
+
+    my $all = 1;
+
+    my @domain_list;
+
 # if given the "all" switch, set @domain_list to all domains
-    if( $all )
+    if( $all == 1 )
     {
 	my $sql = "select distinct d.name from domains d, dns_rec r where r.did = d.id and d.soa is not null";
+
 	my $result = $self->{dbi}->prepare($sql);
 
 	$result->execute;
-	
-	@domain_list = ();
 
-	while( my $row = $result->fetchrow_array )
+	while( my $row = $result->fetchrow_hashref )
 	{
 	    unshift @domain_list, $row->{name};
 	}
 
 	$result->finish;
-
     }
 
 # TODO: foreach domain, do basic checks to make sure it doesn't contain any funny characters
-
-# Some checks
-
-    $self->die_error("NAMED_ROOT not defined") unless $self->{CONF}{NAMED_ROOT};
-
-# if the directory doesn't exist, exit
-    $self->die_error("The directory " . $self->{CONF}{NAMED_ROOT} . " does not exist") unless -d $self->{CONF}{NAMED_ROOT};
 
     my $num;
     my $data;
@@ -2348,7 +2501,6 @@ sub rehash_named
 # Store our new value in the file we got it from
     file_write($self->{CONF}{NAMED_ROOT} . '/num', $num);
 
-
 # Loop through our domain list
 
     foreach my $domain (@domain_list)
@@ -2365,6 +2517,8 @@ sub rehash_named
 
 # TODO: make this a perl command
 	my $date_str = `date +%Y%m%d`;
+	chomp $date_str;
+
 	$date_str .= $num;
 
 	$data = qq~\$TTL    300
@@ -2395,36 +2549,37 @@ sub rehash_named
 
 	}
 
-# Check to make sure this domain has enough DNS entries to be safely put into
-# the configuration
+	$result->finish;
 
-# TODO: see if checkzone will accept input on standard input.. if not, we're going to have to write to a file first
-# and then check it, which isn't prefereable, but we gotta do what we gotta do
-	my $ret = '';#system("checkzone -q " . $domain . " " . $domain.$$);
+# Check to make sure this domain has enough DNS entries to be safely put into the configuration
+	my $tmp_file = $self->{RC_ROOT} . '/var/tmp/' . $row->{name} . '.' . $$;
 
+# write to and check the tmp file
+	file_write($tmp_file, $data);
+	my $ret = system($checkzone . " -q " . $row->{name} . " " . $tmp_file);
+	file_delete($tmp_file);
+
+# if all goes well, load the file
 	if( $ret == 0 )
 	{
 	    
-	    $self->debug("Loading zone " . $domain);
+	    $self->debug("Loading zone " . $row->{name});
 
 # If the zone file didn't already exists, we need to add the domain zone to named.conf. flag rebuild
-	    if( ! -f $self->{CONF}{NAMED_ROOT} . '/' . $domain )
+	    if( ! -f $self->{CONF}{NAMED_ROOT} . '/' . $row->{name} )
 	    {
 		$rebuild_conf = 1;
-		$self->debug($domain . " is not in named.conf, flagging for a rebuild");
+		$self->debug($row->{name} . " is not in named.conf, flagging for a rebuild");
 	    }
 
 # Make the zone file
-# TODO: if we had to create a temp zone file, move instead of file_write, it's faster
-	    file_write($self->{CONF}{NAMED_ROOT} . '/' . $domain, $data);
+	    file_write($self->{CONF}{NAMED_ROOT} . '/' . $row->{name}, $data);
 
 	}
 	else
 	{
-# Remove the bad zone file
-	    $self->debug("Bad zone file for " . $domain);
-
-	    file_delete($self->{CONF}{NAMED_ROOT} . '/' . $domain);
+# bad zone file, don't write it
+	    $self->debug("Bad zone file for " . $row->{name});
 	}
 
     } # end foreach my $domain (@domain_list)
@@ -2452,14 +2607,15 @@ sub rehash_named
 
     };
 
-zone "." {
-    type master;
-    file "default";
-};
+    zone "." {
+        type master;
+        file "default";
+    };
 
 ~;
 
 # Loop through the domains on the server
+# TODO: this needs to be a select statement, as @domain_list may not be all domains once the $query is parsed
 
 	foreach my $domain (@domain_list)
 	{
@@ -2473,6 +2629,9 @@ zone "." {
 ~;
 
 	} # end foreach my $domain (@domain_list)
+
+# write the named.conf file
+	file_write($self->{CONF}{NAMED_CONF_FILE}, $data) if $self->{CONF}{NAMED_CONF_FILE};
 
     } # end if( $rebuild_conf == 1 )
 
@@ -2489,7 +2648,7 @@ zone "." {
 # of the name of it on the current system
     foreach my $init (('bind','bind9','named'))
     {
-	if( -f $self->{CONF}{INITD} . '/' . $init )
+	if( -f $self->{INITD} . '/' . $init )
 	{
 # tell us we restarted
 	    $restarted = 1;
@@ -2536,10 +2695,46 @@ sub chkconfig
 
 # TODO: figure out what other systems like debian use for this, and handle it accordingly
 # TODO: do checking on stuff in @args, it's passed into the system() function
+
+    $self->do_error("Unable to execute chkconfig command") unless find_in_path('chkconfig');
     
     system("chkconfig @args");
 
 } # end sub chkconfig
+
+#
+
+sub list_system_daemons
+{
+    my ($self) = @_;
+
+    my @daemons;
+
+    $self->do_error("Unable to execute chkconfig command") unless find_in_path('chkconfig');
+
+# TODO: figure out what the debian equiv is and call that when {dist} is set to debian
+    open PROG, "chkconfig --list | grep '^[[:alpha:]]'|";
+
+    while(<PROG>)
+    {
+	chomp;
+
+# split on whitespace (spaces, tabs, etc)
+	my @arg = split;
+	
+	my $daemon = shift @arg;
+
+	push @daemons, $daemon;
+
+	@{$self->{daemons}{$daemon}} = @arg;
+
+    }
+
+    close PROG;
+
+    return \@daemons;
+
+}
 
 #
 
@@ -2567,29 +2762,22 @@ sub disp_chkconfig
 #    [ $runlevel -eq $i ] && echo -n " selected"
 #    echo ">$i</option>"
 #done
-
 #echo "</select>
 
     $data .= " )</h2>\n";
 
     $data .= "<table cellpadding=0 cellspacing=0 border=1><tr>\n";
 
+    my $daemons = $self->list_system_daemons;
+    
 #
-    open PROG, "chkconfig --list | grep '^[[:alpha:]]'|";
-
-    while(<PROG>)
+    foreach my $daemon (@{$daemons})
     {
-	chomp;
 
-# split on whitespace (spaces, tabs, etc)
-	my @arg = split;
-	
-	my $s = $arg[0];
-
-	$data .= "<tr><td width=200>" . $s . "</td>";
+	$data .= "<tr><td width=200>" . $daemon . "</td>";
 
 # is this thing going to be on or off?
-	my $status = $arg[$runlevel + 1];
+	my $status = $self->{daemons}{$daemon}[$runlevel];
 	$status =~ s/.*://;
 
 	my $new_status;
@@ -2603,13 +2791,13 @@ sub disp_chkconfig
             $new_status = "off";
             $running = '<img src="images/solidgr.gif" border=0>';
             $start = '<img src="images/start_grey.gif" border=0>';
-            $stop = '<a href="chkconfig.php?service=' . $s . '&status=' . $new_status . '"><img src="images/stop.gif" border=0></a>';
+            $stop = '<a href="chkconfig.php?service=' . $daemon . '&status=' . $new_status . '"><img src="images/stop.gif" border=0></a>';
 	}
 	else
 	{
             $new_status = "on";
             $running = '<img src="images/solidrd.gif" border=0>';
-            $start = '<a href="chkconfig.php?service=' . $s . '&status=' . $new_status . '"><img src="images/start.gif" border=0></a>';
+            $start = '<a href="chkconfig.php?service=' . $daemon . '&status=' . $new_status . '"><img src="images/start.gif" border=0></a>';
             $stop = '<img src="images/stop_grey.gif" border=0>';
 	}
 
@@ -2654,8 +2842,23 @@ sub start_webserver
 {
     my ($self) = @_;
 
-# first off, run the checkconf, with a special variable telling it we're at the terminal
-    $self->checkconf(1);
+# check to make sure it aint already running
+    if( my $tmp = file_get_contents($self->{RC_ROOT} . '/var/run/ravencore.httpd.pid') )
+    {
+	$self->do_error("ravencore.httpd pid file exists, sending TERM signal before startup");
+	kill "TERM", $tmp;
+	sleep 1;
+    }
+# also check pidof
+    if( my @pids = pidof('ravencore.httpd') )
+    {
+	$self->do_error("ravencore.httpd already appears to be running, sending TERM signal before startup");
+	kill "TERM", @pids;
+	sleep 1;
+    }
+
+# run the checkconf
+    $self->checkconf;
 
 # generate ssl cert for panel
 
@@ -2663,23 +2866,23 @@ sub start_webserver
     {
 # generate the key if non-existant
     
-	if( ! -f $self->{CONF}{RC_ROOT} . '/etc/server.key' )
+	if( ! -f $self->{RC_ROOT} . '/etc/server.key' )
 	{
 	    
 	    $self->do_error("Creating control panel SSL key file....");
 	    
-	    system('openssl genrsa -rand /proc/apm:/proc/cpuinfo:/proc/dma:/proc/filesystems:/proc/interrupts:/proc/ioports:/proc/pci:/proc/rtc:/proc/uptime 1024 > ' . $self->{CONF}{RC_ROOT} . '/etc/server.key 2> /dev/null');
+	    system('openssl genrsa -rand /proc/apm:/proc/cpuinfo:/proc/dma:/proc/filesystems:/proc/interrupts:/proc/ioports:/proc/pci:/proc/rtc:/proc/uptime 1024 > ' . $self->{RC_ROOT} . '/etc/server.key 2> /dev/null');
 	    
 	}
     
 # generate the cert if non-existant
 	
-	if( ! -f $self->{CONF}{RC_ROOT} . '/etc/server.crt' )
+	if( ! -f $self->{RC_ROOT} . '/etc/server.crt' )
 	{
 
 	    $self->do_error("Creating control panel SSL cert file....");
 
-	    open SSL, '| openssl req -new -key ' . $self->{CONF}{RC_ROOT} . '/etc/server.key -x509 -days 365 -out ' . $self->{CONF}{RC_ROOT} . '/etc/server.crt 2>/dev/null';
+	    open SSL, '| openssl req -new -key ' . $self->{RC_ROOT} . '/etc/server.key -x509 -days 365 -out ' . $self->{RC_ROOT} . '/etc/server.crt 2>/dev/null';
 
 	    print SSL "--\n";
 	    print SSL "SomeState\n";
@@ -2697,37 +2900,37 @@ sub start_webserver
 
 # check httpd version series. The result of this command will look like: 1.3 , 2.0 , etc
     my $str = ' -v | head -n 1 | sed \'s|.*Apache/||\' | sed \'s/^\([[:digit:]]\.[[:digit:]]*\)\..*$/\1/\'';
-    my $httpd_v = `$self->{CONF}{HTTPD} $str`;
+    my $httpd_v = `$self->{HTTPD} $str`;
 
     chomp $httpd_v;
 
 # check to make sure the conf file exists for this version of apache
 
-    if( ! -f $self->{CONF}{RC_ROOT} . '/etc/ravencore.httpd-' . $httpd_v . '.conf' )
+    if( ! -f $self->{RC_ROOT} . '/etc/ravencore.httpd-' . $httpd_v . '.conf' )
     {
-        $self->die_error("Unable to load ravencore's httpd conf file: $self->{CONF}{RC_ROOT}/etc/ravencore.httpd-$httpd_v.conf");
+        $self->die_error("Unable to load ravencore's httpd conf file: $self->{RC_ROOT}/etc/ravencore.httpd-$httpd_v.conf");
     }
 
 # make sure the docroot.conf file is populated
-    file_write($self->{CONF}{RC_ROOT} . '/etc/docroot.conf', "DocumentRoot " . $self->{CONF}{RC_ROOT} . "/httpdocs\n");
+    file_write($self->{RC_ROOT} . '/etc/docroot.conf', "DocumentRoot " . $self->{RC_ROOT} . "/httpdocs\n");
 
 # make sure the port.conf file exists. if not, create it
-    if( ! -f $self->{CONF}{RC_ROOT} . '/etc/port.conf' )
+    if( ! -f $self->{RC_ROOT} . '/etc/port.conf' )
     {
-	file_write($self->{CONF}{RC_ROOT} . '/etc/port.conf', "Listen 8000\n");
+	file_write($self->{RC_ROOT} . '/etc/port.conf', "Listen 8000\n");
     }
 
 # check to make sure our httpd_modules symlink is correct
 
-    if( ! -l $self->{CONF}{RC_ROOT} . '/etc/httpd_modules' )
+    if( ! -l $self->{RC_ROOT} . '/etc/httpd_modules' )
     {
 
 # make sure that the httpd_modules.path directory exists
 
-	if( -d $self->{CONF}{HTTPD_MODULES} )
+	if( -d $self->{HTTPD_MODULES} )
 	{
 # re-create the symlink
-            system('ln -s ' . $self->{CONF}{HTTPD_MODULES} . ' ' . $self->{CONF}{RC_ROOT} . '/etc/httpd_modules');
+            system('ln -s ' . $self->{HTTPD_MODULES} . ' ' . $self->{RC_ROOT} . '/etc/httpd_modules');
 	}
         else
 	{
@@ -2739,12 +2942,12 @@ sub start_webserver
 
 # set our runtime options
 # conf file is different depending on the httpd version
-    my $OPTIONS = " -d " . $self->{CONF}{RC_ROOT} . " -f etc/ravencore.httpd-$httpd_v.conf";
+    my $OPTIONS = " -d " . $self->{RC_ROOT} . " -f etc/ravencore.httpd-$httpd_v.conf";
 
 # check for compiled-in modules, and include the ones that are not, that we need to function
 
 # get the list from the apache binary
-    my $compiled_modules = `$self->{CONF}{HTTPD} -l`;
+    my $compiled_modules = `$self->{HTTPD} -l`;
     
     foreach my $module ( ('log_config',
 			  'setenvif',
@@ -2799,29 +3002,29 @@ sub start_webserver
 # php5 listed first, because on a test system with both php5 and php4 libs installed, mysql only worked with
 # php5 loaded
 
-    if( -f $self->{CONF}{RC_ROOT} . '/etc/httpd_modules/libphp5.so' )
+    if( -f $self->{RC_ROOT} . '/etc/httpd_modules/libphp5.so' )
     {
         $OPTIONS .= ' -DPHP5';
     }
-    elsif( -f $self->{CONF}{RC_ROOT} . '/etc/httpd_modules/libphp4.so' )
+    elsif( -f $self->{RC_ROOT} . '/etc/httpd_modules/libphp4.so' )
     {
         $OPTIONS .= ' -DPHP4';
     }
 
 # figure out what our ssl shared object file is ( usually mod_ssl.so or libssl.so )
-    my $ssl_file = `ls $self->{CONF}{RC_ROOT}/etc/httpd_modules/*ssl.so 2> /dev/null | head -n1`;
+    my $ssl_file = `ls $self->{RC_ROOT}/etc/httpd_modules/*ssl.so 2> /dev/null | head -n1`;
     chomp $ssl_file;
 
 # if we have ssl installed, enable it when we start the control panel
-    if( -f $ssl_file && $self->{CONF}{RC_ROOT} . '/etc/server.crt' && $self->{CONF}{RC_ROOT} . '/etc/server.key' )
+    if( -f $ssl_file && $self->{RC_ROOT} . '/etc/server.crt' && $self->{RC_ROOT} . '/etc/server.key' )
     {
 	$OPTIONS .= ' -DSSL';
 
 # if running in ssl, be sure we have the port_ssl.conf
 	
-	if( ! -f $self->{CONF}{RC_ROOT} . '/etc/port_ssl.conf' )
+	if( ! -f $self->{RC_ROOT} . '/etc/port_ssl.conf' )
 	{
-	    file_write($self->{CONF}{RC_ROOT} . '/etc/port_ssl.conf', "Listen 8080\n");
+	    file_write($self->{RC_ROOT} . '/etc/port_ssl.conf', "Listen 8080\n");
 	}
 	
     }
@@ -2839,7 +3042,7 @@ sub start_webserver
 
 # start the apache webserver daemon
 
-    my $ret = system($self->{CONF}{RC_ROOT} . '/sbin/ravencore.httpd ' . $OPTIONS);
+    my $ret = system($self->{RC_ROOT} . '/sbin/ravencore.httpd ' . $OPTIONS);
 
 # check the exit status
     if( $ret != 0 )
@@ -2850,10 +3053,7 @@ sub start_webserver
 # wait a split second and check to see if the webserver actually started
     system("sleep .5");
 
-    my $pidof = `pidof ravencore.httpd`;
-    chomp $pidof;
-
-    if( ! $pidof )
+    if( ! pidof('ravencore.httpd') )
     {
 	exit(1);
     }
@@ -2885,19 +3085,19 @@ sub mrtg
     if($type eq "html")
     {
 
-	my @files = dir_list($self->{CONF}{RC_ROOT} . '/var/log/mrtg');
+	my @files = dir_list($self->{RC_ROOT} . '/var/log/mrtg');
 
 	foreach my $file (@files)
 	{
 	    next unless $file =~ /\.html/;
-	    $data .= file_get_contents($self->{CONF}{RC_ROOT} . '/var/log/mrtg/' . $file);
+	    $data .= file_get_contents($self->{RC_ROOT} . '/var/log/mrtg/' . $file);
 	    $data =~ s|SRC="([a-zA-Z0-9_\-\.]*)"|SRC="?img=$1"|ig;
 	}
 	
     }
     elsif($type eq "image")
     {
-	$data = file_get_contents($self->{CONF}{RC_ROOT} . '/var/log/mrtg/' . basename($image));
+	$data = file_get_contents($self->{RC_ROOT} . '/var/log/mrtg/' . basename($image));
     }
     
     return $data;
