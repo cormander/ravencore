@@ -67,34 +67,14 @@ if( $cmd eq "passwd" )
 	
 	print "Enter in a new password: ";
 	
-	system "stty", '-echo', '-icanon', 'eol', "\001";
-	
-	while( my $c = getc )
-	{
-	    last if $c eq "\n";
-	    print "*";
-	    $passwd .= $c;
-	}
-	chomp $passwd;
-	
-	system "stty", 'echo', 'icanon', 'eol', '^@';
+	$passwd = &passwd_prompt;
 	
 	print "\n";
 	
 # confirm password
 	print "  Re-enter the password: ";
 
-	system "stty", '-echo', '-icanon', 'eol', "\001";
-	
-	while( my $c = getc )
-	{
-	    last if $c eq "\n";
-	    print "*";
-	    $passwd_again .= $c;
-	}
-	chomp $passwd_again;
-	
-	system "stty", 'echo', 'icanon', 'eol', '^@';
+	$passwd_again = &passwd_prompt;
 	
 	print "\n";
 	
@@ -177,4 +157,46 @@ sub x_t
     }
 
     return $str;
+}
+
+
+# a password prompt
+
+sub passwd_prompt
+{
+
+    my $passwd;
+    my $n = 0;
+
+    my $_DEL = chr(127);
+    my $_BS = chr(8);
+
+    $| = 1;
+
+    system "stty", '-echo', '-icanon', 'eol', "\001";
+
+    while( my $c = getc )
+    {
+        last if $c eq "\n";
+
+        if( $c ne $_DEL )
+        {
+            print "*";
+	    $passwd .= $c;
+            $n++;
+        }
+
+        if( $c eq $_DEL and $n > 0)
+        {
+            print $_BS . " " . $_BS;
+	    chop $passwd;
+            $n--;
+        }
+
+    }
+
+    system "stty", 'echo', 'icanon', 'eol', '^@';
+
+    return $passwd;
+
 }

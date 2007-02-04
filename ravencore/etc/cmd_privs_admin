@@ -11,3 +11,5 @@ unlock_user
 session_list
 session_remove
 mrtg
+list_system_daemons
+reload

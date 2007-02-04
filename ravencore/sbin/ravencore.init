@@ -58,18 +58,17 @@ fi
 
 RETVAL=0
 
-
 start() {
 
 # make sure ravencore ain't running    
-    kill -15 $(pidof rcserver) 2> /dev/null
+#    kill -15 $(pidof rcserver) 2> /dev/null
+
+    echo -n $"Starting control panel: "
 
     $RC_ROOT/sbin/run_cmd rcserver
 
     RETVAL=$?
     
-    echo -n $"Starting control panel: "
-
     if [ $RETVAL -eq 0 ]; then
 	
 	success
@@ -117,27 +116,54 @@ start() {
     
 }
 
+reload() {
+
+    echo -n $"Reloading control panel: "
+
+    send_kill HUP
+
+}
+
+
 stop() {
 
     echo -n $"Stopping control panel: "
 
-    kill -15 $(pidof rcserver) 2> /dev/null
+    send_kill TERM
+
+}
+
+send_kill() {
+
+    sig=$1
+
+# kill based off the pid file
+    kill -$sig $(cat $RC_ROOT/var/run/rcserver.pid 2> /dev/null) 2> /dev/null
 
     RETVAL=$?
 
     if [ $RETVAL -eq 0 ]; then
-	
 	success
-	
     else
+# try again with pidof
+	kill -$sig $(pidof rcserver) 2> /dev/null
 	
-	failure
+	RETVAL=$?
+	
+	if [ $RETVAL -eq 0 ]; then
+	    success
+	else
+	    failure
+	fi
 	
     fi
-    
+
     echo
 
 }
+
+# if $2 is "debug", touch the debug file... otherwise remove it
+if [ "$2" = "debug" ]; then touch $RC_ROOT/var/run/debug; else rm -f $RC_ROOT/var/run/debug; fi
 
 # See how we were called.
 case "$1" in
@@ -151,12 +177,15 @@ case "$1" in
         status rcserver
 	RETVAL=$?
 	;;
+    reload)
+	reload
+	;;
     restart)
 	stop
 	start
 	;;
   *)
-	echo $"Usage: $prog {start|stop|restart|status}"
+	echo $"Usage: $prog {start|stop|restart|status|reload} [debug]"
 	exit 1
 esac
 
