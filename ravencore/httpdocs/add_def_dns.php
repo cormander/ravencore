@@ -84,8 +84,9 @@ switch ($_POST[type])
         if ($row['count'] != 0)
         {
             print __('You already have a default SOA record set');
+
             nav_bottom();
-            rc_exit();
+
         } 
 
         print '<input type=hidden name=type value=SOA>
@@ -128,15 +129,16 @@ switch ($_POST[type])
 
     case "PTR":
         print '<input type=hidden name=type value=PTR> ' . __('Reverse pointer records are not yet available');
+
         nav_bottom();
-        rc_exit();
 
         break;
 
     default:
         print __('Invalid DNS record type');
+
         nav_bottom();
-        rc_exit();
+
         break;
 } 
 

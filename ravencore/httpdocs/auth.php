@@ -50,7 +50,9 @@ include "functions.php";
 
 session_start(); // session_read() is called here automatically
 
-//$db = new rcclient; // commented out because it's called in the rcclient.php file which is set to auto_prepend
+ob_start();
+
+// $db = new rcclient; // commented out because it's called in the rcclient.php file which is set to auto_prepend
 // $db is a common variable name... for compat with other apps, the rcclient is actually in $rcdb, but since
 // I don't want to bother to change all the current PHP code from $db -> $rcdb (yes, I'm lazy), just make $db
 // a reference to it..
@@ -86,7 +88,6 @@ if($db->auth_resp != 1)
 
   include "login.php";
 
-  rc_exit();
 }
 			  
 // NOTE! Anything beyond this point is considered a logged in user
@@ -112,6 +113,10 @@ if($action == "update_conf" and is_array($_REQUEST['CONF_UPDATE']))
 	}
 
     }
+# tell rcserver to reload, and wait 2 seconds for it to do so
+  $db->do_raw_query('reload I called set_conf_var at least once');
+  sleep(2);
+
   goto($_SERVER['PHP_SELF']);
 }
 
@@ -155,8 +160,6 @@ if( ! $status['gpl_check'] and $_SERVER['PHP_SELF'] != '/logout.php' )
 
    nav_bottom();
 
-  rc_exit();
-
 }
 
 // check to see if configuration is complete. if not, send us to the configuration page
@@ -188,8 +191,6 @@ if( ! $status['config_complete'] and $_SERVER['PHP_SELF'] != '/logout.php' )
   
   nav_bottom();
   
-  rc_exit();
-
 }
 
 // send the admin user to the system page if the database is in panic mode
@@ -198,8 +199,8 @@ if($_SERVER['PHP_SELF'] != '/system.php' and $status['db_panic'] and $action == 
   goto("/system.php");
 }
 
-// if the config is complete, and install_complete is zero, complete the install
-if( $status['config_complete'] and ! $status['install_complete'] )
+// if the config is complete, GPL accepted, and install_complete is zero, complete the install
+if( $status['config_complete'] and $status['gpl_check'] and ! $status['install_complete'] )
 {
   $db->do_raw_query('complete_install');
 }
@@ -221,11 +222,13 @@ if( ! $status['db_panic'] )
   // sanity check.. if we're not an admin and have no user id, there's a problem
   if( ! is_admin() and ! $uid )
     {
-      // TODO: die with a cleaner look
+
       nav_top();
+
       print "Unable to load page, no uid from session";
+
       nav_bottom();
-      rc_exit();
+
     }
   
   if ( $uid )

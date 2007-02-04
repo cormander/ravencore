@@ -109,7 +109,6 @@ function req_service($service)
 
         nav_bottom();
 
-        rc_exit();
     }
 }
 
@@ -169,6 +168,10 @@ function alert($message)
 
 function goto($url)
 {
+  global $db;
+
+  // if we have a status_mesg, store it in the session
+  if(!empty($db->status_mesg)) $_SESSION['status_mesg'] = $db->status_mesg;
 
   // session variables may not be saved before the browser changes to the new page, so we need to
   // save them here
@@ -404,7 +407,6 @@ function req_admin()
 
         nav_bottom();
 
-        rc_exit();
     }
 }
 
@@ -423,13 +425,6 @@ function is_admin()
 function nav_top()
 {
   global $js_alerts, $page_title, $shell_output, $db, $logged_in, $status;
-
-  // if the server has something to tell us, tell the user and unset the session variable
-    if (isset($_SESSION['status_mesg']))
-    {
-        $status_mesg = $_SESSION['status_mesg'];
-        $_SESSION['status_mesg'] = '';
-    }
 
     print '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"><html><head>';
     // Print page title if there is one. Otherwise, print a generic title
@@ -575,7 +570,7 @@ function nav_top()
         print '<li class="menu right"><a href="logout.php" onmouseover="show_help(\'' . __('Logout') . '\');" onmouseout="help_rst();" onclick="return confirm(\'' . __('Are you sure you wish to logout?') . '\');">' . __('Logout') . '</a></li></ul>
 <hr style="visibility: hidden;">';
 
-        print '<div><font size="2" color=red><b>' . $status_mesg . '&nbsp;</b></font></div>';
+        print '<div><!--ERRORS--></div>';
 
     }
 
@@ -585,6 +580,8 @@ function nav_top()
 
 function nav_bottom()
 {
+
+  global $db;
 
     ?>
 
@@ -603,6 +600,41 @@ function nav_bottom()
 </body>
 </html>
 <?php
+
+    $output = ob_get_contents();
+
+    ob_end_clean();
+
+    // 
+    if(is_array($_SESSION['status_mesg']))
+      {
+	foreach($_SESSION['status_mesg'] as $val)
+	  {
+	    array_push($db->status_mesg, $val);
+	  }
+
+	unset($_SESSION['status_mesg']);
+
+      }
+    else if($_SESSION['status_mesg'])
+      {
+	array_push($db->status_mesg, $_SESSION['status_mesg']);
+	unset($_SESSION['status_mesg']);
+      }
+
+    foreach( $db->status_mesg as $val )
+      {
+	$error .= $val . '<br/>';
+      }
+    
+    if($error)
+      {
+        $output = str_replace('<!--ERRORS-->','<font size="2" color=red><b>' . $error . '</b></font>',$output);
+      }
+    
+    print $output;
+
+    rc_exit();
 
 }
 

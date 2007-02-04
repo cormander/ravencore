@@ -89,7 +89,10 @@ class rcclient {
     
     // set the session ID
     session_id($this->session_id);
-    
+
+    //
+    $this->status_mesg = array();
+
     // auth $session_id $ipaddress $username $password
     $this->auth_resp = $this->do_raw_query('auth ' .
 					 $this->session_id . ' ' .
@@ -114,6 +117,9 @@ class rcclient {
     // read data until the EOT byte
     // the $data .= $c; comes FIRST so that $data won't have an EOT byte at the end of it,
     // when the string is done being built
+
+    $c = "";
+    $data = "";
 
     do {
       
@@ -163,7 +169,8 @@ class rcclient {
 	// add this to the session or just output it right away. make this session an array rather then
 	// just a string, so we can clearly count the number of errors if we need to
 
-	$_SESSION['status_mesg'] = 'ERROR on query: ' . $query . '<br />Server responded with: ' . $error;
+	//array_push($this->status_mesg, 'ERROR on query: ' . $query . '<br />Server responded with: ' . $error);
+	array_push($this->status_mesg, $error);
 
       }
 
@@ -357,6 +364,8 @@ function session_dest($id)
   global $rcdb;
 
   $rcdb->do_raw_query('session_dest User logging out');
+
+  $_SESSION = array();
 
   return true;
 }

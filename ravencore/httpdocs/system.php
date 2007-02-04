@@ -33,10 +33,7 @@ if ($_GET['cmd'])
 
 if($status['db_panic'])
 {
-  $msg = "The database connection is down. Make sure the mysql server is running, the DBI module for perl is installed, and your admin password is the same as the mysql admin user's password.";
-  if($_SESSION['status_mesg']) $_SESSION['status_mesg'] .= '<br/>' . $msg;
-  else $_SESSION['status_mesg'] = $msg;
-
+  array_push($db->status_mesg, "The database connection is down. Make sure the mysql server is running, the DBI module for perl is installed, and your admin password is the same as the mysql admin user's password.");
 }
 
 nav_top();

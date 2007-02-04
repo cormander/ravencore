@@ -36,7 +36,6 @@ if ($row[host_type] != "physical")
 
     nav_bottom();
 
-    rc_exit;
 } 
 
 // runtime hang fix

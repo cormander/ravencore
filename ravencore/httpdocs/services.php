@@ -23,6 +23,8 @@ include "auth.php";
 
 req_admin();
 
+$showall = ( $_GET['showall'] ? 'showall=1&' : '' );
+
 $services = array();
 // get contents of $RC_ROOT/etc/services, explode on return character, split on the :, and chop off the .conf, to fill the package / service array
 if ($action == "run")
@@ -33,7 +35,7 @@ if ($action == "run")
   
   if (!$_SESSION['status_mesg']) $_SESSION['status_mesg'] = $_GET['service_cmd'] . ' command sucessfull for ' . $_GET['service'];
   
-  goto($_SERVER[PHP_SELF]);
+  goto($_SERVER[PHP_SELF] . ( $_GET['showall'] ? '?showall=1' : '' ) );
 
 } 
 
@@ -52,7 +54,16 @@ nav_top();
 </tr>
 <?php
 
-$services = $status['services'];
+if($_GET['showall'])
+{
+  $services = $db->do_raw_query('list_system_daemons');
+}
+else
+{
+  $services = $status['services'];
+}
+
+//
 
 foreach ($services as $val)
 {
@@ -63,14 +74,14 @@ foreach ($services as $val)
 
             $running = '<img src="images/solidgr.gif" border=0>';
             $start = '<img src="images/start_grey.gif" border=0>';
-            $stop = '<a href="services.php?action=run&service=' . $val . '&service_cmd=stop"><img src="images/stop.gif" border=0></a>';
+            $stop = '<a href="services.php?' . $showall . 'action=run&service=' . $val . '&service_cmd=stop"><img src="images/stop.gif" border=0></a>';
 
       }
     else
       {
 	
 	$running = '<img src="images/solidrd.gif" border=0>';
-	$start = '<a href="services.php?action=run&service=' . $val . '&service_cmd=start"><img src="images/start.gif" border=0></a>';
+	$start = '<a href="services.php?' . $showall . 'action=run&service=' . $val . '&service_cmd=start"><img src="images/start.gif" border=0></a>';
 	$stop = '<img src="images/stop_grey.gif" border=0>';
 	
     } 
@@ -78,7 +89,7 @@ foreach ($services as $val)
     print $running . '</td>
 <td class="listpad">' . $start . '</td>
 <td class="listpad">' . $stop . '</td>
-<td class="listpad" align=center><a href="services.php?action=run&service=' . $val . '&service_cmd=restart"><img src="images/restart.gif" border=0></a></td></tr>';
+<td class="listpad" align=center><a href="services.php?' . $showall . 'action=run&service=' . $val . '&service_cmd=restart"><img src="images/restart.gif" border=0></a></td></tr>';
 } 
 
 ?>
@@ -86,6 +97,13 @@ foreach ($services as $val)
 </table>
 
 <?php
+
+if(!$_GET['showall'])
+{
+
+  print '<br/><a href="' . $_SERVER['PHP_SELF'] . '?showall=1">List all registered server daemons</a>';
+
+}
 
 nav_bottom();
 

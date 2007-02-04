@@ -52,19 +52,19 @@ if ($login_error) print "<br><b><font color=red>" . $login_error . "</font></b>"
 ?>
 </div>
 <div align=center>
-      <table>
-<tr><th colspan="2"><?php e_('Please Login') ?></th></tr>
+      <table class="listpad">
+<tr><th class="listpad" colspan="2"><?php e_('Please Login') ?></th></tr>
 <tr>
-<td><?php e_('Username') ?>:</td>
-<td><input name="user" size="15" value="<?php print $_POST[user];
+<td class="listpad"><?php e_('Username') ?>:</td>
+<td class="listpad"><input name="user" size="15" value="<?php print $_POST[user];
 ?>"></td>
 </tr><tr>
-<td><?php e_('Password') ?>:</td>
-<td><input name="pass" TYPE="PASSWORD" size="15" value=""></td>
+<td class="listpad"><?php e_('Password') ?>:</td>
+<td class="listpad"><input name="pass" TYPE="PASSWORD" size="15" value=""></td>
 </tr>
 <tr>
-<td><?php e_('Language') ?>:</font></td>
-<td><select name="lang" onchange="document.lang_select.lang.value=document.main.lang.value; document.lang_select.submit()">
+<td class="listpad"><?php e_('Language') ?>:</font></td>
+<td class="listpad"><select name="lang" onchange="document.lang_select.lang.value=document.main.lang.value; document.lang_select.submit()">
 <?php
 
 foreach($locales as $key => $val)
@@ -87,7 +87,7 @@ foreach($locales as $key => $val)
 </td>
 </tr>
 <tr>
-<td colspan="2" align="right">
+<td class="listpad" colspan="2" align="right">
 <div style="float: left"><font size="2">
 <?php
 if ($_ENV['RUN_SSL']) echo ($_SERVER['HTTPS'] ? __('Your login is secure') : '<a href="https://' . $_SERVER['SERVER_NAME'] . ':8080"> ' . __('Go to Secure Login') . '</a>');

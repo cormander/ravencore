@@ -21,8 +21,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 include "auth.php";
 
+$lang = $_SESSION['lang'];
+
 session_destroy();
 
-goto($_SERVER['HTTP_REFERER'] . '?lang=' . $_SESSION['lang']);
+goto($_SERVER['HTTP_REFERER'] . '?lang=' . $lang);
 
 ?>
