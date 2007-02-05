@@ -1,2 +1,5 @@
 # NameD Root direc
 NAMED_ROOT=/etc/bind
+
+# NameD Conf File
+NAMED_CONF_FILE=/etc/bind/named.conf
