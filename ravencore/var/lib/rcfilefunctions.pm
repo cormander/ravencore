@@ -29,7 +29,7 @@ use SEM;
 
 use vars qw(@ISA @EXPORT);
 @ISA     = qw(Exporter);
-@EXPORT  = qw(file_get_contents file_touch file_move file_get_array file_write file_append file_move file_delete file_copy file_chown file_chown_r file_chmod_r mkdir_p dir_list in_array);
+@EXPORT  = qw(file_get_contents file_touch file_move file_get_array file_write file_append file_move file_delete file_copy file_chown file_chown_r file_chmod_r file_diff mkdir_p dir_list find_in_path in_array pidof);
 
 #
 # File function calls... read/write/append/delete/move/etc, with locking support
@@ -324,6 +324,34 @@ sub in_array
 
     return 0;
 
+} # end sub in_array
+
+# look in the PATH enviroment for a file, return the full path if found, nothing otherwise
+
+sub find_in_path
+{
+    my ($file) = @_;
+
+    @dirs = split /:/, $ENV{PATH};
+
+    foreach my $dir (@dirs)
+    {
+	return $dir . '/' . $file if -f $dir . '/' . $file;
+    }
+
+    return;
+}
+
+# returns an array of pids of the given process name, if any
+
+sub pidof
+{
+    my ($prog) = @_;
+
+    my $pidof = `pidof $prog`;
+    chomp $pidof;
+    
+    return split / /, $pidof;
 }
 
 1;
