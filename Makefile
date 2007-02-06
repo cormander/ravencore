@@ -10,13 +10,13 @@ ETC_RAVENCORE=/etc/ravencore.conf
 
 # The current RavenCore version...
 
-VERSION=0.3.1
+VERSION=0.3.2
 
 # 3rd party program names and version numbers
 
 PHPMYADMIN=phpMyAdmin-2.9.2-all-languages-utf-8-only
 PHPSYSINFO=phpsysinfo-2.5.2
-PHPWEBFTP=phpwebftp33
+PHPWEBFTP=phpwebftp40
 AWSTATS=awstats-6.6
 SQUIRRELMAIL=squirrelmail-1.4.9a
 

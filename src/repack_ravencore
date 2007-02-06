@@ -30,7 +30,7 @@ BUILD_DIR=/var/tmp
 
 RPM_SOURCES=/usr/src/redhat/SOURCES
 
-v=0.3.1
+v=0.3.2
 
 if [ ! -d $RAVENCORE_SRC ] || [ ! -d $RC_ROOT ] || [ ! -d $BUILD_DIR ] || [ ! -d $RPM_SOURCES ]; then
     

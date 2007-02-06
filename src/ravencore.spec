@@ -2,7 +2,7 @@
 
 Summary: RavenCore Hosting Control Panel
 Name: ravencore
-Version: 0.3.1
+Version: 0.3.2
 Release: 1
 Packager: Cormander
 URL: http://www.ravencore.com/
@@ -140,6 +140,36 @@ rm -rf $RPM_BUILD_ROOT
 %{rc_root}/var
 
 %changelog
+* Mon Feb 05 2007 cormander <admin@ravencore.com>
+- version 0.3.2
+- upgraded phpwebftp to 4.0 beta
+- fixed checkconf_mrtg to add a return character to the script /etc/cron.d it writes so that it actually runs
+- fixed service_running to check init script output for "running" before "stopped", to fix amavisd always been
+  seen as stopped
+- fixed rehash_mail to correctly populate the transport maps with mail relays for domains setup to relay mail
+- fixed phpsysinfo by turning off safe_mode for just that Location in php.include
+- fixed rehash_named function to actually work
+- fixed the dependency check to make sure all files of a dependancy exist before marking the module enabled
+- added list_system_daemons function that makes the "List all registered server daemons" link on the system
+  services page possible
+- added secure_chroot_dir to vsftpd.conf to be the VHOST_ROOT
+- added rcserver.pid file and checks to TERM a running proccess if it exists on startup
+- added a catch for the HUP signal to reload the database connection and variables, which allows for the
+  connection to be inhereted by children, instead of a connection for each child process
+- added a function so when ravencore reloads via HUP, the perl code and all internal .pm files are reloaded
+- added find_in_path to rcfilefunctions.pm
+- added code in rehash_mail for redirects so spam coming into the server doesn't get redirected
+- added code in rehash_mail for redirects so the +badh delimiter is removed for emails redirected off-server
+- added a new conf variable NAMED_CONF_FILE in conf.d/dns.conf
+- added code to toggle debugging while the daemon is running, without having to completly restart
+- updated the perl code, removing variables from $rc->{CONF} that aren't from the database, such as RC_ROOT,
+  HTTPD, MYSQL_ADMIN_USER, etc (and putting them in $rc->{}) so $rc->{CONF} only contains database variables
+- updated debug function to add server time and process pid to debugging output
+- updated the build Makefile to build to completion without any errors on freebsd
+- updated rcshadow.pm to build the bsd style passwd databases if $ostype is set to 'bsd'
+- updated the debug statements to translate return characters into literal \n for cleaner debugging output
+- updated the run_cmd passwd script with a better password prompt, it correctly handles DEL
+
 * Sun Jan 28 2007 cormander <admin@ravencore.com>
 - version 0.3.1
 - fixed disp_chkconfig so that the "Startup Services" page now correctly loads
