@@ -61,14 +61,10 @@ use rcfilefunctions;
 sub new
 {
 # inherit the classname from the above package statement
-    my ($class) = @_;
+    my ($class, $ostype) = @_;
 
 # define our $self variable so we can bless it
     my $self = {
-	passwd => '/etc/passwd',
-	shadow => '/etc/shadow',
-	group => '/etc/group',
-	gshadow => '/etc/gshadow',
 	shells => '/etc/shells',
 	login_defs => '/etc/login.defs',
 	useradd => '/etc/default/useradd',
@@ -78,6 +74,39 @@ sub new
     
 # bind the class name to this object
     bless $self, $class;
+
+# define our user and group database files, and what they should contain
+# bsd and linux differ a little
+
+    $self->{ostype} = $ostype;
+
+    if($ostype eq 'bsd')
+    {
+	$self->{userdb}{passwd}{file} = '/etc/master.passwd';
+	@{$self->{userdb}{passwd}{order}} = ('user','shadow_passwd','uid','gid','class','last_change','expire','gecos','home_dir','shell');
+
+	$self->{groupdb}{group}{file} = '/etc/group';
+	@{$self->{groupdb}{group}{order}} = ('name','passwd','gid','user_list');
+
+        $self->{enc_char} = '*';
+    }
+    else
+    {
+	$self->{userdb}{passwd}{file} = '/etc/passwd';
+	@{$self->{userdb}{passwd}{order}} = ('user','passwd','uid','gid','gecos','home_dir','shell');
+
+	$self->{userdb}{shadow}{file} = '/etc/shadow';
+	@{$self->{userdb}{shadow}{order}} = ('user','shadow_passwd','last_change','min_change','max_change','warn','inact','expire','reserved');
+
+	$self->{groupdb}{group}{file} = '/etc/group';
+	@{$self->{groupdb}{group}{order}} = ('name','passwd','gid','user_list');
+
+	$self->{groupdb}{gshadow}{file} = '/etc/gshadow';
+	@{$self->{groupdb}{gshadow}{order}} = ('name','passwd','no_idea','user_list');
+
+	$self->{enc_char} = 'x';
+
+    }
 
 # set up logging, using the LOG_AUTHPRIV facility - security/authorization messages (private)
 # when we commit a log statement, use one of the following:
@@ -95,40 +124,40 @@ sub new
 # TODO: check for the existance of each of the system files we reference in this object, and if one doesn't exist,
 #       then exit with error
 
+# set our login.defs defaults, just incase we don't find a login.defs file below
+
+    $self->{UID_MIN} = 500;
+    $self->{UID_MAX} = 90000;
+    $self->{GID_MIN} = 500;
+    $self->{GID_MAX} = 90000;
+    $self->{PASS_MAX_DAYS} = 99999;
+    $self->{PASS_MIN_DAYS} = 0;
+    $self->{PASS_MIN_LEN} = 5;
+    $self->{PASS_WARN_AGE} = 7;
+
 # look in the login.defs file so we can honor its values when adding a new user / group
-    
-    my @file = file_get_array($self->{login_defs});
 
-    foreach(@file)
+    if( -f $self->{login_defs} )
     {
 	
-# these regular expressions return true if the match was successful, in which case, $1 is set to the content we want
+	my @file = file_get_array($self->{login_defs});
 	
-	if($_ =~ s/^UID_MIN\W*(\d*)$/\1/) { $self->{UID_MIN} = $1; }
-	if($_ =~ s/^UID_MAX\W*(\d*)$/\1/) { $self->{UID_MAX} = $1; }
-	if($_ =~ s/^GID_MIN\W*(\d*)$/\1/) { $self->{GID_MIN} = $1; }
-	if($_ =~ s/^GID_MAX\W*(\d*)$/\1/) { $self->{GID_MAX} = $1; }
-	
-	if($_ =~ s/^PASS_MAX_DAYS\W*(\d*)$/\1/) { $self->{PASS_MAX_DAYS} = $1; }
-	if($_ =~ s/^PASS_MIN_DAYS\W*(\d*)$/\1/) { $self->{PASS_MIN_DAYS} = $1; }
-	if($_ =~ s/^PASS_MIN_LEN\W*(\d*)$/\1/) { $self->{PASS_MIN_LEN} = $1; }
-	if($_ =~ s/^PASS_WARN_AGE\W*(\d*)$/\1/) { $self->{PASS_WARN_AGE} = $1; }
-	
-    }
-
-# check to make sure we got all the variables from above
-
-# PASS_MIN_LEN isn't used so don't include it below
-
-    foreach ( ('UID_MIN', 'UID_MAX', 'GID_MIN', 'GID_MAX', 'PASS_MAX_DAYS', 'PASS_MIN_DAYS', 'PASS_WARN_AGE' ) )
-    {
-
-# if missing, exit with error
-	if( ! defined $self->{$_} )
+	foreach(@file)
 	{
-	    print "ERROR: Unable to load variable " . $_ . " from " . $self->{login_defs} . "\n";
-	    exit(1);
+# these regular expressions return true if the match was successful, in which case, $1 is set to the content we want
+	    
+	    if($_ =~ s/^UID_MIN\W*(\d*)$/\1/) { $self->{UID_MIN} = $1; }
+	    if($_ =~ s/^UID_MAX\W*(\d*)$/\1/) { $self->{UID_MAX} = $1; }
+	    if($_ =~ s/^GID_MIN\W*(\d*)$/\1/) { $self->{GID_MIN} = $1; }
+	    if($_ =~ s/^GID_MAX\W*(\d*)$/\1/) { $self->{GID_MAX} = $1; }
+	    
+	    if($_ =~ s/^PASS_MAX_DAYS\W*(\d*)$/\1/) { $self->{PASS_MAX_DAYS} = $1; }
+	    if($_ =~ s/^PASS_MIN_DAYS\W*(\d*)$/\1/) { $self->{PASS_MIN_DAYS} = $1; }
+	    if($_ =~ s/^PASS_MIN_LEN\W*(\d*)$/\1/) { $self->{PASS_MIN_LEN} = $1; }
+	    if($_ =~ s/^PASS_WARN_AGE\W*(\d*)$/\1/) { $self->{PASS_WARN_AGE} = $1; }
+	    
 	}
+	
     }
 
 # check for and load our useradd defaults
@@ -171,69 +200,45 @@ sub new
 
 # TODO: run sanity checks against all fields read in from the passwd and shadow files
 
-# passwd file
-#       user name
-#       password
-#       numeric ID of user
-#       numeric ID of the user's initial group
-#       user's full name or description
-#       home diretory
-#       user's shell
+# get info from the userdb file(s) and store it in $self->{user}
 
-    my @file = file_get_array($self->{passwd});
-    
-    foreach(@file)
+    foreach my $userdb (keys %{$self->{userdb}})
     {
 
-# if $_ doesn't have the correct number of fields, we drop it
-
-	if($self->num_fields($_) != 7)
+	my @file = file_get_array($self->{userdb}{$userdb}{file});
+    
+	foreach(@file)
 	{
-# TODO: dump this entry to passwd.corrupt
-# skip to the next line
-	    next;
-	}
+	    next if /^#/;
+	    
+	    my @args = split /:/;
+	    
+# username is always the first one
+	    my $login = $args[0];
 
-	my ($login,$passwd,$uid,$gid,$name,$home_dir,$shell) = split /:/;
-	
-# check if the user already exists in the $user hash here
-	
-#	if( $self->item_exists('user',$login) )
-#	{
-	    
-#	    print "ERROR: Duplicate entry, user " . $login . " already exists\n";
-	    
-#	    $self->flag_rebuild;
-	    
-#	    if($uid >= $self->{user}{$login}{'uid'})
-#	    {
-# TODO: dump this NEW entry to passwd.corrupt
-		
-# skip to the next user to examine
-#		next;
-#	    }
-#	    else
-#	    {
-# TODO: dump the previous entry to passwd.corrupt and proceed with the below
-		
-#	    }
-	    
-#	}
-	
-# add this user to an array by UID so we can map the uid to the name
-	$self->item_map_add('user',$uid,$login);
-	
-# set our user hash for this user
-	$self->{user}{$login}{'passwd'} = $passwd;
-	$self->{user}{$login}{'uid'} = $uid;
-	$self->{user}{$login}{'gid'} = $gid;
-	$self->{user}{$login}{'name'} = $name;
-	$self->{user}{$login}{'home_dir'} = $home_dir;
+# count the number of elements in order
+	    my $c = @{$self->{userdb}{$userdb}{order}};
+	    my $i;
 
+# walk down the order
+	    for( $i = 0; $i < $c; $i++ )
+	    {
+		$self->{user}{$login}{$self->{userdb}{$userdb}{order}[$i]} = $args[$i];
+	    }
+	    
+	} # end foreach(@file)
+	
+    } # end foreach my $userdb (keys %{$self->{userdb}})
+
+# confirm the login shell and add every user to the item_maps
+    foreach my $login (keys %{$self->{user}})
+    {
 # check to make sure this is a valid shell
-	$self->{user}{$login}{'shell'} = $self->confirm_shell($shell, $uid);
-	
-    }
+	$self->{user}{$login}{'shell'} = $self->confirm_shell($self->{user}{$login}{'shell'}, $self->{user}{$login}{'uid'});
+	 
+# add this user to an array by UID so we can map the uid to the name
+	$self->item_map_add('user',$self->{user}{$login}{'uid'},$login);
+   }
 
 # group file
 #       group name
@@ -241,120 +246,43 @@ sub new
 #       numeric ID of group
 #       comma separted list of users in the group
 
-    my @file = file_get_array($self->{group});
-    
-    my $num_lines = @file;
 
-    foreach(@file)
+# get info from the groupdb file(s) and store it in $self->{group}
+
+    foreach my $groupdb (keys %{$self->{groupdb}})
     {
-	
-	if($self->num_fields($_) != 4)
+
+	my @file = file_get_array($self->{groupdb}{$groupdb}{file});
+    
+	foreach(@file)
 	{
-# TODO: dump this entry to passwd.corrupt
-# skip to the next line
-	    next;
-	}
-
-	my ($name,$passwd,$gid,$user_list) = split /:/;
-
-# check if the group already exists
-	
-#	if( $self->item_exists('group',$name) )
-#	{
+	    next if /^#/;
 	    
-#	    print "ERROR: Duplicate entry, group " . $name . " already exists\n";
+	    my @args = split /:/;
 	    
-#	    $self->flag_rebuild;
-	    
-#	    if($gid >= $self->{group}{$name}{'gid'})
-#	    {
-# TODO: dump this NEW entry to group.corrupt
-		
-# skip to the next group to examine
-#		next;
-#	    }
-#	    else
-#	    {
-# TODO: dump the previous entry to group.corrupt and proceed with the below
-		
-#	    }
-	    
-#	}
-	
-# add this group to an arry by GID so we can map the gid to the name
-	$self->item_map_add('group',$gid,$name);
-	
-	$self->{group}{$name}{'gid'} = $gid;
-	$self->{group}{$name}{'passwd'} = $passwd;
-# the user_list is an array
-	@{$self->{group}{$name}{'user_list'}} = split /,/, $user_list;
-	
-    }
+# group is always the first one
+	    my $group = $args[0];
 
-# shadow file
-#       user name
-#       user's encrypted password
-#       days since Jan 1, 1970 password was last changed.
-#       days before which password may not be changed.
-#       days after which password must be changed.
-#       days before password is to expire that user is warned of pending password expiration.
-#       days after password expires that account is considered inactive and disabled.
-#       days since Jan 1, 1970 when account will be disabled.
-#       reserved for future use.
+# count the number of elements in order
+	    my $c = @{$self->{groupdb}{$groupdb}{order}};
+	    my $i;
 
-    my @file = file_get_array($self->{shadow});
+# walk down the order
+	    for( $i = 0; $i < $c; $i++ )
+	    {
+		$self->{group}{$group}{$self->{groupdb}{$groupdb}{order}[$i]} = $args[$i];
+	    }
+	    
+	} # end foreach(@file)
+	
+    } # end foreach my $groupdb (keys %{$self->{groupdb}})
     
-    foreach(@file)
+# add this group to an array by GID so we can map the gid to the name
+    foreach my $group (keys %{$self->{group}})
     {
-	if($self->num_fields($_) != 9)
-	{
-# TODO: dump this entry to passwd.corrupt
-# skip to the next line
-	    next;
-	}
-
-	my ($login,$passwd,$last_change,$min_change,$max_change,$warn,$inact,$expire,$reserved) = split /:/;
-
-# TODO: make sure this user exists... if not, dump this entry to shadow.corrupt
-	
-# set the shadow_passwd 
-	$self->{user}{$login}{'shadow_passwd'} = $passwd unless $self->{user}{$login}{'passwd'} ne "x";
-# if there is no shadow_passwd, set to !!
-	$self->{user}{$login}{'shadow_passwd'} = '!!' unless $self->{user}{$login}{'shadow_passwd'};
-	
-	$self->{user}{$login}{'last_change'} = $last_change;
-	$self->{user}{$login}{'min_change'} = ( $min_change ? $min_change : $self->{PASS_MIN_DAYS} );
-	$self->{user}{$login}{'max_change'} = ( $max_change ? $max_change : $self->{PASS_MAX_DAYS} );
-	$self->{user}{$login}{'warn'} = ( $warn ? $warn : $self->{PASS_WARN_AGE} );
-	$self->{user}{$login}{'inact'} = ( $inact ? $inact : $self->{INACTIVE} );
-	$self->{user}{$login}{'expire'} = ( $expire ? $expire : $self->{EXPIRE} );
-	$self->{user}{$login}{'reserved'} = $reserved;
-	
+	$self->item_map_add('group',$self->{group}{$group}{'gid'},$group);
     }
     
-# gshadow file
-#       group name
-#       group's encrypted password
-#       ????
-#       user list
-
-    my @file = file_get_array($self->{gshadow});
-    
-    foreach(@file)
-    {
-	
-	my ($name,$passwd,$no_idea,$user_list) = split /:/;
-
-	$self->{group}{$name}{'shadow_passwd'} = $passwd unless $self->{group}{$name}{'passwd'} ne "x";
-# if there is no shadow_passwd, oh well!
-# TODO: figure out what we're supposed to do here
-	
-# the user_list is an array
-# TODO: diff the group user_list and the gshadow user_list... and dump to syslog any differences, assume /etc/group 
-#       is correct and sync /etc/gshadow with it.... dump gshadow to gshadow.corrupted
-#    @{$self->{group}{$name}{'user_list'}} = split /,/, $user_list;
-	
-    }
     
 #
 # Now that we have all our users and groups in memory, we can do some additional checks on them
@@ -372,7 +300,7 @@ sub new
 	if($self->{group}{$name}{'gid'} > $self->{GID_MAX})
 	{
 	    
-	    print "ERROR: exceeded GID MAX of " . $self->{GID_MAX} . "\n";
+#	    print "ERROR: exceeded GID MAX of " . $self->{GID_MAX} . "\n";
 	    
 # look for the lowest available UID and automatically assign it to this user
 
@@ -397,7 +325,7 @@ sub new
 	if($self->{user}{$login}{'uid'} > $self->{UID_MAX})
 	{
 	    
-	    print "ERROR: exceeded UID MAX of " . $self->{UID_MAX} . "\n";
+#	    print "ERROR: exceeded UID MAX of " . $self->{UID_MAX} . "\n";
 	    
 # look for the lowest available UID and automatically assign it to this user
 
@@ -442,6 +370,8 @@ sub new
 #	$self->add_user(
 
     }
+
+#
 
 # return our object to the caller
     return $self;
@@ -522,15 +452,17 @@ sub confirm_group_users
     my ($self, $name) = @_;
     
     my $i = 0;
+
+    my @user_list = split /,/, $self->{group}{$name}{'user_list'};
     
-    foreach (@{$self->{group}{$name}{'user_list'}})
+    foreach (@user_list)
     {
 # if the user doesn't exist, remove it from the group
 	if( ! $self->{user}{$_} )
 	{
-	    print "ERROR: group " . $name . " contains a non-existant user: " . $_ . ", removing it\n";
-# kill this entry from the group and shift all the elements down		
-	    splice @{$self->{group}{$name}{'user_list'}}, $i, 1;
+#	    print "ERROR: group " . $name . " contains a non-existant user: " . $_ . ", removing it\n";
+# kill this entry from the group
+	    $self->{group}{$name}{'user_list'} =~ s/$_,?//;
 # flag for a rebuild
 	    $self->flag_rebuild;
 	}
@@ -713,8 +645,9 @@ sub add_user
 
 # set our user hash for this user
 
+    $self->{user}{$login}{'user'} = $login;
 # by default, encrypt the password
-    $self->{user}{$login}{'passwd'} = 'x';
+    $self->{user}{$login}{'passwd'} = $self->{enc_char};
     $self->{user}{$login}{'uid'} = $uid;
     $self->{user}{$login}{'gid'} = $gid;
     $self->{user}{$login}{'home_dir'} = $home_dir;
@@ -819,7 +752,7 @@ sub delete_user
 
 sub add_group
 {
-    my ($self,$name,$gid,@user_list) = @_;
+    my ($self,$name,$gid,$user_list) = @_;
 
     $self->add_item_checks('group',$name);
 
@@ -827,10 +760,10 @@ sub add_group
 # TODO: make a switch for adding a system group
     $gid = $self->assign_id('group',$name) unless $gid;
 
+    $self->{group}{$name}{'name'} = $name;
     $self->{group}{$name}{'gid'} = $gid;
 
-# the user_list is an array
-    @{$self->{group}{$name}{'user_list'}} = @user_list;
+    $self->{group}{$name}{'user_list'} = $user_list;
 # make sure all the users in this group exist
     $self->confirm_group_users($name);
 
@@ -848,7 +781,16 @@ sub group_user_add
 {
     my ($self,$name,$user) = @_;
 
-    push @{$self->{group}{$name}{'user_list'}}, $user;
+# TOOD: check to make sure the user is already in the group
+
+    if( $self->{group}{$name}{'user_list'} )
+    {
+	$self->{group}{$name}{'user_list'} .= ',' . $user;
+    }
+    else
+    {
+	$self->{group}{$name}{'user_list'} = $user;
+    }
 
     $self->flag_rebuild("new user added to group: name=" . $user . ", group=" . $name);
 
@@ -870,104 +812,84 @@ sub commit
 {
     my ($self) = @_;
 
-# note to self..... "my $passwd_file, $shadow_file, $group_file, $gshadow_file;" only declairs $passwd_file as local,
-# the rest are then considered global... and wierd things start happening to the group/shadow/gshadow files.... so
-# explicity declair them all as local variables individually
-    my $passwd_file;
-    my $shadow_file;
-    my $group_file;
-    my $gshadow_file;
-
 # if we had any errors above, our rebuild_shadows flag should be set to 1 so we know to re-write the files with corrections
 
     if( $self->{rebuild_shadows} != 0 )
     {
 
-# TODO: save a copy of the file to passwd- , shadow- , etc before we overwrite them
+# make sure that the user with uid 0 is root
+        $self->{useritem_map}{sprintf("U%.7u",0)} = "root";
 
-# build our passwd and shadow files
-	
-# sort our hash so we build the file in order of UID
-	foreach my $key (sort(keys %{$self->{useritem_map}}))
-	{
-	    
-# get the name of this user
-	    my $login = $self->{useritem_map}{$key};
-
-# if there isn't a $login, then skip the below... this should probably never happen
-	    next unless $login;
-
-# append to the passwd file
-	    $passwd_file .= $login . ":" .
-		$self->{user}{$login}{'passwd'} . ":" .
-		$self->{user}{$login}{'uid'} . ":" .
-		$self->{user}{$login}{'gid'} . ":" .
-		$self->{user}{$login}{'name'} . ":" .
-		$self->{user}{$login}{'home_dir'} . ":" .
-		$self->{user}{$login}{'shell'} . "\n";
-	    
-# append to the shadow file
-	    $shadow_file .= $login . ":" .
-		$self->{user}{$login}{'shadow_passwd'} . ":" .
-		$self->{user}{$login}{'last_change'} . ":" .
-		$self->{user}{$login}{'min_change'} . ":" .
-		$self->{user}{$login}{'max_change'} . ":" .
-		$self->{user}{$login}{'warn'} . ":" .
-		$self->{user}{$login}{'inact'} . ":" .
-		$self->{user}{$login}{'expire'} . ":" .
-		$self->{user}{$login}{'reserved'} . "\n";
-
-	}
-
-# build our group and gshadow files
-
-# sort our hash so we order on GID
-	foreach my $key (sort(keys %{$self->{groupitem_map}}))
+	foreach my $db ( ('userdb','groupdb') )
 	{
 
-# get the group name
-	    my $name = $self->{groupitem_map}{$key};
+	    my $item_map;
+	    my $item;
 
-# next if no group name, this should never happen
-	    next unless $name;
-
-# local variable $user_list will be comma seperated of all the users
-	    my $user_list;
-
-# loop through the array	    
-	    while ( my $usr = shift @{$self->{group}{$name}{'user_list'}} )
+	    if( $db eq "userdb" )
 	    {
-# if there are more users in the array, append a comma to the end. otherwise, don't so we don't end with a comma
-		$user_list .= $usr . ( @{$self->{group}{$name}{'user_list'}} ? ',' : '' );
+		$item_map = 'useritem_map';
+		$item = 'user';
 	    }
 
-# append to the group file
-	    $group_file .= $name . ":" .
-		$self->{group}{$name}{'passwd'} . ":" .
-		$self->{group}{$name}{'gid'} . ":" .
-		$user_list . "\n";
+	    if( $db eq "groupdb" )
+	    {
+		$item_map = 'groupitem_map';
+		$item = 'group';
+	    }
 
-# append to the gshadow file
-	    $gshadow_file .= $name . ":" .
-		$self->{group}{$name}{'shadow_passwd'} . ":" .
-		$self->{group}{$name}{'no_idea'} . ":" .
-		$user_list . "\n";
+# walk down the $db files and write data
+	    
+	    foreach my $itemdb (keys %{$self->{$db}})
+	    {
+		
+		my $data;
+		
+# sort our hash so we build the file in order of UID
+		foreach my $key (sort(keys %{$self->{$item_map}}))
+		{
+		    
+# get the name of this user
+		    my $user = $self->{$item_map}{$key};
+		    
+# if there isn't a $user, then skip the below... this should probably never happen
+		    next unless $user;
+		    
+# count the number of elements in order
+		    my $c = @{$self->{$db}{$itemdb}{order}};
+		    my $i;
+		    
+# walk down the order
+		    for( $i = 0; $i < $c; $i++ )
+		    {
+			$data .= $self->{$item}{$user}{$self->{$db}{$itemdb}{order}[$i]}. ':';
+		    }
+		    
+# chop the last : off
+		    chop $data;
+		    
+# return character at the end of this line
+		    $data .= "\n";
+		    
+		}
 
+# save a copy of the files to passwd- , shadow- , etc before we overwrite them
+		file_copy($self->{$db}{$itemdb}{file}, $self->{$db}{$itemdb}{file} . '-');
+
+# write the gathered data to the file
+		file_write($self->{$db}{$itemdb}{file}, $data);
+
+	    }
+		
 	}
-# backup the files
-# TODO: instead of copy blindly, get the contents, write the new, and only write a backup if they differ
-	file_copy($self->{passwd}, $self->{passwd} . '-');
-	file_copy($self->{shadow}, $self->{shadow} . '-');
-	file_copy($self->{group},$self->{group} . '-' );
-	file_copy($self->{gshadow}, $self->{gshadow} . '-');
-
-# write the files
-	file_write($self->{passwd}, $passwd_file);
-	file_write($self->{shadow}, $shadow_file);
-	file_write($self->{group}, $group_file);
-	file_write($self->{gshadow}, $gshadow_file);
 
     } # end if( $self->{rebuild_shadows} != 0 )
+
+# BSD requires pwd_mkdb be ran afterwards
+    if($self->{ostype} eq 'bsd')
+    {
+	system('pwd_mkdb ' . $self->{userdb}{passwd}{file});
+    }
     
 # destroy ourself at end of commit
     undef $self;
