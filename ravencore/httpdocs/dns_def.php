@@ -43,7 +43,7 @@ $num = $db->data_num_rows();
 if ($num == 0) print __("No default DNS records setup for this server");
 else
 {
-    print '<h3>' . __('Default DNS for domains setup on this server') . '</h3><form method=post><table class="listpad"><tr><th class="listpad">&nbsp;</th><th class="listpad">' . _('Record Name') . '</th><th class="listpad">' . __('Record Type') . '</th><th class="listpad">' . __('Record Target') . '</th></tr>';
+    print '<h3>' . __('Default DNS for domains setup on this server') . '</h3><form method=post><table class="listpad"><tr><th class="listpad">&nbsp;</th><th class="listpad">' . __('Record Name') . '</th><th class="listpad">' . __('Record Type') . '</th><th class="listpad">' . __('Record Target') . '</th></tr>';
 
     while ( $row = $db->data_fetch_array($result) )
     {
