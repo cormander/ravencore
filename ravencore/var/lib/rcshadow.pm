@@ -781,8 +781,17 @@ sub group_user_add
 {
     my ($self,$name,$user) = @_;
 
-# TOOD: check to make sure the user is already in the group
-
+	# check to make sure the user isn't already in the group
+	
+    if( $self->{group}{$name}{'user_list'} =~ /^$user$/ or
+        $self->{group}{$name}{'user_list'} =~ /^$user,/ or
+        $self->{group}{$name}{'user_list'} =~ /,$user$/ or
+        $self->{group}{$name}{'user_list'} =~ /,$user,/ )
+    {
+		# if so, do nothing
+        return;
+    } 
+	
     if( $self->{group}{$name}{'user_list'} )
     {
 	$self->{group}{$name}{'user_list'} .= ',' . $user;
