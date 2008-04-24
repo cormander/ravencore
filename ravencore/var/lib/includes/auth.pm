@@ -294,7 +294,7 @@ sub auth_user
     $result->finish();
 
 # success if %row exists
-    return 1 if %row;
+	return 1 if $result->rows;
 
 # we only get here if we failed auth.. call the failed auth function
     return $self->auth_failure($username);
