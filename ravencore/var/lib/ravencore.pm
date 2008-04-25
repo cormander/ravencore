@@ -1547,12 +1547,8 @@ sub rehash_httpd
 	    
 	    $data .= "<VirtualHost *:80>\n";
 	    $data .= "\tServerName\t" . $row->{'name'} . "\n";
-	    if( $row->{'www'} )
-	    {
-		$data .= "\tServerAlias  www." . $row->{'name'} . "\n";
-	    }
 	    
-	    $data .= &server_alias($row->{'name'}, $row->{'www'});
+	    $data .= $self->server_alias($row->{'name'}, $row->{'www'});
 	    
 	    $data .= "\tRedirectPermanent / \"" . $row->{'redirect_url'} . "\"\n";
 	    $data .= "</VirtualHost>\n";
@@ -1656,11 +1652,6 @@ sub make_virtual_host {
 #    
     $data .= "<VirtualHost *:" . $port . ">\n";
     $data .= "\tServerName   " . $domain . ":" . $port . "\n";
-    
-    if( $www eq "true")
-    {
-	$data .= "\tServerAlias  www." . $domain . "\n";
-    }
     
 # Does this domain have any aliases for it?
     $data .= $self->server_alias($domain, $www);
@@ -1820,8 +1811,9 @@ sub server_alias
     my ($self, $domain, $www) = @_;
 
     my $data;
+    my $sql;
+    my $result;
 
-#    
     $data = "\tServerAlias  " . $domain . "\n";
     
 #    $self->debug($domain . " has server alias " . $domain);
@@ -1829,7 +1821,16 @@ sub server_alias
     if ( $www eq "true" )
     {
 	$data .=  "\tServerAlias  www." . $domain . "\n";
-	$self->debug($domain . " has server alias www." . $domain );
+#      $self->debug($domain . " has server alias www." . $domain );
+    }
+
+    #Find domains aliased to this domain, without this they will just show the default...
+    $sql = "SELECT name, www FROM domains WHERE redirect_url = '" . $domain . "'" ;
+    $result = $self->{dbi}->prepare($sql);
+    $result->execute;
+    while ( $row = $result->fetchrow_hashref )
+    {
+       $data .= $self->server_alias($row->{'name'}, $row->{'www'});
     }
     
     return $data;
@@ -2457,6 +2458,7 @@ sub rehash_named
 
 # TODO: parse $query
 
+	my $rebuild_conf = 1;
     my $all = 1;
 
     my @domain_list;
@@ -3102,6 +3104,54 @@ sub mrtg
     
     return $data;
 
+}
+
+sub ftp_del
+{
+    my ($self, $username) = @_;
+	
+# check to make sure this is a legitimate ID being deleted
+    if ( $username =~ /^[a-zA-Z0-9-_\.]+$/ )
+    {
+		my $ret = `/usr/bin/id -u $username`;
+		if ($ret ge 500) # only delete ID's above 500
+		{
+			system("/usr/sbin/userdel " . $username);
+			return 1;
+		}
+		else
+		{
+			system("echo ftp_del error: id was less than 500: " . $username . " -UID- " . $ret);
+			return 0;
+		}
+    }
+    else
+    {
+		return 0;
+    }
+}
+
+sub domain_del
+{
+    my ($self, $domain) = @_;
+	
+# remove the domain from the apache directory
+    if( length($domain) gt 0 )
+    {
+		system("/bin/rm -Rf --directory " . $self->{CONF}{VHOST_ROOT} . "/" . $domain);
+		$self->rehash_httpd("--all");
+	}
+    else
+    {
+        return 0;
+    }
+}
+
+sub AUTOLOAD
+{
+    my ($self) = @_;
+
+    $self->debug("WARNING: Caught undefined function via AUTOLOAD");
 }
 
 1; # end package ravencore
