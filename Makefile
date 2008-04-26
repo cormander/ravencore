@@ -10,7 +10,7 @@ ETC_RAVENCORE=/etc/ravencore.conf
 
 # The current RavenCore version...
 
-VERSION=0.3.2
+VERSION=0.3.3
 
 # 3rd party program names and version numbers
 
@@ -40,12 +40,6 @@ all:
 	@echo "               make RC_ROOT=/new/target/directory install"
 
 build:
-
-# make sure we're starting fresh
-	rm -rf ./ravencore
-
-# unwrap ravencore
-	tar zxf ./src/ravencore.tar.gz
 
 # make sure /bin/bash exists
 	@if [ ! -f /bin/bash ] && [ -f /usr/local/bin/bash ]; then ln -s /usr/local/bin/bash /bin/bash; fi

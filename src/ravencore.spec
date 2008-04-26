@@ -2,15 +2,18 @@
 
 Summary: RavenCore Hosting Control Panel
 Name: ravencore
-Version: 0.3.2
+Version: 0.3.3
 Release: 1
-Packager: Cormander
+Packager: cormander
+Vendor: RavenCore
 URL: http://www.ravencore.com/
 Source0: %{name}-%{version}.tar.gz
 License: GPL
 Group: System Environment/Daemons
 BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-root
+# For now, don't preocess dependancies
+AutoReq: no
 
 %description
 A Free Hosting Control Panel for Linux intended to replace the need
@@ -140,6 +143,15 @@ rm -rf $RPM_BUILD_ROOT
 %{rc_root}/var
 
 %changelog
+* Fri Apr 25 2007 cormander <admin@ravencore.com>
+- version 0.3.3
+- fixed function syntax error on dns_def.php
+- fixed return value type in auth.pm
+- fixed recursive server aliases via the server_alias function
+- ftp_del and domain_del now work as expected and don't return an error
+- calls to undefined functions don't crash the daemon anymore
+- rcadmin and apache are now only added to /etc/group once
+
 * Mon Feb 05 2007 cormander <admin@ravencore.com>
 - version 0.3.2
 - upgraded phpwebftp to 4.0 beta
