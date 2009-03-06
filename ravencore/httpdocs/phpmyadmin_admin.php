@@ -21,43 +21,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 include "auth.php";
 
-req_admin();
-
-if( $action == "phpmyadmin_login" )
-{
-
-  if( ! $db->do_raw_query('verify_passwd ' . $_POST['phpmyadmin_passwd']) )
-    {
-      $error = "Password incorrect";
-    }
-  else
-    {
-      
-      $lang = $_SESSION['lang'];
-      
-      $_SESSION = array();
-
-      $_SESSION['ravencore_login'] = 'admin'; // TODO: FIX THIS, its just a quick hack to get it working
-      $_SESSION['ravencore_passwd'] = $_POST['phpmyadmin_passwd'];
-      $_SESSION['ravencore_name'] = '';
-      $_SESSION['ravencore_phpmyadmin_lang'] = $locales[$lang]['phpmyadmin'];
-      
-      goto("phpmyadmin/");
-      
-    }
-
-}
+goto("/phpmyadmin/");
 
 ?>
-<center>
-<h1>phpMyAdmin</h1>
-<?php
-if($error) print '<b><font color="red">' . $error . '</font></b><br/>';
-?>
-<b>Please re-authenticate your <?=$CONF['MYSQL_ADMIN_USER']?> password:</b>
-<br />
-<form method="post">
-<input type="password" name="phpmyadmin_passwd"> <input type="submit" value="Submit">
-<input type="hidden" name="action" value="phpmyadmin_login">
-</form>
-</center>

@@ -21,22 +21,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 include "auth.php";
 
-if (!$did or !$dbid or !$dbu) goto("users.php?uid=$uid");
-
-$sql = "select name, login, passwd from data_bases d, data_base_users u where db_id = d.id and d.id = '$dbid' and u.id = '$dbu' and did = '$did'";
-$result = $db->data_query($sql);
-
-$row = $db->data_fetch_array($result);
-
-$lang = $_SESSION['lang'];
-
-$_SESSION = array();
-
-$_SESSION['ravencore_name'] = $row[name];
-$_SESSION['ravencore_login'] = $row[login];
-$_SESSION['ravencore_passwd'] = $row[passwd];
-$_SESSION['ravencore_phpmyadmin_lang'] = $locales[$lang]['phpmyadmin'];
-
-goto("phpmyadmin/");
+goto("/phpmyadmin/");
 
 ?>
