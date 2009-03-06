@@ -4,7 +4,7 @@ Summary: RavenCore Hosting Control Panel
 Name: ravencore
 Version: 0.3.3
 Release: 1
-Packager: cormander
+Packager: Corey Henderson <corman@cormander.com>
 Vendor: RavenCore
 URL: http://www.ravencore.com/
 Source0: %{name}-%{version}.tar.gz
