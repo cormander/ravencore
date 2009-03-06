@@ -20,15 +20,15 @@
 
 # version
 
-v_tree=0.3.x
+v_tree=ravencore-0.3.x
 v=0.3.3
 
 RPM_SOURCES=/usr/src/redhat/SOURCES
 
 # simple check to make sure we're in the right directory....
 
-if [ ! -f GPL ] || [ ! -f LICENSE ] || [ ! -f Makefile ] || [ ! -f README.install ] || [ ! -d  src ] || [ ! -d .svn ] || [ ! -f svn2rpm.sh ]; then
-	echo "Don't appear to be in the subversion directory..."
+if [ ! -f GPL ] || [ ! -f LICENSE ] || [ ! -f Makefile ] || [ ! -f README.install ] || [ ! -d  src ] || [ ! -d .git ] || [ ! -f git2rpm.sh ]; then
+	echo "Don't appear to be in the git directory..."
 	exit 1
 fi
 
@@ -37,12 +37,12 @@ fi
 cd ..
 
 if [ ! -d $v_tree ]; then
-	echo "WTF! The subversion directory isn't named $v_tree..."
+	echo "WTF! The git directory isn't named $v_tree..."
 	exit 1
 fi
 
 mv $v_tree ravencore-$v
-tar --exclude ".svn" -czpf $RPM_SOURCES/ravencore-$v.tar.gz ravencore-$v
+tar --exclude ".git" -czpf $RPM_SOURCES/ravencore-$v.tar.gz ravencore-$v
 mv ravencore-$v $v_tree
 
 cd $v_tree
