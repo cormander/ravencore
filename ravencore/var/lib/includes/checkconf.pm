@@ -500,11 +500,12 @@ sub checkconf
         $reload_ravencore = 1;
     }
 
-# make sure the system httpd binary matches what we have running ravencore
+# make sure the we're linked to the system httpd binary
 
-    if(file_get_contents($self->{HTTPD}) ne file_get_contents($self->{RC_ROOT} . '/sbin/ravencore.httpd'))
+    if( ! -l $self->{RC_ROOT} . '/sbin/ravencore.httpd')
     {
-        file_copy($self->{HTTPD}, $self->{RC_ROOT} . '/sbin/ravencore.httpd');
+	unlink($self->{RC_ROOT} . '/sbin/ravencore.httpd');
+        system("ln -s " . $self->{HTTPD} . " " . $self->{RC_ROOT} . '/sbin/ravencore.httpd');
 
         $reload_ravencore = 1;
 
