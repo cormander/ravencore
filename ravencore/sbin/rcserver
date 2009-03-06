@@ -92,6 +92,7 @@ $rc->debug("Proccess detatched from terminal, further output logged at " . $logf
 # close our standard filehandles, and redirect them to a logfile
 close STDERR;
 close STDOUT;
+close STDIN;
 open STDOUT, ">>" . $logfile;
 # tie STDERR with STDOUT
 open STDERR, ">&STDOUT";
