@@ -23,6 +23,18 @@ include "auth.php";
 
 req_service("web");
 
+if ($action) {
+    $sql = "delete from domain_ips where did = " . $did;
+    $db->data_query($sql);
+
+    if(is_array($_POST['ip_addresses'])) {
+	foreach ($_POST['ip_addresses'] as $key => $val) {
+	    $sql = "insert into domain_ips values ($did, '$val')";
+	    $db->data_query($sql);
+	}
+    }
+}
+
 if ($action == "edit")
 {
     if (!$did) goto("domains.php");
@@ -138,6 +150,24 @@ else
 
     if ($_POST[host_type] or $row[host_type] != "none")
     {
+ // array of possible IPs
+	$ip_addresses = Array();
+	$sql = "select ip_address from ip_addresses where uid = '$uid' or uid = 0";
+	$result_ips = $db->data_query($sql);
+	while ( $row_ips = $db->data_fetch_array($result_ips) ) {
+		$ip_addresses[$row_ips['ip_address']] = $row_ips['ip_address'];
+	}
+
+  // array of currently used IPs
+	$row['ip_addresses'] = Array();
+	$sql = "select ip_address from domain_ips where did = " . $row['id'];
+	$result_ips = $db->data_query($sql);
+	while ( $row_ips = $db->data_fetch_array($result_ips) ) {
+		$row['ip_addresses'][$row_ips['ip_address']] = $row_ips['ip_address'];
+	}
+
+	print __("IP Address") . ": " . selection_array("ip_addresses", $row['ip_addresses'], -1, "MULTIPLE", $ip_addresses) . "<p>";
+
         print __("www prefix") . ": <input type=radio name=www value=true";
         if ($row[www] == "true") print " checked";
         print "> " . __('Yes') . " <input type=radio name=www value=false";

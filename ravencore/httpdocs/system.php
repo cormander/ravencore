@@ -52,6 +52,10 @@ nav_top();
 
 <p>
 
+<a href="ip_addresses.php" onmouseover="show_help('<?php e_('Manage IP addresses')?>');" onmouseout="help_rst();"><?php e_('IP Addresses')?></a>
+
+<p>
+
 <a href="sessions.php" onmouseover="show_help('<?php e_('View who is logged into the server, and where from')?>');" onmouseout="help_rst();"><?php e_('Login Sessions')?></a>
 
 <?php

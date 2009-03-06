@@ -1379,126 +1379,35 @@ sub rehash_httpd
 
     return unless exists $modules{web};
 
-# TODO: This script's usage output
-#    sub usage
-#    {
-#	&die_error("Usage: rehash_httpd [options] domain_list\n" . 
-#		   "\t--all      Rebuild httpd.include for all domains on the server\n" .
-#		   "\t--restart  Do a full restart of apache instead of just a reload\n" .
-#		   "\t-v         Be verbose\n" . 
-#		   "\n\t           domain_list is one or more domains, seperated by spaces\n");
-#    }
-    
-#
-    
-    my $all = 0;
-    my $all = 1;
-    
-#
-    
     if( ! $self->{CONF}{VHOST_ROOT} )
     {
 	$self->do_error("VHOST_ROOT not defined");
 	return;
     }
 
-#
     my $restart_httpd;
-# TODO: fix
-#    while( $arg = shift @ARGV ) {
-#    if( $arg eq "--all" )    {	$all = 1;    }
-#    elsif( $arg eq "--restart" )    {	$restart_httpd = 1;    }
-#    elsif( $arg eq "-v" )    {	$verbose = 1;    }    else    {	$domain_todo = $arg;    }
-#    }
 
 # Always make sure that the vhost root exists and is readable
-
     mkdir_p($self->{CONF}{VHOST_ROOT});
 
 # chown / chmod the vhost root with correct permissions
     file_chown('root:servgrp',$self->{CONF}{VHOST_ROOT});
     chmod 0755, $self->{CONF}{VHOST_ROOT};
 
+# make sure ip addresses are loaded into the db
+    $self->ip_list;
+
     my $sql;
-    
-    if($all == 1)
-    {
-	$sql = "select d.*, u.login from domains d, sys_users u where d.suid = u.id";
-    }
-    else
-    {
-# TODO: FIX ME
-	$sql = "select d.*, login from domains d, sys_users u where d.suid = u.id and d.name = '" . $sql . "'";
-    }
-    
-    $self->debug("Begin building domain httpd.include files");
-    
-    my $result = $self->{dbi}->prepare($sql);
+    my $data = "";
+    my $vhost_data = "";
 
-    $result->execute;
-
-    while( my $row = $result->fetchrow_hashref )
-    {
-
-	next unless $row->{'name'};
-
-# Check to see if the ftp user exists. If it doesn't exist, attempt to add it
-# TODO: fix this
-#    if( "$($_grep $ftp_user: /etc/passwd)" )
-#    {
-#	$db->run_cmd("rehash_ftp $ftp_user");
-#    }
-
-# Make sure the proper directories exist and that they are set to the correct permissions
-
-	my $domain_root = $self->{CONF}{VHOST_ROOT} . "/" . $row->{'name'};
-	
-	$self->debug("Building conf file for " . $row->{'name'});
-
-	mkdir_p( (
-			 $domain_root,
-			 $domain_root . "/var/log",
-			 $domain_root . "/var/awstats",
-			 $domain_root . "/httpdocs",
-			 $domain_root . "/conf",
-			 $domain_root . "/tmp",
-			 )
-			);
-	
-# chmod / chown the directories
-
-	file_chown("root:servgrp", $domain_root);
-	file_chown($row->{'login'} . ":servgrp", $domain_root . "/httpdocs", $domain_root . "/tmp");
-	
-	chmod 0750, $domain_root,
-	$domain_root . "/httpdocs";
-	
-	chmod 0770, $domain_root . "/tmp";
-	
-# Build the virtual host tag
-	
-	my $data = $self->make_virtual_host($row->{'name'}, $row->{'www'}, $row->{'host_dir'}, $row->{'host_cgi'}, $row->{'host_php'}, 0);
-	
-	if( $row->{'host_ssl'} eq "true" )
-	{
-	    $data .= "\n" . $self->make_virtual_host($row->{'name'}, $row->{'www'}, $row->{'host_dir'}, $row->{'host_cgi'}, $row->{'host_php'}, 1);
-	}
-	
-# write the data to the httpd vhost include file
-	
-	file_write($domain_root . "/conf/httpd.include", $data);
-	
-    } # end foreach $domain (@domain_list)
-    
-    $self->debug("End building domain config files");
-    
 # set the vhosts file
     
     my $vhosts = $self->{RC_ROOT} . "/etc/vhosts.conf";
 
 # make sure that no other apache configuration denies access to the domains
     
-    my $data = "<Directory " . $self->{CONF}{VHOST_ROOT} . ">\n";
+    $data .= "<Directory " . $self->{CONF}{VHOST_ROOT} . ">\n";
     $data .= "Order allow,deny\n";
     $data .= "Allow from all\n";
     $data .= "</Directory>\n";
@@ -1514,73 +1423,89 @@ sub rehash_httpd
 #
 # Rebuild the vhosts.conf file
 #
+    $domain_include_file = {};
 
-    $data = "NameVirtualHost *:80\n";
-    
-# if we have no ssl domains, don't echo the 443 virtualhost
-    my $sql = "select count(*) as count from domains where host_ssl = 'true'";
-    my $result = $self->{dbi}->prepare($sql);
-    
-    $result->execute;
-    
-    my $row = $result->fetchrow_hashref;
-    
-    if( $row->{'count'} != 0 ) { $data .= "NameVirtualHost *:443\n" }
-    
-    $self->debug("Rebuilding the vhosts.conf file");
+    $self->debug("Begin IP address loop");
 
-    my $sql = "select * from domains d left join sys_users u on d.suid = u.id where hosting = 'on'";
+# walk down all our IP addresses and build the domains on them
+    $sql = "select * from ip_addresses order by ip_address";
     my $result = $self->{dbi}->prepare($sql);
-    
+
     $result->execute;
 
-    while ( my $row = $result->fetchrow_hashref )
+    while( my $row = $result->fetchrow_hashref )
     {
-# Add this domain's include file to the master vhosts.conf if it's physical hosting
+	my $ip_in_use = 0;
+
+# build the IP's default domain first
+	my $dom = $self->{dbi}->selectrow_hashref("select d.*, u.login from domains d, sys_users u where d.suid = u.id and d.id = ? and hosting = 'on'", undef, $row->{default_did});
 	
-	if( $row->{'host_type'} eq "physical" )
-	{
-	    $data .= "Include " . $self->{CONF}{VHOST_ROOT} . "/" . $row->{'name'} . "/conf/httpd.include\n";
+	$vhost_data .= $self->make_virtual_host($row->{ip_address}, $dom);
+
+	if ( $dom->{'name'} ) {
+	    $ip_in_use = 1;
 	}
-	elsif( $row->{'host_type'} eq "redirect" )
-	{
-	    
-	    $data .= "<VirtualHost *:80>\n";
-	    $data .= "\tServerName\t" . $row->{'name'} . "\n";
-	    
-	    $data .= $self->server_alias($row->{'name'}, $row->{'www'});
-	    
-	    $data .= "\tRedirectPermanent / \"" . $row->{'redirect_url'} . "\"\n";
-	    $data .= "</VirtualHost>\n";
-	    
+
+# build the rest of the domains on this IP
+	$sql = "select d.*, u.login from domains d inner join domain_ips i on d.id = i.did, sys_users u where d.suid = u.id and i.ip_address = ? and d.id != ? and hosting = 'on'";
+	my $result_dom = $self->{dbi}->prepare($sql);
+
+	$result_dom->execute($row->{ip_address}, $row->{default_did});
+
+	while ($dom = $result_dom->fetchrow_hashref ) {
+	    $domain_include_file->{$dom->{'name'}} .= $self->make_virtual_host($row->{ip_address}, $dom);
+	    $ip_in_use = 1;
 	}
-    
+
+	$result_dom->finish;
+
+	if ( $ip_in_use == 1 ) {
+	    $data .= "NameVirtualHost " . $row->{ip_address} . ":80\n";
+	}
+
     }
 
-# add webmail alias to end of $vhosts files
+    $result->finish;
 
-    my $squirrelmail = $self->{RC_ROOT} . "/var/apps/squirrelmail";
-    my $save_path = $self->{RC_ROOT} . "/var/tmp";
+    $self->debug("End IP address loop");
+
+# look for domains that don't have an IP, and build them here
+    $sql = "select d.*, u.login from domains d, sys_users u where d.suid = u.id and d.id not in (select did from domain_ips) and hosting = 'on'";
+    $result = $self->{dbi}->prepare($sql);
+
+    $result->execute;
+
+    my $wildcard_virtualhost = 0;
+
+    while( my $dom = $result->fetchrow_hashref )
+    {
+	$wildcard_virtualhost = 1;
+	$self->debug("Wildcard domain " . $row->{'name'});
+	$domain_include_file->{$dom->{'name'}} .= $self->make_virtual_host('*', $dom, 0);
+    }
+
+    $result->finish;
+
+    foreach my $domain_name (keys %{$domain_include_file}) {
+	$vhost_data .= "Include " . $self->{CONF}{VHOST_ROOT} . "/" . $domain_name . "/conf/httpd.include\n";
+	file_write($self->{CONF}{VHOST_ROOT} . "/" . $domain_name . "/conf/httpd.include", $domain_include_file->{$domain_name} );
+    }
+
+    if ($wildcard_virtualhost == 1) {
+	$data .= "NameVirtualHost *:80\n";
+
+# if we have no ssl domains, don't echo the 443 virtualhost
+	my $sql = "select count(*) as count from domains where host_ssl = 'true'";
+	my $result = $self->{dbi}->prepare($sql);
     
-    $data .= qq~
-<VirtualHost *:80>
-        ServerName webmail
-        ServerAlias webmail.*
-        DocumentRoot $squirrelmail
-        <IfModule mod_ssl.c>
-                SSLEngine off
-        </IfModule>
-        <Directory $squirrelmail>
-        Options -Indexes
-        <IfModule sapi_apache2.c>
-                php_admin_flag engine on
-                php_admin_value open_basedir "$squirrelmail"
-                php_admin_value upload_tmp_dir "$save_path"
-                php_admin_value session.save_path "$save_path"
-        </IfModule>
-        </Directory>
-</VirtualHost>
-~;
+	$result->execute;
+    
+	my $row = $result->fetchrow_hashref;
+    
+	if( $row->{'count'} != 0 ) { $data .= "NameVirtualHost *:443\n" }
+    }
+
+    $data .= "\n\n" . $vhost_data;
 
     file_write($vhosts, $data);
     
@@ -1628,11 +1553,105 @@ sub rehash_httpd
    
 } # end sub rehash_httpd
 
-# A function to make a physical hosting virtualhost tag
 
-sub make_virtual_host {
+# build all the directories, and return the resulting config file
+sub make_virtual_host
+{
+    my ($self, $ip, $row) = @_;
 
-    my ($self, $domain, $www, $host_dir, $host_cgi, $host_php, $ssl) = @_;
+    return unless $row->{'name'};
+
+    my $data = "";
+
+    $self->debug("make_virtual_host for $ip " . $row->{'name'});
+
+# Make sure the proper directories exist and that they are set to the correct permissions
+
+    my $domain_root = $self->{CONF}{VHOST_ROOT} . "/" . $row->{'name'};
+	
+    $self->debug("Building conf file for " . $row->{'name'});
+
+    if ( $row->{'host_type'} eq "physical" )
+    {
+	mkdir_p( (
+		 $domain_root,
+		 $domain_root . "/var/log",
+		 $domain_root . "/var/awstats",
+		 $domain_root . "/httpdocs",
+		 $domain_root . "/conf",
+		 $domain_root . "/tmp",
+		 )
+		);
+	
+# chmod / chown the directories
+
+	file_chown("root:servgrp", $domain_root);
+	file_chown($row->{'login'} . ":servgrp", $domain_root . "/httpdocs", $domain_root . "/tmp");
+
+	chmod 0750, $domain_root,
+	$domain_root . "/httpdocs";
+
+	chmod 0770, $domain_root . "/tmp";
+	
+	$data .= $self->make_virtual_host_content($ip, 0, $row);
+	if( $row->{'host_ssl'} eq "true" ) {
+	    $data .= $self->make_virtual_host_content($ip, 1, $row);
+	}
+
+    }
+    elsif( $row->{'host_type'} eq "redirect" )
+    {
+	$data .= "<VirtualHost $ip:80>\n";
+	$data .= "\tServerName\t" . $row->{'name'} . "\n";
+	    
+	$data .= $self->server_alias($row->{'name'}, $row->{'www'});
+	    
+	$data .= "\tRedirectPermanent / \"" . $row->{'redirect_url'} . "\"\n";
+	$data .= "</VirtualHost>\n\n";
+     }
+
+    if ( $row->{'webmail'} eq "yes" ) {
+	my $squirrelmail = $self->{RC_ROOT} . "/var/apps/squirrelmail";
+	my $save_path = $self->{RC_ROOT} . "/var/tmp";
+	my $domain_name = $row->{'name'};
+
+	$data .= qq~
+<VirtualHost $ip:80>
+        ServerName webmail.$domain_name
+        DocumentRoot $squirrelmail
+        <IfModule mod_ssl.c>
+                SSLEngine off
+        </IfModule>
+        <Directory $squirrelmail>
+        Options -Indexes
+        <IfModule sapi_apache2.c>
+                php_admin_flag engine on
+                php_admin_value open_basedir "$squirrelmail"
+                php_admin_value upload_tmp_dir "$save_path"
+                php_admin_value session.save_path "$save_path"
+        </IfModule>
+        </Directory>
+</VirtualHost>
+
+~;
+
+    }
+
+    $self->debug("End building domain config file for " . $row->{'name'});
+
+    return $data;
+
+} # end sub make_virtual_host
+
+sub make_virtual_host_content
+{
+    my ($self, $ip, $ssl, $row) = @_;
+
+    $domain = $row->{'name'};
+    $www = $row->{'www'};
+    $host_dir = $row->{'host_dir'};
+    $host_cgi = $row->{'host_cgi'};
+    $host_php = $row->{'host_php'};
 
     my $data;
     my $port;
@@ -1640,17 +1659,17 @@ sub make_virtual_host {
 # If this tag is ssl, the port is 443
     if( $ssl == 1 )
     {
-	$port = 443;
-	$self->debug($domain . " is setup for ssl");
-	$data = "<IfModule mod_ssl.c>\n";
-    } 
+        $port = 443;
+        $self->debug($domain . " is setup for ssl");
+        $data = "<IfModule mod_ssl.c>\n";
+    }
     else
     {
-	$port = 80;
+        $port = 80;
     }
 
 #    
-    $data .= "<VirtualHost *:" . $port . ">\n";
+    $data .= "<VirtualHost " . $ip . ":" . $port . ">\n";
     $data .= "\tServerName   " . $domain . ":" . $port . "\n";
     
 # Does this domain have any aliases for it?
@@ -1706,23 +1725,10 @@ sub make_virtual_host {
 	$data .= "\tSSLEngine on\n";
 	$data .= "\tSSLVerifyClient none\n";
 
-# TODO: make this passed into the function so we don't have to make a database call
-#	$sql = "select value from parameters p inner join domains d on p.type_id = d.id where param = 'ssl_cert' and d.name = '" . $domain . "'";
-#	@result_cert = $db->data_query($sql);
-	
-#	$row_cert = $db->data_fetch_row(\@result_cert);
-	
-#	if( $row_cert->{'value'} )
-#	{
-#	    $data .= "\tSSLCertificateFile " . $row_cert->{'value'} . "\n";
-#	    $data .= "\tSSLCertificateKeyFile " . $row_cert->{'value'} . ".key\n";
-#	}
-#	else
-#	{
-# TODO: this only works on redhat... dynamically search for the server .crt and .key and use those
-	$data .= "\tSSLCertificateFile /etc/httpd/conf/ssl.crt/server.crt\n";
-	$data .= "\tSSLCertificateKeyFile /etc/httpd/conf/ssl.key/server.key\n";
-#	}
+	$self->ssl_genkey_pair($domain_root . "/conf");
+
+	$data .= "\tSSLCertificateFile " . $domain_root . "/conf/server.crt\n";
+	$data .= "\tSSLCertificateKeyFile " . $domain_root . "/conf/server.key\n";
 	
     }
     else
@@ -1781,10 +1787,6 @@ sub make_virtual_host {
 # Setup this domains error documents
 # TODO: finish this
 #	$sql = "select * from error_docs where did = '$did'";
-#	if( "" )
-#	{
-#	    $data .= "\tErrorDocument " . $code . " " . $file . "\n";
-#	}
     
 # If a vhost.conf file exists for this domain, include it
 # TODO: do this for vhost_ssl.conf as well
@@ -1801,8 +1803,51 @@ sub make_virtual_host {
     if( $ssl == 1) { $data .= "</IfModule>\n" }
 
     return $data;
+
+}
+
+
+sub ssl_genkey_pair
+{
+    my ($self, $path) = @_;
+
+    if( -x '/usr/bin/openssl' )
+    {
+# generate the key if non-existant
     
-} # end sub make_virtual_host
+	if( ! -f $path . '/server.key' )
+	{
+	    
+	    $self->do_error("Creating SSL key file in $path....");
+	    
+	    system('openssl genrsa -rand /proc/apm:/proc/cpuinfo:/proc/dma:/proc/filesystems:/proc/interrupts:/proc/ioports:/proc/pci:/proc/rtc:/proc/uptime 1024 > ' . $path . '/server.key 2> /dev/null');
+	    
+	}
+    
+# generate the cert if non-existant
+	
+	if( ! -f $path . '/server.crt' )
+	{
+
+	    $self->do_error("Creating SSL cert file in $path....");
+
+	    open SSL, '| openssl req -new -key ' . $path . '/server.key -x509 -days 365 -out ' . $path . '/server.crt 2>/dev/null';
+
+	    print SSL "--\n";
+	    print SSL "SomeState\n";
+	    print SSL "SomeCity\n";
+	    print SSL "SomeOrganization\n";
+	    print SSL "SomeOrganizationalUnit\n";
+	    print SSL $ENV{HOSTNAME} . "\n";
+	    print SSL 'root@' . $ENV{HOSTNAME} . "\n";
+
+	    close SSL;
+
+	}
+
+    }
+
+}
 
 # A function to print out the server aliases for a domain
 
@@ -2863,42 +2908,7 @@ sub start_webserver
     $self->checkconf;
 
 # generate ssl cert for panel
-
-    if( -x '/usr/bin/openssl' )
-    {
-# generate the key if non-existant
-    
-	if( ! -f $self->{RC_ROOT} . '/etc/server.key' )
-	{
-	    
-	    $self->do_error("Creating control panel SSL key file....");
-	    
-	    system('openssl genrsa -rand /proc/apm:/proc/cpuinfo:/proc/dma:/proc/filesystems:/proc/interrupts:/proc/ioports:/proc/pci:/proc/rtc:/proc/uptime 1024 > ' . $self->{RC_ROOT} . '/etc/server.key 2> /dev/null');
-	    
-	}
-    
-# generate the cert if non-existant
-	
-	if( ! -f $self->{RC_ROOT} . '/etc/server.crt' )
-	{
-
-	    $self->do_error("Creating control panel SSL cert file....");
-
-	    open SSL, '| openssl req -new -key ' . $self->{RC_ROOT} . '/etc/server.key -x509 -days 365 -out ' . $self->{RC_ROOT} . '/etc/server.crt 2>/dev/null';
-
-	    print SSL "--\n";
-	    print SSL "SomeState\n";
-	    print SSL "SomeCity\n";
-	    print SSL "SomeOrganization\n";
-	    print SSL "SomeOrganizationalUnit\n";
-	    print SSL $ENV{HOSTNAME} . "\n";
-	    print SSL 'root@' . $ENV{HOSTNAME} . "\n";
-
-	    close SSL;
-
-	}
-
-    }
+    $self->ssl_genkey_pair($self->{RC_ROOT} . '/etc/');
 
 # check httpd version series. The result of this command will look like: 1.3 , 2.0 , etc
     my $str = ' -v | head -n 1 | sed \'s|.*Apache/||\' | sed \'s/^\([[:digit:]]\.[[:digit:]]*\)\..*$/\1/\'';
@@ -3145,6 +3155,91 @@ sub domain_del
     {
         return 0;
     }
+}
+
+sub ip_update
+{
+    my ($self, $str) = @_;
+
+    my ($ip, $uid, $did) = split / /, $str;
+
+    return $self->do_error("Not an IP address: $ip") unless is_ip($ip);
+
+    if ( $uid eq "NULL" ) {
+	$self->{dbi}->do("update ip_addresses set uid = NULL, default_did = ? where ip_address = ?", undef, $did, $ip);
+    } else {
+	$self->{dbi}->do("update ip_addresses set uid = ?, default_did = ? where ip_address = ?", undef, $uid, $did, $ip);
+    }
+
+    $self->rehash_httpd;
+
+    $self->do_error("IP address updated.");
+
+    return 0;
+}
+
+sub ip_list
+{
+    my ($self) = @_;
+
+    my $ips = {};
+    my $db_ips = {};
+
+    my $sql = "select * from ip_addresses";
+    my $sth = $self->{dbi}->prepare($sql);
+
+    $sth->execute;
+
+    while ( my $row = $sth->fetchrow_hashref ) {
+	$db_ips->{$row->{ip_address}} = $row;
+    }
+
+    $sth->finish;
+
+    open IF, "ifconfig |";
+    while (<IF>) {
+	chomp;
+
+        my $ip = $_;
+        $ip =~ s/.*addr:((\d{1,3}\.){3}\d{1,3}).*/$1/;
+
+        next unless is_ip($ip);
+        next if $ip =~ /^127./;
+
+	# not in the database?
+	if ( ! $db_ips->{$ip} ) {
+	    $self->{dbi}->do("insert into ip_addresses set ip_address = ?, active = ?", undef, $ip, "true");
+	    $db_ips->{$ip} = { active => "true" };
+	} elsif ( $db_ips->{$ip}{active} ne "true" ) {
+	    $self->{dbi}->do("update ip_addresses set active = ? where ip_address = ?", undef, "true", $ip);
+	    $db_ips->{$ip}{active} = "true";
+	}
+
+        $ips->{$ip} = $db_ips->{$ip};
+    }
+    close IF;
+
+    # look for IPs in db that aren't in $ips
+    foreach my $ip (keys %{$db_ips}) {
+	if ( ! defined($ips->{$ip}) ) {
+	    $self->{dbi}->do("update ip_addresses set active = ? where ip_address = ?", undef, "false", $ip);
+	    $ips->{$ip} = $db_ips->{$ip};
+	    $ips->{$ip}{active} = "false";
+	}
+    }
+
+    # convert undef to NULL string
+    foreach my $ip (keys %{$ips}) {
+	if ( ! defined($ips->{$ip}{uid}) ) {
+	    $ips->{$ip}{uid} = "NULL";
+	}
+    }
+
+    return $ips;
+}
+
+sub is_ip {
+    return $_[0] =~ /^(\d{1,3}\.){3}\d{1,3}$/;
 }
 
 sub AUTOLOAD

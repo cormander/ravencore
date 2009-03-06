@@ -638,4 +638,97 @@ function nav_bottom()
 
 }
 
+function selection_array($name, $selected, $num, $options, $arr = Array())
+{
+    global $db;
+
+    $str = '<select name="' . $name . '' . ( $num ? '[' . ( $num == -1 ? '' : $num ) . ']' : '' ) . '" ' . $options . '>';
+
+    foreach ($arr as $key => $val) {
+
+	$str .= '<option value="' . $key . '"';
+
+	// I SERIOUSLY want to strangle someone here ... string "NULL" is == to integer 0 ... wtf?
+	// this is a dirty ugly hack...
+	if (is_array($selected) ) {
+	    foreach ( $selected as $sey => $sal ) {
+		if ( strlen($sal) == strlen($key) and $key == "NULL" ) {
+		    $str .= ' selected';
+		} else if ( $key != 0 and $sal == $key ) {
+		    $str .= ' selected';
+		}
+	    }
+	} else {
+
+		if ( strlen($selected) == strlen($key) and $key == "NULL" ) {
+		    $str .= ' selected';
+		} else if ( $key != 0 and $selected == $key ) {
+		    $str .= ' selected';
+		}
+	}
+
+	$str .= '>' . $val . '</option>' ;
+
+    }
+
+    $str .= '</select>';
+
+    return $str;
+}
+
+function selection_users($uid = 0, $num = 0, $select_opt = "")
+{
+    global $db;
+
+    $str = '<select name=uid' . ( $num ? '[' . $num . ']' : '' ) . ' ' . $select_opt . '>';
+
+    $sql = "select * from users";
+    $result = $db->data_query($sql);
+
+    $num = $db->data_num_rows();
+
+    $str .= '<option value=0>' . __('No One') . '</option>';
+
+    while ($row_u = $db->data_fetch_array($result))
+    {
+	$str .= '<option value="' . $row_u['id'] . '"';
+
+        if ($row_u['id'] == $uid) $str .= ' selected';
+
+        $str .= '>' . $row_u['name'] . '</option>';
+    }
+
+    $str .= '</select>';
+
+    return $str;
+}
+
+function selection_domains($uid = 0, $did = 0, $num = 0, $select_opt = "")
+{
+    global $db;
+
+    $str = '<select name=did' . ( $num ? '[' . $num . ']' : '' ) . ' ' . $select_opt . '>';
+
+    $sql = "select * from domains" . ( $uid ? "where uid = $uid" : "" );
+
+    $result = $db->data_query($sql);
+
+    $num = $db->data_num_rows();
+
+    $str .= '<option value=0>' . __('Select a domain') . '</option>';
+
+    while ($row_u = $db->data_fetch_array($result))
+    {
+        $str .= '<option value="' . $row_u['id'] . '"';
+
+        if ($row_u['id'] == $did) $str .= ' selected';
+
+        $str .= '>' . $row_u['name'] . '</option>';
+    }
+
+    $str .= '</select>';
+
+    return $str;
+}
+
 ?>

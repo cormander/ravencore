@@ -617,6 +617,9 @@ sub checkconf
 # if we have a database connection
     if($self->{db_connected})
     {
+# initialize ips if it hastn' been
+	$self->ip_list;
+
 # run other checkconf scripts
 	$self->checkconf_cron;
 

@@ -284,25 +284,7 @@ else
         {
             $uid = $row['uid'];
 
-            print '<form method="post">' . __('This domain belongs to') . ': <select name=uid>';
-
-            $sql = "select * from users";
-            $result = $db->data_query($sql);
-
-            $num = $db->data_num_rows();
-
-            print '<option value=0>' . __('No One') . '</option>';
-
-            while ($row_u = $db->data_fetch_array($result))
-            {
-                print '<option value="' . $row_u['id'] . '"';
-
-                if ($row_u['id'] == $uid) print ' selected';
-
-                print '>' . $row_u['name'] . '</option>';
-            } 
-
-            print '</select> <input type=submit value="' . __('Change') . '">
+            print '<form method="post">' . __('This domain belongs to') . ': ' . selection_users($uid) . ' <input type=submit value="' . __('Change') . '">
 <input type=hidden name=action value=change>
 <input type=hidden name=did value="' . $did . '">
 </form>';
