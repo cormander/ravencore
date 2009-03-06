@@ -9,3 +9,5 @@ mail_del
 webstats
 disp_chkconfig
 chkconfig
+ftp_del
+domain_del
