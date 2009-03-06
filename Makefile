@@ -15,7 +15,7 @@ VERSION=0.3.3
 # 3rd party program names and version numbers
 
 PHPMYADMIN=phpMyAdmin-2.11.9.4-all-languages
-PHPSYSINFO=phpsysinfo-2.5.2
+PHPSYSINFO=phpsysinfo-2.5.4
 PHPWEBFTP=phpwebftp40
 AWSTATS=awstats-6.9
 SQUIRRELMAIL=squirrelmail-1.4.17
