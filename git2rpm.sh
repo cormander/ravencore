@@ -32,6 +32,21 @@ if [ ! -f GPL ] || [ ! -f LICENSE ] || [ ! -f Makefile ] || [ ! -f README.instal
 	exit 1
 fi
 
+# check version to make sure we match in Makefile and src/ravencore.spec
+
+makeversion=$(grep '^VERSION=' Makefile | cut -d = -f 2)
+specversion=$(grep '^Version: ' src/ravencore.spec | cut -d ' ' -f 2)
+
+if [ $v != $makeversion ]; then
+	echo "Makefile VERSION doesn't match ours!"
+	exit 1
+fi
+
+if [ $v != $specversion ]; then
+	echo "RPM spec Version doesn't match ours!"
+	exit 1
+fi
+
 # go down one and make sure we are where we expect
 
 cd ..
