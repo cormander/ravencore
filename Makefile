@@ -18,7 +18,7 @@ PHPMYADMIN=phpMyAdmin-2.9.2-all-languages-utf-8-only
 PHPSYSINFO=phpsysinfo-2.5.2
 PHPWEBFTP=phpwebftp40
 AWSTATS=awstats-6.6
-SQUIRRELMAIL=squirrelmail-1.4.9a
+SQUIRRELMAIL=squirrelmail-1.4.17
 
 # Squirrelmail plugins to install
 
