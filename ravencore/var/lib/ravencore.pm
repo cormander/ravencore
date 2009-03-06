@@ -437,7 +437,6 @@ sub reload
 } # end sub reload
 
 # call an internal function based on a client's request
-
 sub client_request
 {
     my ($self, $query) = @_;
@@ -1233,8 +1232,13 @@ sub sql
     if($query !~ m/^select/i and $query !~ m/^show/i)
     {
 
+# make sure the connection didn't go away on us
+	$self->database_connect;
+
 # submit the query to the database
         $rows_affected = $self->{dbi}->do($query);
+	$self->debug("Did SQL query: $query");
+	$self->debug("Rows affected: $rows_affected");
 
         if ( ! $self->{dbi}->errstr )
         {
@@ -1242,7 +1246,9 @@ sub sql
 
 # this isn't a select statement, but we still return data in the same format
             $data = $insert_id . $self->{ETX} . $self->{ETX} . $rows_affected . $self->{ETX} . $self->{ETX};
-        }
+        } else {
+	    $self->do_error("DBI Error: " . $self->{dbi}->errstr);
+	}
 
     }
     else
