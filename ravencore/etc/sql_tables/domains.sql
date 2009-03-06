@@ -29,6 +29,7 @@ CREATE TABLE domains (
   log_compress enum('yes','no') NOT NULL default 'no',
   log_rotate_size_ext enum('k','M','') NOT NULL default '',
   suid int(10) unsigned NOT NULL default '0',
+  webmail enum('yes','no') NOT NULL default 'yes',
   PRIMARY KEY  (id)
 ) TYPE=MyISAM;
 /*!40000 ALTER TABLE domains DISABLE KEYS */;
