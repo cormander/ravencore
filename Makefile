@@ -32,7 +32,7 @@ all:
 	@echo "Usage: make build"
 	@echo "       This does all the required build commands for the 3rd party applications to work"
 	@echo ""
-	@echo "Usage: make install"
+	@echo "       make install"
 	@echo ""
 	@echo "       Run this after \"make build\" to install the files"
 	@echo "       The default target directory is: /usr/local/ravencore"
@@ -41,10 +41,18 @@ all:
 	@echo ""
 	@echo "       make rpm"
 	@echo "       Build an RPM package which you can install/upgrade"
+	@echo ""
+	@echo "       make release"
+	@echo "       Build a release RPM package"
+	@echo ""
 
 
 rpm:
 	./git2rpm.sh
+
+
+release:
+	DO_RELEASE=1 ./git2rpm.sh
 
 
 build:
