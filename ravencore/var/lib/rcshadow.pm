@@ -48,11 +48,22 @@
 #         if its a neg uid, make it posotive. if that uid is in use, assign it the next available one
 #         if the group doesn't exist, put the user in the group named the same as the user. if it doesn't exist, create it
 
+#
+# NOTE -
+#
+# This module has a few limitions, nothing too bad I hope. For one, you can't have more than one user with the same
+# UID, or more than one group with the same GID. If you do, you'll end up with only one user / group for each UID / GID,
+# with the others simply gone. You might even have wierd things happen like a "mixed" user with the name from one and
+# a shell or home_dir from the other (of the same UID).. I don't know, haven't tested that :)
+#
+# This supposedly works on BSD systems, though you might have trouble with the "class" section if you use it. Needs more
+# testing.
+#
+
 package rcshadow;
 
 # TODO: finish implementing syslog logging of errors
 use Sys::Syslog;
-
 use rcfilefunctions;
 
 # as we create the class, read in all of our system configuration files for user creation, and read in our
@@ -82,29 +93,29 @@ sub new
 
     if($ostype eq 'bsd')
     {
-	$self->{userdb}{passwd}{file} = '/etc/master.passwd';
-	@{$self->{userdb}{passwd}{order}} = ('user','shadow_passwd','uid','gid','class','last_change','expire','gecos','home_dir','shell');
+		$self->{userdb}{passwd}{file} = '/etc/master.passwd';
+		@{$self->{userdb}{passwd}{order}} = ('user','shadow_passwd','uid','gid','class','last_change','expire','gecos','home_dir','shell');
 
-	$self->{groupdb}{group}{file} = '/etc/group';
-	@{$self->{groupdb}{group}{order}} = ('name','passwd','gid','user_list');
+		$self->{groupdb}{group}{file} = '/etc/group';
+		@{$self->{groupdb}{group}{order}} = ('name','passwd','gid','user_list');
 
         $self->{enc_char} = '*';
     }
     else
     {
-	$self->{userdb}{passwd}{file} = '/etc/passwd';
-	@{$self->{userdb}{passwd}{order}} = ('user','passwd','uid','gid','gecos','home_dir','shell');
+		$self->{userdb}{passwd}{file} = '/etc/passwd';
+		@{$self->{userdb}{passwd}{order}} = ('user','passwd','uid','gid','gecos','home_dir','shell');
 
-	$self->{userdb}{shadow}{file} = '/etc/shadow';
-	@{$self->{userdb}{shadow}{order}} = ('user','shadow_passwd','last_change','min_change','max_change','warn','inact','expire','reserved');
+		$self->{userdb}{shadow}{file} = '/etc/shadow';
+		@{$self->{userdb}{shadow}{order}} = ('user','shadow_passwd','last_change','min_change','max_change','warn','inact','expire','reserved');
 
-	$self->{groupdb}{group}{file} = '/etc/group';
-	@{$self->{groupdb}{group}{order}} = ('name','passwd','gid','user_list');
+		$self->{groupdb}{group}{file} = '/etc/group';
+		@{$self->{groupdb}{group}{order}} = ('name','passwd','gid','user_list');
 
-	$self->{groupdb}{gshadow}{file} = '/etc/gshadow';
-	@{$self->{groupdb}{gshadow}{order}} = ('name','passwd','no_idea','user_list');
+		$self->{groupdb}{gshadow}{file} = '/etc/gshadow';
+		@{$self->{groupdb}{gshadow}{order}} = ('name','passwd','no_idea','user_list');
 
-	$self->{enc_char} = 'x';
+		$self->{enc_char} = 'x';
 
     }
 
@@ -119,84 +130,84 @@ sub new
 # * LOG_INFO - informational message
 # * LOG_DEBUG - debug-level message
 
-    openlog('rcshadow','pid','LOG_AUTHPRIV');
+	openlog('rcshadow','pid','LOG_AUTHPRIV');
     
 # TODO: check for the existance of each of the system files we reference in this object, and if one doesn't exist,
 #       then exit with error
 
 # set our login.defs defaults, just incase we don't find a login.defs file below
 
-    $self->{UID_MIN} = 500;
-    $self->{UID_MAX} = 90000;
-    $self->{GID_MIN} = 500;
-    $self->{GID_MAX} = 90000;
-    $self->{PASS_MAX_DAYS} = 99999;
-    $self->{PASS_MIN_DAYS} = 0;
-    $self->{PASS_MIN_LEN} = 5;
-    $self->{PASS_WARN_AGE} = 7;
+	$self->{UID_MIN} = 500;
+	$self->{UID_MAX} = 90000;
+	$self->{GID_MIN} = 500;
+	$self->{GID_MAX} = 90000;
+	$self->{PASS_MAX_DAYS} = 99999;
+	$self->{PASS_MIN_DAYS} = 0;
+	$self->{PASS_MIN_LEN} = 5;
+	$self->{PASS_WARN_AGE} = 7;
 
 # look in the login.defs file so we can honor its values when adding a new user / group
 
-    if( -f $self->{login_defs} )
-    {
-	
-	my @file = file_get_array($self->{login_defs});
-	
-	foreach(@file)
+	if( -f $self->{login_defs} )
 	{
+	
+		my @file = file_get_array($self->{login_defs});
+	
+		foreach(@file)
+		{
 # these regular expressions return true if the match was successful, in which case, $1 is set to the content we want
-	    
-	    if($_ =~ s/^UID_MIN\W*(\d*)$/\1/) { $self->{UID_MIN} = $1; }
-	    if($_ =~ s/^UID_MAX\W*(\d*)$/\1/) { $self->{UID_MAX} = $1; }
-	    if($_ =~ s/^GID_MIN\W*(\d*)$/\1/) { $self->{GID_MIN} = $1; }
-	    if($_ =~ s/^GID_MAX\W*(\d*)$/\1/) { $self->{GID_MAX} = $1; }
-	    
-	    if($_ =~ s/^PASS_MAX_DAYS\W*(\d*)$/\1/) { $self->{PASS_MAX_DAYS} = $1; }
-	    if($_ =~ s/^PASS_MIN_DAYS\W*(\d*)$/\1/) { $self->{PASS_MIN_DAYS} = $1; }
-	    if($_ =~ s/^PASS_MIN_LEN\W*(\d*)$/\1/) { $self->{PASS_MIN_LEN} = $1; }
-	    if($_ =~ s/^PASS_WARN_AGE\W*(\d*)$/\1/) { $self->{PASS_WARN_AGE} = $1; }
-	    
-	}
+			
+			if($_ =~ s/^UID_MIN\W*(\d*)$/$1/) { $self->{UID_MIN} = $1; }
+			if($_ =~ s/^UID_MAX\W*(\d*)$/$1/) { $self->{UID_MAX} = $1; }
+			if($_ =~ s/^GID_MIN\W*(\d*)$/$1/) { $self->{GID_MIN} = $1; }
+			if($_ =~ s/^GID_MAX\W*(\d*)$/$1/) { $self->{GID_MAX} = $1; }
+			
+			if($_ =~ s/^PASS_MAX_DAYS\W*(\d*)$/$1/) { $self->{PASS_MAX_DAYS} = $1; }
+			if($_ =~ s/^PASS_MIN_DAYS\W*(\d*)$/$1/) { $self->{PASS_MIN_DAYS} = $1; }
+			if($_ =~ s/^PASS_MIN_LEN\W*(\d*)$/$1/) { $self->{PASS_MIN_LEN} = $1; }
+			if($_ =~ s/^PASS_WARN_AGE\W*(\d*)$/$1/) { $self->{PASS_WARN_AGE} = $1; }
+			
+		}
 	
     }
 
 # check for and load our useradd defaults
     
-    my @file = file_get_array($self->{useradd});
+	my @file = file_get_array($self->{useradd});
 
-    foreach(@file)
-    {
-	if( $_ =~ s/^EXPIRE=(.*)$/\1/) { $self->{EXPIRE} = $1; }
+	foreach(@file)
+	{
+		if( $_ =~ s/^EXPIRE=(.*)$/$1/) { $self->{EXPIRE} = $1; }
 # assume -1 is empty with the INACTIVE config
-	if( $_ =~ s/^INACTIVE=(.*)$/\1/) { $self->{INACTIVE} = $1 unless $1 == -1; }
-	
-    }
+		if( $_ =~ s/^INACTIVE=(.*)$/$1/) { $self->{INACTIVE} = $1 unless $1 == -1; }
+		
+	}
 
 # some systems don't have a useradd file.. but that's OK, we don't really NEED them.
     
 # open up /etc/shells and get a list of valid shells so we can validate user's shells.
-    my $bin_false = 0;
+	my $bin_false = 0;
     
-    @{$self->{valid_shells}} = file_get_array($self->{shells});
+	@{$self->{valid_shells}} = file_get_array($self->{shells});
     
 # remove newline characters, and check to see if /bin/false is a valid shell
     
-    foreach (@{$self->{valid_shells}})
-    {
-	$bin_false = 1 unless $_ ne $self->{bin_false};
-    }
+	foreach (@{$self->{valid_shells}})
+	{
+		$bin_false = 1 unless $_ ne $self->{bin_false};
+	}
     
 # if /bin/false is not a valid shell, then add it
     
-    if( $bin_false == 0 )
-    {	
-	push @{$self->{valid_shells}}, $self->{bin_false};
-
-	file_append($self->{shells}, $self->{bin_false} . "\n");
-	
+	if( $bin_false == 0 )
+	{	
+		push @{$self->{valid_shells}}, $self->{bin_false};
+		
+		file_append($self->{shells}, $self->{bin_false} . "\n");
+		
 # tell syslog that we added /bin/false to the list of shells
-	syslog('LOG_NOTICE',"Added " . $self->{bin_false} . " to " . $self->{shells});
-    }
+		syslog('LOG_NOTICE',"Added " . $self->{bin_false} . " to " . $self->{shells});
+	}
 
 # TODO: run sanity checks against all fields read in from the passwd and shadow files
 
@@ -308,9 +319,6 @@ sub new
 	    
 	}
 
-# make sure all these users are valid users
-	$self->confirm_group_users($name);
-
     } # end foreach my $name (%{$self->{groupitem_map}})
 
 #
@@ -376,7 +384,7 @@ sub new
 # return our object to the caller
     return $self;
 
-} # end sub new
+}
 
 # assign a system user or group ID, usually done if it is was bigger then ID_MAX
 
@@ -420,7 +428,7 @@ sub assign_id
 	exit(1);
     }
     
-} # end sub assign_id
+}
 
 # validate that the user's shell is valid, and if not (and they're not a system user or root),
 # give them a default shell
@@ -444,34 +452,7 @@ sub confirm_shell
 
     return $shell;
     
-} # end sub confirm_shell
-
-# make sure all the users in a group are valid users	
-sub confirm_group_users
-{
-    my ($self, $name) = @_;
-    
-    my $i = 0;
-
-    my @user_list = split /,/, $self->{group}{$name}{'user_list'};
-    
-    foreach (@user_list)
-    {
-# if the user doesn't exist, remove it from the group
-	if( ! $self->{user}{$_} )
-	{
-#	    print "ERROR: group " . $name . " contains a non-existant user: " . $_ . ", removing it\n";
-# kill this entry from the group
-	    $self->{group}{$name}{'user_list'} =~ s/$_,?//;
-# flag for a rebuild
-	    $self->flag_rebuild;
-	}
-# increment our spot in the array
-	$i++;
-	
-    }
-    
-} # end sub confirm_group_users
+}
 
 # count the number of fields in the given line of a passwd / shadow / etc file
 
@@ -502,7 +483,7 @@ sub item_map_add
 
     $self->{$obj . 'item_map'}{sprintf("U%.7u",$id)} = $name;
 
-} # end sub item_map_add
+}
 
 # remove an id from a list map
 
@@ -512,7 +493,7 @@ sub item_map_delete
 
 # only delete $id if it exists, because if it doesn't, this will delete root from the useritem_map
     delete $self->{$obj . 'item_map'}{sprintf("U%.7u",$id)} unless $id == 0;
-} # end sub item_map_delete
+}
 
 # tell us if the given ID is uniq (whether or not it's in use)
 
@@ -541,31 +522,25 @@ sub add_item_checks
 {
     my ($self, $obj, $name) = @_;
 
-# the only required field is the username. the rest we can deal with ourself if we have to
-    if( ! $name )
-    {
-	print "ERROR: Must specify the " . $obj . " name.\n";
-
-	exit(1);
+	# the only required field is the username. the rest we can deal with ourself if we have to
+    if( ! $name ) {
+		return 0;
     }
 
-# duplicate username
-    if( $self->item_exists($obj,$name) )
-    {
-	print "ERROR: " . $obj . " " . $name . " already exists.\n";
-
-        exit(1);
+	# duplicate username
+    if( $self->item_exists($obj,$name) ) {
+		return 0;
     }
 
-# security / sanity check
+	# security / sanity check
     if( ! $self->valid_name($name) )
     {
-        print "ERROR: " . $obj . " " . $name . " contains illegal characters.\n";
-	
-        exit(1);
+		return 0;
     }
 
-} # end sub add_item_checks
+	# success, return 1
+	return 1;
+}
 
 # check a given name (login name, group name, etc) and determine whether it's safe to use
 
@@ -581,7 +556,7 @@ sub valid_name
     return 1 if $name =~ m/^[a-zA-Z0-9_\.\-]*$/;
     return 0;
 
-} # end sub valid_name
+}
 
 # check if the given user or group exists
 
@@ -592,7 +567,7 @@ sub item_exists
     # duplicate name
     return 0 unless defined $self->{$obj}{$name};
     return 1;
-} # end sub item_exists
+}
 
 # randomly generate a salt str and return the $passwd as an encrypted string
 
@@ -608,7 +583,7 @@ sub crypt_passwd
 # run the crypt function with a random salt
     return crypt($passwd,$salt);
 
-} # end sub crypt_passwd
+}
 
 # function to tell commit to rebuild the shadow files when called
 # TODO: go through all the flag_rebuild calls and make sure they are submitting appropriate messages for syslog
@@ -621,7 +596,7 @@ sub flag_rebuild
     $self->{rebuild_shadows} = 1;
 # log it if we got a message
     syslog('LOG_INFO',$msg) if $msg;
-} # end sub flag_rebuild
+}
 
 #
 
@@ -629,7 +604,7 @@ sub add_user
 {
     my ($self,$login,$passwd,$home_dir,$shell,$uid,$gid) = @_;
     
-    $self->add_item_checks('user',$login);
+    return if ! $self->add_item_checks('user',$login);
 
 # assign a uid for this user, if none was given
 # TODO: make a switch for adding a system user
@@ -678,7 +653,7 @@ sub add_user
 # return the uid of the created user
     return $uid;
     
-} # end sub add_user
+}
 
 # edit a system user
 # TODO: make the username able to be changed - but it cant be changed to a name already in user
@@ -722,7 +697,7 @@ sub edit_user
 	$self->flag_rebuild("change user `" . $login . "' ");
     }
 
-} # end sub edit_user
+}
 
 #
 
@@ -733,8 +708,8 @@ sub delete_user
 # check to make sure that this user isn't already gone...
     if( ! $self->item_exists('user',$login) )
     {
-	print "ERROR: user " . $login . " does not exist\n";
-	exit(1);
+		print "ERROR: user " . $login . " does not exist\n";
+		exit(1);
     }
 
 # TODO: if the gid's name is the same as the user, and has no user_list, delete the group too
@@ -746,15 +721,15 @@ sub delete_user
 # flag for rebuild
     $self->flag_rebuild("delete user `" . $login . "'");
 
-} # end sub delete_user
+}
 
 #
 
 sub add_group
 {
-    my ($self,$name,$gid,$user_list) = @_;
+    my ($self,$name,$gid,$user) = @_;
 
-    $self->add_item_checks('group',$name);
+    return if ! $self->add_item_checks('group',$name);
 
 # assign this new group a gid if not given
 # TODO: make a switch for adding a system group
@@ -763,9 +738,7 @@ sub add_group
     $self->{group}{$name}{'name'} = $name;
     $self->{group}{$name}{'gid'} = $gid;
 
-    $self->{group}{$name}{'user_list'} = $user_list;
-# make sure all the users in this group exist
-    $self->confirm_group_users($name);
+    $self->{group}{$name}{'user_list'}[0] = $user;
 
 # flag the object to rebuild
     $self->flag_rebuild("new group: name=" . $name . ", gid=" . $gid);
@@ -773,42 +746,61 @@ sub add_group
 # return the uid of the created user
     return $gid;
 
-} # end sub add_group
+}
 
-#
+# add a user to a group
 
 sub group_user_add
 {
     my ($self,$name,$user) = @_;
 
-	# check to make sure the user isn't already in the group
-	
-    if( $self->{group}{$name}{'user_list'} =~ /^$user$/ or
-        $self->{group}{$name}{'user_list'} =~ /^$user,/ or
-        $self->{group}{$name}{'user_list'} =~ /,$user$/ or
-        $self->{group}{$name}{'user_list'} =~ /,$user,/ )
-    {
-		# if so, do nothing
-        return;
-    } 
-	
-    if( $self->{group}{$name}{'user_list'} )
-    {
-	$self->{group}{$name}{'user_list'} .= ',' . $user;
-    }
-    else
-    {
-	$self->{group}{$name}{'user_list'} = $user;
-    }
+# check to make sure the user isn't already in the group
+    return if $self->user_in_group($user, $name);
+
+    push @{$self->{group}{$name}{'user_list'}}, $user;
 
     $self->flag_rebuild("new user added to group: name=" . $user . ", group=" . $name);
 
-} # end sub group_user_add
+}
+
+# delete a user from a group
+
+sub group_user_delete
+{
+    my ($self,$name,$user) = @_;
+
+# check to make sure the user is actually in the group
+    return unless $self->user_in_group($user, $name);
+
+    my $c = @{$self->{group}{$name}{'user_list'}};
+
+    for (my $i = 0; $i < $c; $i++) {
+	if ( $self->{group}{$name}{'user_list'}[$i] eq $user ) {
+	    $self->{group}{$name}{'user_list'}[$i] = '';
+	}
+    }
+
+    $self->flag_rebuild("user removed from group: name=" . $user . ", group=" . $name);
+
+}
+
+# check to see if the given user is in the specified group
+
+sub user_in_group
+{
+    my ($self, $user, $name) = @_;
+    
+# not the most elabroate solution, but it works.. try to match the user in the user_list string
+    foreach my $guser (@{$self->{group}{$name}{'user_list'}}) {
+	return 1 if $guser eq $user;
+    }
+
+    return 0;
+} # end user_in_group
 
 #
 # TODO: make/finish functions:
 # edit_group - edit a group
-# group_user_del - remove a user from a group
 # delete_group - delete a group
 # user_is_disabled - return true/false on whether or not a user is disabled
 # disable_user - disable a user
@@ -871,7 +863,13 @@ sub commit
 # walk down the order
 		    for( $i = 0; $i < $c; $i++ )
 		    {
-			$data .= $self->{$item}{$user}{$self->{$db}{$itemdb}{order}[$i]}. ':';
+			if ( ref($self->{$item}{$user}{$self->{$db}{$itemdb}{order}[$i]}) eq "ARRAY" ) {
+			    $data .= join(',', @{$self->{$item}{$user}{$self->{$db}{$itemdb}{order}[$i]}}). ':';
+			    $data =~ s/,,/,/g;
+			    $data =~ s/:,/:/;
+			} else {
+			    $data .= $self->{$item}{$user}{$self->{$db}{$itemdb}{order}[$i]}. ':';
+			}
 		    }
 		    
 # chop the last : off
@@ -903,6 +901,6 @@ sub commit
 # destroy ourself at end of commit
     undef $self;
 
-} # end sub commit
+}
 
 1; # end package rcshadow
