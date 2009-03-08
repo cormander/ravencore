@@ -38,6 +38,14 @@ all:
 	@echo "       The default target directory is: /usr/local/ravencore"
 	@echo "       You can change the default install dir via:"
 	@echo "               make RC_ROOT=/new/target/directory install"
+	@echo ""
+	@echo "       make rpm"
+	@echo "       Build an RPM package which you can install/upgrade"
+
+
+rpm:
+	./git2rpm.sh
+
 
 build:
 

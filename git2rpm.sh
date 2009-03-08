@@ -19,11 +19,11 @@
 #
 
 # version
-
-v_tree=ravencore-0.3.x
 v=0.3.3
 
 RPM_SOURCES=/usr/src/redhat/SOURCES
+
+reinstall=$1
 
 # simple check to make sure we're in the right directory....
 
@@ -47,26 +47,29 @@ if [ $v != $specversion ]; then
 	exit 1
 fi
 
+# remember this directory name
+mydir=$(basename $(pwd))
+
 # go down one and make sure we are where we expect
 
 cd ..
 
-if [ ! -d $v_tree ]; then
-	echo "WTF! The git directory isn't named $v_tree..."
+if [ ! -d $mydir ]; then
+	echo "WTF! Our current working directory was $mydir but I don't see it now..."
 	exit 1
 fi
 
-mv $v_tree ravencore-$v
+mv $mydir ravencore-$v
 tar --exclude ".git" -czpf $RPM_SOURCES/ravencore-$v.tar.gz ravencore-$v
-mv ravencore-$v $v_tree
+mv ravencore-$v $mydir
 
-cd $v_tree
+cd $mydir
 
 # build an RPM out of ravencore
 
 rpmbuild -ba src/ravencore.spec
 
-if [ $? -eq 0 ]; then
+if [ $? -eq 0 ] && [ -n "$reinstall" ]; then
 
 	# remove ravencore from the system
 	rpm -e ravencore
