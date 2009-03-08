@@ -1724,7 +1724,19 @@ sub make_virtual_host_content
 	file_write($domain_root . "/conf/awstats." . $domain . ".conf", $awstats_conf);
 	
     }
-    
+
+# make sure a symlink to it exists in /etc/awstats
+    if ( $row->{'webstats_url'} eq "yes" and ! -l "/etc/awstats/" . $domain . ".conf" ) {
+	mkdir_p("/etc/awstats");
+	unlink("/etc/awstats/awstats." . $domain . ".conf");
+	system("ln -s " . $domain_root . "/conf/awstats." . $domain . ".conf /etc/awstats/awstats." . $domain . ".conf");
+    }
+
+# make sure it doesn't exist if webstats_url is no
+    if ( $row->{'webstats_url'} ne "yes" ) {
+	unlink("/etc/awstats/awstats." . $domain . ".conf");
+    }
+
     if( $ssl == 1)
     {
 	
@@ -1801,6 +1813,19 @@ sub make_virtual_host_content
 	$data .= "\tInclude " . $domain_root . "/conf/vhost.conf\n";
 	
 	$self->debug($domain . " has a vhost.conf file");
+    }
+
+    if ( $row->{'webstats_url'} eq "yes" ) {
+	$data .= qq~
+	Alias /icon/  $self->{RC_ROOT}/var/apps/awstats/wwwroot/icon/
+
+	ScriptAlias /awstats/ $self->{RC_ROOT}/var/apps/awstats/wwwroot/cgi-bin/
+
+	<Directory $self->{RC_ROOT}/var/apps/awstats/wwwroot/cgi-bin/>
+		DirectoryIndex awstats.pl
+	</Directory>
+
+~;
     }
 
 # End our virtual host tag
