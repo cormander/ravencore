@@ -108,6 +108,7 @@ else if ($action == "add")
         if (user_can_add($uid, "php") or is_admin()) $sql .= ", host_php = '$_POST[php]'";
         if (user_can_add($uid, "cgi") or is_admin()) $sql .= ", host_cgi = '$_POST[cgi]'";
         if (user_can_add($uid, "ssl") or is_admin()) $sql .= ", host_ssl = '$_POST[ssl]'";
+	if (user_can_add($uid, "dir") or is_admin()) $sql .= ", host_dir = '$_POST[dir]'";
 
         $sql .= " where id = '$did'";
 
