@@ -1,9 +1,11 @@
 %define rc_root /usr/local/ravencore
 
+%define reltag %{?_with_release: 1} %{?!_with_release: 0.%(date +%Y%m%d%H%M%%S)}
+
 Summary: RavenCore Hosting Control Panel
 Name: ravencore
 Version: 0.3.3
-Release: 1
+Release: %{reltag}
 Packager: Corey Henderson <corman@cormander.com>
 Vendor: RavenCore
 URL: http://www.ravencore.com/
@@ -30,6 +32,8 @@ and much more.
 
 %prep
 %setup -q
+
+echo "Building %{name}-%{version}-%{release}"
 
 %build
 

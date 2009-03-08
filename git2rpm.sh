@@ -21,7 +21,7 @@
 # version
 v=0.3.3
 
-RPM_SOURCES=/usr/src/redhat/SOURCES
+RPM_ROOT=/usr/src/redhat
 
 reinstall=$1
 
@@ -60,14 +60,17 @@ if [ ! -d $mydir ]; then
 fi
 
 mv $mydir ravencore-$v
-tar --exclude ".git" -czpf $RPM_SOURCES/ravencore-$v.tar.gz ravencore-$v
+tar --exclude ".git" -czpf $RPM_ROOT/SOURCES/ravencore-$v.tar.gz ravencore-$v
 mv ravencore-$v $mydir
 
 cd $mydir
 
 # build an RPM out of ravencore
-
-rpmbuild -ba src/ravencore.spec
+if [ -n "$DO_RELEASE" ]; then
+	rpmbuild -ba --with release src/ravencore.spec
+else
+	rpmbuild -ba src/ravencore.spec
+fi
 
 if [ $? -eq 0 ] && [ -n "$reinstall" ]; then
 
@@ -75,11 +78,27 @@ if [ $? -eq 0 ] && [ -n "$reinstall" ]; then
 	rpm -e ravencore
 	rm -rf /usr/local/ravencore
 
-	# install what we just built
-	rpm -Uvh /usr/src/redhat/RPMS/noarch/ravencore-$v-1.noarch.rpm
+	# location of RPM depends on how it was built
 
-	# restart!!!
-	/etc/init.d/ravencore restart
+	if [ -n "$DO_RELEASE" ]; then
+		
+		rpm -Uvh $RPM_ROOT/RPMS/noarch/ravencore-$v-1.noarch.rpm
+		/etc/init.d/ravencore restart
+
+	else
+
+		# find what we just built
+		therpm=$(ls $RPM_ROOT/RPMS/noarch/ravencore-0.3.4-0.$(date +%Y)*.noarch.rpm 2> /dev/null | sort | tail -n 1)
+
+		if [ -f $therpm ]; then
+			echo "Found: $therpm"
+			rpm -Uvh $therpm
+			/etc/init.d/ravencore restart
+		else
+			echo "Successful build of RPM, but couldn't find where it ended up"
+		fi
+
+	fi
 
 fi
 
