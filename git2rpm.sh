@@ -19,7 +19,7 @@
 #
 
 # version
-v=0.3.3
+v=0.3.4
 
 RPM_ROOT=/usr/src/redhat
 
