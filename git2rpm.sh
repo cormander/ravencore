@@ -32,6 +32,28 @@ if [ ! -f GPL ] || [ ! -f LICENSE ] || [ ! -f Makefile ] || [ ! -f README.instal
 	exit 1
 fi
 
+check_packages="make rpm-build unzip patch"
+
+rpm -q $check_packages &> /dev/null
+
+if [ $? -ne 0 ]; then
+
+	if [ ! -x /usr/bin/yum ]; then
+		echo "You're missing some packages to build ravencore, and don't have yum to install them"
+		exit 1
+	fi
+
+	yum -y install $check_packages
+
+	rpm -q $check_packages &> /dev/null
+
+	if [ $? -ne 0 ]; then
+		echo "Attempted to install packages, but failed: $check_packages"
+		exit 1
+	fi
+
+fi
+
 # check version to make sure we match in Makefile and src/ravencore.spec
 
 makeversion=$(grep '^VERSION=' Makefile | cut -d = -f 2)
