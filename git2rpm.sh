@@ -72,6 +72,9 @@ fi
 # remember this directory name
 mydir=$(basename $(pwd))
 
+# remove files in .gitignore
+rm -rf $(cat .gitignore)
+
 # go down one and make sure we are where we expect
 
 cd ..
@@ -82,7 +85,7 @@ if [ ! -d $mydir ]; then
 fi
 
 mv $mydir ravencore-$v
-tar --exclude ".git" -czpf $RPM_ROOT/SOURCES/ravencore-$v.tar.gz ravencore-$v
+tar --exclude ".git" -hczpf $RPM_ROOT/SOURCES/ravencore-$v.tar.gz ravencore-$v
 mv ravencore-$v $mydir
 
 cd $mydir
@@ -96,9 +99,15 @@ fi
 
 if [ $? -eq 0 ] && [ -n "$reinstall" ]; then
 
+	# if it's a symlink, just remove the symlink
+	if [ -L /usr/local/ravencore ]; then
+		rm -f /usr/local/ravencore
+	else
+		rm -rf /usr/local/ravencore
+	fi
+
 	# remove ravencore from the system
 	rpm -e ravencore
-	rm -rf /usr/local/ravencore
 
 	# location of RPM depends on how it was built
 

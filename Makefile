@@ -156,11 +156,6 @@ build:
 # sent_confirmation config file
 	cp -f src/webmail_sc_config.php ravencore/var/apps/squirrelmail/plugins/sent_confirmation/config.php
 
-# put license stuff in the right places
-	cp LICENSE README.install ravencore/
-
-	cp GPL ravencore/httpdocs/
-
 # we're done
 	@echo ""
 	@echo "make build done"
