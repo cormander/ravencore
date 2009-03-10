@@ -34,9 +34,9 @@ unshift @INC, $RC_ROOT . '/var/lib';
 
 # we require, instead of use, because "use" is pre-processed and we don't get a chance to look in our
 # RC_ROOT/var/lib directory.
-require rcclient;
+require RavenCore::Client;
 
-$rc = new rcclient($RC_ROOT);
+$rc = new RavenCore::Client($RC_ROOT);
 
 # build our $cmd off of everything given on the command line
 

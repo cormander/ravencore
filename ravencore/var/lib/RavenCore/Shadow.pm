@@ -18,8 +18,6 @@
 #
 
 #
-# package rcshadow
-#
 # This object is used to read in the system files that define users and groups (passwd, shadow, group, gshadow)
 # and provide functions to add / edit / delete entries from them. It does file integrety checks, auto-correction
 # when it can, and all the normal sanity checks the system useradd / usermod / etc commands would, with some
@@ -60,11 +58,11 @@
 # testing.
 #
 
-package rcshadow;
+package RavenCore::Shadow;
 
 # TODO: finish implementing syslog logging of errors
 use Sys::Syslog;
-use rcfilefunctions;
+use RavenCore;
 
 # as we create the class, read in all of our system configuration files for user creation, and read in our
 # passwd, shadow, group, and gshadow files. Then, do some auto-correction if possible

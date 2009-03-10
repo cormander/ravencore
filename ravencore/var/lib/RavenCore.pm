@@ -18,12 +18,10 @@
 #
 
 #
-# package rcfilefunctions
-#
 # file functions that ravencore uses all over the place
 #
 
-package rcfilefunctions;
+package RavenCore;
 
 use SEM;
 

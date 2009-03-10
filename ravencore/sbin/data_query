@@ -22,9 +22,9 @@
 # clean up the shell scripts code, and have all SQL queries be pointed at the
 # socket, which enables logging of 100% of all sql queries, system wide
 
-use rcclient;
+use RavenCore::Client;
 
-$rc = new rcclient('/usr/local/ravencore');
+$rc = new RavenCore::Client('/usr/local/ravencore');
 
 # build our $sql query off of everything given on the command line
 

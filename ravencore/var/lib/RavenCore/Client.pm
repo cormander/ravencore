@@ -17,18 +17,17 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-# package rcclient
 #
 # The method (coded in perl) to connect to the ravencore socket and submit queries and read data
 #
 
-package rcclient;
+package RavenCore::Client;
 
 use Socket;
 use MIME::Base64;
 
-use rcfilefunctions;
-use serialize;
+use RavenCore;
+use Serialize;
 
 # connect to the ravencore socket
 

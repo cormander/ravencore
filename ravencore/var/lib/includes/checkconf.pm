@@ -243,7 +243,7 @@ sub checkconf
 
 # create our shadow object just incase we need to add users/groups
 
-    my $shadow = new rcshadow($self->{ostype});
+    my $shadow = new RavenCore::Shadow($self->{ostype});
     
 # make sure we have the rcadmin user / group
 # check the group first, because in order to add the user, we need a valid existing gid
@@ -744,7 +744,7 @@ sub checkconf_mail
     my $setgid_group = `postconf | grep setgid_group | awk '{print \$3}'`;
     chomp $setgid_group;
 
-    my $shadow = new rcshadow($self->{ostype});
+    my $shadow = new RavenCore::Shadow($self->{ostype});
 
     if( $setgid_group && ! $shadow->item_exists('group', $setgid_group) )
     {

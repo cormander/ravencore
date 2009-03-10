@@ -20,12 +20,10 @@
 #use strict;
 
 #
-# package ravencore
-#
 # provides a method for access to most of ravencore's backend functions.
 #
 
-package ravencore;
+package RavenCore::Server;
 
 # use perl libs
 
@@ -34,11 +32,10 @@ use File::Basename; # functions to make parsing a file to form our semaphore a l
 # use File::Find; # so we can do recursive chmod/chown/etc calls.. unused, not implemented
 
 # use ravencore's custom perl libs
-
+use RavenCore;
+use RavenCore::Shadow;
+use Serialize;
 use SEM; # file locking with semaphores
-use rcshadow; # perl lib to edit unix system users
-use rcfilefunctions; # perl lib for easy file functions
-use serialize; # to get/set PHP $_SESSION data, lib found at: http://hurring.com/code/perl/serialize/
 
 =pod
 *** NOTES ***
@@ -2312,7 +2309,7 @@ sub rehash_ftp
 #    }
 
 # create our shadow object
-    my $shadow = new rcshadow($self->{ostype});
+    my $shadow = new RavenCore::Shadow($self->{ostype});
 
     my $sql;
     

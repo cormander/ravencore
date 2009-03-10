@@ -20,14 +20,14 @@
 
 use Socket;
 use POSIX;
-use rcfilefunctions;
-use ravencore;
+use RavenCore;
+use RavenCore::Server;
 
 # name our process
 $0 = 'rcserver';
 
 #
-$rc = new ravencore;
+$rc = new RavenCore::Server;
 
 # set debugging to 1 if the debug file exists;
 $rc->{debug_flag} = 1 if -f $rc->{RC_ROOT} . '/var/run/debug';
@@ -303,7 +303,7 @@ sub sig_HUP
 
     $rc->debug("Receiving sig HUP, reloading");
 
-    do $rc->{RC_ROOT} . '/var/lib/ravencore.pm';
+    do $rc->{RC_ROOT} . '/var/lib/RavenCore/Server.pm';
     
 # load the other .pm modules in var/lib/includes/
     $rc->load_internal_pm;
