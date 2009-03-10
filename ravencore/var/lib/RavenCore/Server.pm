@@ -3266,10 +3266,6 @@ sub ip_list
     return $ips;
 }
 
-sub is_ip {
-    return $_[0] =~ /^(\d{1,3}\.){3}\d{1,3}$/;
-}
-
 sub AUTOLOAD
 {
     my ($self) = @_;

@@ -27,7 +27,7 @@ use SEM;
 
 use vars qw(@ISA @EXPORT);
 @ISA     = qw(Exporter);
-@EXPORT  = qw(file_get_contents file_touch file_move file_get_array file_write file_append file_move file_delete file_copy file_chown file_chown_r file_chmod_r file_diff mkdir_p dir_list find_in_path in_array pidof);
+@EXPORT  = qw(file_get_contents file_touch file_move file_get_array file_write file_append file_move file_delete file_copy file_chown file_chown_r file_chmod_r file_diff mkdir_p dir_list find_in_path in_array pidof is_ip);
 
 #
 # File function calls... read/write/append/delete/move/etc, with locking support
@@ -350,6 +350,10 @@ sub pidof
     chomp $pidof;
     
     return split / /, $pidof;
+}
+
+sub is_ip {
+    return $_[0] =~ /^(\d{1,3}\.){3}\d{1,3}$/;
 }
 
 1;
