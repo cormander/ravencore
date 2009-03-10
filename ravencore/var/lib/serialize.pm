@@ -1,4 +1,5 @@
-package serialize;
+package Serialize;
+
 use strict;
 use vars qw(@ISA @EXPORT $VERSION);
 @ISA     = qw(Exporter);
@@ -9,13 +10,12 @@ our $SERIALIZE_DBG = 0;
 
 =pod
 Perl implementation of PHP's native serialize(), unserialize(),
-and session_encode() functions.
-
-Planned for next version is session_decode()
+session_decode(), and session_encode() functions.
 
 @author Scott Hurring (scott at hurring dot com)
 http://hurring.com/
 Please be nice and send bugfixes and code improvements to me.
+(or send them to RavenCore.. as we actually maintain this too)
 
 @version v0.92
 @author Scott Hurring; scott at hurring dot com
@@ -26,7 +26,7 @@ Most recent version can be found at:
 http://hurring.com/code/perl/serialize/
 
 BUGFIXES: v0.92 contains two bugs in the unserialize function, which were
-fixed in this file by cormander
+fixed in this file by RavenCore
 
 1) Any single digit integer was being seen as a NULL value, instead of an
 integer:
@@ -266,9 +266,10 @@ sub serialize_value {
 sub session_decode {
 	my ($string) = @_;
 	
-	# Not implemented (yet)
+# for seesion_decode, I got this perl regex off of php.net:
+	my %res = $string =~ /([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)\|([^\|]*[\;\}])/g;
 	
-	die("Not implemented.");
+	return \%res;
 }
 
 
@@ -403,7 +404,7 @@ sub unserialize_sub {
 	# Loop through the data char-by-char, eating them as we go...
 	while ( defined(my $c = shift @{$chars}) )
 	{
-		serialize_dbg("\twhile [$mode] = $c (skip=$skip)");
+	    serialize_dbg("\twhile [$mode] = $c (skip=$skip)");
 	
 		# Processing a serialized string
 		# Format: s:length:"data"
