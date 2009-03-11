@@ -294,7 +294,8 @@ sub unserialize_value {
 	# the need for single-value unserialize code
 	
 	# This is an array
-	if ($value =~ /^a:(\d+):\{(.*)\}$/) {
+	# BUGFIX by cormander, multi-line strings were comming back as NULL
+	if ($value =~ /^a:(\d+):\{(.*)\}$/s) {
 		serialize_dbg("Unserializing array");
 		
 		my @chars = split(//, $2);
