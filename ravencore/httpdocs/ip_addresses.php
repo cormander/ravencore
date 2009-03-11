@@ -38,6 +38,13 @@ nav_top();
 
 $ips = $db->do_raw_query('ip_list');
 
+if (!is_array($ips)) {
+
+    print $ips;
+    nav_bottom();
+
+}
+
 print '<form name=main method=post>
 <input type=hidden name=action value=update>
 <input type=hidden name=ip>

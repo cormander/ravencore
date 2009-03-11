@@ -65,7 +65,7 @@ start() {
 
     echo -n $"Starting control panel: "
 
-    $RC_ROOT/sbin/run_cmd rcserver
+    perl -I$RC_ROOT/var/lib $RC_ROOT/sbin/rcserver
 
     RETVAL=$?
     
@@ -73,7 +73,7 @@ start() {
 	
 	success
 
-# check to see if we're a completed installation...
+        # check to see if we're a completed installation...
     
 	if [ ! -f $RC_ROOT/var/run/install_complete ]; then
 	    
@@ -82,10 +82,10 @@ start() {
 	    echo
 	    echo "Thank You for using RavenCore!"
 	    echo
-	    echo "The install/upgrade process will not be completed until after you login to the control panel web interface as the admin user, and accept the license agreement (GPL)."
+	    echo "The install/upgrade process will not be completed until after you login to the control panel web interface as the $ADMIN_USER user, and accept the license agreement"
 	    echo
 	    
-# simple loop to get all IP addresses bound to a machine
+            # simple loop to get all IP addresses bound to a machine
 	    
 	    IP_ADDRESSES=$(for IFACE in `ifconfig | grep -v '^ ' | awk '{print $1}'`; do echo $(for i in `ifconfig | awk "/^\$IFACE/ {print \\$1}"`; do ifconfig $i | grep -o 'addr:[[:digit:]]\{1,3\}\.[[:digit:]]\{1,3\}\.[[:digit:]]\{1,3\}\.[[:digit:]]\{1,3\}' | sed 's/addr://'; done); done)
 	    
@@ -95,7 +95,7 @@ start() {
 	    
 	    passwd=$(cat $RC_ROOT/.shadow 2> /dev/null)
 	    
-	    if [ "$passwd" = "ravencore" ]; then
+	    if [ -z "$passwd" ] || [ "$passwd" = "ravencore" ]; then
 		
 		echo "NOTE: You have not yet set your admin password!"
 		echo "You can do this by running this as root: "$RC_ROOT"/sbin/run_cmd passwd"
@@ -145,12 +145,14 @@ send_kill() {
     if [ $RETVAL -eq 0 ]; then
 	success
     else
+
 # try again with pidof
 	kill -$sig $(pidof rcserver) 2> /dev/null
 	
 	RETVAL=$?
 	
 	if [ $RETVAL -eq 0 ]; then
+	    rm -f $RC_ROOT/var/run/rcserver.pid
 	    success
 	else
 	    failure

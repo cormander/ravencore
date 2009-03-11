@@ -18,25 +18,19 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-$RC_ROOT = ( $ENV{'RC_ROOT'} ? $ENV{'RC_ROOT'} : '/usr/local/ravencore' );
+BEGIN {
+	$RC_ROOT = ( $ENV{'RC_ROOT'} ? $ENV{'RC_ROOT'} : '/usr/local/ravencore' );
 
-#
+	# add the ravencore lib directory to the search path for perl modules
+	unshift @INC, $RC_ROOT . '/var/lib';
+};
 
-if( $ARGV[0] eq "rcserver" )
-{
-    chdir $RC_ROOT . '/var/lib';
-    
-    exec $RC_ROOT . '/sbin/rcserver';
-}
+use RavenCore::Client;
+use Data::Dumper;
 
-# add the ravencore lib directory to the search path for perl modules
-unshift @INC, $RC_ROOT . '/var/lib';
+my $cmd;
 
-# we require, instead of use, because "use" is pre-processed and we don't get a chance to look in our
-# RC_ROOT/var/lib directory.
-require RavenCore::Client;
-
-$rc = new RavenCore::Client($RC_ROOT);
+my $rc = new RavenCore::Client($RC_ROOT);
 
 # build our $cmd off of everything given on the command line
 
@@ -103,62 +97,9 @@ if( $cmd eq "passwd" )
 
 my $ret = $rc->do_raw_query($cmd);
 
-my $dat = &print_r($ret);
-
-print $dat . "\n" if $dat;
-
-# global variable for the print_r function
-$nest = 0;
-
-# look at the given variable, print it if it's string, and if it's a hash, walk down the hash and call
-# itself again on those values... effectivly giving a similiar functionality to the PHP print_r function
-
-sub print_r
-{
-    my $val = shift;
-
-    my $data;
-    
-    if( ref($val) eq "HASH" )
-    {
-	$nest++;
-	$data .= "\%HASH\n" . &x_t($nest-1). "[\n";
-
-	foreach my $b (keys %$val)
-	{
-	    $data .= &x_t($nest);
-
-	    $data .= $b . "=" . &print_r($val->{$b}) . "\n";
-	}
-	
-	$data .= &x_t($nest-1) . "]\n";
-
-	$nest--;
-    }
-    else
-    {
-	$data = $val;
-    }
-    
-    return $data;
+if ( $ret ) {
+    print ( ref($ret) ? Dumper($ret) : $ret );
 }
-
-# return X "\t" characters
-
-sub x_t
-{
-    my $x = shift;
-    
-    my $str;
-
-    for(my $i = 0; $i < ($x); $i++)
-    {
-	$str .= "\t";
-    }
-
-    return $str;
-}
-
 
 # a password prompt
 
@@ -200,3 +141,4 @@ sub passwd_prompt
     return $passwd;
 
 }
+

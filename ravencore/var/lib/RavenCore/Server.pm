@@ -25,17 +25,28 @@
 
 package RavenCore::Server;
 
-# use perl libs
-
-use MIME::Base64; # to make our lives easier with encoding data accross the socket
-use File::Basename; # functions to make parsing a file to form our semaphore a lot easier
-# use File::Find; # so we can do recursive chmod/chown/etc calls.. unused, not implemented
-
-# use ravencore's custom perl libs
+# if these don't exist, you've got one funky installation
 use RavenCore;
 use RavenCore::Shadow;
 use Serialize;
-use SEM; # file locking with semaphores
+
+# these modules should come with perl, and it's OK to die here if they don't exist
+use File::Basename;
+use Data::Dumper;
+use MIME::Base64;
+
+# likewise; these are needed by Net::Server
+use IO::Handle;
+use IO::Select;
+use IO::Socket;
+use IO::Socket::UNIX;
+use POSIX;
+use Socket qw(SOCK_DGRAM);
+use Sys::Syslog;
+
+# global vars
+our $ETX = chr(3);
+our $EOT = chr(4);
 
 =pod
 *** NOTES ***
@@ -73,219 +84,86 @@ greatly reduce the risk of sql injection
 
 =cut
 
-# our object constructor
+# combind this object with Net::Server, and load other nessisary functions from various files
 
 sub new
 {
     my ($class) = @_;
 
-# make sure we are root
-    die "Must be root" unless $< == 0;
-    
-# define our $self with a few of our binary communication characters
-    my $self = {
-	ETX => chr(3), # end of text
-	EOT => chr(4), # end of transmission
-	NAK => chr(21), # negative acknowledge
-	ETB => chr(23), # end of trans. block
-	CAN => chr(24), # cancel
-	debug_flag => 0, # flag for debugging, do not change it here!
-                         # you can activate debugging when you startup:
-	                 #    /etc/init.d/ravencore start debug
-	                 #    /etc/init.d/ravencore restart debug
-	                 # or at any time while running:
-	                 #    /etc/init.d/ravencore reload debug
-	                 # if you like to see debugging as it occurs, background a tail:
-	                 #    tail -f /usr/local/ravencore/var/log/rcserver &
-	                 # and to disable debugging while running, reload again (w/o debug):
-	                 #    /etc/init.d/ravencore reload
-    };
-    
-# TODO: FIX ME
-    my $RC_ETC = ( $ENV{'RC_ETC'} ? $ENV{'RC_ETC'} : '/etc/ravencore.conf' );
+    my $self = {};
 
-# bless the object    
     bless $self, $class;
 
-# define our session set vars.. none to start with, for now
-    %{$self->{session_set_vars}} = ();
-    
-# get our base configuration file
+    # TODO: ugly ugly ugly!!!
+    my $RC_ETC = ( $ENV{'RC_ETC'} ? $ENV{'RC_ETC'} : '/etc/ravencore.conf' );
+
     my %rcetc = $self->parse_conf_file($RC_ETC);
-    
+
     foreach my $key (keys %rcetc)
     {
-	$self->{$key} = $rcetc{$key};
+        $self->{$key} = $rcetc{$key};
     }
 
-# variable telling us if we're at the terminal, when we startup, we are
-    $self->{term} = 1;
+    #
+    # load required modules that we need from our own lib; they may not nessisarily exist with a standard perl install
+    #
 
-# map inertal functions to their respective security levels. anything not listed is non-accessable at all
-# by a direct call from a connected client
+    unshift @INC, $self->{RC_ROOT} . '/var/lib';
 
-# cmd_privs_unauth: commands anybody can run. they should be few, and not able to do much
-# cmd_privs_client: commands a non-admin user can run
-# cmd_privs_admin: admin-only commands. reboot server, change password, etc.
-# cmd_privs_system: system-only commands. system access includes admin access
+    # import the Net::Server module included with RavenCore, and make RavenCore::Server inherit it
+    require base;
+    import base qw(Net::Server::Fork);
 
-# TODO: make each function of _client check the session against what it's asked to do, so one client can't try
-# to ask the system to edit things that belong to another (just incase they bypass the security in the PHP
-# code)
+    #
+    # load "optional" perl modules; most of them are required for RavenCore to be useful, but we can at least start the interface
+    # without them
+    #
 
-    foreach my $privs ( ('cmd_privs_unauth', 'cmd_privs_client', 'cmd_privs_admin', 'cmd_privs_system') )
+    my @internal_perl_mod_specs = ( 'Net::HTTP',
+                                    'Time::HiRes',
+				    'DBI',
+				    'DBD::mysql',
+                                    'Locale::gettext',
+				    );
+
+    foreach my $mod ( @internal_perl_mod_specs )
     {
-	@{$self->{$privs}} = file_get_array($self->{RC_ROOT} . '/etc/' . $privs);
-    }
-
-# by default, we have unauth privs
-    @{$self->{cmd_privs}} = @{$self->{cmd_privs_unauth}};
-
-# get the list of ravencore internal perl modules to include
-    $self->load_internal_pm;
-
-# walk through a list of perl modules to include, if they exist on the system. These are not required
-# for ravencore to function, but add additional functionality
-
-# Net::HTTP - retrieve remote http data for the version check
-# DBI - database interface
-# TODO: make this an array somewhere, maybe read as a file in RC_ROOT/etc
-
-    foreach my $mod ( ( 'Net::HTTP', 'DBI' ) )
-    {
-	my $found = 0;
-
-# search the @INC array for the existance of the module
-	foreach (@INC)
-	{
-# modifying $_ would screw us up, so copy it to $path instead
-	    my $path = $_;
-
-# add the $mod to the $path and convert the module name to its respective file
-	    $path .= '/' . $mod . '.pm';
-	    $path =~ s|::|/|g;
-
-# if it exists, require it and mark it as found
-	    if( -f $path )
-	    {
-		require $path;
-		$self->debug("Including $mod perl module");
-		$found = 1;
+        eval "use " . $mod . ";";
+	if (!$@) {
 		$self->{perl_modules}{$mod} = 1;
-		last;
-	    }
 	}
-
-	$self->do_error("Unable to load perl module $mod, not found") if $found == 0;
-
     }
 
-# if we have the DBI module loaded, check to see if we have the 'mysql' driver for the DBI object installed
-    if($self->{perl_modules}{DBI})
-    {
-	
-# list DBI's available drivers
-	my @dbi_driver_names = DBI->available_drivers;
-	
-	my $mysql_driver = 0;
-	
-	foreach(@dbi_driver_names)
-	{
-	    $self->debug('DBI driver "' . $_ . '" found');
-	    $mysql_driver = 1 if $_ eq 'mysql';
-	}
-	
-# if $mysql_driver is still set to 0 after this loop, then the driver wasn't found, and we can't continue
-	if( $mysql_driver == 0 )
-	{
-	    $self->do_error("The mysql driver for the perl DBI object was not found. Perhaps the DBD::mysql perl module hasn't been installed?");
-# having the DBI module is useless if the mysql driver isn't available, so remove it from our list
-	    delete $self->{perl_modules}{DBI};
-	}
-
-    }
-
-
-#
-# TODO: make sure we have certian variables here... we probably only need to check for RC_ROOT, but
-# die with error if we don't have it, or if it doesn't exist on the filesystem
-#
-
-# define our PATH based off of our $ENV{PATH}
-    @{$self->{PATH}} = split /:/, $ENV{PATH};
-
-# find out what distribution of linux we are (dist)
-
-    my @dist_map = file_get_array($self->{RC_ROOT} . '/etc/dist.map');
-# the etc/dist.map file is one distribution per line, first word is the name, and each string after it
-# seperated by a space is a file that is uniq to the distribution (that shouldn't exist on others).
-# it's a very basic way to tell what system this is, but it seems to work quite well
-
-    foreach my $dist (@dist_map)
-    {
-        my @arr = split / /,$dist;
-
-# the first one is the dist name, we maybe are this one
-	my $maybe_this = shift(@arr);
-
-# don't bother checking this if it's a # or a blank
-
-	if($maybe_this eq '#' or $maybe_this eq "") { next }
-
-# walk down the rest of the array.. they are files to check for
-	foreach my $file (@arr)
-	{
-# if this file exists, we're this dist... don't check again once the {dist} is set
-            if( -f $file && !$self->{dist})
-	    {
-		$self->{dist} = $maybe_this;
-	    }
-	    
-	}
-	
-    }
-
-# figure out our $ostype
-    my $ostype = `uname`;
-    chomp $ostype;
-
-    if($ostype =~ /linux/i)
-    {
-	$self->{ostype} = 'linux';
-    }
-    elsif($ostype =~ /bsd/i)
-    {
-	$self->{ostype} = 'bsd';
-    }
-
-    $self->debug("ostype set to " . $self->{ostype});
-
-    return $self;
-    
-} # end sub new
-
-#
-
-sub load_internal_pm
-{
-    my ($self) = @_;
+    #
+    # load more internal functions from seperate files
+    #
 
     my @pms = dir_list($self->{RC_ROOT} . '/var/lib/includes');
-    
+
     foreach my $pm (@pms)
     {
-# only include this file if it ends in .pm
-# TODO: check file ownership/permissions, should be 0600 root:root
-	next unless $pm =~ /\.pm$/;
-	do $self->{RC_ROOT} . '/var/lib/includes/' . $pm;
-# check for errors on the do statement, if there is a syntax error, it'll show up as a "Bad file
-# descriptor", but that's confusing and scary, so say something more optimistic
-	$self->do_error("Warning: $pm might not have completly loaded, it appears to have syntax errors") if $!;
+	# only include this file if it ends in .pm
+	# TODO: check file ownership/permissions, should be 0600 root:root
+        next unless $pm =~ /\.pm$/;
 
-	$self->debug("Including " . $self->{RC_ROOT} . '/var/lib/includes/' . $pm);
+        $self->debug("Including " . $self->{RC_ROOT} . '/var/lib/includes/' . $pm);
+        do $self->{RC_ROOT} . '/var/lib/includes/' . $pm;
+
+	# check for errors on the do statement, if there is a syntax error, it'll show up as a "Bad file
+	# descriptor", but that's confusing and scary, so say something more optimistic
+        $self->do_error(_("Warning: %s might not have completly loaded, it appears to have syntax errors", $pm)) if $!;
     }
 
+    $self->die_error(_('Variable %s is undefined! Please check the file: %s', 'RC_ROOT', $RC_ETC)) unless $self->{RC_ROOT};
+    $self->die_error(_('The root directory %s does not exist!', $self->{RC_ROOT})) unless -d $self->{RC_ROOT};
+
+    $self->{class} = $_[0];
+
+    @{$self->{errors}} = ();
+
+    return $self;
 }
+
 
 # function to tell the client some basic information on what they can do
 
@@ -342,10 +220,6 @@ sub get_default_locale
 } # end sub get_default_locale
 
 # ... you guessed it, connect to the database!!!
-# RavenCore gets a  database connection on startup and passes a shared connection to the child processes.
-# If for some reason the passed connection is lost ( the mysql server restarts, the password changes, etc) 
-# then the ping will see that and reconnect manually, and also signalling the parent process to reget
-# the database connection
 
 sub database_connect
 {
@@ -353,7 +227,15 @@ sub database_connect
 
     $self->{db_connected} = 0;
 
-    return unless $self->{perl_modules}{DBI};
+    if ( ! $self->{perl_modules}{DBI} ) {
+	$self->debug("DBI not loaded");
+	return;
+    }
+
+    if ( ! $self->{perl_modules}{DBD::mysql} ) {
+	$self->debug("DBD::mysql not loaded");
+	return;
+    }
 
 # test if we have the dbi object, and if so, ping it to see if it's still alive
     if( $self->{dbi} )
@@ -381,9 +263,6 @@ sub database_connect
 
 # if we get here, we have lost database connection...
 	$self->{db_connected} = 0;
-
-# attempt to reload the parent
-	$self->reload("Inherited database connection is no longer valid... trying to reload it");
 
     }
     
@@ -420,108 +299,17 @@ sub database_connect
 sub reload
 {
     my ($self, $msg) = @_;
-    
-# tell our parent process to reload (if we are not the parent process)
-    if( $self->{ppid} ne $$ )
+
+    # tell our parent process to reload (if we are not the parent process)
+    if( $self->{server}{ppid} ne $$ )
     {
-	$self->debug($msg);
-	
-	kill "HUP", $self->{ppid};
+        $self->log('2',$msg) if $msg; # always good to know why
+
+        kill "HUP", $self->{server}{ppid};
     }
-    
+
     return;
-
-} # end sub reload
-
-# call an internal function based on a client's request
-sub client_request
-{
-    my ($self, $query) = @_;
-    
-# split the string
-    my @args = split/ /, $query;
-
-# the first argument is the command (function) name to be called
-    my $func = shift @args;
-    
-# remember that we did this $func.. we have a hash for easy lookup, and an array to remember to order
-# in which they were called
-    $self->{client_request_hash}{$func} = 1;
-    push @{$self->{client_request_array}}, $func;
-
-    my $ok_to_do = 0;
-
-# check to see if it is OK for this client to run this function    
-    foreach(@{$self->{cmd_privs}})
-    {
-	$ok_to_do = 1 if $_ eq $func;
-    }
-    
-    $self->debug("received query: " . $query);
-
-#
-# TODO: implement query logging. part of the whole reason why everything talks to the socket for data
-# queries and such, is so that there is a central point of logging... set different logging verbose levels,
-# so we'll know whather to report just insert/update/delete queries, just report commands, or report
-# ALL queries, directed to a logfile somewhere
-#
-
-    if( $ok_to_do == 1 )
-    {
-# remove $func from query
-	$query =~ s/^$func ?//;
-
-	my $ret;
-
-# recieve any returned data from the client into this variable. Note that if we want to pass a hash or an
-# array, we need to return them as a reference, ie: return \%{self->{CONF}};
-# otherwise, you'll get a very wierd string
-
-# running a $func that doesn't exist shouldn't ever happen (unless a non-existant function is put in the
-# cmd_privs ), so just in case, do an eval on it to catch an "object method" error and prevent the child
-# process from crashing
-        eval
-        {
-            local $SIG{__DIE__};
-	    $ret = $self->$func($query);
-	};
-
-# if there was an error caught, tell the client
-	$self->do_error($@) if $@;
-
-	$self->debug("End of function call " . $func);
-	$self->debug("Sent data: " . $ret);
-
-# serialize and encode_base64 $ret so that it can safely travel back to the client
-	return encode_base64(serialize($ret));
-    }
-    else
-    {
-	$self->do_error("Unable to execute requested query: " . $query . ". Access is denied.");
-    }
-    
-    return;
-
-} # end sub client_request
-
-# a simple debug function... print the given input if debugging is turned on
-
-sub debug
-{
-    my ($self, $msg) = @_;
-
-    if( $self->{debug_flag} == 1 )
-    {
-# get the scalar return from local time, eg: Sun Feb  4 12:14:51 2007
-	my $time = localtime;
-# get rid of any trailling return character
-	chomp $msg;
-# translate return character to literal \n
-	$msg =~ s/\n/\\n/g;
-	print $time . " pid " . $$ . ": " . $msg . "\n";
-    }
-
-} # end sub debug
+}
 
 # a function use to read the password out of the .shadow file
 
@@ -540,9 +328,6 @@ sub get_passwd
 #
 # Configuration reading/writting functions (the functions for writting are TODO)
 #
-
-# read a file and return a name/value hash
-# these files are always in format: NAME=VALUE (and always all uppercase)
 
 sub parse_conf_file
 {
@@ -653,7 +438,11 @@ sub get_db_conf
 
 # check to see if the GPL has been accepted
     $self->{gpl_check} = 0;
-    $self->{gpl_check} = 1 if -f $self->{RC_ROOT} . '/var/run/gpl_check';
+    if ( -f $self->{RC_ROOT} . "/var/run/gpl_check" ) {
+	$self->{gpl_check} = 1;
+    } else {
+	$self->debug("GPL agree file not found: " . $self->{RC_ROOT} . "/var/run/gpl_check");
+    }
 
 # are we a complete install?
     $self->{install_complete} = 0;
@@ -832,42 +621,6 @@ sub module_list_enabled
     return %enabled;
 }
 
-# oh no!! die with an error message!! :)
-
-sub die_error
-{
-    my ($self, $msg) = @_;
-    
-    print $msg . "\n";
-    
-    exit(1);
-} # end sub die_error
-
-# function that is called inside the child process, to handle error messages
-
-sub do_error
-{
-    my ($self, $errstr) = @_;
-
-    chomp $errstr;
-
-    $self->debug("ERROR: " . $errstr);
-
-# if the running process is conneted to a socket client, print the error there
-    if( $self->{CLIENT} )
-    {
-	print {$self->{CLIENT}} $self->{NAK} . $errstr . $self->{ETB};
-    }
-    else
-    {
-# otherwise, spit it out on STDERR so the sys admin at the terminal can read it
-	print STDERR $errstr . "\n";
-    }
-
-    return 0;
-
-} # end sub do_error
-
 # function that is called if things have gone horribly wrong. Print all the appropriate
 # closing bytes to the client ( NAK for error, CAN for fatal error, and EOT so the client
 # knows we're done reporting ), and exit out with an error.
@@ -896,46 +649,6 @@ sub fatal_error
     
 } # end sub fatal_error
 
-# read in a line of data. don't be fooled by the word "line", as it doesn't stop at a newline character, but
-# rather at an end-of-transmission character. the built in < > perl operators read until a newline character,
-# so we have to go about reading a different way
-
-sub data_read
-{
-
-# our first and only argument is the filehandle in which to read
-
-    my ($self) = @_;
-
-# initilize some local variables so they don't conflict with the rest of the script
-
-    my $data;
-    my $c;
-    my $ret;
-
-# $data .= $c; comes FIRST so that $data doesn't contain the $EOT character at the end
-# then we read in one byte, and get the return value of the read syscall
-# if the $ret is zero, then nothing was read. return with zero so the program exists the loop
-# and forces the client connection to close.
-
-    do {
-
-        $data .= $c;
-
-        $ret = read $self->{CLIENT}, $c, 1;
-
-	$self->do_error("Error on data read: " . $!) if ! defined $ret;
-
-        if ( $ret == 0 ) { return 0; }
-
-    } while ( $c ne $self->{EOT} );
-
-# this is all done while the character read isn't an EOT (end-of-transmission) character. all input on the
-# socket up until the EOT character will be base64 encoded, so decode it here as we return it
-
-    return decode_base64($data);
-
-} # end sub data_read
 
 #
 
@@ -1214,14 +927,13 @@ sub verify_passwd
 sub sql
 {
     my ($self, $query) = @_;
-    my $data;
+    my $data = {
+		rows_affected => undef,
+		insert_id => undef,
+		rows => [],
+	};
 
     return unless $self->{db_connected};
-
-# set some values to zero
-
-    my $rows_affected = 0;
-    my $insert_id = 0;
 
 # do the sql query, but the kind of query depends on what we do.
 # if it's NOT a "select" or a "show" query (do a case in-sensative match) then we simply "do"
@@ -1233,16 +945,12 @@ sub sql
 	$self->database_connect;
 
 # submit the query to the database
-        $rows_affected = $self->{dbi}->do($query);
+        $data->{rows_affected} = $self->{dbi}->do($query);
 	$self->debug("Did SQL query: $query");
-	$self->debug("Rows affected: $rows_affected");
+	$self->debug("Rows affected: ". $data->{rows_affected});
 
-        if ( ! $self->{dbi}->errstr )
-        {
-            $insert_id = $self->{dbi}->{ q{mysql_insertid} };
-
-# this isn't a select statement, but we still return data in the same format
-            $data = $insert_id . $self->{ETX} . $self->{ETX} . $rows_affected . $self->{ETX} . $self->{ETX};
+        if ( ! $self->{dbi}->errstr ) {
+            $data->{insert_id} = $self->{dbi}->{ q{mysql_insertid} };
         } else {
 	    $self->do_error("DBI Error: " . $self->{dbi}->errstr);
 	}
@@ -1263,25 +971,13 @@ sub sql
 # fetch the data into a hash. That way, we have both the column name and the value
             while( my $hash_ref = $result->fetchrow_hashref )
             {
-# data is in the following format:
-# name{value} (value is base64 encoded) followed by an ETX character (end of text)
-# name is the database column name, and is considered safe from malicious activity
-# the value is encoded so that data won't mess up this proccess if it contains stuff
-# like "}" or the ETX binary character
-                foreach (keys %$hash_ref)
-                {
-                    $data .= $_ .'{' . encode_base64($hash_ref->{$_}) . '}' . $self->{ETX};
-                }
-# end the string with a ETX character... end of string will always be two ETX's, unless
-# there are no results, in which case, it doesn't matter because an empty string is returned
-                $data .= $self->{ETX};
+
+		push @{$data->{rows}}, $hash_ref;
+
             }
 
 #
             $result->finish();
-
-# gather our info. the PHP data_query function will know how to parse this.
-            $data = $insert_id . $self->{ETX} . $self->{ETX} . $rows_affected . $self->{ETX} . $self->{ETX} . $data;
         }
 
     }
@@ -2887,30 +2583,6 @@ sub disp_chkconfig
 
 } # end sub disp_chkconfig
 
-# generate a random string of $x length
-# TODO: work on this a bit. it isn't a "truely random" string generator, but it works good enough for now
-
-sub gen_random_id
-{
-    my ($self, $x) = @_;
-
-    my $str;
-    
-# $x item long string with randomly generated letters ( from a to Z ) and numbers
-    for(my $i=0; $i < $x; $i++)
-    {
-	my $c = pack("C",int(rand(26))+65);
-	
-# 1/3rd chance that this will be a random digit instead
-	$c = int(rand(10)) if int(rand(3)) == 2;
-
-	$str .= (int(rand(3))==0?$c:lc($c));
-    }
-    
-    return $str;
-
-} # end sub gen_random_id
-
 #
 
 sub start_webserver
@@ -3210,6 +2882,8 @@ sub ip_list
 {
     my ($self) = @_;
 
+    return "This page doesn't work without a database connection." unless $self->{db_connected};
+
     my $ips = {};
     my $db_ips = {};
 
@@ -3273,4 +2947,338 @@ sub AUTOLOAD
     $self->debug("WARNING: Caught undefined function via AUTOLOAD");
 }
 
-1; # end package ravencore
+# mark set
+
+
+#
+# functions on Net::Server startup
+#
+
+sub configure_hook
+{
+    my ($self) = @_;
+
+    # if we have Locale::gettext, set our textdomain
+    if($INC{'Locale/gettext.pm'})
+    {
+        textdomain("ravencore");
+        bindtextdomain("ravencore", $self->{RC_ROOT} . '/var/locale');
+	# TODO: verify LC_MESSAGES works in single quotes
+        setlocale('LC_MESSAGES', $self->get_default_locale);
+    }
+
+    # toggle debugging
+    $self->{debug_flag} = 1 if -f $self->{RC_ROOT} . '/var/run/debug';
+
+    # cmd_privs_unauth: commands anybody can run. very few commands, and not able to do much
+    # cmd_privs_client: commands a non-admin user can run
+    # cmd_privs_admin: admin-only commands. reboot server, change password, etc.
+    # cmd_privs_system: system-only commands
+
+    # list of all functions
+    @{$self->{'cmds'}} = ();
+
+    foreach my $privs ( ('unauth', 'client', 'admin', 'system') )
+    {
+        @{$self->{'cmd_privs_'.$privs}} = file_get_array($self->{RC_ROOT} . '/etc/cmd_privs_' . $privs);
+	@{$self->{'cmds'}} = (@{$self->{'cmds'}}, @{$self->{'cmd_privs_'.$privs}});
+    }
+
+    # default to unauth privs
+    @{$self->{cmd_privs}} = @{$self->{cmd_privs_unauth}};
+
+    # TODO: $ENV{PATH}
+
+    my @dist_map = file_get_array($self->{RC_ROOT} . '/etc/dist.map');
+
+    # the etc/dist.map file is one distribution per line, first word is the name, and each string after it
+    # seperated by a space is a file that is uniq to the distribution (that shouldn't exist on others).
+    # it's a very basic way to tell what system this is, but it seems to work quite well
+
+    foreach my $dist (@dist_map)
+    {
+        my @arr = split / /,$dist;
+
+	# the first one is the dist name, we maybe are this one
+        my $maybe_this = shift(@arr);
+
+	# don't bother checking this if it's a # or a blank
+	next unless $maybe_this;
+        next if $maybe_this eq '#';
+
+	# walk down the rest of the array.. they are files to check for
+        foreach my $file (@arr)
+        {
+	    # if this file exists, we're this dist... don't check again once the {dist} is set	    
+            if( -f $file && !$self->{dist})
+            {
+                $self->{dist} = $maybe_this;
+            }
+	    
+        }
+	
+    }
+
+    my $ostype = `uname`;
+    chomp $ostype;
+
+    if($ostype =~ /linux/i)
+    {
+        $self->{ostype} = 'linux';
+    }
+    elsif($ostype =~ /bsd/i)
+    {
+        $self->{ostype} = 'bsd';
+    }
+
+    # initialize some variables
+    @{$self->{errors}} = ();
+
+    # TODO: search for these rather then just define them
+    $self->{HTTPD} = '/usr/sbin/httpd';
+    $self->{INITD} = '/etc/init.d';
+
+    # a hack; replace commandline with our correct startup procedure, so we can survive a sig HUP
+    # Net::Server's default is $0, which is changed to 'rcserver', this changes the internal var back to the full path
+    $self->{server}{commandline} = [ 'perl', '-I' . $self->{RC_ROOT} . '/var/lib', $self->{RC_ROOT} . '/sbin/rcserver', '--noweb' ];
+}
+
+# post_configure_hook
+# post_bind_hook
+
+sub pre_loop_hook
+{
+    my ($self) = @_;
+
+    chmod 0660, $self->{server}{port}[0];
+    # TODO: use perl function instead of syscall
+    CORE::system('chgrp rcadmin ' . $self->{server}{port}[0]);
+}
+
+#
+# runtime functions before client connection
+#
+
+# pre_accept_hook
+# post_accept_hook
+
+# redirect STDERR before we fork
+
+sub pre_fork_hook 
+{
+    my ($self) = @_;
+
+    # reopen STDERR to syslog so syntax and program errors are sent somewhere other than /dev/null
+    # TODO: this is ugly, and may not work everywhere
+    close STDERR;
+    *STDERR = IO::Socket::UNIX->new(Type => SOCK_DGRAM, Peer => "/dev/log") or die $@;
+}
+
+#
+# handle client connection
+#
+
+sub process_request
+{
+    my ($self) = @_;
+
+    $self->database_connect;
+
+    $self->debug('Got client connection');
+
+    # read commands until disconnect or quit
+    while ( my $query = $self->data_read )
+    {
+	# proccess the requested query and return the results to the client
+	$self->data_write($self->run_query($query));
+
+	last if $self->{quit}; # manual exit of session
+    }
+    
+    # if session_read was called but seesion_write wasn't, call session_write
+    if($self->{run_ran}{session_read} && ! $self->{run_ran}{session_write})
+    {
+        $self->debug(_('%s was ran, but %s was not; running %s', "session_read", "session_write", "session_write"));
+	$self->session_write({'data' => $self->{session}{data}});
+    }
+    
+    $self->debug('Closing client connection');
+
+    return 1;
+}
+
+#
+# shutdown cleaup
+#
+
+# pre_server_close_hook
+
+#
+# Net::Server functions to completly redefine
+#
+
+# nullify the damn function call that removes the entire %ENV hash on HUP.. it breaks shit. What the hell are they thinking?
+
+sub hup_delete_env_keys { return; }
+
+# contrary to usual daemon operations, we don't want a server INT or HUP to stop children from what they're doing...
+# TODO: this may cause problems with shutdowns in certian situations, do some testing
+
+sub close_children { return; }
+
+#
+# internal (non-Net::Server) functions which aren't called by the client
+#
+
+# simple debugging facility
+# TODO: accept various debug verboseness
+
+sub debug
+{
+    my ($self, $msg) = @_;
+
+    # only log in debug mode
+    $self->log(2, $msg) if $self->{debug_flag};
+}
+
+# receive a chunk of data followed by a binary "end of transmission" character,
+
+sub data_read
+{
+    my ($self) = @_;
+
+    my $data;
+    my $c;
+
+    # read each character one by one until EOT is reached
+    while( read($self->{server}{client}, $c, 1) ) {
+	last if $c eq $EOT;
+        $data .= $c;
+    }
+
+    # no data; either interuppted system call or the client disconnected
+    return undef unless $data;
+
+    # return the decoded data
+    return $data;
+}
+
+# write a chunk of base64 encoded data followed by the binary EOT bit
+# the encoded string is serialized, RavenCore::Client->run will decoded it properly
+
+sub data_write
+{
+    my ($self, $stdout) = @_;
+
+    my $data = {
+	stdout => $stdout,
+	stderr => $self->{errors},
+    };
+
+    # write data the chunck
+    print {$self->{server}{client}} encode_base64(serialize($data)) . $EOT;
+
+    # errors are cleared after they're written
+    @{$self->{errors}} = ();
+
+}
+
+# this is the server side function that is executed when RavenCore::Client->run() is called
+
+sub run_query
+{
+    my ($self, $query) = @_;
+
+# split the string
+    my @args = split/ /, $query;
+
+# the first argument is the command (function) name to be called
+    my $func = shift @args;
+
+# remember that we did this $func.. we have a hash for easy lookup, and an array to remember to order
+# in which they were called
+    $self->{client_request_hash}{$func} = 1;
+    push @{$self->{client_request_array}}, $func;
+
+    my $ok_to_do = 0;
+
+# check to see if it is OK for this client to run this function
+    foreach(@{$self->{cmd_privs}})
+    {
+	$ok_to_do = 1 if $_ eq $func;
+    }
+
+    $self->debug("received query: " . $query);
+
+#
+# TODO: implement query logging. part of the whole reason why everything talks to the socket for data
+# queries and such, is so that there is a central point of logging... set different logging verbose levels,
+# so we'll know whather to report just insert/update/delete queries, just report commands, or report
+# ALL queries, directed to a logfile somewhere
+#
+
+    if( $ok_to_do == 1 )
+    {
+# remove $func from query
+	$query =~ s/^$func ?//;
+
+	my $ret;
+
+# recieve any returned data from the client into this variable. Note that if we want to pass a hash or an
+# array, we need to return them as a reference, ie: return \%{self->{CONF}};
+# otherwise, you'll get a very wierd string
+
+# running a $func that doesn't exist shouldn't ever happen (unless a non-existant function is put in the
+# cmd_privs ), so just in case, do an eval on it to catch an "object method" error and prevent the child
+# process from crashing
+	eval
+	{
+	    local $SIG{__DIE__};
+	    $ret = $self->$func($query);
+	};
+
+# if there was an error caught, tell the client
+	$self->do_error($@) if $@;
+
+	$self->debug("End of function call " . $func);
+	$self->debug(_('Sent data: %s', ( ref($ret) ? Dumper($ret) : $ret )));
+		
+	return $ret;
+    }
+	
+    # will only get here if $func wasn't OK to run for this client
+    $self->do_error(_('Access denied for query: %s', $query));
+	
+    return;
+}
+
+# simple error facility
+
+sub do_error
+{
+    my ($self, $msg) = @_;
+
+    push @{$self->{errors}}, $msg;
+
+    $self->debug(_('Sent error: %s', $msg));
+}
+
+#
+
+sub die_error
+{
+    my ($self, $msg) = @_;
+
+    print STDERR $msg, "\n";
+
+    exit(1);
+}
+
+# very handy for debugging
+
+sub dump_vars {
+    my ($self) = @_;
+    return Dumper($self);
+}
+
+1;

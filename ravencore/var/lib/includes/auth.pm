@@ -181,7 +181,7 @@ sub auth
     else
     {
 # no database connection, users can't login
-        return "Database error." unless $self->{db_connected};
+        return "Sorry, there is a problem with the login system." unless $self->{db_connected};
 	
         return "Login failed." unless $self->auth_user($username, $password);
     }

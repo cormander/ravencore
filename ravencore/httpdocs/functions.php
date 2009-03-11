@@ -622,10 +622,12 @@ function nav_bottom()
 	unset($_SESSION['status_mesg']);
       }
 
-    foreach( $db->status_mesg as $val )
+    if (is_array($db->status_mesg)) {
+       foreach( $db->status_mesg as $val )
       {
 	$error .= $val . '<br/>';
       }
+    }
     
     if($error)
       {

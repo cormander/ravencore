@@ -485,7 +485,7 @@ sub checkconf
 
     if( $SERVER_ID eq "" )
     {
-        file_write($self->{RC_ROOT} . '/etc/server-id', $self->gen_random_id(16));
+        file_write($self->{RC_ROOT} . '/etc/server-id', gen_random_id(16));
     }
 
 # check to make sure the session.save_path for php is correct, in case the $RC_ROOT variable changes

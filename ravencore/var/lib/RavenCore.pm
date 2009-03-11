@@ -27,7 +27,7 @@ use SEM;
 
 use vars qw(@ISA @EXPORT);
 @ISA     = qw(Exporter);
-@EXPORT  = qw(file_get_contents file_touch file_move file_get_array file_write file_append file_move file_delete file_copy file_chown file_chown_r file_chmod_r file_diff mkdir_p dir_list find_in_path in_array pidof is_ip);
+@EXPORT  = qw(file_get_contents file_touch file_move file_get_array file_write file_append file_move file_delete file_copy file_chown file_chown_r file_chmod_r file_diff mkdir_p dir_list find_in_path in_array pidof is_ip gen_random_id _ );
 
 #
 # File function calls... read/write/append/delete/move/etc, with locking support
@@ -354,6 +354,38 @@ sub pidof
 
 sub is_ip {
     return $_[0] =~ /^(\d{1,3}\.){3}\d{1,3}$/;
+}
+
+# generate a random string of $x length
+# TODO: work on this a bit. it isn't a "truely random" string generator, but it works good enough for now
+
+sub gen_random_id
+{
+    my ($x) = @_;
+
+    my $str;
+
+# $x item long string with randomly generated letters ( from a to Z ) and numbers
+    for(my $i=0; $i < $x; $i++)
+    {
+        my $c = pack("C",int(rand(26))+65);
+
+# 1/3rd chance that this will be a random digit instead
+        $c = int(rand(10)) if int(rand(3)) == 2;
+
+        $str .= (int(rand(3))==0?$c:lc($c));
+    }
+
+    return $str;
+
+}
+
+
+sub _
+{
+    my $str = shift;
+    $str = gettext($str) if $INC{'Locale/gettext.pm'};
+    return sprintf($str, @_);
 }
 
 1;

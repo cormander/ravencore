@@ -23,58 +23,30 @@
 
 package RavenCore::Client;
 
-use Socket;
-use MIME::Base64;
-
 use RavenCore;
 use Serialize;
+
+use IO::Socket::UNIX;
+use MIME::Base64;
+
+our $EOT = chr(4);
 
 # connect to the ravencore socket
 
 sub new
 {
-
-# inherit the classname from the above package statement, and tell us where the RC_ROOT is
-
     my ($class, $RC_ROOT) = @_;
 
-# initlize some of our variables
-
     my $self = {
-	ETX => chr(3), # end of text
-	EOT => chr(4), # end of transmission
-	NAK => chr(21), # end of transmission
-        ETB => chr(23), # end of trans. block
-        CAN => chr(24), # cancel
-	RC_ROOT => $RC_ROOT,
-	num_rows => undef,
-	insert_id => undef,
-	rows_affected => undef,
-	alive => undef,
-	};
-    
-# bind the class name to this object and return the results
-    
+		RC_ROOT => $RC_ROOT
+    };
+
     bless $self, $class;
     
-# make sure we are root
-    $self->die_error("Must be root") unless $< == 0;
-
-# connect to the socket here. if failed, die with error
-    
-    socket($self->{socket}, PF_UNIX, SOCK_STREAM, 0) || $self->die_error("Unable to create socket: " . $!);
-    connect($self->{socket}, sockaddr_un($RC_ROOT . '/var/rc.sock')) || $self->die_error("Unable to connect to socket: " . $!);
-    
-# turn on autoflush
-
-    select $self->{socket};
-    $| = 1;
-    select STDOUT;
-
-# authenticate the administrator password for system access
+    $self->{socket} = IO::Socket::UNIX->new($self->{RC_ROOT} . '/var/rc.sock') or die('Unable to connect to RavenCore socket');
 
 # generate a random session_id
-    my $session_id = $self->gen_random_id(32);
+    my $session_id = gen_random_id(32);
 
 # define our authentication file that will be looked for when we run auth_system
 # TODO: repackage the file_ functions in ravencore.pm to their own module and use the file_touch here
@@ -90,37 +62,12 @@ sub new
 
     if( $resp ne "1" )
     {
-	print STDERR $resp . "\n";
+	print STDERR "Error: " . $resp . "\n";
 	exit 1;
     }
 
     return $self;
 }
-
-# generate a random string of $x length
-# TODO: work on this a bit. it isn't a "truely random" string generator, but it works good enough for now
-# TODO: this is copied from ravencore.pm. put it in a seperate module on its own so both can use a single one
-
-sub gen_random_id
-{
-    my ($self, $x) = @_;
-
-    my $str;
-
-# $x item long string with randomly generated letters ( from a to Z ) and numbers
-    for(my $i=0; $i < $x; $i++)
-    {
-        my $c = pack("C",int(rand(26))+65);
-
-# 1/3rd chance that this will be a random digit instead
-        $c = int(rand(10)) if int(rand(3)) == 2;
-
-        $str .= (int(rand(3))==0?$c:lc($c));
-    }
-
-    return $str;
-
-} # end sub gen_random_id
 
 #
 
@@ -136,46 +83,27 @@ sub get_passwd
 
 # submit a query to the socket
 
-sub do_raw_query
-{
-
-    my ($self, $query) = @_;
+sub do_raw_query {
+    my ($self, $query, $serial) = @_;
 
     my $c;
-    my $ret;
     my $data;
 
-# write to the socket
+    # write to the socket
+    print {$self->{socket}} $query . ( $serial ? ' -- ' . encode_base64(serialize($serial)) : '' ) . $EOT;
 
-    print { $self->{socket} } encode_base64($query) . $self->{EOT};
-
-# read a byte at a time from the socket, until we get an EOT
-
-    do {
-
+    # read the reply a byte at a time from the socket, until we get an EOT
+    while ( read($self->{socket}, $c, 1) ) {
+        last if $c eq $EOT;
         $data .= $c;
-
-        $ret = read $self->{socket}, $c, 1;
-
-# if $ret is zero, the connection closed on us
-        return $self->die_error($data) if ! defined $ret;
-
-    } while ( $c ne $self->{EOT} );
-
-# check for error on the socket ... error starts with NAK byte and ends with ETB
-
-    if($data =~ m/^$self->{NAK}.*$self->{ETB}/)
-    {
-	my $error = $data;
-
-	$error =~ s/^$self->{NAK}(.*)$self->{ETB}.*$/$1/;
-	$data =~ s/^$self->{NAK}.*$self->{ETB}(.*)$/$1/;
-
-	$self->do_error($error);
     }
 
-    return unserialize(decode_base64($data));
+    my $output = unserialize(decode_base64($data));
 
+    # previous errors get overwritten
+    $self->{errors} = $data->{stderr};
+
+    return $output->{stdout};
 }
 
 #
@@ -208,86 +136,9 @@ sub data_query
 
     my ($self, $sql) = @_;
 
-    my @dat;
-
-# query the socket and get the data based on our question
-
     my $data = $self->do_raw_query('sql ' . $sql);
-#    print $data . "\n";
-# now we want to parse this raw data and load our array with it's peices
-# we got rows, and columns.... end of row will always be two ETX bytes
 
-    my @rows = split/$self->{ETX}$self->{ETX}/, $data;
-
-# the last element in this first array will always be blank, so remove it
-    
-#    pop @rows;
-
-# the first two elements in the array are special values
-# 1) insert_id , if any
-    
-    $self->{insert_id} = shift @rows;
-    
-# 2) rows_affected , if any
-
-    $self->{rows_affected} = shift @rows;
-
-# set our row count to zero
-    
-    $self->{num_rows} = 0;
-
-# initlize our array... because if we have no data, we need the return value still
-# specified as the "array" variable type.
-
-# walk down the rows, and split the column data into it's key => value pair
-
-    foreach my $row_data (@rows)
-      {
-	
-# columns seperated by the ETX byte
-	
-	  my @item = split/$self->{ETX}/, $row_data;
-
-# we don't do an array_pop here, because the last NUL was removed by the first explode
-# where the end-of-row one and the end-of-column ones were joined, which is why we split on two
-# the end of the string here is an actual value to consider in the array
-	
-	  my $i = $self->{num_rows};
-	  
-# walk down the raw column data, as we still have yet to split into key / val
-	
-	  foreach my $item_data (@item)
-	  {
-	    
-# data is returned in the following format:
-# key{value} ( value is base64 encoded )
-# so the two below regex rules parse out the key / val appropriatly
-	      
-	      my $key;
-	      my $val;
-
-	      $key = $val = $item_data;
-	      
-	      $key =~ s|^(.*)\{.*\}$|\1|s;
-	      $val =~ s|^.*\{(.*)\}$|\1|s;
-
-# add this has key => val hash to our dat array
-
-	      $dat[$i]{$key} = decode_base64($val);
-
-#	      print $key . " => " . $dat[$i]{$key} . "\n";
-	    
-	  } # end foreach
-	  
-# increment the row number
-	
-	  $self->{num_rows}++;
-	  
-      } # end foreach
-
-# return the nested hash
-
-    return @dat;
+    return @{$data->{rows}};
 
 } # end sub data_query
 

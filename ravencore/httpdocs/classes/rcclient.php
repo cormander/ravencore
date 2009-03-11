@@ -52,9 +52,6 @@ class rcclient {
 
     $this->ETX = chr(3); // end of text
     $this->EOT = chr(4); // end of transmission
-    $this->NAK = chr(21); // negative acknowledge
-    $this->ETB = chr(23); // end of trans. block
-    $this->CAN = chr(24); // cancel
 
     // TODO: make this dynamic off of getcwd
     $socket = '/usr/local/ravencore/var/rc.sock';
@@ -66,7 +63,7 @@ class rcclient {
 
     // open our socket...
 
-    $this->sock = fsockopen($socket, 0, $errno, $errstr);
+    $this->sock = @fsockopen($socket, 0, $errno, $errstr);
     
     // make sure our return value is a rea resource... if not, we shouldn't continue
     
@@ -104,12 +101,12 @@ class rcclient {
 
   // submit a query to the socket, and return the raw data that is the answer.
 
-  function do_raw_query($query)
+  function do_raw_query($query, $serial = NULL)
   {
 
     // submit the query to the socket, base64 encoded to be binary safe, and the EOT character tells
     // the socket that we're done transmitting this query
-    fwrite($this->sock, base64_encode($query) . $this->EOT);
+    fwrite($this->sock, $query . ( $serial ? ' -- ' . base64_encode(serialize($serial)) : '') . $this->EOT);
 
     // flush our writting to the socket so we get an imidate reply on the data
     fflush($this->sock);
@@ -120,64 +117,45 @@ class rcclient {
 
     $c = "";
     $data = "";
+    $error = "";
 
-    do {
-      
-      $data .= $c;
-      
-      $c = fgetc($this->sock);
-
-      // if $c is litterally false, we got disconnected. probably a "too many connections" error
-      if( $c === false )
-	{
-
-	  // nav_top/bottom may not exist yet if we got a disconnect error before auth.php is executed
-	  if(function_exists('nav_top')) nav_top();
-
-	  print 'ERROR: Broken pipe on socket, or too many connections.';
-
-	  if(function_exists('nav_bottom')) nav_bottom();
-
-	  exit;
-	}
-      
-    } while ( $c != $this->EOT );
-
-    // check for an error on the data returned.
-
-    // if the first character in $data is a NAK byte,
-    // then we know there was trouble.... print the error and exit. We don't have to worry about
-    // binary files fudging this up, because just about everything else is returned as a base64
-    // encoded string
-
-    if( preg_match('|^' . $this->NAK . '.*' . $this->ETB . '|', $data) )
+    while ( $c != $this->EOT )
       {
 
-	// this error is a fatal error if it ends with the CAN byte
-	if (  preg_match('|' . $this->CAN . '$|', $data) )
-	  {
-	    nav_top();
-	    print str_replace($this->CAN,'',$data);
-	    nav_bottom();
-	    exit;
-	  }
+        $data .= $c;
 
-	$error = preg_replace('|^' . $this->NAK . '(.*)' . $this->ETB . '.*$|s','\1',$data);
-	$data = preg_replace('|^' . $this->NAK . '.*' . $this->ETB . '(.*)$|s','\1',$data);
+        $c = fgetc($this->sock);
 
-	// TODO: make this call a function instead. and whether or not headers are already sent, either 
-	// add this to the session or just output it right away. make this session an array rather then
-	// just a string, so we can clearly count the number of errors if we need to
 
-	//array_push($this->status_mesg, 'ERROR on query: ' . $query . '<br />Server responded with: ' . $error);
-	array_push($this->status_mesg, $error);
+        // if $c is litterally false, we got disconnected. probably a "too many connections" error
+        if( $c === false )
+          {
+
+            // nav_top/bottom may not exist yet if we got a disconnect error before auth.php is executed
+            if(function_exists('nav_top')) nav_top();
+
+            // TODO: FIX FIX FIX
+            print 'Please wait a few seconds and then click <a href="javascript:refresh()">here</a>';
+
+            if(function_exists('nav_bottom')) nav_bottom();
+
+            exit;
+          }
 
       }
 
-    // return the raw response. whichever function calling do_raw_query will parse the data
+    $output = unserialize(base64_decode($data));
+
+    if ( $output['stderr'] ) {
+	foreach ($output['stderr'] as $err) {
+	    array_push($this->status_mesg, $err);
+	}
+    }
+
+    // return the raw response. whichever function calling run will parse the data
     // as appropriate
 
-    return unserialize(base64_decode($data));
+    return $output['stdout'];
 
   }
   
@@ -191,65 +169,14 @@ class rcclient {
     // query the socket and get the data based on our question
     $data = $this->do_raw_query('sql ' . $sql);
 
-    // now we want to parse this raw data and load our array with it's peices
-    // we got rows, and columns.... end of row will always be two ETX bytes
-
-    $rows = explode($this->ETX.$this->ETX, $data);
-
-    // the last element in this first array will always be blank, so remove it
-    array_pop($rows);
-
-    // the first two elements in the array are special values
-
-    // 1) insert_id , if any
-    $this->insert_id = array_shift($rows);
-
-    // 2) rows_affected , if any
-    $this->rows_affected = array_shift($rows);
+    $this->insert_id = $data['insert_id'];
+    $this->rows_affected = $data['rows_affected'];
 
     // set our row count to zero    
-    $this->num_rows = 0;
+    $this->num_rows = count($data['rows']);
     
-    // initlize our array... because if we have no data, we need the return value still
-    // specified as the "array" variable type.
-
-    $dat = array();
-
-    // walk down the rows, and split the column data into it's key => value pair
-    foreach($rows as $row_data)
-      {
-	
-	// columns seperated by the ETX byte
-	$item = explode($this->ETX, $row_data);
-
-	// we don't do an array_pop here, because the last ETX was removed by the first explode
-	// where the end-of-row one and the end-of-column ones were joined, which is why we split on two
-	// the end of the string here is an actual value to consider in the array
-	$i = $this->num_rows;
-
-	// walk down the raw column data, as we still have yet to split into key / val
-	foreach($item as $item_data)
-	  {
-	    
-	    // data is returned in the following format:
-	    // key{value} ( value is base64 encoded )
-	    // so the two below regex rules parse out the key / val appropriatly
- 	    
-	    $key = preg_replace('|^(.*)\{.*\}$|s','\1',$item_data);
-	    $val = preg_replace('|^.*\{(.*)\}$|s','\1',$item_data);
-
-	    // return the : characters back to newline, and decode the base64 of $val to get the real value
-	    $dat[$i][$key] = base64_decode($val);
-	    
-	  } // end foreach($item as $item_data)
-	
-	// increment the row number
-	$this->num_rows++;
-	
-      } // end foreach($rows as $row_data)
-
     // return the nested array
-    return $dat;
+    return $data['rows'];
 
   } // end function data_query($sql)
 

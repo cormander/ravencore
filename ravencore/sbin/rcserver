@@ -18,351 +18,38 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-use Socket;
-use POSIX;
-use RavenCore;
+#
+# This script needs to be ran with the perl -I switch of the RC_ROOT/var/lib
+#
+
 use RavenCore::Server;
+use File::Basename;
 
 # name our process
-$0 = 'rcserver';
+$0 = basename($0);
 
-#
-$rc = new RavenCore::Server;
+my $user = 'root';
 
-# set debugging to 1 if the debug file exists;
-$rc->{debug_flag} = 1 if -f $rc->{RC_ROOT} . '/var/run/debug';
+my $rc = new RavenCore::Server;
 
-# define our socket to listen to
-my $socket = $rc->{RC_ROOT} . '/var/rc.sock';
-$rc->debug("socket set to " . $socket);
-
-# do some system stuff with the socket
-my $uaddr = sockaddr_un($socket);
-
-# create the socket as a UNIX domain socket
-socket(SERVER,PF_UNIX,SOCK_STREAM,0) || die "socket: $!";
-
-# remove the socket if it was there before
-unlink($socket);
-
-# bind this process to the socket 
-bind (SERVER, $uaddr) || die "bind: $!";
-$rc->debug("bound to socket " . $socket);
-
-# change the ownership and permissions on the socket so that only the ravencore webserver can
-# read / write to it. It's VERY important that these permissions are set BEFORE we start to
-# listen to the socket
-
-$rcadmin = "rcadmin";
-
-# chown only accepts numeric uid/gids, so get the $uid of rcadmin here
-$uid = getpwnam($rcadmin);
-
-# group ownership set to root
-chown $uid, 0, $socket;
-
-# very strict file permissions on the socket
-chmod 0600, $socket;
-
-# begin to listen to the socket
-listen(SERVER,5) || die "listen: $!";
-
-#
-# run all the checks needed to get the web server running for our control panel front-end.
-# we do it after we listen to the socket so a client that connects right after the webserver
-# starts won't get a "connection refused" message from the PHP interface, but we do this before
-# we "daemonize" so that if there is a problem starting up, we haven't detached from the
-# sysadmin's terminal yet, and can error out appropriatly.
-#
-
-# TODO: check to see if mysql server is running. if not, setart it
-
-# start the control paenl webserver
-$rc->start_webserver;
-
-# "daemonize" ourself by forking, and exiting if we're the parent. The child process will then
-# proceed to start a new session. We do this so that when we're started from the shell, we aren't
-# attached to the session that started us. If there is a fatal error before this point, the $?
-# error code will be set to non-zero, and we'll know there was something wrong
-
-my $logfile = $rc->{RC_ROOT} . "/var/log/rcserver";
-
-$rc->debug("Proccess detatched from terminal, further output logged at " . $logfile);
-
-# close our standard filehandles, and redirect them to a logfile
-close STDERR;
-close STDOUT;
-close STDIN;
-open STDOUT, ">>" . $logfile;
-# tie STDERR with STDOUT
-open STDERR, ">&STDOUT";
-select STDOUT;
-$| = 1;
-
-defined(my $ppid = fork) or die "Can't fork: $!";
-exit if $ppid;
-setsid or die "Can't start a new session: $!";
-
-# we are no longer considered to be at the terminal
-$rc->{term} = 0;
-
-# check if the pid exists... if so, tell it to terminate and wait a second
-
-if( -f $rc->{RC_ROOT} . '/var/run/rcserver.pid' )
-{
-    $rc->do_error("rcserver pid file exists, sending TERM signal before startup");
-    kill "TERM", file_get_contents($rc->{RC_ROOT} . '/var/run/rcserver.pid');
-    sleep 1;
+if ($ARGV[0] eq "--noweb") {
+    $rc->checkconf;
+} else {
+    # start the control panel webserver
+    $rc->start_webserver unless $ARGV[0] eq "--noweb";
 }
 
-# record our process id
-my $pid = $$;
+# start the back-end daemon
+$rc->run(
+	 proto => 'unix',
+	 port => $rc->{RC_ROOT} . '/var/rc.sock',
+	 pid_file => $rc->{RC_ROOT} . '/var/run/rcserver.pid',
+	 user => $user,
+	 group => $user,
+	 log_file => 'Sys::Syslog',
+	 syslog_ident => $0,
+	 syslog_logopt => 'pid',
+	 setsid => 1,
+	 background => 1,
+	 );
 
-file_write($rc->{RC_ROOT} . '/var/run/rcserver.pid', $pid);
-$rc->debug("writing pid file, pid is " . $pid);
-
-# save $pid in the object to hand to our children, so they remember us!
-$rc->{ppid} = $pid;
-
-# before we enter our loop, define this signal to catch children processes' exit signals with
-# the REAPER function
-
-$SIG{CHLD} = \&REAPER;
-$SIG{__WARN__} = \&send_error;
-$SIG{__DIE__} = \&send_error;
-
-# signal used to shutdown
-$SIG{TERM} = \&sig_TERM;
-
-# signal to reload
-$SIG{HUP} = \&sig_HUP;
-
-my %child;
-
-#
-$rc->database_connect;
-
-# endlessly loop, waiting for a connection
-LOOP:
-
-for ( $waitedpid = 0; ($paddr = accept($rc->{CLIENT},SERVER)) || $waitedpid; $waitedpid = 0, close $rc->{CLIENT})
-{
-
-# if $waitedpid still exists and there is no packed address from the 'accept' call, then we're not ready to do
-# execute our code
-    next if $waitedpid and not $paddr;
-
-    $rc->debug("client connected");
-
-# past this point, we have a connection from a client. fork into parent/child processes to handle the request
-
-# limit connections to MAX_CLIENT_CONNECTION, and if exceeded, close the connection with an error here
-# this is to prevent a DOSS attack, filling up the process tree and using system resources
-
-# count the number of active connections
-
-    my $c = 0;
-
-    foreach my $id (keys %child)
-    {
-	$c++;
-    }
-
-# MAX_CLIENT_CONNECTION may not exist yet, so enforce a default if that's the case
-    my $max_connections = ( $rc->{CONF}{MAX_CLIENT_CONNECTION} ? $rc->{CONF}{MAX_CLIENT_CONNECTION} : 25 );
-
-    if($c > $max_connections)
-    {
-
-	$rc->debug("connection refused, too many connections");
-
-# in order to issue the error, we first have to read what the client put. just don't do anything with it
-	$rc->data_read;
-
-# issue the error
-	$rc->do_error("Too many connections, try again later.");
-
-# close the connection and wait for the next one, hopefully some will have disconnected by then
-	close $rc->{CLIENT};
-
-	next;
-    }
-
-    my $cpid;
-
-    if (!defined($cpid = fork))
-    {
-# fatal error in fork()... there's something very bad happening with the system. usually out of memory
-	
-# explicity tell fatal_error not to exit, as we're not nessisarilly dead in the water. we might be able
-# to fork next time the server is called, so don't just die. This is probably the only time we should
-# set $noexit with a fatal_error call
-	$rc->{noexit} = 1;
-	
-	$rc->fatal_error("cannot fork: $!");
-	
-# unset the noexit
-	$rc->{noexit} = 0;
-
-# go to the beginning of the loop so we can try again....
-	next;
-
-    }
-    elsif ($cpid)
-    {
-# i'm the parent... go back and wait for another connection
-	$child{$cpid} = 1;
-	
-	next;
-	
-    }
-# i'm the child... handle the data request
-# NOTE: any values changed past this point won't affect the parent process at all, since all of our
-# variables are copies of the originals
-
-# rename the process
-    $0 = 'rcserver (child)';
-
-# ingore HUP signals now, only the parent process waiting for connections should be able to do the sig_HUP routine
-    $SIG{HUP} = 'IGNORE';
-# being the child process, handle TERM signal a little differently
-    $SIG{TERM} = \&sig_TERM_child;
-
-    $rc->debug("child process spawned");
-    
-# redirect anything printed to STDERR to instead call the do_error function
-#    $stderr = tie *STDERR, 'Redirect', \$rc->do_error;
-
-# TODO: determine if we need to likewise do the above for STDOUT, and whether or not we should close
-# the STDIN handler
-
-# turn on autoflush on the CLIENT I/O handle, so output we send via print statements goes right away
-
-    select $rc->{CLIENT};
-    $| = 1;
-    select STDOUT;
-
-# make sure we have a database connection
-    $rc->database_connect;
-    
-# read in the data from the client in a while loop, we want to handle as many requests as is nessisary
-# TODO: implement a timeout on the data_read, so if the client takes too long to send anything, they are
-# disconnected
-    
-    while( $query = $rc->data_read )
-    {
-	
-# call the function from the ravencore object
-	my $data = $rc->client_request($query);
-	
-# print the $data to the client along with a EOT character at the end, noteing the end-of-data
-	print {$rc->{CLIENT}} $data . $rc->{EOT};
-	
-    } # end while($query = $rc->data_read)
-
-# if session_read was called but seesion_write wasn't, call session_write. this should only happen if
-# exit() is called w/o calling session_write_close() first. This won't write any new data given to
-# $_SESSION on that particular page load, but it helps maintain current session data
-    if($rc->{client_request_hash}{session_read} && ! $rc->{client_request_hash}{session_write})
-    {
-	$rc->debug("session_read was called by client, but session_write was not. calling session_write.");
-	$rc->session_write($rc->{session}{data});
-    }
-
-# if set_conf_var was called this session and no reload, signal the parent to reload
-    if($rc->{client_request_hash}{set_conf_var} and ! $rc->{client_request_hash}{reload})
-    {
-	$rc->reload("set_conf_var was called but reload was not, calling reload.");
-    }
-
-# force the socket to close    
-    close $rc->{CLIENT};
-    
-# exit cleanly
-    POSIX::_exit(0);
-
-}
-
-# we get here if we were interupted with a signal... go back to the start of the loop
-
-goto LOOP;    
-
-# stuff to do on HUP... reload
-
-sub sig_HUP
-{
-# set debugging to 1 if the debug file exists;
-    if( -f $rc->{RC_ROOT} . '/var/run/debug' )
-    {
-	$rc->{debug_flag} = 1;
-    }
-    else
-    {
-	$rc->{debug_flag} = 0;
-    }
-
-    $rc->debug("Receiving sig HUP, reloading");
-
-    do $rc->{RC_ROOT} . '/var/lib/RavenCore/Server.pm';
-    
-# load the other .pm modules in var/lib/includes/
-    $rc->load_internal_pm;
-    
-    $rc->database_connect;
-
-# get_db_conf isn't called if the database connection is alive, force it to call here
-    $rc->get_db_conf;
-
-}
-
-# stuff to do on shutdown
-
-sub sig_TERM
-{
-    $rc->debug("Receiving sig TERM, shutting down");
-
-# kill the apache for ravencore
-    kill "TERM", file_get_contents($rc->{RC_ROOT} . '/var/run/ravencore.httpd.pid');
-
-# remove our pid file
-    unlink($rc->{RC_ROOT} . '/var/run/rcserver.pid');
-
-# exit cleanly
-    exit(0);
-}
-
-#
-
-sub sig_TERM_child
-{
-    print {$rc->{CLIENT}} $data . $rc->{EOT};
-    
-    close $rc->{CLIENT};
-
-    POSIX::_exit(0);
-}
-
-#
-
-sub send_error
-{
-    my $msg = "@_";
-
-    $rc->debug($msg);
-}
-
-# function to clean up zombies
-
-sub REAPER
-{
-    $SIG{CHLD} = \&REAPER;
-    $waitedpid = wait;
-
-    delete $child{$waitedpid};
-
-    $rc->debug("child pid $waitedpid disconnected") unless $waitedpid == -1;
-
-# TODO: once query logging is written, have it be prepended and appended with the child $cpid
-# and the eventual exit code of the process
-#    print "reaped $waitedpid" . ($? ? " with exit $?" : '') . "\n";
-}
