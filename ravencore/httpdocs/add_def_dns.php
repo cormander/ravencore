@@ -21,50 +21,37 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 include "auth.php";
 
-if ($action == "add")
-{
-    $sql = "select count(*) as count from dns_def where name = '$_POST[name]' and type = '$_POST[type]' and target = '$_POST[target]'";
-    $result = $db->data_query($sql);
+if ($action == "add") {
+	$sql = "select count(*) as count from dns_def where name = '$_POST[name]' and type = '$_POST[type]' and target = '$_POST[target]'";
+	$result = $db->data_query($sql);
 
-    $row = $db->data_fetch_array($result);
+	$row = $db->data_fetch_array($result);
 
-    if ($row['count'] != 0)
-	{
+	if ($row['count'] != 0) {
 		alert(__("You already have a $_POST[type] record for $_POST[name] pointing to $_POST[target]"));
-	}
-    else
-    {
-        if ($_POST['name'] == $_POST['target'] and $_POST['type'] != "MX")
-		{
+	} else {
+		if ($_POST['name'] == $_POST['target'] and $_POST['type'] != "MX") {
 			alert(__("Your record name and target cannot be the same."));
-		}
-        else
-        {
-            if (($_POST['type'] == "SOA" or $_POST['type'] == "MX" or $_POST['type'] == "CNAME")
-				and is_ip($_POST['target']))
-			{
+		} else {
+			if (($_POST['type'] == "SOA" or $_POST['type'] == "MX" or $_POST['type'] == "CNAME")
+				and is_ip($_POST['target'])) {
 				alert(__("A $_POST[type] record cannot point to an IP address!"));
-			}
-            else
-            {
-                if (ereg('\.$', $_POST['name']))
-				{
+			} else {
+				if (ereg('\.$', $_POST['name'])) {
 					alert(__("You cannot enter in a full domain as the record name."));
+				} else {
+					if ($_POST['type'] == "MX") $_POST['type'] .= '-' . $_POST['preference'];
+
+					$sql = "insert into dns_def set name = '$_POST[name]', type = '$_POST[type]', target = '$_POST[target]'";
+
+					$db->data_query($sql);
+
+					goto("dns_def.php");
 				}
-                else
-                {
-                    if ($_POST['type'] == "MX") $_POST['type'] .= '-' . $_POST['preference'];
-
-                    $sql = "insert into dns_def set name = '$_POST[name]', type = '$_POST[type]', target = '$_POST[target]'";
-
-                    $db->data_query($sql);
-
-                    goto("dns_def.php");
-                } 
-            } 
-        } 
-    } 
-} 
+			}
+		}
+	}
+}
 
 nav_top();
 
@@ -72,75 +59,74 @@ print '<form method=post>
 <input type=hidden name=action value=add>
 ';
 
-switch ($_POST[type])
-{
-    case "SOA":
+switch ($_POST[type]) {
+	case "SOA":
 
-        $sql = "select count(*) as count from dns_def where type = 'SOA'";
-        $result = $db->data_query($sql);
+		$sql = "select count(*) as count from dns_def where type = 'SOA'";
+		$result = $db->data_query($sql);
 
 	$row = $db->data_fetch_array($result);
 
-        if ($row['count'] != 0)
-        {
-            print __('You already have a default SOA record set');
+		if ($row['count'] != 0)
+		{
+			print __('You already have a default SOA record set');
 
-            nav_bottom();
+			nav_bottom();
 
-        } 
+		}
 
-        print '<input type=hidden name=type value=SOA>
+		print '<input type=hidden name=type value=SOA>
 ' . __('Default Start of Authority') . ': <input type=text name=target>
 ';
-        break;
+		break;
 
-    case "A":
-        print '<input type=hidden name=type value=A>
+	case "A":
+		print '<input type=hidden name=type value=A>
 			' . __('Record Name') . ': <input type=text name=name>
 			<br>
 			' . __('Target IP') . ': <input type=text name=target>
 			';
 
-        break;
+		break;
 
-    case "NS":
-        print '<input type=hidden name=type value=NS>
+	case "NS":
+		print '<input type=hidden name=type value=NS>
 			<input type=hidden name=name value="@">
 			' . __('Nameserver') . ': <input type=text name=target>
 			';
-        break;
+		break;
 
-    case "MX":
-        print __('Mail for the domain') . ': <input type=hidden name=name value="@">
+	case "MX":
+		print __('Mail for the domain') . ': <input type=hidden name=name value="@">
 	<input type=hidden name=type value=MX>
 	' . __('MX Preference') . ': <select name=preference>';
-        for($i = 10; $i < 51; $i += 10) print '<option value="' . $i . '">' . $i . '</option>';
-        print '</select>
+		for($i = 10; $i < 51; $i += 10) print '<option value="' . $i . '">' . $i . '</option>';
+		print '</select>
 	<br>
 	' . __('Mail Server') . ': <input type=text name=target> ( must not be an IP! )
 	';
-        break;
+		break;
 
-    case "CNAME":
-        print '<input type=hidden name=type value=CNAME> ' . __('Alias name') . ': <input type=text name=name>
+	case "CNAME":
+		print '<input type=hidden name=type value=CNAME> ' . __('Alias name') . ': <input type=text name=name>
 		<br>
 		' . __('Target name') . ': <input type=text name=target>';
-        break;
+		break;
 
-    case "PTR":
-        print '<input type=hidden name=type value=PTR> ' . __('Reverse pointer records are not yet available');
+	case "PTR":
+		print '<input type=hidden name=type value=PTR> ' . __('Reverse pointer records are not yet available');
 
-        nav_bottom();
+		nav_bottom();
 
-        break;
+		break;
 
-    default:
-        print __('Invalid DNS record type');
+	default:
+		print __('Invalid DNS record type');
 
-        nav_bottom();
+		nav_bottom();
 
-        break;
-} 
+		break;
+}
 
 print '<p><input type=submit value="' . __('Add Record') . '">
 </form>';

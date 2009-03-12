@@ -28,325 +28,295 @@ include "classes/user.php";
 
 //
 
-function rc_exit()
-{
-  session_write_close();
-  exit;
+function rc_exit() {
+	session_write_close();
+	exit;
 }
 
 //
+function update_parameter($type_id, $param, $value) {
 
-function update_parameter($type_id, $param, $value)
-{
+	global $db;
 
-    global $db;
+	$sql = "delete form parameters where type_id = '$type_id' and param = '$param'";
+	$db->data_query($sql);
 
-    $sql = "delete form parameters where type_id = '$type_id' and param = '$param'";
-    $db->data_query($sql);
-
-    $sql = "insert into parameters set type_id = '$type_id', param = '$param', value = '$value'";
-    $db->data_query($sql);
+	$sql = "insert into parameters set type_id = '$type_id', param = '$param', value = '$value'";
+	$db->data_query($sql);
 }
 
 // a basic password validation function
+function valid_passwd($passwd) {
+	if (function_exists("pspell_new")) {
+		// we use the english dictionary
+		$d = pspell_new("en");
+		// if the string is a word, it isn't a safe password
+		if (pspell_check($d, $passwd)) return false;
+	}
 
-function valid_passwd($passwd)
-{
-    if (function_exists("pspell_new"))
-    {
-        // we use the english dictionary
-        $d = pspell_new("en");
-        // if the string is a word, it isn't a safe password
-        if (pspell_check($d, $passwd)) return false;
-    }
-    // if the string is less than 5 characters long, it isn't a safe password
-    if (strlen($passwd) < 5) return false;
+	// if the string is less than 5 characters long, it isn't a safe password
+	if (strlen($passwd) < 5) return false;
 
-    return true;
+	return true;
 }
 
 // A function to tell us if we have any "domain" services, or in other words,
 // any service that requires the use of the domains table to function
+function have_domain_services() {
+	// domain services as of version 0.0.1
+	if (have_service("web") or have_service("mail") or have_service("dns")) return true;
 
-function have_domain_services()
-{
-    // domain services as of version 0.0.1
-    if (have_service("web") or have_service("mail") or have_service("dns")) return true;
-
-    return false;
+	return false;
 }
 
 // A function to tell us whether or not we have database services.
 // Right now it only looks for mysql, but this will in the future look for other db types
 // such as pgsql, mssql, etc
 
-function have_database_services()
-{
-    if (have_service("mysql")) return true;
-    else return false;
+function have_database_services() {
+	if (have_service("mysql")) return true;
+	else return false;
 }
 
-function have_service($service)
-{
-    global $status;
+function have_service($service) {
+	global $status;
 
-    if( $status['modules_enabled'][$service] )
-      return true;
+	if ($status['modules_enabled'][$service])
+		return true;
 
-    return false;
+	return false;
 }
 
 // A function that requires the existances of the webserver to load the page
 // Must use before you output any headers.
+function req_service($service) {
+	if (!have_service($service)) {
+		nav_top();
 
-function req_service($service)
-{
-    if (!have_service($service))
-    {
-        nav_top();
+		print __('This server does not have ' . $service . ' installed. Page cannot be displayed.');
 
-        print __('This server does not have ' . $service . ' installed. Page cannot be displayed.');
-
-        nav_bottom();
-
-    }
+		nav_bottom();
+	}
 }
 
 // A function to convert the number of bytes into K or MB
-function readable_size($size)
-{
-    if ($size > 1048576)
-    {
-        $size /= 1048576;
-        $size = round($size, 2) . 'MB';
-    }
-    else if ($size = round(($size / 1024), 2)) $size .= 'K';
+function readable_size($size) {
+	if ($size > 1048576) {
+		$size /= 1048576;
+		$size = round($size, 2) . 'MB';
+	} else if ($size = round(($size / 1024), 2)) $size .= 'K';
 
-    return $size;
+	return $size;
 }
+
 // A function to delete a domain's log file
-function delete_log($did, $log_file)
-{
-  $d = new domain($did);
+function delete_log($did, $log_file) {
+	$d = new domain($did);
 
-    $domain_name = $d->name();
+	$domain_name = $d->name();
 
-    $db->do_raw_query("log_del $domain_name $log_file");
+	$db->do_raw_query("log_del $domain_name $log_file");
 }
-
 
 // A function to tell us whether or not given string is an ip address. I got the core
 // routines off of php.net, but made some of my own changes to make it return a bool value
+function is_ip($ip) {
+	$ip = trim($ip);
+	if (strlen($ip) < 7) return false;
+	if (!ereg("\.", $ip)) return false;
+	if (!ereg("[0-9.]{" . strlen($ip) . "}", $ip)) return false;
+	$ip_arr = split("\.", $ip);
+	if (count($ip_arr) != 4) return false;
 
-function is_ip($ip)
-{
-    $ip = trim($ip);
-    if (strlen($ip) < 7) return false;
-    if (!ereg("\.", $ip)) return false;
-    if (!ereg("[0-9.]{" . strlen($ip) . "}", $ip)) return false;
-    $ip_arr = split("\.", $ip);
-    if (count($ip_arr) != 4) return false;
-    for ($i = 0;$i < count($ip_arr);$i++)
-    {
-        if ((!is_numeric($ip_arr[$i])) || (($ip_arr[$i] < 0) || ($ip_arr[$i] > 255))) return false;
-    }
-    return true;
+	for ($i = 0;$i < count($ip_arr);$i++) {
+		if ((!is_numeric($ip_arr[$i])) || (($ip_arr[$i] < 0) || ($ip_arr[$i] > 255))) return false;
+	}
+	return true;
 }
 
 // A function to queue a message to be output with a javascript alert
 // It must be called before the nav_top function
+function alert($message) {
+	global $js_alerts;
 
-function alert($message)
-{
-    global $js_alerts;
-
-    array_push($js_alerts, $message);
+	array_push($js_alerts, $message);
 }
 
 // A function to do a header to the given location. Must be called before output
 // goes to the browser. This function is used just about everywhere.
+function goto($url) {
+	global $db;
 
-function goto($url)
-{
-  global $db;
+	// if we have a status_mesg, store it in the session
+	if (!empty($db->status_mesg)) $_SESSION['status_mesg'] = $db->status_mesg;
 
-  // if we have a status_mesg, store it in the session
-  if(!empty($db->status_mesg)) $_SESSION['status_mesg'] = $db->status_mesg;
+	// session variables may not be saved before the browser changes to the new page, so we need to
+	// save them here
+	session_write_close();
 
-  // session variables may not be saved before the browser changes to the new page, so we need to
-  // save them here
-  
-  session_write_close();
-  
-  header("Location: $url");
-  
-  rc_exit();
+	header("Location: $url");
+
+	rc_exit();
 
 }
 
 // Returns the correct word assositated with a permission
+function perm_into_word($perm) {
+	switch ($perm) {
+		case "domain":
 
-function perm_into_word($perm)
-{
-    switch ($perm)
-    {
-        case "domain":
+			return "Domains";
 
-            return "Domains";
+		case "database":
 
-        case "database":
+			return "Databases";
 
-            return "Databases";
+		case "crontab":
 
-        case "crontab":
+			return "Cron Jobs";
 
-            return "Cron Jobs";
+		case "email":
 
-        case "email":
+			return "Email Addresses";
 
-            return "Email Addresses";
+		case "dns_rec":
 
-        case "dns_rec":
+			return "DNS Records";
 
-            return "DNS Records";
+		case "host_cgi":
 
-        case "host_cgi":
+			return "CGI Hosting";
 
-            return "CGI Hosting";
+		case "host_php":
 
-        case "host_php":
+			return "PHP Hosting";
 
-            return "PHP Hosting";
+		case "host_ssl":
 
-        case "host_ssl":
+			return "SSL Hosting";
 
-            return "SSL Hosting";
+		case "shell_user":
 
-        case "shell_user":
+			return "Shell Users";
 
-            return "Shell Users";
+		default:
 
-        default:
+			return "FIX ME";
 
-            return "FIX ME";
-
-            break;
-    }
+			break;
+	}
 }
 
 // A function to find out if a user can add another item of the given permission
 // Returns false on failure, true on success
+function user_can_add($uid, $perm) {
+	global $CONF, $db;
 
-function user_can_add($uid, $perm)
-{
-    global $CONF, $db;
+	$lim = user_have_permission($uid, $perm);
 
-    $lim = user_have_permission($uid, $perm);
+	if (!$lim) return false;
+	if ($lim < 0) return true;
 
-    if (!$lim) return false;
-    if ($lim < 0) return true;
+	switch ($perm) {
+		case "domain":
+			$sql = "select count(*) as count from domains where uid = '$uid'";
+			$result = $db->data_query($sql);
 
-    switch ($perm)
-    {
-        case "domain":
-            $sql = "select count(*) as count from domains where uid = '$uid'";
-            $result = $db->data_query($sql);
+			$row = $db->data_fetch_array($result);
 
-            $row = $db->data_fetch_array($result);
+			if ($row[count] < $lim) return true;
+			else return false;
 
-            if ($row[count] < $lim) return true;
-            else return false;
+			break;
 
-            break;
+		case "database":
+			$sql = "select count(*) as count from data_bases b, domains d where did = d.id and uid = '$uid'";
+			$result = $db->data_query($sql);
 
-        case "database":
-            $sql = "select count(*) as count from data_bases b, domains d where did = d.id and uid = '$uid'";
-            $result = $db->data_query($sql);
+			$row = $db->data_fetch_array($result);
 
-            $row = $db->data_fetch_array($result);
+			if ($row[count] < $lim) return true;
+			else return false;
 
-            if ($row[count] < $lim) return true;
-            else return false;
+			break;
 
-            break;
+		case "crontab":
+			// NEED TO RE-DO CRONTAB MANAGEMENT
+			break;
 
-        case "crontab":
-            // NEED TO RE-DO CRONTAB MANAGEMENT
-            break;
+		case "email":
+			$sql = "select count(*) as count from mail_users m, domains d where did = d.id and uid = '$uid'";
+			$result = $db->data_query($sql);
 
-        case "email":
-            $sql = "select count(*) as count from mail_users m, domains d where did = d.id and uid = '$uid'";
-            $result = $db->data_query($sql);
+			$row = $db->data_fetch_array($result);
 
-            $row = $db->data_fetch_array($result);
+			if ($row[count] < $lim) return true;
+			else return false;
 
-            if ($row[count] < $lim) return true;
-            else return false;
+			break;
 
-            break;
+		case "dns_rec":
+			$sql = "select count(*) as count from dns_rec r, domains d where did = d.id and uid = '$uid'";
+			$result = $db->data_query($sql);
 
-        case "dns_rec":
-            $sql = "select count(*) as count from dns_rec r, domains d where did = d.id and uid = '$uid'";
-            $result = $db->data_query($sql);
+			$row = $db->data_fetch_array($result);
 
-            $row = $db->data_fetch_array($result);
+			if ($row[count] < $lim) return true;
+			else return false;
 
-            if ($row[count] < $lim) return true;
-            else return false;
+			break;
 
-            break;
+		case "host_cgi":
+			$sql = "select count(*) as count from domains where host_cgi = 'true' and uid = '$uid'";
+			$result = $db->data_query($sql);
 
-        case "host_cgi":
-            $sql = "select count(*) as count from domains where host_cgi = 'true' and uid = '$uid'";
-            $result = $db->data_query($sql);
+			$row = $db->data_fetch_array($result);
 
-            $row = $db->data_fetch_array($result);
+			if ($row[count] < $lim) return true;
+			else return false;
 
-            if ($row[count] < $lim) return true;
-            else return false;
+			break;
 
-            break;
+		case "host_php":
+			$sql = "select count(*) as count from domains where host_php = 'true' and uid = '$uid'";
+			$result = $db->data_query($sql);
 
-        case "host_php":
-            $sql = "select count(*) as count from domains where host_php = 'true' and uid = '$uid'";
-            $result = $db->data_query($sql);
+			$row = $db->data_fetch_array($result);
 
-            $row = $db->data_fetch_array($result);
+			if ($row[count] < $lim) return true;
+			else return false;
 
-            if ($row[count] < $lim) return true;
-            else return false;
+			break;
 
-            break;
+		case "host_ssl":
+			$sql = "select count(*) as count from domains where host_ssl = 'true' and uid = '$uid'";
+			$result = $db->data_query($sql);
 
-        case "host_ssl":
-            $sql = "select count(*) as count from domains where host_ssl = 'true' and uid = '$uid'";
-            $result = $db->data_query($sql);
+			$row = $db->data_fetch_array($result);
 
-            $row = $db->data_fetch_array($result);
+			if ($row[count] < $lim) return true;
+			else return false;
 
-            if ($row[count] < $lim) return true;
-            else return false;
+			break;
 
-            break;
+		case "shell_user":
 
-        case "shell_user":
+			$sql = "select count(*) as count from sys_users f, domains d where uid = '$uid' and shell != '$CONF[DEFAULT_LOGIN_SHELL]'";
+			$result = $db->data_query($sql);
 
-            $sql = "select count(*) as count from sys_users f, domains d where uid = '$uid' and shell != '$CONF[DEFAULT_LOGIN_SHELL]'";
-            $result = $db->data_query($sql);
+			$row = $db->data_fetch_array($result);
 
-            $row = $db->data_fetch_array($result);
+			if ($row[count] < $lim) return true;
+			else return false;
 
-            if ($row[count] < $lim) return true;
-            else return false;
+			break;
 
-            break;
+		default:
 
-        default:
+			return false;
 
-            return false;
-
-            break;
-    }
+			break;
+	}
 }
 
 // A function to print " checked" if the user has that permission. We return it as a string,
@@ -354,67 +324,61 @@ function user_can_add($uid, $perm)
 // before the print statement itself, and we don't want to print something like this:
 // "checked <input type=checkbox name=host_php value=true>"
 
-function perm_checked($uid, $perm)
-{
-    if (user_have_permission($uid, $perm)) return " checked";
+function perm_checked($uid, $perm) {
+	if (user_have_permission($uid, $perm)) return " checked";
 }
 
 // A function to find out if a a user has a permission
 // Returns zero on no, and the number of allowed on true
 
-function user_have_permission($uid, $perm)
-{
+function user_have_permission($uid, $perm) {
 
-    global $db;
+	global $db;
 
-    $sql = "select val, lim from user_permissions where uid = '$uid' and perm = '$perm'";
-    $result = $db->data_query($sql);
+	$sql = "select val, lim from user_permissions where uid = '$uid' and perm = '$perm'";
+	$result = $db->data_query($sql);
 
-    $row = $db->data_fetch_array($result);
+	$row = $db->data_fetch_array($result);
 
-    if ($row[val] == "yes") return $row[lim];
-    else return 0;
+	if ($row[val] == "yes") return $row[lim];
+	else return 0;
 }
 
 // A function to find out if a domain id belongs to a user id
 // returns true if true, or if the user is an admin.
 
-function user_have_domain($uid, $did)
-{
+function user_have_domain($uid, $did) {
 
-    global $db;
+	global $db;
 
-    if (is_admin()) return true;
+	if (is_admin()) return true;
 
-    $sql = "select count(*) as count from domains where uid = '$uid' and id = '$did'";
-    $result = $db->data_query($sql);
+	$sql = "select count(*) as count from domains where uid = '$uid' and id = '$did'";
+	$result = $db->data_query($sql);
 
-    $row = $db->data_fetch_array($result);
+	$row = $db->data_fetch_array($result);
 
-    if ($row[count] == 1) return true;
-    else return false;
+	if ($row[count] == 1) return true;
+	else return false;
 }
 
 // A function to make a page require the user be an admin.
 
-function req_admin()
-{
-    if (!is_admin())
-    {
-        nav_top();
+function req_admin() {
+	if (!is_admin()) {
+		nav_top();
 
-        print __('You are not authorized to view this page');
+		print __('You are not authorized to view this page');
 
-        nav_bottom();
+		nav_bottom();
 
-    }
+	}
 }
 
 // A function to find out whether or not this user is an admin. Used as the primary
 // security method, and is used just about everywhere
 
-function is_admin()
-{
+function is_admin() {
   global $status;
 
   return $status['is_admin'];
@@ -422,16 +386,15 @@ function is_admin()
 
 // A function that should be used at the top of every main page
 
-function nav_top()
-{
+function nav_top() {
   global $js_alerts, $page_title, $shell_output, $db, $logged_in, $status;
 
-    print '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"><html><head>';
-    // Print page title if there is one. Otherwise, print a generic title
-    print '<title>';
-    if ($page_title) print $page_title;
-    else print "RavenCore";
-    print '</title>
+	print '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"><html><head>';
+	// Print page title if there is one. Otherwise, print a generic title
+	print '<title>';
+	if ($page_title) print $page_title;
+	else print "RavenCore";
+	print '</title>
 <meta http-equiv="Content-Type" content="text/html; charset=' . locale_getcharset() . '">
 <meta name="keywords" content="ravencore, open source, control panel, hosting panel, hosting control panel, hosting software, free, webhosting software" />
 <meta name="description" content="A Free and Open Source Hosting Control Panel for Linux" />
@@ -446,20 +409,19 @@ function nav_top()
 <script src="js/ajax.js">
 </script>
 ';
-    // If the alert() function was called at all, output its contents here. We do it in the
-    // <head> section of the page so that you see the error message before the page reloads
-    if (sizeof($js_alerts) > 0)
-      {
-        print '<script type="text/javascript">';
-	
-        foreach($js_alerts as $alert) print 'alert("' . $alert . '");';
-	
-        print '</script>';
-      }
-    
-    print '</head><body>';
-    
-    print '
+	// If the alert() function was called at all, output its contents here. We do it in the
+	// <head> section of the page so that you see the error message before the page reloads
+	if (sizeof($js_alerts) > 0) {
+		print '<script type="text/javascript">';
+
+		foreach($js_alerts as $alert) print 'alert("' . $alert . '");';
+
+		print '</script>';
+	}
+
+	print '</head><body>';
+
+	print '
 
 <div id="container">
 
@@ -474,116 +436,108 @@ function nav_top()
 
 <div id="content">';
 
-    // only show the top menu if we're logged in
-    if ($logged_in == 1)
-    {
+	// only show the top menu if we're logged in
+	if ($logged_in == 1) {
 
-        print '<ul>';
-        // Admins get to see a whole lot more then normal users
-        if (is_admin())
-        {
-
-	  if( ! $status['db_panic'] )
-	    {
-	      
-	      print '<li class="menu"><a href="users.php" onmouseover="show_help(\'' . __('List control panel users') . '\');" onmouseout="help_rst();">' . __('Users') . ' (';
-
-	      $sql = "select count(*) as count from users";
-	      $result = $db->data_query($sql);
-
-	      $row = $db->data_fetch_array($result);
-	      
-	      print $row['count'];
-	      
-	      print ')</a></li>';
-
-	      if (have_domain_services())
+		print '<ul>';
+		// Admins get to see a whole lot more then normal users
+		if (is_admin())
 		{
-		  print '<li class="menu"><a href="domains.php" onmouseover="show_help(\'' . __('List domains') . '\');" onmouseout="help_rst();">' . __('Domains') . ' (';
-		  
-		  $sql = "select count(*) as count from domains";
-		  $result = $db->data_query($sql);
-		  
-		  $row = $db->data_fetch_array($result);
-		  
-		  print $row['count'];
-		  
-		  print ')</a></li>';
-		}
-	      
-	      if (have_service("mail"))
-		{
-		  print '<li class="menu"><a href="mail.php" onmouseover="show_help(\'' . __('List email addresses') . '\');" onmouseout="help_rst();">' . __('Mail') . ' (';
-		  
-		  $sql = "select count(*) as count from mail_users";
-		  $result = $db->data_query($sql);
-		  
-		  $row = $db->data_fetch_array($result);
-		  
-		  print $row[count];
-		  
-		  print ')</a></li>';
-		}
-	      
-	      if (have_database_services())
-		{
-		  print '<li class="menu"><a href="databases.php" onmouseover="show_help(\'' . __('List databases') . '\');" onmouseout="help_rst();">' . __('Databases') . ' (';
-		  
-		  $sql = "select count(*) as count from data_bases";
-		  $result = $db->data_query($sql);
-		  
-		  $row = $db->data_fetch_array($result);
-		  
-		  print $row[count];
-		  
-		  print ')</a></li>';
-		}
-	      
-	      if (have_service("dns"))
-		{
-		  print '<li class="menu"><a href="dns.php" onmouseover="show_help(\'' . __('DNS for domains on this server') . '\');" onmouseout="help_rst();">' . __('DNS') . ' (';
-		
-		  $sql = "select count(*) as count from domains where soa is not null";
-		  $result = $db->data_query($sql);
-		  
-		  $row = $db->data_fetch_array($result);
-		  
-		  print $row[count];
-		  
-		  print ')</a></li>';
-		}
-	      // log manager currently disabled, it broke somewhere along the line :)
-	      // if(have_service("web")) print '<li class="menu"><a href="log_manager.php" onmouseover="show_help(\'View all server log files\');" onmouseout="help_rst();">Logs</a></li>';
-	    }
 
-	  print '<li class="menu"><a href="system.php" onmouseover="show_help(\'' . __('Manage system settings') . '\');" onmouseout="help_rst();">' . __('System') . '</a></li>';
+			if( ! $status['db_panic'] ) {
 
-        }
-        else
-        {
-            print '<li class="menu"><a href="users.php" onmouseover="show_help(\'' . __('Goto main server index page') . '\');" onmouseout="help_rst();">' . __('Main Menu') . '</a></li>
+				print '<li class="menu"><a href="users.php" onmouseover="show_help(\'' . __('List control panel users') . '\');" onmouseout="help_rst();">' . __('Users') . ' (';
+
+				$sql = "select count(*) as count from users";
+				$result = $db->data_query($sql);
+
+				$row = $db->data_fetch_array($result);
+
+				print $row['count'];
+
+				print ')</a></li>';
+
+				if (have_domain_services()) {
+					print '<li class="menu"><a href="domains.php" onmouseover="show_help(\'' . __('List domains') . '\');" onmouseout="help_rst();">' . __('Domains') . ' (';
+
+					$sql = "select count(*) as count from domains";
+					$result = $db->data_query($sql);
+
+					$row = $db->data_fetch_array($result);
+
+					print $row['count'];
+
+					print ')</a></li>';
+				}
+
+				if (have_service("mail")) {
+					print '<li class="menu"><a href="mail.php" onmouseover="show_help(\'' . __('List email addresses') . '\');" onmouseout="help_rst();">' . __('Mail') . ' (';
+
+					$sql = "select count(*) as count from mail_users";
+					$result = $db->data_query($sql);
+
+					$row = $db->data_fetch_array($result);
+
+					print $row[count];
+
+					print ')</a></li>';
+				}
+
+				if (have_database_services()) {
+					print '<li class="menu"><a href="databases.php" onmouseover="show_help(\'' . __('List databases') . '\');" onmouseout="help_rst();">' . __('Databases') . ' (';
+
+					$sql = "select count(*) as count from data_bases";
+					$result = $db->data_query($sql);
+
+					$row = $db->data_fetch_array($result);
+
+					print $row[count];
+
+					print ')</a></li>';
+				}
+
+				if (have_service("dns")) {
+					print '<li class="menu"><a href="dns.php" onmouseover="show_help(\'' . __('DNS for domains on this server') . '\');" onmouseout="help_rst();">' . __('DNS') . ' (';
+
+					$sql = "select count(*) as count from domains where soa is not null";
+					$result = $db->data_query($sql);
+
+					$row = $db->data_fetch_array($result);
+
+					print $row[count];
+
+					print ')</a></li>';
+				}
+
+				// log manager currently disabled, it broke somewhere along the line :)
+				// if(have_service("web")) print '<li class="menu"><a href="log_manager.php" onmouseover="show_help(\'View all server log files\');" onmouseout="help_rst();">Logs</a></li>';
+			}
+
+			print '<li class="menu"><a href="system.php" onmouseover="show_help(\'' . __('Manage system settings') . '\');" onmouseout="help_rst();">' . __('System') . '</a></li>';
+
+		} else {
+			print '<li class="menu"><a href="users.php" onmouseover="show_help(\'' . __('Goto main server index page') . '\');" onmouseout="help_rst();">' . __('Main Menu') . '</a></li>
 <li class="menu"><a href="domains.php" onmouseover="show_help(\'' . __('List your domains') . '\');" onmouseout="help_rst();">' . __('My Domains') . '</a></li>';
 
-            if (have_service("mail")) print '<li class="menu"><a href="mail.php" onmouseover="show_help(\'' . __('List all your email accounts') . '\');" onmouseout="help_rst();">' . __('My email accounts') . '</a></li>';
-        }
+			if (have_service("mail")) print '<li class="menu"><a href="mail.php" onmouseover="show_help(\'' . __('List all your email accounts') . '\');" onmouseout="help_rst();">' . __('My email accounts') . '</a></li>';
+		}
 
-        print '<li class="menu right"><a href="logout.php" onmouseover="show_help(\'' . __('Logout') . '\');" onmouseout="help_rst();" onclick="return confirm(\'' . __('Are you sure you wish to logout?') . '\');">' . __('Logout') . '</a></li></ul>
+		print '<li class="menu right"><a href="logout.php" onmouseover="show_help(\'' . __('Logout') . '\');" onmouseout="help_rst();" onclick="return confirm(\'' . __('Are you sure you wish to logout?') . '\');">' . __('Logout') . '</a></li></ul>
 <hr style="visibility: hidden;">';
 
-        print '<div><!--ERRORS--></div>';
+		print '<div><!--ERRORS--></div>';
 
-    }
+	}
 
 }
 
 // A function that should be used at the very bottom of every main page
 
-function nav_bottom()
-{
+function nav_bottom() {
 
   global $db;
 
-    ?>
+	?>
 
 </div>
 
@@ -601,136 +555,125 @@ function nav_bottom()
 </html>
 <?php
 
-    $output = ob_get_contents();
+	$output = ob_get_contents();
 
-    ob_end_clean();
+	ob_end_clean();
 
-    // 
-    if(is_array($_SESSION['status_mesg']))
-      {
-	foreach($_SESSION['status_mesg'] as $val)
-	  {
-	    array_push($db->status_mesg, $val);
-	  }
-
-	unset($_SESSION['status_mesg']);
-
-      }
-    else if($_SESSION['status_mesg'])
-      {
-	array_push($db->status_mesg, $_SESSION['status_mesg']);
-	unset($_SESSION['status_mesg']);
-      }
-
-    if (is_array($db->status_mesg)) {
-       foreach( $db->status_mesg as $val )
-      {
-	$error .= $val . '<br/>';
-      }
-    }
-    
-    if($error)
-      {
-        $output = str_replace('<!--ERRORS-->','<font size="2" color=red><b>' . $error . '</b></font>',$output);
-      }
-    
-    print $output;
-
-    rc_exit();
-
-}
-
-function selection_array($name, $selected, $num, $options, $arr = Array())
-{
-    global $db;
-
-    $str = '<select name="' . $name . '' . ( $num ? '[' . ( $num == -1 ? '' : $num ) . ']' : '' ) . '" ' . $options . '>';
-
-    foreach ($arr as $key => $val) {
-
-	$str .= '<option value="' . $key . '"';
-
-	// I SERIOUSLY want to strangle someone here ... string "NULL" is == to integer 0 ... wtf?
-	// this is a dirty ugly hack...
-	if (is_array($selected) ) {
-	    foreach ( $selected as $sey => $sal ) {
-		if ( strlen($sal) == strlen($key) and $key == "NULL" ) {
-		    $str .= ' selected';
-		} else if ( $key != 0 and $sal == $key ) {
-		    $str .= ' selected';
+	//
+	if (is_array($_SESSION['status_mesg'])) {
+		foreach ($_SESSION['status_mesg'] as $val) {
+			array_push($db->status_mesg, $val);
 		}
-	    }
-	} else {
 
-		if ( strlen($selected) == strlen($key) and $key == "NULL" ) {
-		    $str .= ' selected';
-		} else if ( $key != 0 and $selected == $key ) {
-		    $str .= ' selected';
+		unset ($_SESSION['status_mesg']);
+
+	} else if ($_SESSION['status_mesg']) {
+		array_push($db->status_mesg, $_SESSION['status_mesg']);
+		unset ($_SESSION['status_mesg']);
+	}
+
+	if (is_array($db->status_mesg)) {
+		foreach ($db->status_mesg as $val){
+			$error .= $val . '<br/>';
 		}
 	}
 
-	$str .= '>' . $val . '</option>' ;
+	if ($error) {
+		$output = str_replace('<!--ERRORS-->','<font size="2" color=red><b>' . $error . '</b></font>',$output);
+	}
 
-    }
+	print $output;
 
-    $str .= '</select>';
+	rc_exit();
 
-    return $str;
 }
 
-function selection_users($uid = 0, $num = 0, $select_opt = "")
-{
-    global $db;
+function selection_array($name, $selected, $num, $options, $arr = Array()) {
+	global $db;
 
-    $str = '<select name=uid' . ( $num ? '[' . $num . ']' : '' ) . ' ' . $select_opt . '>';
+	$str = '<select name="' . $name . '' . ( $num ? '[' . ( $num == -1 ? '' : $num ) . ']' : '' ) . '" ' . $options . '>';
 
-    $sql = "select * from users";
-    $result = $db->data_query($sql);
+	foreach ($arr as $key => $val) {
 
-    $num = $db->data_num_rows();
+		$str .= '<option value="' . $key . '"';
 
-    $str .= '<option value=0>' . __('No One') . '</option>';
+		// I SERIOUSLY want to strangle someone here ... string "NULL" is == to integer 0 ... wtf?
+		// this is a dirty ugly hack...
+		if (is_array($selected) ) {
+			foreach ( $selected as $sey => $sal ) {
+				if ( strlen($sal) == strlen($key) and $key == "NULL" ) {
+					$str .= ' selected';
+				} else if ( $key != 0 and $sal == $key ) {
+					$str .= ' selected';
+				}
+			}
+		} else {
 
-    while ($row_u = $db->data_fetch_array($result))
-    {
+			if ( strlen($selected) == strlen($key) and $key == "NULL" ) {
+				$str .= ' selected';
+			} else if ( $key != 0 and $selected == $key ) {
+				$str .= ' selected';
+			}
+		}
+
+		$str .= '>' . $val . '</option>' ;
+
+	}
+
+	$str .= '</select>';
+
+	return $str;
+}
+
+function selection_users($uid = 0, $num = 0, $select_opt = "") {
+	global $db;
+
+	$str = '<select name=uid' . ( $num ? '[' . $num . ']' : '' ) . ' ' . $select_opt . '>';
+
+	$sql = "select * from users";
+	$result = $db->data_query($sql);
+
+	$num = $db->data_num_rows();
+
+	$str .= '<option value=0>' . __('No One') . '</option>';
+
+	while ($row_u = $db->data_fetch_array($result)) {
 	$str .= '<option value="' . $row_u['id'] . '"';
 
-        if ($row_u['id'] == $uid) $str .= ' selected';
+		if ($row_u['id'] == $uid) $str .= ' selected';
 
-        $str .= '>' . $row_u['name'] . '</option>';
-    }
+		$str .= '>' . $row_u['name'] . '</option>';
+	}
 
-    $str .= '</select>';
+	$str .= '</select>';
 
-    return $str;
+	return $str;
 }
 
-function selection_domains($uid = 0, $did = 0, $num = 0, $select_opt = "")
-{
-    global $db;
+function selection_domains($uid = 0, $did = 0, $num = 0, $select_opt = "") {
+	global $db;
 
-    $str = '<select name=did' . ( $num ? '[' . $num . ']' : '' ) . ' ' . $select_opt . '>';
+	$str = '<select name=did' . ( $num ? '[' . $num . ']' : '' ) . ' ' . $select_opt . '>';
 
-    $sql = "select * from domains" . ( $uid ? "where uid = $uid" : "" );
+	$sql = "select * from domains" . ( $uid ? "where uid = $uid" : "" );
 
-    $result = $db->data_query($sql);
+	$result = $db->data_query($sql);
 
-    $num = $db->data_num_rows();
+	$num = $db->data_num_rows();
 
-    $str .= '<option value=0>' . __('Select a domain') . '</option>';
+	$str .= '<option value=0>' . __('Select a domain') . '</option>';
 
-    while ($row_u = $db->data_fetch_array($result))
-    {
-        $str .= '<option value="' . $row_u['id'] . '"';
+	while ($row_u = $db->data_fetch_array($result)) {
+		$str .= '<option value="' . $row_u['id'] . '"';
 
-        if ($row_u['id'] == $did) $str .= ' selected';
+		if ($row_u['id'] == $did) $str .= ' selected';
 
-        $str .= '>' . $row_u['name'] . '</option>';
-    }
+		$str .= '>' . $row_u['name'] . '</option>';
+	}
 
-    $str .= '</select>';
+	$str .= '</select>';
 
-    return $str;
+	return $str;
 }
 
 ?>

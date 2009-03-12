@@ -33,144 +33,128 @@ our $EOT = chr(4);
 
 # connect to the ravencore socket
 
-sub new
-{
-    my ($class, $RC_ROOT) = @_;
+sub new {
+	my ($class, $RC_ROOT) = @_;
 
-    my $self = {
+	my $self = {
 		RC_ROOT => $RC_ROOT
-    };
+	};
 
-    bless $self, $class;
-    
-    $self->{socket} = IO::Socket::UNIX->new($self->{RC_ROOT} . '/var/rc.sock') or die('Unable to connect to RavenCore socket');
+	bless $self, $class;
 
-# generate a random session_id
-    my $session_id = gen_random_id(32);
+	$self->{socket} = IO::Socket::UNIX->new($self->{RC_ROOT} . '/var/rc.sock') or die('Unable to connect to RavenCore socket');
 
-# define our authentication file that will be looked for when we run auth_system
-# TODO: repackage the file_ functions in ravencore.pm to their own module and use the file_touch here
-    system('touch ' . $self->{RC_ROOT} . '/var/tmp/sessions/SYSTEM_' . $session_id);
+	# generate a random session_id
+	my $session_id = gen_random_id(32);
 
-# normal auth would look something like this
-#    my $resp = $self->do_raw_query('auth ' . $session_id . ' ' . $ipaddress . ' ' . $username . ' ' . $password);
-# TODO: create a user-level shell API using this method
+	# define our authentication file that will be looked for when we run auth_system
+	# TODO: repackage the file_ functions in ravencore.pm to their own module and use the file_touch here
+	system('touch ' . $self->{RC_ROOT} . '/var/tmp/sessions/SYSTEM_' . $session_id);
 
-    my $resp = $self->do_raw_query('auth_system ' . $session_id . ' ' . $self->get_passwd);
-    
+	# normal auth would look something like this
+	#    my $resp = $self->do_raw_query('auth ' . $session_id . ' ' . $ipaddress . ' ' . $username . ' ' . $password);
+	# TODO: create a user-level shell API using this method
+
+	my $resp = $self->do_raw_query('auth_system ' . $session_id . ' ' . $self->get_passwd);
+
 # if we got an authentication failure on the socket for some reason, die with the given error
 
-    if( $resp ne "1" )
-    {
-	print STDERR "Error: " . $resp . "\n";
-	exit 1;
-    }
+	if ($resp ne "1") {
+		print STDERR "Error: " . $resp . "\n";
+		exit 1;
+	}
 
-    return $self;
+	return $self;
 }
 
 #
 
-sub get_passwd
-{
-    my ($self) = @_;
+sub get_passwd {
+	my ($self) = @_;
 
-    my $password = file_get_contents($self->{RC_ROOT} . '/.shadow');
-    chomp $password;
+	my $password = file_get_contents($self->{RC_ROOT} . '/.shadow');
+	chomp $password;
 
-    return $password;
+	return $password;
 }
 
 # submit a query to the socket
 
 sub do_raw_query {
-    my ($self, $query, $serial) = @_;
+	my ($self, $query, $serial) = @_;
 
-    my $c;
-    my $data;
+	my $c;
+	my $data;
 
-    # write to the socket
-    print {$self->{socket}} $query . ( $serial ? ' -- ' . encode_base64(serialize($serial)) : '' ) . $EOT;
+	# write to the socket
+	print {$self->{socket}} $query . ( $serial ? ' -- ' . encode_base64(serialize($serial)) : '' ) . $EOT;
 
-    # read the reply a byte at a time from the socket, until we get an EOT
-    while ( read($self->{socket}, $c, 1) ) {
-        last if $c eq $EOT;
-        $data .= $c;
-    }
+	# read the reply a byte at a time from the socket, until we get an EOT
+	while ( read($self->{socket}, $c, 1) ) {
+		last if $c eq $EOT;
+		$data .= $c;
+	}
 
-    my $output = unserialize(decode_base64($data));
+	my $output = unserialize(decode_base64($data));
 
-    # previous errors get overwritten
-    $self->{errors} = $data->{stderr};
+	# previous errors get overwritten
+	$self->{errors} = $data->{stderr};
 
-    return $output->{stdout};
+	return $output->{stdout};
 }
 
 #
 
-sub do_error
-{
-    my ($self, $msg) = @_;
+sub do_error {
+	my ($self, $msg) = @_;
 
-    $msg =~ s/^$self->{NAK}//;
+	$msg =~ s/^$self->{NAK}//;
 
-    print STDERR $msg . "\n";
-
+	print STDERR $msg . "\n";
 }
 
 # call do_error and exit
 
-sub die_error
-{
-    my ($self, $msg) = @_;
+sub die_error {
+	my ($self, $msg) = @_;
 
-    $self->do_error($msg);
+	$self->do_error($msg);
 
-    exit(1);
+	exit(1);
 }
 
 # mysql query equiv
   
-sub data_query
-{
+sub data_query {
+	my ($self, $sql) = @_;
 
-    my ($self, $sql) = @_;
+	my $data = $self->do_raw_query('sql ' . $sql);
 
-    my $data = $self->do_raw_query('sql ' . $sql);
+	return @{$data->{rows}};
 
-    return @{$data->{rows}};
-
-} # end sub data_query
+}
 
 #
 
-sub service_running
-{
-
-    my ($self, $service) = @_;
-
-    return $self->do_raw_query('service_running ' . $service);
-
+sub service_running {
+	my ($self, $service) = @_;
+	return $self->do_raw_query('service_running ' . $service);
 }
 
 # a function to change the current database in use
 
-sub use_database
-{
-    my ($self, $database) = @_;
-
-    return $self->do_raw_query('use ' . $database);
+sub use_database {
+	my ($self, $database) = @_;
+	return $self->do_raw_query('use ' . $database);
 }
 
 # a function to change the admin password. returns true on success, false on failure
 # this only checks if the $old password is correct. it's up to the code that calls this to verify
 # things like password strength, length, etc.
 
-sub passwd
-{
-    my ($self, $old, $new) = @_;
-    
-    return $self->do_raw_query('passwd ' . $old . ' ' . $new);
+sub passwd {
+	my ($self, $old, $new) = @_;
+	return $self->do_raw_query('passwd ' . $old . ' ' . $new);
 }
 
 # shift off and return the hash of the current data query. return undef otherwise
@@ -195,12 +179,12 @@ sub data_rows_affected { my ($self) = @_; return $self->{rows_affected} }
 
 sub die_error
 {
-    my ($self, $msg) = @_;
+	my ($self, $msg) = @_;
 
-    print $msg . "\n";
+	print $msg . "\n";
 
-    exit(1);
-} # end sub die_error
+	exit(1);
+}
 
 #
 

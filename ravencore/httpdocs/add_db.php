@@ -25,18 +25,17 @@ if (!$did) goto("users.php?uid=$uid");
 
 if (!user_can_add($uid, "database") and !is_admin()) goto("users.php?user=$uid");
 
-if ($action == "add")
-{
-    $sql = "create database $_POST[name]";
+if ($action == "add") {
+	$sql = "create database $_POST[name]";
 
-    $db->data_query($sql);
+	$db->data_query($sql);
 
-    $sql = "insert into data_bases set name = '$_POST[name]', did = '$did'";
-    $db->data_query($sql);
-    
-    goto("databases.php?did=$did");
+	$sql = "insert into data_bases set name = '$_POST[name]', did = '$did'";
+	$db->data_query($sql);
 
-} 
+	goto("databases.php?did=$did");
+
+}
 
 nav_top();
 

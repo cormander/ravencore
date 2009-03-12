@@ -38,18 +38,18 @@ read pass
 mysql -h $host -u $user -p$pass -e "use $database" &> /dev/null
 
 if [ $? -eq 0 ]; then
-    
-    cat << EOF > $RC_ROOT/database.cfg
+	
+	cat << EOF > $RC_ROOT/database.cfg
 MYSQL_ADMIN_HOST="$host"
 MYSQL_ADMIN_PORT="$port"
 MYSQL_ADMIN_USER="$user"
 MYSQL_ADMIN_DB="$database"
 EOF
 
-    echo $pass > $RC_ROOT/.shadow
+	echo $pass > $RC_ROOT/.shadow
 
 else
 
-    echo "Unable to make a database connection with given info. Please try again"
+	echo "Unable to make a database connection with given info. Please try again"
 
 fi

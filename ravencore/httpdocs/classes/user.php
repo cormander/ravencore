@@ -2,132 +2,108 @@
 
 class user {
 
-  function user($uid) {
+	function user($uid) {
 
-    global $db;
+		global $db;
 
-    $this->uid = (int)$uid;
+		$this->uid = (int)$uid;
 
-    // get all info from user table
+		// get all info from user table
+		$sql = "select * from users where id = '" . $this->uid . "' limit 1";
+		$result = $db->data_query($sql);
 
-    $sql = "select * from users where id = '" . $this->uid . "' limit 1";
-    $result = $db->data_query($sql);
+		$this->info = $db->data_fetch_array($result);
 
-    $this->info = $db->data_fetch_array($result);
+		// get all domains for this user
+		$sql = "select * from domains where uid = '" . $this->uid . "'";
+		$result = $db->data_query($sql);
 
-    // get all domains for this user
+		// get number of domains
+		$this->info['num_domains'] = $db->data_num_rows();
 
-    $sql = "select * from domains where uid = '" . $this->uid . "'";
-    $result = $db->data_query($sql);
+		// fill an array with domain ids
+		$this->info['domains'] = array();
 
-    // get number of domains
+		for ( $i = 0; $row = $db->data_fetch_array($result); $i++ ) {
+			array_push($this->info['domains'], $row['id']);
+		}
+	}
 
-    $this->info['num_domains'] = $db->data_num_rows();
+	// get this user's usage of space
+	function space_usage($month, $year) {
 
-    // fill an array with domain ids
+		global $db;
 
-    $this->info['domains'] = array();
+		$total = 0;
 
-    for ( $i = 0; $row = $db->data_fetch_array($result); $i++ )
-      {
+		foreach( $this->info['domains'] as $did ) {
 
-        array_push($this->info['domains'], $row['id']);
+			$d = new domain($did);
 
-      }
+			$total += $d->space_usage($month, $year);
 
-  }
+		}
 
-  // get this user's usage of space
+		return $total;
 
-  function space_usage($month, $year)
-  {
-    
-    global $db;
-    
-    $total = 0;
+	}
 
-    foreach( $this->info['domains'] as $did )
-      {
-	
-	$d = new domain($did);
+	// get a users usage of traffic
+	function traffic_usage($month, $year) {
 
-	$total += $d->space_usage($month, $year);
+		global $db;
 
-      }
+		$total = 0;
 
-    return $total;
-    
-  }
+		foreach( $this->info['domains'] as $did ) {
 
-  // get a users usage of traffic
+			$d = new domain($did);
 
-  function traffic_usage($month, $year)
-  {
-  
-    global $db;
-    
-    $total = 0;
-    
-    foreach( $this->info['domains'] as $did )
-      {
+			$total += $d->traffic_usage($month, $year);
 
-        $d = new domain($did);
+		}
 
-        $total += $d->traffic_usage($month, $year);
+		return $total;
 
-      }
-    
-    return $total;
-    
-  }
+	}
 
-  // find out if a user owns this domains
+	// find out if a user owns this domains
+	function owns_domain($did) {
 
-  function owns_domain($did)
-  {
+		if( in_array( $did, $this->info['domains'] ) ) return true;
+		else return false;
 
-    if( in_array( $did, $this->info['domains'] ) ) return true;
-    else return false;
+	}
 
-  }
+	// return the number of domains this user has setup
+	function get_num_domains() {
+		return $this->info['num_domains'];
+	}
 
-  // return the number of domains this user has setup
+	// delete this user
+	function delete() {
 
-  function get_num_domains()
-  {
+		global $db;
 
-    return $this->info['num_domains'];
+		// delete this users domains
+		foreach( $this->info['domains'] as $did ) {
 
-  }
+			$d = new domain($did);
 
-  // delete this user
-  
-  function delete()
-  {
+			$d->delete();
 
-    global $db;
+		}
 
-    // delete this users domains
-    foreach( $this->info['domains'] as $did )
-      {
+		// remove this users permissions
+		$sql = "delete from user_permissions where uid = '" . $this->uid . "'";
+		$db->data_query($sql);
 
-	$d = new domain($did);
+		// get rid of the user
+		$sql = "delete from users where id = '" . $this->uid . "'";
+		$db->data_query($sql);
 
-	$d->delete();
+	}
 
-      }
-
-    // remove this users permissions
-    $sql = "delete from user_permissions where uid = '" . $this->uid . "'";
-    $db->data_query($sql);
-
-    // get rid of the user
-    $sql = "delete from users where id = '" . $this->uid . "'";
-    $db->data_query($sql);
-
-  }
-
-
-} // end class user
+}
 
 ?>

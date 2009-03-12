@@ -28,9 +28,8 @@ $rc = new RavenCore::Client('/usr/local/ravencore');
 
 # build our $sql query off of everything given on the command line
 
-foreach (@ARGV)
-{
-    $sql .= $_ . ' ';
+foreach (@ARGV) {
+	$sql .= $_ . ' ';
 }
 
 # run the SQL query
@@ -38,13 +37,11 @@ foreach (@ARGV)
 
 # return the resutls if there are any
 
-while( $row = $rc->data_fetch_row(\@result) )
-{
+while ($row = $rc->data_fetch_row(\@result)) {
 
-    foreach my $key (keys %$row)
-    {
-	print $row->{$key} . "\t";
-    }
-    
-    print "\n";
+	foreach my $key (keys %$row) {
+		print $row->{$key} . "\t";
+	}
+
+	print "\n";
 }

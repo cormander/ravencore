@@ -21,12 +21,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 include "auth.php";
 
-if ($_GET[service] and $_GET[status])
-{
-  $db->do_raw_query("chkconfig --level 3 $_GET[service] $_GET[status]");
-  
-  goto("$_SERVER[PHP_SELF]");
-} 
+if ($_GET[service] and $_GET[status]) {
+	$db->do_raw_query("chkconfig --level 3 $_GET[service] $_GET[status]");
+
+	goto("$_SERVER[PHP_SELF]");
+}
 
 nav_top();
 

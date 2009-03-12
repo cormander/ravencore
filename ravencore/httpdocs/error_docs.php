@@ -27,46 +27,41 @@ if (!$did) goto("users.php?uid=$uid");
 
 $domain_name = $d->name();
 
-if ($action == "add")
-{ 
-    // quick hack to get all the allowed status codes into an array
-    $handle = popen("cat http_status_codes.php | awk '{print \$1}' | grep '^[[:digit:]]'", "r");
+if ($action == "add") {
+	// quick hack to get all the allowed status codes into an array
+	$handle = popen("cat http_status_codes.php | awk '{print \$1}' | grep '^[[:digit:]]'", "r");
 
-    while (!feof($handle)) $code_data .= fread($handle, 1024);
+	while (!feof($handle)) $code_data .= fread($handle, 1024);
 
-    pclose($handle);
+	pclose($handle);
 
-    $http_codes = explode("\n", $code_data);
+	$http_codes = explode("\n", $code_data);
 
-    if (!in_array($_POST[code], $http_codes)) alert(__("$_POST[code] is not a valid http code!"));
-    else
-    {
-        $sql = "select count(*) as count from error_docs where did = '$did' and code = '$_POST[code]'";
-        $result = $db->data_query($sql);
+	if (!in_array($_POST[code], $http_codes)) alert(__("$_POST[code] is not a valid http code!"));
+	else {
+		$sql = "select count(*) as count from error_docs where did = '$did' and code = '$_POST[code]'";
+		$result = $db->data_query($sql);
 
-	$row = $db->data_fetch_array($result);
+		$row = $db->data_fetch_array($result);
 
-        if ($row[count] != 0) alert(__("You already have a $_POST[code] error document"));
-        else
-        {
-            $sql = "insert into error_docs set did = '$did', code = '$_POST[code]', file = '$_POST[file]'";
-            $db->data_query($sql);
+		if ($row[count] != 0) alert(__("You already have a $_POST[code] error document"));
+		else {
+			$sql = "insert into error_docs set did = '$did', code = '$_POST[code]', file = '$_POST[file]'";
+			$db->data_query($sql);
 
-            $db->do_raw_query("rehash_httpd " . $d->name());
+			$db->do_raw_query("rehash_httpd " . $d->name());
 
-            goto("error_docs.php?did=$did");
-        } 
-    } 
-} 
-else if ($action == "delete")
-{
-    $sql = "delete from error_docs where did = '$did' and code = '$_POST[code]'";
-    $db->data_query($sql);
+			goto("error_docs.php?did=$did");
+		}
+	}
+} else if ($action == "delete") {
+	$sql = "delete from error_docs where did = '$did' and code = '$_POST[code]'";
+	$db->data_query($sql);
 
-    $db->do_raw_query("rehash_httpd " . $d->name());
+	$db->do_raw_query("rehash_httpd " . $d->name());
 
-    goto("error_docs.php?did=$did");
-} 
+	goto("error_docs.php?did=$did");
+}
 
 nav_top();
 
@@ -76,17 +71,15 @@ $result = $db->data_query($sql);
 $num = $db->data_num_rows();
 
 if ($num == 0) print __('No custom error documents setup.');
-else
-{
-    print '<form method=POST>';
+else {
+	print '<form method=POST>';
 
-    while ( $row = $db->data_fetch_array($result) )
-    {
-        print '<input type=radio name=code value=' . $row[code] . '> ' . $row[code] . ' - ' . $row[file] . '<br>';
-    } 
+	while ( $row = $db->data_fetch_array($result) ) {
+		print '<input type=radio name=code value=' . $row[code] . '> ' . $row[code] . ' - ' . $row[file] . '<br>';
+	}
 
-    print '<input type=submit value=' . __('Delete') . '><input type=hidden name=action value=delete></form>';
-} 
+	print '<input type=submit value=' . __('Delete') . '><input type=hidden name=action value=delete></form>';
+}
 
 print '<p><form method=POST>
 ' . __('Add Custom Error Document') . ':

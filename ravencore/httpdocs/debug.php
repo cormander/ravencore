@@ -27,7 +27,7 @@ $resp = "";
 
 if($debug)
 {
-  $resp = $db->do_raw_query($debug);
+	$resp = $db->do_raw_query($debug);
 }
 
 nav_top();
@@ -48,30 +48,22 @@ Enter in a raw query to the socket and press submit to see the output. <a href="
 <pre>
 <?php
 
-if(is_array($resp))
-{
-  // print arrays with print_r
-  print_r($resp);
-}
-else if(ereg('^sql ', $debug))
-{
-  // treat the "sql" command like an sql statement
-  $sql = ereg_replace('^sql ', '', $debug);
-  
-  $result = $db->data_query(stripslashes($sql));
-  
-  while( $row = $db->data_fetch_array($result) )
-    {
-      print_r($row);
-    }
+if(is_array($resp)) {
+	// print arrays with print_r
+	print_r($resp);
+} else if(ereg('^sql ', $debug)) {
+	// treat the "sql" command like an sql statement
+	$sql = ereg_replace('^sql ', '', $debug);
 
-}
-else if(ereg('^help', $debug))
-{
+	$result = $db->data_query(stripslashes($sql));
+
+	while( $row = $db->data_fetch_array($result) ) {
+		print_r($row);
+	}
+
+} else if(ereg('^help', $debug)) {
   print '</pre><p>' . nl2br(htmlspecialchars($resp)) . '</p><pre>';
-}
-else
-{
+} else {
   print htmlspecialchars($resp);
 }
 

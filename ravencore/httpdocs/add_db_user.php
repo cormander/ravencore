@@ -23,44 +23,39 @@ include "auth.php";
 
 if (!$dbid or !$did) goto("users.php?user=$uid");
 
-if ($action == "add")
-{ 
-    // does user already exist?
-    $sql = "select count(*) as count from data_base_users where login = '$_POST[login]'";
-    $result = $db->data_query($sql);
+if ($action == "add") {
+	// does user already exist?
+	$sql = "select count(*) as count from data_base_users where login = '$_POST[login]'";
+	$result = $db->data_query($sql);
 
-    $row = $db->data_fetch_array($result);
+	$row = $db->data_fetch_array($result);
 
-    // we can't use the admin username
-    if ($_POST['login'] == $CONF['MYSQL_ADMIN_USER']) $row['count'] = 1;
+	// we can't use the admin username
+	if ($_POST['login'] == $CONF['MYSQL_ADMIN_USER']) $row['count'] = 1;
 
-    if ($row['count'] != 0) $_SESSION['status_mesg'] = $_POST[login] . __(" user already exists");
-    else
-    {
-        if (preg_match('/^' . REGEX_PASSWORD . '$/', $_POST[passwd]) and valid_passwd($_POST[passwd]))
-        {
-            $sql = "select * from data_bases where id = '$dbid'";
-            $result = $db->data_query($sql);
+	if ($row['count'] != 0) $_SESSION['status_mesg'] = $_POST[login] . __(" user already exists");
+	else {
+		if (preg_match('/^' . REGEX_PASSWORD . '$/', $_POST[passwd]) and valid_passwd($_POST[passwd])) {
+			$sql = "select * from data_bases where id = '$dbid'";
+			$result = $db->data_query($sql);
 
-	    $row = $db->data_fetch_array($result);
+			$row = $db->data_fetch_array($result);
 
-            $sql = "grant select,insert,update,delete,create,drop,alter on $row[name].* to $_POST[login]@localhost identified by '$_POST[passwd]'";
+			$sql = "grant select,insert,update,delete,create,drop,alter on $row[name].* to $_POST[login]@localhost identified by '$_POST[passwd]'";
 
-            $db->data_query($sql);
-	    
-	    $sql = "insert into data_base_users set login = '$_POST[login]', db_id = '$dbid', passwd = '$_POST[passwd]'";
-	    $db->data_query($sql);
-	    
-	    goto("databases.php?did=$did&dbid=$dbid");
+			$db->data_query($sql);
 
-        } 
-        else
-        {
-            alert(__("Invalid password. Must only contain letters and numbers, must be atleast 5 characters, and not a dictionary word"));
-            $_POST[passwd] = "";
-        } 
-    } 
-} 
+			$sql = "insert into data_base_users set login = '$_POST[login]', db_id = '$dbid', passwd = '$_POST[passwd]'";
+			$db->data_query($sql);
+
+			goto("databases.php?did=$did&dbid=$dbid");
+
+		} else {
+			alert(__("Invalid password. Must only contain letters and numbers, must be atleast 5 characters, and not a dictionary word"));
+			$_POST[passwd] = "";
+		}
+	}
+}
 
 nav_top();
 

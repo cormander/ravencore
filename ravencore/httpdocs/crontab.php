@@ -25,24 +25,21 @@ req_admin();
 // for now....
 $user = $_REQUEST[user];
 
-if ($action == "add")
-{
-    $sql = "insert into crontab set minute = '$_POST[minute]', hour = '$_POST[hour]', dayofm = '$_POST[dayofm]', month = '$_POST[month]', dayofw = '$_POST[dayofw]', cmd = '$_POST[cmd]', user = '$_POST[user]'";
-    $db->data_query($sql);
+if ($action == "add") {
+	$sql = "insert into crontab set minute = '$_POST[minute]', hour = '$_POST[hour]', dayofm = '$_POST[dayofm]', month = '$_POST[month]', dayofw = '$_POST[dayofw]', cmd = '$_POST[cmd]', user = '$_POST[user]'";
+	$db->data_query($sql);
 
-    socket_cmd("crontab_mng $_POST[user]");
+	socket_cmd("crontab_mng $_POST[user]");
 
-    goto("$_SERVER[PHP_SELF]?user=$_POST[user]");
-} 
-else if ($action == "delete")
-{
-    $sql = "delete from crontab where id = '$_POST[del_val]' and user = '$_POST[user]'";
-    $db->data_query($sql);
+	goto("$_SERVER[PHP_SELF]?user=$_POST[user]");
+} else if ($action == "delete") {
+	$sql = "delete from crontab where id = '$_POST[del_val]' and user = '$_POST[user]'";
+	$db->data_query($sql);
 
-    socket_cmd("crontab_mng $_POST[user]");
+	socket_cmd("crontab_mng $_POST[user]");
 
-    goto("$_SERVER[PHP_SELF]?user=$_POST[user]");
-} 
+	goto("$_SERVER[PHP_SELF]?user=$_POST[user]");
+}
 
 nav_top();
 
@@ -51,67 +48,58 @@ $result = $db->data_query($sql);
 
 $num = $db->data_num_rows();
 
-if (!$_POST[user] or $num == 0)
-{
-    print "<a href=\"crontab.php?add=1\">" . __("Add a crontab") . "</a><p>";
+if (!$_POST[user] or $num == 0) {
+	print "<a href=\"crontab.php?add=1\">" . __("Add a crontab") . "</a><p>";
 
-    $_POST[user] = "";
-} 
+	$_POST[user] = "";
+}
 
 if ($num == 0) print __("There are no crontabs.") . "<p>";
-else
-{
-    print "<form name=f method=get>" . __("User") . ": <select name=user onchange=\"document.f.submit()\"><option value=''>- - " . __("Choose a user") . " - -</option>";
+else {
+	print "<form name=f method=get>" . __("User") . ": <select name=user onchange=\"document.f.submit()\"><option value=''>- - " . __("Choose a user") . " - -</option>";
 
-    while ( $row = $db->data_fetch_array($result) )
-    {
-        print "<option value=$row[user]";
-        if ($user == $row[user]) print " selected";
-        print ">$row[user]</option>";
-    } 
+	while ( $row = $db->data_fetch_array($result) ) {
+		print "<option value=$row[user]";
+		if ($user == $row[user]) print " selected";
+		print ">$row[user]</option>";
+	}
 
-    print "</select></form>";
-} 
+	print "</select></form>";
+}
 
 print "<p>";
 
-if ($user)
-{
-    $sql = "select * from crontab where user = '$user'";
-    $result = $db->data_query($sql);
+if ($user) {
+	$sql = "select * from crontab where user = '$user'";
+	$result = $db->data_query($sql);
 
-    $num = $db->data_num_rows();
+	$num = $db->data_num_rows();
 
-    if ($num == 0)
-    {
-        print __("No crontab for user $user");
+	if ($num == 0) {
+		print __("No crontab for user $user");
 
-        rc_exit;
-    } 
-    else
-    {
-        print "<form method=post><table>";
+		rc_exit;
+	} else {
+		print "<form method=post><table>";
 
-        while ( $row = $db->data_fetch_array($result) )
-        {
-            print "<tr><td><input type=radio name=del_val value=$row[id]></td><td>$row[minute]</td><td>$row[hour]</td><td>$row[dayofm]</td><td>$row[month]</td><td>$row[dayofw]</td><td>$row[cmd]</td></tr>";
-        } 
+		while ($row = $db->data_fetch_array($result)) {
+			print "<tr><td><input type=radio name=del_val value=$row[id]></td><td>$row[minute]</td><td>$row[hour]</td><td>$row[dayofm]</td><td>$row[month]</td><td>$row[dayofw]</td><td>$row[cmd]</td></tr>";
+		}
 
-        print "</table><input type=submit value=\"" . __("Delete Selected") . "\"> <input type=hidden name=user value=\"$user\"><input type=hidden name=action value=delete></form>";
-    } 
-} 
+		print "</table><input type=submit value=\"" . __("Delete Selected") . "\"> <input type=hidden name=user value=\"$user\"><input type=hidden name=action value=delete></form>";
+	}
+}
 
-if ($add or $user)
-{
+if ($add or $user) {
 
-    ?><form method=post>
+	?><form method=post>
 
 User: <?php
 
-    if ($user) print $user . "<input type=hidden name=user value=$user";
-    else print "<input type=text name=user>";
+	if ($user) print $user . "<input type=hidden name=user value=$user";
+	else print "<input type=text name=user>";
 
-    ?>
+	?>
 
 <p>
    <?php e_('Entry')?>:
@@ -130,7 +118,7 @@ User: <?php
 
 <?php
 
-} 
+}
 
 nav_bottom();
 

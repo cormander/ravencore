@@ -21,11 +21,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // We shouldn't call this script directly from the web
 if($_SERVER['PHP_SELF'] == "/login.php") goto("users.php");
 
-if($_SERVER['PHP_SELF'] == "/ajax.php") 
-{
+if($_SERVER['PHP_SELF'] == "/ajax.php")  {
   print 'hi
 <script>
-    window.location.reload( true );
+	window.location.reload( true );
 </script>
 ';
   exit;
@@ -52,7 +51,7 @@ if ($login_error) print "<br><b><font color=red>" . $login_error . "</font></b>"
 ?>
 </div>
 <div align=center>
-      <table class="listpad">
+	  <table class="listpad">
 <tr><th class="listpad" colspan="2"><?php e_('Please Login') ?></th></tr>
 <tr>
 <td class="listpad"><?php e_('Username') ?>:</td>
@@ -67,18 +66,17 @@ if ($login_error) print "<br><b><font color=red>" . $login_error . "</font></b>"
 <td class="listpad"><select name="lang" onchange="document.lang_select.lang.value=document.main.lang.value; document.lang_select.submit()">
 <?php
 
-foreach($locales as $key => $val)
-{
-    print '<option value="' . $key . '"';
+foreach($locales as $key => $val) {
+	print '<option value="' . $key . '"';
 
-    if ($_SESSION['lang'] == $key)
-    {
-        print ' selected';
-        $lang_selected = 1;
-    } 
-    else if ($CONF['DEFAULT_LOCALE'] == $key and $lang_selected == 0) print ' selected';
+	if ($_SESSION['lang'] == $key)
+	{
+		print ' selected';
+		$lang_selected = 1;
+	}
+	else if ($CONF['DEFAULT_LOCALE'] == $key and $lang_selected == 0) print ' selected';
 
-    print '>' . $val['name'] . '</option>' . "\n";
+	print '>' . $val['name'] . '</option>' . "\n";
 } 
 
 ?>

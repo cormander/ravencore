@@ -23,16 +23,14 @@ include "auth.php";
 
 req_admin();
 
-if ($_GET['cmd'])
-{
+if ($_GET['cmd']) {
   $db->do_raw_query("system " . $_GET['cmd']);
 
   alert(__("The system will now $_GET[cmd]"));
- 
-} 
 
-if($status['db_panic'])
-{
+}
+
+if($status['db_panic']) {
   array_push($db->status_mesg, "The database connection is down. Make sure the mysql server is running, the DBI module for perl is installed, and your admin password is the same as the mysql admin user's password.");
 }
 
@@ -62,15 +60,13 @@ nav_top();
 
 print '<p>';
 
-if (have_service("web"))
-{ 
+if (have_service("web")) {
   // commented out because it doesn't currently work
   // print '<a href="crontab.php" onmouseover="show_help(\'Manage Vixie Crontab for the server\');" onmouseout="help_rst();">Manage Crontab</a>';
   // print '<p>';
-} 
+}
 
-if ( have_service("dns") and ! $status['db_panic'] )
-{
+if ( have_service("dns") and ! $status['db_panic'] ) {
 
     ?>
 <a href="dns_def.php" onmouseover="show_help('<?php e_('The DNS records that are setup for a domain by default when one is added to the server')?>');" onmouseout="help_rst();"><?php e_('Default DNS')?></a>
@@ -79,7 +75,7 @@ if ( have_service("dns") and ! $status['db_panic'] )
 
 <?php
 
-} 
+}
 
 print '<a href="change_password.php" onmouseover="show_help(\'' . __('Change the admin password') . '\');" onmouseout="help_rst();">' . __('Change Admin Password') . '</a>';
 
@@ -116,8 +112,7 @@ print '<a href="/debug.php">Debugging</a>';
 
 <?php
 
-if( have_service("mrtg") )
-{
+if( have_service("mrtg") ) {
 ?>
 <p>
 <a href="mrtg.php" target=_blank onmouseover="show_help('<?php e_('MRTG')?>');" onmouseout="help_rst();"><?php e_('MRTG')?></a>

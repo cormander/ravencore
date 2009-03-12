@@ -34,9 +34,8 @@ my $rc = new RavenCore::Client($RC_ROOT);
 
 # build our $cmd off of everything given on the command line
 
-foreach (@ARGV)
-{
-    $cmd .= $_ . ' ';
+foreach (@ARGV) {
+	$cmd .= $_ . ' ';
 }
 
 #
@@ -44,52 +43,48 @@ chop $cmd;
 
 # user-friendly wrapper for the "passwd" command
 
-if( $cmd eq "passwd" )
-{
-    $| = 1;
+if ($cmd eq "passwd") {
+	$| = 1;
 
-    my $error;
+	my $error;
 
 # nested do/while loop, allowing the user to retype the password if they made a mistake, w/o having
 # to re-run the script
-    do
-    {
-	
+	do {
+
 	$error = 0;
 	my $passwd = "";
 	my $passwd_again = "";
-	
+
 	print "Enter in a new password: ";
-	
+
 	$passwd = &passwd_prompt;
-	
+
 	print "\n";
-	
+
 # confirm password
 	print "  Re-enter the password: ";
 
 	$passwd_again = &passwd_prompt;
-	
+
 	print "\n";
-	
-	if( $passwd ne $passwd_again )
-	{
-	    print "The passwords must match!\n\n";
-	    $error = 1;
+
+	if ($passwd ne $passwd_again) {
+		print "The passwords must match!\n\n";
+		$error = 1;
 	}
 
-	if( $error == 0 )
-	{
-	    $error = 1;
-	    $error = 0 if $rc->passwd($rc->get_passwd . ' ' . $passwd);
+	if ($error == 0) {
+		$error = 1;
+		$error = 0 if $rc->passwd($rc->get_passwd . ' ' . $passwd);
 	}
 
-    } while( $error );
+	} while( $error );
 
-    print "Success!!\n";
-    
-    exit;
-    
+	print "Success!!\n";
+
+	exit;
+
 }
 
 # run the command
@@ -97,48 +92,45 @@ if( $cmd eq "passwd" )
 
 my $ret = $rc->do_raw_query($cmd);
 
-if ( $ret ) {
-    print ( ref($ret) ? Dumper($ret) : $ret );
+if ($ret) {
+	print ( ref($ret) ? Dumper($ret) : $ret );
 }
 
 # a password prompt
 
-sub passwd_prompt
-{
+sub passwd_prompt {
 
-    my $passwd;
-    my $n = 0;
+	my $passwd;
+	my $n = 0;
 
-    my $_DEL = chr(127);
-    my $_BS = chr(8);
+	my $_DEL = chr(127);
+	my $_BS = chr(8);
 
-    $| = 1;
+	$| = 1;
 
-    system "stty", '-echo', '-icanon', 'eol', "\001";
+	system "stty", '-echo', '-icanon', 'eol', "\001";
 
-    while( my $c = getc )
-    {
-        last if $c eq "\n";
+	while (my $c = getc) {
+		last if $c eq "\n";
 
-        if( $c ne $_DEL )
-        {
-            print "*";
-	    $passwd .= $c;
-            $n++;
-        }
+		if( $c ne $_DEL )
+		{
+			print "*";
+		$passwd .= $c;
+			$n++;
+		}
 
-        if( $c eq $_DEL and $n > 0)
-        {
-            print $_BS . " " . $_BS;
-	    chop $passwd;
-            $n--;
-        }
+		if ($c eq $_DEL and $n > 0) {
+			print $_BS . " " . $_BS;
+			chop $passwd;
+			$n--;
+		}
 
-    }
+	}
 
-    system "stty", 'echo', 'icanon', 'eol', '^@';
+	system "stty", 'echo', 'icanon', 'eol', '^@';
 
-    return $passwd;
+	return $passwd;
 
 }
 

@@ -36,7 +36,7 @@ if ($row[host_type] != "physical")
 
     nav_bottom();
 
-} 
+}
 
 // runtime hang fix
 // TODO: issue disconnect function

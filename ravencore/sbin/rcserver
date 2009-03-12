@@ -33,10 +33,10 @@ my $user = 'root';
 my $rc = new RavenCore::Server;
 
 if ($ARGV[0] eq "--noweb") {
-    $rc->checkconf;
+	$rc->checkconf;
 } else {
-    # start the control panel webserver
-    $rc->start_webserver unless $ARGV[0] eq "--noweb";
+	# start the control panel webserver
+	$rc->start_webserver unless $ARGV[0] eq "--noweb";
 }
 
 # start the back-end daemon

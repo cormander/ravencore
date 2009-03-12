@@ -23,11 +23,10 @@ include "auth.php";
 
 req_admin();
 
-if ($action == "delete")
-{
+if ($action == "delete") {
   $db->do_raw_query('session_remove ' . $_POST['session']);
   goto($_SERVER['PHP_SELF']);
-} 
+}
 
 nav_top();
 
@@ -45,29 +44,28 @@ print '<form method=post>
 <th class="listpad" width=20%>' . __('Idle Time') . '</th>
 <th class="listpad" width=20%>' . __('Delete') . '</th></tr>';
 
-foreach ($sessions as $session_id => $row )
-{
-    print '<tr><td class="listpad">';
+foreach ($sessions as $session_id => $row ) {
+	print '<tr><td class="listpad">';
 
-    if( $session_id == session_id() ) print '<b>' . $row['user'] . '</b>';
-    else print $row['user']; 
+	if( $session_id == session_id() ) print '<b>' . $row['user'] . '</b>';
+	else print $row['user'];
 
-    $time = date('i:s', mktime(0, 0, time() - $row['created'], 1, 1, 1));
-    $idle = date('i:s', mktime(0, 0, time() - $row['accessed'], 1, 1, 1));
+	$time = date('i:s', mktime(0, 0, time() - $row['created'], 1, 1, 1));
+	$idle = date('i:s', mktime(0, 0, time() - $row['accessed'], 1, 1, 1));
 
-    // 'accessed' is updated after the page loads (session_write), so for this user's session, say 
-    // and idle time of zero
-    if( $session_id == session_id() ) $idle = '00:00';
-    
-    print '</td><td class="listpad">' . $row['ip'] . '</td>
+	// 'accessed' is updated after the page loads (session_write), so for this user's session, say
+	// and idle time of zero
+	if( $session_id == session_id() ) $idle = '00:00';
+
+	print '</td><td class="listpad">' . $row['ip'] . '</td>
 <td class="listpad">' . $time . '</td>
 <td class="listpad">' . $idle . '</td>
 <td class="listpad"><input type=radio name=session value="' . $session_id . '"';
 
-    if ($session_id == session_id()) print ' disabled';
+	if ($session_id == session_id()) print ' disabled';
 
-    print '></td></tr>';
-} 
+	print '></td></tr>';
+}
 
 print '<tr><td class="listpad" colspan=4></td><td class="listpad"><input type=hidden name=action value=delete><input type=submit value="' . __('Remove') . '"></td></tr></table></form>';
 

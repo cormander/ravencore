@@ -35,14 +35,12 @@ $js_alerts = array();
 // A list of variables that are allowed to use the GET and POST methods
 $reg_glob_vars = array('uid', 'did', 'mid', 'action', 'debug', 'dbid', 'dbu', 'page_type');
 
-foreach ($reg_glob_vars as $val)
-{
-    if (isset($_REQUEST[$val]))
-    {
-        $eval_code = '$' . $val . ' = $_REQUEST[\'' . $val . '\'];';
+foreach ($reg_glob_vars as $val) {
+	if (isset($_REQUEST[$val])) {
+		$eval_code = '$' . $val . ' = $_REQUEST[\'' . $val . '\'];';
 
-        eval($eval_code);
-    }
+		eval($eval_code);
+	}
 }
 
 // Include our function file
@@ -65,14 +63,12 @@ $db = &$rcdb;
 if($_REQUEST['lang']) $_SESSION['lang'] = $_REQUEST['lang'];
 
 // if no session variable for language, set it to the default locale
-if (!$_SESSION['lang'])
-{
-  $_SESSION['lang'] = $db->do_raw_query('get_default_locale');
+if (!$_SESSION['lang']) {
+	$_SESSION['lang'] = $db->do_raw_query('get_default_locale');
 }
 // if we still don't have it (should never happen), set it to english
-if (!$_SESSION['lang'])
-{
-  $_SESSION['lang'] = 'en_US';
+if (!$_SESSION['lang']) {
+	$_SESSION['lang'] = 'en_US';
 }
 // set the locale
 locale_set($_SESSION['lang']);
@@ -81,43 +77,37 @@ locale_set($_SESSION['lang']);
 $logged_in = 0;
 
 // check if we're authenticated.
-if($db->auth_resp != 1)
-{
+if($db->auth_resp != 1) {
+	$login_error = $db->auth_resp;
 
-  $login_error = $db->auth_resp;
-
-  include "login.php";
-
+	include "login.php";
 }
-			  
+
 // NOTE! Anything beyond this point is considered a logged in user
-  
+
 // read logged_in comment above. beyond this point we assume we are logged in
 $logged_in = 1;
 
 // if we're posting the gpl_agree, tell the server so
-if($action == "gpl_agree" && $_REQUEST['gpl_agree'] == "yes")
-{
-  $db->do_raw_query('gpl_agree');
-  goto($_SERVER['PHP_SELF']);
+if($action == "gpl_agree" && $_REQUEST['gpl_agree'] == "yes") {
+	$db->do_raw_query('gpl_agree');
+	goto($_SERVER['PHP_SELF']);
 }
 
 // if we're posting the update_conf, update conf with the incoming array
-if($action == "update_conf" and is_array($_REQUEST['CONF_UPDATE']))
-{
-  foreach( $_REQUEST['CONF_UPDATE'] as $key => $val )
-    {
-      if( $key and isset($val) )
-	{
-	  $db->do_raw_query('set_conf_var ' . $key . ' ' . $val);
+if($action == "update_conf" and is_array($_REQUEST['CONF_UPDATE'])) {
+	foreach( $_REQUEST['CONF_UPDATE'] as $key => $val ) {
+		if( $key and isset($val) ) {
+			$db->do_raw_query('set_conf_var ' . $key . ' ' . $val);
+		}
+
 	}
 
-    }
-# tell rcserver to reload, and wait 2 seconds for it to do so
-  $db->do_raw_query('reload I called set_conf_var at least once');
-  sleep(2);
+	# tell rcserver to reload, and wait 2 seconds for it to do so
+	$db->do_raw_query('reload I called set_conf_var at least once');
+	sleep(2);
 
-  goto($_SERVER['PHP_SELF']);
+	goto($_SERVER['PHP_SELF']);
 }
 
 // ask for the current state of things. this needs to be done AFTER all post actions for this file
@@ -127,23 +117,21 @@ $status = $db->do_raw_query("session_status");
 $CONF = &$status['CONF'];
 
 // check to see if the GPL was accepted. if not, send us to that page
-if( ! $status['gpl_check'] and $_SERVER['PHP_SELF'] != '/logout.php' )
-{
+if ( ! $status['gpl_check'] and $_SERVER['PHP_SELF'] != '/logout.php' ) {
 
-  nav_top();
+	nav_top();
 
-  if ($action == "gpl_agree")
-    {
-      print '<b><font color="red">' . __('You must agree to the GPL License to use RavenCore.') . '</font></b><p>';
-    }
+	if ($action == "gpl_agree") {
+		print '<b><font color="red">' . __('You must agree to the GPL License to use RavenCore.') . '</font></b><p>';
+	}
 
-  print __('Please read the GPL License and select the "I agree" checkbox below') . '<hr><pre>';
+	print __('Please read the GPL License and select the "I agree" checkbox below') . '<hr><pre>';
 
-  $h = fopen("../LICENSE", "r");
+	$h = fopen("../LICENSE", "r");
 
-  fpassthru($h);
+	fpassthru($h);
 
-  print __('The GPL License should appear in the frame below') . ': </pre>';
+	print __('The GPL License should appear in the frame below') . ': </pre>';
 
 ?>
 <iframe src="GPL" width="675" height="250">
@@ -158,103 +146,90 @@ if( ! $status['gpl_check'] and $_SERVER['PHP_SELF'] != '/logout.php' )
 </form>
 <?php
 
-   nav_bottom();
+	nav_bottom();
 
 }
 
 // check to see if configuration is complete. if not, send us to the configuration page
-if( ! $status['config_complete'] and $_SERVER['PHP_SELF'] != '/logout.php' )
-{
+if ( ! $status['config_complete'] and $_SERVER['PHP_SELF'] != '/logout.php' ) {
 
-  nav_top();
+	nav_top();
 
-  print '<div align=center>' . __('Welcome, and thank you for using RavenCore!') . '</div>
-         <p>' . 
-    __('You installed and/or upgraded some packages that require new configuration settings.') . ' ' .
-    __('Please take a moment to review these settings. We recomend that you keep the default values, ') .
-    __('but if you know what you are doing, you may adjust them to your liking.')
-    . '
-      <div align=center>
-      <form method=post>
-      <input type=hidden name=action value="update_conf">
-      <table>';
+	print '<div align=center>' . __('Welcome, and thank you for using RavenCore!') . '</div>
+		 <p>' .
+	__('You installed and/or upgraded some packages that require new configuration settings.') . ' ' .
+	__('Please take a moment to review these settings. We recomend that you keep the default values, ') .
+	__('but if you know what you are doing, you may adjust them to your liking.')
+	. '
+	  <div align=center>
+	  <form method=post>
+	  <input type=hidden name=action value="update_conf">
+	  <table>';
 
-  foreach( $status['UNINIT_CONF'] as $key => $val )
-    {
-      
-      print '<tr><td>' . $key . ':</td>' .
-	'<td><input type="text" name="CONF_UPDATE[' . $key . ']" value="' . $val . '"></td></tr>';
+	foreach ( $status['UNINIT_CONF'] as $key => $val ) {
 
-    }
+		 print '<tr><td>' . $key . ':</td>' .
+			'<td><input type="text" name="CONF_UPDATE[' . $key . ']" value="' . $val . '"></td></tr>';
 
-  print '<tr><td colspan=2 align=right><input type="submit" value="' . __('Submit') . '"></td></tr></table></div>';
-  
-  nav_bottom();
-  
+	}
+
+	print '<tr><td colspan=2 align=right><input type="submit" value="' . __('Submit') . '"></td></tr></table></div>';
+
+	nav_bottom();
+
 }
 
 // send the admin user to the system page if the database is in panic mode
-if($_SERVER['PHP_SELF'] != '/system.php' and $status['db_panic'] and $action == 'login')
-{
-  goto("/system.php");
+if ($_SERVER['PHP_SELF'] != '/system.php' and $status['db_panic'] and $action == 'login') {
+	goto("/system.php");
 }
 
 // if the config is complete, GPL accepted, and install_complete is zero, complete the install
-if( $status['config_complete'] and $status['gpl_check'] and ! $status['install_complete'] )
-{
-  $db->do_raw_query('complete_install');
+if ($status['config_complete'] and $status['gpl_check'] and ! $status['install_complete']) {
+	$db->do_raw_query('complete_install');
 }
 
 // logging in - redirect to pick up any session variables
-if($action == 'login')
-{
-  goto($_SERVER['PHP_SELF']);
+if ($action == 'login') {
+	goto($_SERVER['PHP_SELF']);
 }
 
-if( ! $status['db_panic'] )
-{
-  // create user object if this is not an admin user  
-  if( ! is_admin() )
-    {
-      $uid = $status['user_data']['id'];
-    }
-  
-  // sanity check.. if we're not an admin and have no user id, there's a problem
-  if( ! is_admin() and ! $uid )
-    {
+if( ! $status['db_panic'] ) {
+	// create user object if this is not an admin user
+	if ( ! is_admin() ) {
+		$uid = $status['user_data']['id'];
+	}
 
-      nav_top();
+	// sanity check.. if we're not an admin and have no user id, there's a problem
+	if ( ! is_admin() and ! $uid ) {
 
-      print "Unable to load page, no uid from session";
+		nav_top();
 
-      nav_bottom();
+		print "Unable to load page, no uid from session";
 
-    }
-  
-  if ( $uid )
-    {
-      $u = new user($uid);
-    }
+		nav_bottom();
 
-  if ( $did )
-    {
-      $d = new domain($did);
-    }
-  
-  // If we have a $did and no $uid, we're an admin looking at a user's domain page. Get the $uid
-  if (!$uid and $did)
-    {
-      $u = new user($d->info['uid']);
-      
-      $uid = $u->uid;
-    }
-  
-  // If we have a $did, match it with the given $uid. If we fail, goto the user's main page
-  if ( $did and $u and ! $u->owns_domain($did) and !is_admin())
-    {
-      goto("users.php");
-    }
-  
-} // end if( ! $status['db_panic'] )
+	}
+
+	if ($uid) {
+		$u = new user($uid);
+	}
+
+	if ($did) {
+		$d = new domain($did);
+	}
+
+	// If we have a $did and no $uid, we're an admin looking at a user's domain page. Get the $uid
+	if (!$uid and $did) {
+		$u = new user($d->info['uid']);
+		$uid = $u->uid;
+	}
+
+	// If we have a $did, match it with the given $uid. If we fail, goto the user's main page
+	if ($did and $u and ! $u->owns_domain($did) and !is_admin()) {
+		goto("users.php");
+	}
+
+}
 
 ?>

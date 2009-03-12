@@ -23,15 +23,14 @@ include "auth.php";
 
 req_admin();
 
-if ($action == "update")
-{
-  $ip = $_POST['ip'];
-  $uid = ( $_POST['uids'] ? $_POST['uids'][$ip] : 0 );
-  $did = ( $_POST['dids'] ? $_POST['dids'][$ip] : 0 );
+if ($action == "update") {
+	$ip = $_POST['ip'];
+	$uid = ( $_POST['uids'] ? $_POST['uids'][$ip] : 0 );
+	$did = ( $_POST['dids'] ? $_POST['dids'][$ip] : 0 );
 
-//  print '<pre>'; print_r($_POST); exit;
-  $db->do_raw_query('ip_update ' . $ip . ' ' . $uid . ' ' . $did);
-  goto($_SERVER['PHP_SELF']);
+	//  print '<pre>'; print_r($_POST); exit;
+	$db->do_raw_query('ip_update ' . $ip . ' ' . $uid . ' ' . $did);
+	goto($_SERVER['PHP_SELF']);
 }
 
 nav_top();
@@ -40,8 +39,8 @@ $ips = $db->do_raw_query('ip_list');
 
 if (!is_array($ips)) {
 
-    print $ips;
-    nav_bottom();
+	print $ips;
+	nav_bottom();
 
 }
 
@@ -60,7 +59,7 @@ $sql = "select * from domains";
 $result_dom = $db->data_query($sql);
 
 while ($row_d = $db->data_fetch_array($result_dom)) {
-    $alldomains[$row_d['id']] = $row_d['name'];
+	$alldomains[$row_d['id']] = $row_d['name'];
 }
 
 $userlist = Array( "NULL" => 'No One', 0 => __('Everyone') );
@@ -71,31 +70,27 @@ $domainlist[0] = $alldomains;
 $sql = "select * from users";
 $result = $db->data_query($sql);
 
-while ($row_u = $db->data_fetch_array($result))
-{
-    $userlist[$row_u['id']] = $row_u['name'];
+while ($row_u = $db->data_fetch_array($result)) {
+	$userlist[$row_u['id']] = $row_u['name'];
 
-    $domainlist[$row_u['id']] = Array( 0 => __('Select a Domain') );
+	$domainlist[$row_u['id']] = Array( 0 => __('Select a Domain') );
 
-    $sql = "select * from domains" . ( $row_u['id'] ? " where uid = '" . $row_u['id'] . "'" : "" );
-    $result_dom = $db->data_query($sql);
+	$sql = "select * from domains" . ( $row_u['id'] ? " where uid = '" . $row_u['id'] . "'" : "" );
+	$result_dom = $db->data_query($sql);
 
-    while ($row_d = $db->data_fetch_array($result_dom)) {
-	$domainlist[$row_u['id']][$row_d['id']] = $row_d['name'];
-    }
+	while ($row_d = $db->data_fetch_array($result_dom)) {
+		$domainlist[$row_u['id']][$row_d['id']] = $row_d['name'];
+	}
 
 }
 
 //print '<pre>'; print_r($userlist);exit;
 
+foreach ($ips as $ip => $row ) {
+	//print '<pre>'; print_r($row);print '</pre>';
 
-foreach ($ips as $ip => $row )
-{
-   
-//print '<pre>'; print_r($row);print '</pre>';
- 
-    print '<tr' . ( $row['active'] == "true" ? '' : ' class="redwarning"' ) . '><td class="listpad">' . $ip . '</td><td class="listpad">' . selection_array("uids", $row['uid'], $ip, "onchange=document.main.ip.value='" . $ip . "';document.main.submit()", $userlist) . '</td><td class="listpad">' . selection_array("dids", $row['default_did'], $ip, "onchange=document.main.ip.value='" . $ip . "';document.main.submit()", $domainlist[$row['uid']]) . '</td><td class="listpad">' . $row['active'] . '</td></tr>';
-} 
+	print '<tr' . ( $row['active'] == "true" ? '' : ' class="redwarning"' ) . '><td class="listpad">' . $ip . '</td><td class="listpad">' . selection_array("uids", $row['uid'], $ip, "onchange=document.main.ip.value='" . $ip . "';document.main.submit()", $userlist) . '</td><td class="listpad">' . selection_array("dids", $row['default_did'], $ip, "onchange=document.main.ip.value='" . $ip . "';document.main.submit()", $domainlist[$row['uid']]) . '</td><td class="listpad">' . $row['active'] . '</td></tr>';
+}
 
 print '</table></form>';
 

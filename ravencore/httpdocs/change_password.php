@@ -23,15 +23,13 @@ if ($being_included != true) include "auth.php";
 
 req_admin();
 
-if ($action == "change")
-{
+if ($action == "change") {
 
-  if( $db->change_passwd($_POST['old_pass'], $_POST['new_pass']) )
-    {  
-      $_SESSION['status_mesg'] = 'Password change successful.';
+	if( $db->change_passwd($_POST['old_pass'], $_POST['new_pass']) ) {
+		$_SESSION['status_mesg'] = 'Password change successful.';
 
-      goto("system.php");
-    }
+		goto("system.php");
+	}
 
 }
 
@@ -43,13 +41,13 @@ nav_top();
 
 function validate_pw(f) {
 
-  if(f.new_pass.value != f.confirm.value) {
+	if(f.new_pass.value != f.confirm.value) {
 
-    alert('<?php e_('Your passwords are not the same!') ?>');
+		alert('<?php e_('Your passwords are not the same!') ?>');
 
-    return false;
+		return false;
 
-  } else return true;
+	} else return true;
 
 }
 
