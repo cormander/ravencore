@@ -302,6 +302,19 @@ sub reload {
 	return;
 }
 
+# reload ravencore.httpd
+
+sub reload_webserver {
+	my ($self) = @_;
+
+	$self->debug("reloading control panel webserver");
+
+	# argument makes it graceful
+	$self->start_webserver(1);
+
+	return
+}
+
 # a function use to read the password out of the .shadow file
 
 sub get_passwd {
@@ -2430,24 +2443,28 @@ sub disp_chkconfig {
 #
 
 sub start_webserver {
-	my ($self) = @_;
+	my ($self, $graceful) = @_;
 
-	# check to make sure it aint already running
-	if (my $tmp = file_get_contents($self->{RC_ROOT} . '/var/run/ravencore.httpd.pid')) {
-		$self->do_error("ravencore.httpd pid file exists, sending TERM signal before startup");
-		kill "TERM", $tmp;
-		sleep 1;
+	unless ($graceful) {
+
+		# check to make sure it aint already running
+		if (my $tmp = file_get_contents($self->{RC_ROOT} . '/var/run/ravencore.httpd.pid')) {
+			$self->do_error("ravencore.httpd pid file exists, sending TERM signal before startup");
+			kill "TERM", $tmp;
+			sleep 1;
+		}
+
+		# also check pidof
+		if (my @pids = pidof('ravencore.httpd')) {
+			$self->do_error("ravencore.httpd already appears to be running, sending TERM signal before startup");
+			kill "TERM", @pids;
+			sleep 1;
+		}
+
+		# run the checkconf
+		$self->checkconf;
+
 	}
-
-	# also check pidof
-	if (my @pids = pidof('ravencore.httpd')) {
-		$self->do_error("ravencore.httpd already appears to be running, sending TERM signal before startup");
-		kill "TERM", @pids;
-		sleep 1;
-	}
-
-	# run the checkconf
-	$self->checkconf;
 
 	# generate ssl cert for panel
 	$self->ssl_genkey_pair($self->{RC_ROOT} . '/etc/');
@@ -2579,7 +2596,7 @@ sub start_webserver {
 #	done
 
 	# start the apache webserver daemon
-	my $ret = system($self->{RC_ROOT} . '/sbin/ravencore.httpd ' . $OPTIONS);
+	my $ret = system($self->{RC_ROOT} . '/sbin/ravencore.httpd ' . ( $graceful ? ' -k graceful ' : '' ) . $OPTIONS);
 
 	# check the exit status
 	if ($ret != 0) {

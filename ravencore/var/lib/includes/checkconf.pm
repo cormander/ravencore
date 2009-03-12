@@ -444,12 +444,14 @@ sub checkconf {
 		$reload_ravencore = 1;
 	}
 
-	# make sure the we're linked to the system httpd binary
-	if ( ! -l $self->{RC_ROOT} . '/sbin/ravencore.httpd') {
-		unlink ($self->{RC_ROOT} . '/sbin/ravencore.httpd');
-		system ("ln -s " . $self->{HTTPD} . " " . $self->{RC_ROOT} . '/sbin/ravencore.httpd');
+	$self->debug("checking httpd vs. ravencore.httpd");
 
-		$reload_ravencore = 1;
+	# make sure ravencore.httpd matches the system's httpd
+	if( ! -f $self->{RC_ROOT} . '/sbin/ravencore.httpd' or file_get_contents($self->{HTTPD}) ne file_get_contents($self->{RC_ROOT} . '/sbin/ravencore.httpd')) {
+		unlink ($self->{RC_ROOT} . '/sbin/ravencore.httpd');
+		file_copy($self->{HTTPD}, $self->{RC_ROOT} . '/sbin/ravencore.httpd');
+		chmod 0755, $self->{RC_ROOT} . '/sbin/ravencore.httpd';
+ 		$self->reload_webserver;
 	}
 
 	# check to make sure the vsftpd.conf file is correct
