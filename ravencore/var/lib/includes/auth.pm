@@ -148,6 +148,11 @@ sub auth {
 
 	}
 
+	# this lets us keep the password as "ravencore" in the demo
+	if ($self->{DEMO}) {
+		$self->{initial_passwd} = 0;
+	}
+
 	# TODO: have a spot to specify why locked, and fields to determine when it'll unlock, and have the option for a perm-lock
 	# things such as "account disabled"
 

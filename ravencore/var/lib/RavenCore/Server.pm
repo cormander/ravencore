@@ -88,7 +88,7 @@ sub new
 {
 	my ($class) = @_;
 
-	my $self = {};
+	my $self = { DEMO => 0 };
 
 	bless $self, $class;
 
@@ -786,6 +786,11 @@ sub mailq {
 sub passwd {
 	my ($self, $query) = @_;
 
+	if ($self->{DEMO}) {
+		$self->do_error("Can't change the password in the demo!");
+		return;
+	}
+
 	# parse out the info from the $query
 	my ($old, $new) = split / /,$query;
 
@@ -1003,6 +1008,8 @@ sub version_outdated {
 sub rehash_httpd
 {
 	my ($self, $query) = @_;
+
+	return if $self->{DEMO};
 
 	my %modules = $self->module_list_enabled;
 
@@ -1506,6 +1513,8 @@ sub server_alias {
 sub rehash_mail {
 	my ($self) = @_;
 
+	return if $self->{DEMO};
+
 	# check to make sure that this server is a mail server
 	my %modules = $self->module_list_enabled;
 
@@ -1849,6 +1858,8 @@ sub rehash_mail {
 sub rehash_ftp {
 	my ($self, $query) = @_;
 
+	return if $self->{DEMO};
+
 # check to make sure that this server is a webserver
 	my %modules = $self->module_list_enabled;
 
@@ -1929,6 +1940,11 @@ sub mail_del {
 sub service {
 	my ($self, $query) = @_;
 
+	if ($self->{DEMO}) {
+		$self->do_error("Can't stop or start services in the demo.");
+		return;
+	}
+
 	my ($service, $cmd) = split / /, $query;
 
 	my $ret;
@@ -1968,6 +1984,8 @@ sub service {
 
 sub rehash_logrotate {
 	my ($self) = @_;
+
+	return if $self->{DEMO};
 
 	my %modules = $self->module_list_enabled;
 
@@ -2052,6 +2070,8 @@ $log {
 
 sub rehash_named {
 	my ($self, $query) = @_;
+
+	return if $self->{DEMO};
 
 	my %modules = $self->module_list_enabled;
 
@@ -2267,6 +2287,11 @@ sub rehash_named {
 sub system {
 	my ($self, $cmd) = @_;
 
+	if ($self->{DEMO}){
+		$self->do_error("You can't reboot or shutdown the demo server!");
+		return;
+	}
+
 	my $s;
 
 	# only allow "reboot" and "shutdown" calls
@@ -2286,6 +2311,11 @@ sub system {
 
 sub chkconfig {
 	my ($self, @args) = @_;
+
+	if($self->{DEMO}) {
+		$self->do_error("You can't change services in the demo server!");
+		return;
+	}
 
 	# TODO: figure out what other systems like debian use for this, and handle it accordingly
 	# TODO: do checking on stuff in @args, it's passed into the system() function
