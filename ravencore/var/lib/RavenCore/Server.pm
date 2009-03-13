@@ -949,16 +949,12 @@ sub version_outdated {
 		return 0;
 	}
 
-	# our running version
-	my $version = file_get_contents($self->{RC_ROOT} . '/etc/version');
-	chomp($version);
-
 	# the last digit is the release number
-	my $release = $version;
+	my $release = $self->{version};
 	$release =~ s/.*\.(\d*)/$1/;
 
 	# sub the last digit for an x, this is the variable used to find the correct remote version file
-	my $v = $version;
+	my $v = $self->{version};
 	$v =~ s/\.\d*$/.x/;
 
 	my $s;
@@ -984,8 +980,8 @@ sub version_outdated {
 	}
 
 	# request the version file for this series
-	$s->write_request(GET => "/updates/" . $v . '.txt', 'User-Agent' => "RavenCore/".$version);
-	$self->debug("http request sent to www.ravencore.com: GET /updates/$v.txt, User-Agent RavenCore/$version");
+	$s->write_request(GET => "/updates/" . $v . '.txt', 'User-Agent' => "RavenCore/".$self->{version});
+	$self->debug("http request sent to www.ravencore.com: GET /updates/$v.txt, User-Agent RavenCore/".$self->{version});
 
 	# read the response headers
 	my($code, $mess, %h) = $s->read_response_headers or return 0;
@@ -2622,6 +2618,33 @@ sub unlock_user {
 
 #
 
+sub ravencore_info {
+	my ($self) = @_;
+
+	my $release;
+
+	chomp(my $rpm_output = `rpm -q ravencore`);
+
+	if ($rpm_output =~ /not installed/) {
+		$release = 'unknown';
+	} else {
+		($release = $rpm_output) =~ s/^ravencore\-\d+\.\d+\.\d+\-//;
+		if ($release ne "1") {
+			$release =~ s/^0\.//;
+			$release = "Snapshot built on " . scalar(localtime($release));
+		}
+	}
+
+	my $info = {
+		version => $self->{version},
+		release => $release,
+	};
+
+	return $info;
+}
+
+#
+
 sub mrtg {
 	my ($self, $query) = @_;
 
@@ -2779,6 +2802,9 @@ sub AUTOLOAD {
 
 sub configure_hook {
 	my ($self) = @_;
+
+	# our running version
+	chomp($self->{version} = file_get_contents($self->{RC_ROOT} . '/etc/version'));
 
 	# if we have Locale::gettext, set our textdomain
 	if ($INC{'Locale/gettext.pm'}) {

@@ -42,6 +42,11 @@ nav_top();
 <tr><th colspan="2" class="listpad"><?php e_('System')?></th></tr>
 <tr>
 <td width=300 valign=top class="listpad">
+
+<p>
+<a href="ravencore.php" onmouseover="show_help('<?php e_('Information about your RavenCore installation')?>');" onmouseout="help_rst();"><?php e_('RavenCore Info')?></a>
+</p>
+
 <a href="services.php" onmouseover="show_help('<?php e_('Stop/Start system services such as httpd, mail, etc')?>');" onmouseout="help_rst();"><?php e_('System Services')?></a>
 
 <p>
