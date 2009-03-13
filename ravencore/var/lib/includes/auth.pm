@@ -34,7 +34,7 @@ sub auth {
 	return 'Invalid session ID.' unless $session_id =~ /^[a-zA-Z0-9]*$/;
 
 	# validate IP address
-	return 'Invalid IP address.' unless $ipaddress =~ /\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/;
+	return 'Invalid IP address.' unless is_ip($ipaddress);
 
 	# cache the current time
 	my $now = time;
@@ -239,7 +239,7 @@ sub auth_system {
 
 	# the password must be correct AND our special session file must exist prior to authenticaton, the
 	# system client must create the file
-	return if ! -f $session_file;
+	return unless $session_file;
 
 	# TODO: actually use the session for session read/write, and remove it after we're done
 	# for now, just remove the session file so it doesn't hang around forever
