@@ -999,13 +999,13 @@ sub version_outdated {
 	$data =~ s/\s+$//;
 
 	# $data should now contain just a digit - the release number. check it against our current $release
-	if ($data > $release) {
+	if ($data gt $self->{version}) {
 		$self->debug("RavenCore version is NOT up-to-date");
 		return 1;
 	}
 
 	# return 0 when up to date
-	$self->debug("RavenCore version is up-to-date, checked at www.ravencore.com");
+	$self->debug("RavenCore version is up-to-date, checked at www.ravencore.com (which said " . $data . ")");
 	return 0;
 
 }
