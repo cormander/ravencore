@@ -36,7 +36,7 @@ $info = $db->do_raw_query('ravencore_info');
 <?php
 
 print _("Version") . ': ' . $info['version'] . '<br />';
-print _("Release") . ': ' . $info['release'] . '<br />';
+if ($info['release'] != "1") print $info['release'] . '<br />';
 
 ?>
 
