@@ -20,7 +20,7 @@
 #
 
 sub checkconf {
-	my ($self) = @_;
+	my ($self, $term) = @_;
 
 	$self->debug("Running checkconf");
 
@@ -575,7 +575,7 @@ sub checkconf {
 	}
 
 	# run logrotation if we're not at the terminal
-	if ($self->{term} == 0) {
+	unless ($term) {
 		$self->rehash_logrotate;
 
 		if (-f $self->{RC_ROOT} . '/etc/logrotate.conf') {
@@ -959,7 +959,7 @@ sub rebuild_conf_file {
 		$self->debug("The config file $conf_basename for $service has been modified...rebuilding it and restarting $service");
 
 		# if at the terminal, print it out
-		if ($self->{term}) {
+		if ($term) {
 			$self->do_error("The config file $conf_basename for $service has been modified...rebuilding it and restarting $service");
 		}
 

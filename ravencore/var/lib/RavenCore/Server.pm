@@ -2461,9 +2461,6 @@ sub start_webserver {
 			sleep 1;
 		}
 
-		# run the checkconf
-		$self->checkconf;
-
 	}
 
 	# generate ssl cert for panel
@@ -2857,7 +2854,7 @@ sub configure_hook {
 
 	# a hack; replace commandline with our correct startup procedure, so we can survive a sig HUP
 	# Net::Server's default is $0, which is changed to 'rcserver', this changes the internal var back to the full path
-	$self->{server}{commandline} = [ 'perl', '-I' . $self->{RC_ROOT} . '/var/lib', $self->{RC_ROOT} . '/sbin/rcserver', '--noweb' ];
+	$self->{server}{commandline} = [ 'perl', '-I' . $self->{RC_ROOT} . '/var/lib', $self->{RC_ROOT} . '/sbin/rcserver' ];
 }
 
 # post_configure_hook

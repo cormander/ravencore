@@ -42,7 +42,17 @@ sub new {
 
 	bless $self, $class;
 
-	$self->{socket} = IO::Socket::UNIX->new($self->{RC_ROOT} . '/var/rc.sock') or die('Unable to connect to RavenCore socket');
+	# try 3 times to connect, then bail
+	my $connect_retry = 0;
+
+	while ($connect_retry < 3) {
+		$self->{socket} = IO::Socket::UNIX->new($self->{RC_ROOT} . '/var/rc.sock');
+		last if $self->{socket};
+		$connect_retry++;
+		sleep(1);
+	}
+
+	die "Unable to connect to RavenCore socket" unless $self->{socket};
 
 	# generate a random session_id
 	my $session_id = gen_random_id(32);

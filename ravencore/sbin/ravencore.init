@@ -31,6 +31,7 @@
 # tells us if we found source function library for init scripts. Initilize it to zero
 
 found_init_func=0
+prog=$0
 
 # Source function library for init scripts.
 if [ -f /etc/init.d/functions ]; then
@@ -63,7 +64,7 @@ start() {
 # make sure ravencore ain't running    
 #    kill -15 $(pidof rcserver) 2> /dev/null
 
-    echo -n $"Starting control panel: "
+    echo -n $"Starting RavenCore daemon: "
 
     perl -I$RC_ROOT/var/lib $RC_ROOT/sbin/rcserver
 
@@ -71,6 +72,19 @@ start() {
     
     if [ $RETVAL -eq 0 ]; then
 	
+	success
+	echo
+
+	echo -n $"Starting RavenCore web interface: "
+
+	$RC_ROOT/sbin/run_cmd start_webserver
+
+	RETVAL=$?
+
+	if [ $RETVAL -ne 0 ]; then
+		return $RETVAL
+	fi
+
 	success
 
         # check to see if we're a completed installation...
@@ -118,27 +132,30 @@ start() {
 
 reload() {
 
-    echo -n $"Reloading control panel: "
+    echo -n $"Reloading RavenCore daemon: "
 
-    send_kill HUP
+    send_kill rcserver HUP
 
 }
 
 
 stop() {
 
-    echo -n $"Stopping control panel: "
+    echo -n $"Stopping RavenCore web interface: "
+    send_kill ravencore.httpd TERM
 
-    send_kill TERM
+    echo -n $"Stopping RavenCore daemon: "
+    send_kill rcserver TERM
 
 }
 
 send_kill() {
 
-    sig=$1
+    proccess=$1
+    sig=$2
 
 # kill based off the pid file
-    kill -$sig $(cat $RC_ROOT/var/run/rcserver.pid 2> /dev/null) 2> /dev/null
+    kill -$sig $(cat $RC_ROOT/var/run/$proccess.pid 2> /dev/null) 2> /dev/null
 
     RETVAL=$?
 
@@ -147,12 +164,12 @@ send_kill() {
     else
 
 # try again with pidof
-	kill -$sig $(pidof rcserver) 2> /dev/null
+	kill -$sig $(pidof $proccess) 2> /dev/null
 	
 	RETVAL=$?
 	
 	if [ $RETVAL -eq 0 ]; then
-	    rm -f $RC_ROOT/var/run/rcserver.pid
+	    rm -f $RC_ROOT/var/run/$proccess.pid
 	    success
 	else
 	    failure
@@ -177,6 +194,7 @@ case "$1" in
 	;;
     status)
         status rcserver
+	status ravencore.httpd
 	RETVAL=$?
 	;;
     reload)
