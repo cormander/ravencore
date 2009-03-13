@@ -2626,7 +2626,8 @@ sub ravencore_info {
 	chomp(my $rpm_output = `rpm -q ravencore`);
 
 	if ($rpm_output =~ /not installed/) {
-		$release = 'unknown';
+		# just assume this isn't a snapshot, since we have no way of knowing
+		$release = 1;
 	} else {
 		($release = $rpm_output) =~ s/^ravencore\-\d+\.\d+\.\d+\-//;
 		if ($release ne "1") {
