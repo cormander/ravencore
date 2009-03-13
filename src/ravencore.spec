@@ -1,6 +1,6 @@
 %define rc_root /usr/local/ravencore
 
-%define reltag %{?_with_release: 1} %{?!_with_release: 0.%(date +%Y%m%d%H%M%%S)}
+%define reltag %{?_with_release: 1} %{?!_with_release: 0.%(perl -e 'print time()')}
 
 Summary: RavenCore Hosting Control Panel
 Name: ravencore
