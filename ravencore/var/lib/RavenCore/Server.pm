@@ -249,6 +249,8 @@ sub database_connect {
 			if($self->get_passwd =~ m/^ravencore$/i) { $self->{initial_passwd} = 1 }
 			else { $self->{initial_passwd} = 0 }
 
+			$self->get_db_conf;
+
 			return;
 		}
 
@@ -625,6 +627,8 @@ sub gpl_agree {
 
 sub complete_install {
 	my ($self) = @_;
+
+	return unless $self->{config_complete};
 
 	$self->debug("Running post-installation process");
 
