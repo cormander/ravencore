@@ -57,6 +57,8 @@ else
 
 fi
 
+[ -f $RC_ROOT/database.cfg ] &&	source $RC_ROOT/database.cfg
+
 RETVAL=0
 
 start() {
@@ -96,7 +98,7 @@ start() {
 	    echo
 	    echo "Thank You for using RavenCore!"
 	    echo
-	    echo "The install/upgrade process will not be completed until after you login to the control panel web interface as the $ADMIN_USER user, and accept the license agreement"
+	    echo "The install/upgrade process will not be completed until after you login to the control panel web interface as the $MYSQL_ADMIN_USER user, and accept the license agreement"
 	    echo
 	    
             # simple loop to get all IP addresses bound to a machine
