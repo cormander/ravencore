@@ -30,10 +30,6 @@ if ($_GET['cmd']) {
 
 }
 
-if($status['db_panic']) {
-  array_push($db->status_mesg, "The database connection is down. Make sure the mysql server is running, the DBI and DBD::mysql modules for perl are installed, and your admin password is the same as the mysql admin user's password.");
-}
-
 nav_top();
 
 ?>

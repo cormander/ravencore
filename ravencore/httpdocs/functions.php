@@ -389,6 +389,10 @@ function is_admin() {
 function nav_top() {
   global $js_alerts, $page_title, $shell_output, $db, $logged_in, $status;
 
+	if($status['db_panic']) {
+		array_push($db->status_mesg, "The database connection is down. Make sure the mysql server is running, the DBI and DBD::mysql modules for perl are installed, and your admin password is the same as the mysql admin user's password.");
+	}
+
 	print '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"><html><head>';
 	// Print page title if there is one. Otherwise, print a generic title
 	print '<title>';
