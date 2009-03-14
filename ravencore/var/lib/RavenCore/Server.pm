@@ -423,24 +423,6 @@ sub set_conf_var {
 sub get_db_conf {
 	my ($self) = @_;
 
-	# assume our configuration is complete, because if it actually isn't, we'll set this to zero
-	# if no database connection, we're considered to have a "config_complete" because we won't
-	# be able to find out, which is what we want.
-	$self->{config_complete} = 1;
-
-	# check to see if the GPL has been accepted
-	$self->{gpl_check} = 0;
-
-	if ( -f $self->{RC_ROOT} . "/var/run/gpl_check" ) {
-		$self->{gpl_check} = 1;
-	} else {
-		$self->debug("GPL agree file not found: " . $self->{RC_ROOT} . "/var/run/gpl_check");
-	}
-
-	# are we a complete install?
-	$self->{install_complete} = 0;
-	$self->{install_complete} = 1 if -f $self->{RC_ROOT} . '/var/run/install_complete'; 
-
 	# no database connection - don't read the settings
 	return unless $self->{db_connected};
 
@@ -2833,6 +2815,24 @@ sub configure_hook {
 
 	# default to unauth privs
 	@{$self->{cmd_privs}} = @{$self->{cmd_privs_unauth}};
+
+	# check to see if the GPL has been accepted
+	$self->{gpl_check} = 0;
+
+	if ( -f $self->{RC_ROOT} . "/var/run/gpl_check" ) {
+		$self->{gpl_check} = 1;
+	} else {
+		$self->debug("GPL agree file not found: " . $self->{RC_ROOT} . "/var/run/gpl_check");
+	}
+
+	# assume our configuration is complete, because if it actually isn't, we'll set this to zero
+	# if no database connection, we're considered to have a "config_complete" because we won't
+	# be able to find out, which is what we want.
+	$self->{config_complete} = 1;
+
+	# are we a complete install?
+	$self->{install_complete} = 0;
+	$self->{install_complete} = 1 if -f $self->{RC_ROOT} . '/var/run/install_complete'; 
 
 	# TODO: $ENV{PATH}
 	my @dist_map = file_get_array($self->{RC_ROOT} . '/etc/dist.map');
