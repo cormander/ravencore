@@ -315,3 +315,198 @@ sub set_privs {
 
 }
 
+# a function use to read the password out of the .shadow file
+
+sub get_passwd {
+	my ($self) = @_;
+
+	# since the .shadow file is read a lot and almost never written to, skip locking. it isn't going to be
+	# devistating if we're reading it while it's written to once in a very blue moon
+	my $passwd = file_get_contents($self->{RC_ROOT} . "/.shadow", 1);
+	chomp $passwd;
+
+	return $passwd;
+}
+
+# is this an admin user?
+
+sub is_admin {
+	my ($self, $username) = @_;
+
+	# if we're not given a username, assume the session as the user to check
+	$username = $self->{session}{user} unless $username;
+
+	return 1 if $username eq $self->{MYSQL_ADMIN_USER};
+	return 0;
+}
+
+# change the admin password
+
+sub passwd {
+	my ($self, $query) = @_;
+
+	if ($self->{DEMO}) {
+		$self->do_error("Can't change the password in the demo!");
+		return;
+	}
+
+	# parse out the info from the $query
+	my ($old, $new) = split / /,$query;
+
+	my $error = 0;
+
+	if (length($new) < 5) {
+		$self->do_error("Your password must be at least 5 characters long.");
+		$error = 1;
+	}
+
+	if ($new !~ /\d/) {
+		$self->do_error("Your password must contain at least one digit.");
+		$error = 1;
+	}
+
+	if ($new !~ /[a-zA-Z]/) {
+		$self->do_error("Your password must contain at least one alphabetical character.");
+		$error = 1;
+	}
+
+	if ( ! $self->verify_passwd($old) ) {
+	$self->do_error("Old password incorrect.");
+	$error = 1;
+	}
+
+	# TODO: do a dictionary lookup on groups of letters, translating hackerscript as well (1 = i or l, 4 = a, etc)
+
+	if ($error == 0) {
+
+		if ($self->{db_connected}) {
+			$self->{dbi}->do("SET PASSWORD FOR '" . $self->{MYSQL_ADMIN_USER} . "'\@'" . $self->{MYSQL_ADMIN_HOST} . "' = PASSWORD('" . $new . "')");
+
+			if ($self->{dbi}->errstr) {
+				$error = 1;
+				$self->do_error("Unable to execute \"SET PASSWORD\" database query: " . $self->{dbi}->errstr);
+			}
+
+		}
+
+		if ($error == 0) {
+			# the password change was successful. commit the password to the .shadow file and return true
+			my $shadow_file = $self->{RC_ROOT} . "/.shadow";
+
+			chmod 0600, $shadow_file;
+			file_write($shadow_file, $new . "\n");
+			chmod 0400, $shadow_file;
+
+			$self->debug("Password change successful.");
+
+			$self->reload("Password change");
+
+			# TODO:
+			# if( ! $self->{db_connected} ) {
+			#	   ... check to see if this new password actually connects us to the database
+			#	   ... if not, issue: do_error("Warning: unable to sync new password to mysql server");
+			# }
+
+			return 1;
+		}
+
+	} else {
+		# failed
+		$self->debug("Password change NOT successful.");
+		return;
+	}
+
+}
+
+#
+
+sub verify_passwd {
+	my ($self, $passwd) = @_;
+
+	return 1 if $passwd eq $self->get_passwd;
+	return 0;
+}
+
+#
+
+sub version_outdated {
+	my ($self) = @_;
+
+	# return 0 if unable to check
+	unless( $self->{perl_modules}{Net::HTTP} ) {
+		$self->debug("Unable to check ravencore version: Net::HTTP perl module not found");
+		return 0;
+	}
+
+	# the last digit is the release number
+	my $release = $self->{version};
+	$release =~ s/.*\.(\d*)/$1/;
+
+	# sub the last digit for an x, this is the variable used to find the correct remote version file
+	my $v = $self->{version};
+	$v =~ s/\.\d*$/.x/;
+
+	my $s;
+
+	# eval this because we want to timeout if the http connection takes too long
+	eval {
+		# trap the die and alarm signals, so nothing gets sent to the client if the next few lines fail
+		local $SIG{__DIE__};
+		local $SIG{ALRM} = sub { die "alarm\n" };
+
+		# set a timeout of 5 seconds to the connecting to ravencore.com
+		alarm(5);
+
+		# open the http connection
+		$s = Net::HTTP->new(Host => "www.ravencore.com");
+		alarm(0);
+	};
+
+	# if $@ exists, there was a problem, just return 0
+	if ($@) {
+		$self->debug("Unable to check ravencore version: $@");
+		return 0;
+	}
+
+	# request the version file for this series
+	$s->write_request(GET => "/updates/" . $v . '.txt', 'User-Agent' => "RavenCore/".$self->{version});
+	$self->debug("http request sent to www.ravencore.com: GET /updates/$v.txt, User-Agent RavenCore/".$self->{version});
+
+	# read the response headers
+	my($code, $mess, %h) = $s->read_response_headers or return 0;
+
+	my $data;
+	my $buf;
+
+	# get all http body data
+	while ($s->read_entity_body($buf, 1024)) {
+		$data .= $buf;
+	}
+
+	# remove all extra whitespace from $data
+	$data =~ s/^\s+//;
+	$data =~ s/\s+$//;
+
+	# $data should now contain just a digit - the release number. check it against our current $release
+	if ($data gt $self->{version}) {
+		$self->debug("RavenCore version is NOT up-to-date");
+		return 1;
+	}
+
+	# return 0 when up to date
+	$self->debug("RavenCore version is up-to-date, checked at www.ravencore.com (which said " . $data . ")");
+	return 0;
+
+}
+
+#
+
+sub unlock_user {
+	my ($self, $user) = @_;
+
+	my $sql = "delete from login_failure where login = '" . $user . "'";
+	$self->{dbi}->do($sql);
+
+	return;
+}
+
