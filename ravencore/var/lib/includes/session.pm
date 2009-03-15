@@ -169,6 +169,28 @@ sub session_read {
 
 #
 
+sub clear_stale_sessions {
+	my ($self) = @_;
+
+	opendir DH, $self->{RC_ROOT} . '/var/tmp/sessions/';
+	while (my $file = readdir(DH)) {
+		next if $file =~ /^\./;
+		my $session_file = $self->{RC_ROOT} . '/var/tmp/sessions/' . $file;
+
+		my ($ip,$created,$accessed,$user,$sess_data) = $self->session_read_file($session_file);
+
+		# think a day is long enough to keep a stale session around?
+		if ((time - $accessed) > (60*60*24)) {
+			$self->debug("Clearing session file $file");
+			file_delete($session_file);
+		}
+	}
+	closedir DH;
+
+}
+
+#
+
 sub session_read_file {
 	my ($self, $file) = @_;
 

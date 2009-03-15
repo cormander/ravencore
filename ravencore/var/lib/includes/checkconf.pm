@@ -24,6 +24,9 @@ sub checkconf {
 
 	$self->debug("Running checkconf");
 
+	# clear stale sessions
+	$self->clear_stale_sessions;
+
 	# are we a complete install?
 	$self->{install_complete} = 0;
 	$self->{install_complete} = 1 if -f $self->{RC_ROOT} . '/var/run/install_complete';
