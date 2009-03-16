@@ -10,7 +10,7 @@ ETC_RAVENCORE=/etc/ravencore.conf
 
 # The current RavenCore version...
 
-VERSION=0.3.4
+VERSION=0.3.5
 
 # 3rd party program names and version numbers
 
