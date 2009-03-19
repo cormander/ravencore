@@ -1,1 +1,0 @@
-"-d -c -m5 -H -u vmail -x --virtual-config-dir=$_[VMAIL_ROOT]/%d/%l"

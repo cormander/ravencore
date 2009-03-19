@@ -612,11 +612,47 @@ sub checkconf_cron {
 sub checkconf_amavisd {
 	my ($self) = @_;
 
-	# we kind of really need $VMAIL_ROOT to be set to function, so we exit if we don't have it set.
-	return if ! $self->{CONF}{VMAIL_ROOT};
+	# things we need
+	return unless $self->{CONF}{VMAIL_CONF_DIR};
+	return unless $self->{CONF}{CLAMD_PID_FILE};
+	return unless $self->{CONF}{CLAMD_SOCKET};
+	return unless $self->{CONF}{CLAMD_LOG_FILE};
+	return unless $self->{CONF}{CLAMD_CONF_FILE};
+	return unless $self->{CONF}{AMAVISD_CONF_FILE};
+	return unless $self->{CONF}{AMAVISD_USER};
+	return unless $self->{CONF}{AMAVISD_HOME_DIR};
 
-	# make sure the clamav socket and pid are owned by amavis
-	file_chown_r("amavis:amavis", "/var/run/clamav");
+	# add the AMAVISD_USER user/group if it doesn't exist on the system
+	my $shadow = new RavenCore::Shadow($self->{ostype});
+
+	# check the group first, because in order to add the user, we need a valid existing gid
+	if ( ! $shadow->item_exists('group', $self->{CONF}{AMAVISD_USER}) ) {
+		$shadow->add_group($self->{CONF}{AMAVISD_USER});
+	}
+
+	if ( ! $shadow->item_exists('user', $self->{CONF}{AMAVISD_USER}) ) {
+		$shadow->add_user(
+			$self->{CONF}{AMAVISD_USER},
+			'',
+			$self->{CONF}{AMAVISD_HOME_DIR},
+			'/bin/false',
+			'',
+			$shadow->{group}{$self->{CONF}{AMAVISD_USER}}{'gid'}
+		);
+	}
+
+	$shadow->commit;
+
+	# make sure the clamav socket, pid, and log files are owned by amavis
+	file_chown_r(
+		$self->{CONF}{AMAVISD_USER} . ":" . $self->{CONF}{AMAVISD_USER},
+		(
+			dirname($self->{CONF}{CLAMD_PID_FILE}),
+			dirname($self->{CONF}{CLAMD_SOCKET}),
+			$self->{CONF}{CLAMD_LOG_FILE},
+			$self->{CONF}{AMAVISD_HOME_DIR}
+		)
+	);
 
 	# make sure we have our content filter
 	my $content_filter_data = "smtp:127.0.0.1:10024";
@@ -642,6 +678,9 @@ sub checkconf_mail {
 	# we kind of really need $VMAIL_ROOT to be set to function, so we exit if we don't have it
 	# set.
 	return unless $self->{CONF}{VMAIL_ROOT};
+	return unless $self->{CONF}{VMAIL_CONF_DIR};
+	return unless $self->{CONF}{VMAIL_USER};
+	return unless $self->{CONF}{SASL2_SMTPD};
 
 	# if /usr/libexec doesn't exit, create it ( so postfix will work on SuSE )
 	# TODO: make this cleaner
@@ -660,33 +699,37 @@ sub checkconf_mail {
 		$shadow->add_group($setgid_group);
 	}
 
-	# The system user mail will run as
-	my $VMAIL_USER = 'vmail';
-
 	# make sure we have the the vmail user / group
 	# check the group first, because in order to add the user, we need a valid existing gid
 
-	if ( ! $shadow->item_exists('group', $VMAIL_USER) ) {
-		$shadow->add_group($VMAIL_USER);
+	if ( ! $shadow->item_exists('group', $self->{CONF}{VMAIL_USER}) ) {
+		$shadow->add_group($self->{CONF}{VMAIL_USER});
 	}
 
 	# check if the user exists
-	if ( ! $shadow->item_exists('user', $VMAIL_USER) ) {
-		$shadow->add_user($VMAIL_USER,'',$self->{CONF}{VMAIL_CONF_DIR},'/bin/false','',$shadow->{group}{$VMAIL_USER}{'gid'});
+	if ( ! $shadow->item_exists('user', $self->{CONF}{VMAIL_USER}) ) {
+		$shadow->add_user(
+			$self->{CONF}{VMAIL_USER},
+			'',
+			$self->{CONF}{VMAIL_CONF_DIR},
+			'/bin/false',
+			'',
+			$shadow->{group}{$self->{CONF}{VMAIL_USER}}{'gid'}
+		);
 	}
 
 	# The system uid and gid of the mail user. we put this in the CONF hash so it'll be see in
 	# the rebuild_conf_file function call
-	$self->{CONF}{VMAIL_UID} = $shadow->{user}{$VMAIL_USER}{'uid'};
-	$self->{CONF}{VMAIL_GID} = $shadow->{group}{$VMAIL_USER}{'gid'};
+	$self->{CONF}{VMAIL_UID} = $shadow->{user}{$self->{CONF}{VMAIL_USER}}{'uid'};
+	$self->{CONF}{VMAIL_GID} = $shadow->{group}{$self->{CONF}{VMAIL_USER}}{'gid'};
 
 	# commit any changes to $shadow
 	$shadow->commit;
 
 	# make sure the /etc/sasldb2 exists and is owned by postfix
-	file_touch('/etc/sasldb2');
-	file_chown('postfix:postfix', '/etc/sasldb2');
-	chmod 0600, '/etc/sasldb2';
+	file_touch($self->{CONF}{SASL2_DB});
+	file_chown('postfix:postfix', $self->{CONF}{SASL2_DB});
+	chmod 0600, $self->{CONF}{SASL2_DB};
 
 	# ask dovecot what version it is
 	my $dovecot_v = `dovecot --version 2> /dev/null | sed 's/\\..*//'`;
@@ -743,8 +786,8 @@ sub checkconf_mrtg {
 	my ($self) = @_;
 
 	# don't continue if we don't have $MRTG_CONF_FILE
-	return if ! $self->{CONF}{MRTG_CONF_FILE};
-	return if ! $self->{CONF}{SNMPD_CONF_FILE};
+	return unless $self->{CONF}{MRTG_CONF_FILE};
+	return unless $self->{CONF}{SNMPD_CONF_FILE};
 
 	#
 	$self->cache_rebuild_conf_file($self->{CONF}{SNMPD_CONF_FILE}, 'snmpd', ' = ', 1);
@@ -771,8 +814,8 @@ sub checkconf_mrtg {
 sub checkconf_postgrey {
 	my ($self) = @_;
 
-	return if ! $self->{CONF}{VMAIL_ROOT};
-	return if ! $self->{CONF}{POSTGREY_SOCKET};
+	return unless $self->{CONF}{VMAIL_ROOT};
+	return unless $self->{CONF}{POSTGREY_SOCKET};
 
 	# make sure we have our policy server definition
 	my $found = `grep $self->{CONF}{POSTGREY_SOCKET} $self->{RC_ROOT}/etc/postfix/main.cf/smtpd_recipient_restrictions 2> /dev/null`;

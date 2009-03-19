@@ -12,8 +12,8 @@
 # @bypass_spam_checks_maps  = (1);  # uncomment to DISABLE anti-spam code
 
 $max_servers = 2;            # number of pre-forked children (2..15 is common)
-$daemon_user  = "amavis";     # (no default;  customary: vscan or amavis)
-$daemon_group = "amavis";     # (no default;  customary: vscan or amavis)
+$daemon_user  = "$_[AMAVISD_USER]";     # (no default;  customary: vscan or amavis)
+$daemon_group = "$_[AMAVISD_USER]";     # (no default;  customary: vscan or amavis)
 
 $mydomain = $ENV{HOSTNAME};   # a convenient default for other settings
 
@@ -21,6 +21,7 @@ $MYHOME = "$_[AMAVISD_HOME_DIR]";
 $TEMPBASE = "$MYHOME/tmp";   # working directory, needs to be created manually
 $ENV{TMPDIR} = $TEMPBASE;    # environment variable TMPDIR
 $QUARANTINEDIR = "/var/virusmails";
+
 # $quarantine_subdir_levels = 1;  # add level of subdirs to disperse quarantine
 
 # $daemon_chroot_dir = $MYHOME;   # chroot directory or undef
@@ -90,7 +91,6 @@ $sa_spam_subject_tag = '***SPAM*** ';
 $defang_virus  = 1;  # MIME-wrap passed infected mail
 $defang_banned = 1;  # MIME-wrap passed mail containing banned name
 
-
 # OTHER MORE COMMON SETTINGS (defaults may suffice):
 
 # $myhostname = 'host.example.com';  # must be a fully-qualified domain name!
@@ -102,7 +102,6 @@ $defang_banned = 1;  # MIME-wrap passed mail containing banned name
 # $final_banned_destiny     = D_BOUNCE;
 $final_spam_destiny       = D_PASS;
 # $final_bad_header_destiny = D_PASS;
-
 
 # SOME OTHER VARIABLES WORTH CONSIDERING (see amavisd.conf-default for all)
 

@@ -912,7 +912,9 @@ sub rehash_mail {
 	return unless exists $modules{mail};
 
 	#
-	return $self->debug("VMAIL_ROOT not defined") if $self->{CONF}{VMAIL_ROOT} eq "";
+	return unless $self->{CONF}{VMAIL_ROOT};
+	return unless $self->{CONF}{VMAIL_USER};
+	return unless $self->{CONF}{SASL2_DB};
 
 	#
 	mkdir_p($self->{CONF}{VMAIL_ROOT}) unless -d $self->{CONF}{VMAIL_ROOT};
@@ -928,16 +930,13 @@ sub rehash_mail {
 	my $output;
 
 	# The system user mail will run as
-	my $VMAIL_USER = "vmail";
-
-	# The system uid and gid of the mail user
-	my $VMAIL_UID = getpwnam($VMAIL_USER);
-	my $VMAIL_GID = getgrnam($VMAIL_USER);
+	my $VMAIL_UID = getpwnam($self->{CONF}{VMAIL_USER});
+	my $VMAIL_GID = getgrnam($self->{CONF}{VMAIL_USER});
 
 	# check to make sure that the /etc/sasldb2 file isn't corrupt
 
-	if (-f "/etc/sasldb2" && file_get_contents("/etc/sasldb2") eq "") {
-		file_delete("/etc/sasldb2");
+	if (-f $self->{CONF}{SASL2_DB} && file_get_contents($self->{CONF}{SASL2_DB}) eq "") {
+		file_delete($self->{CONF}{SASL2_DB});
 	}
 
 	# cache a list of current sasl users
@@ -963,7 +962,7 @@ sub rehash_mail {
 
 		mkdir_p( $domain_root . "/" . $row->{'mail_name'} );
 
-		file_chown($VMAIL_USER.':'.$VMAIL_USER, $domain_root, $domain_root . "/" . $row->{'name'});
+		file_chown($self->{CONF}{VMAIL_USER} . ':' . $self->{CONF}{VMAIL_USER}, $domain_root, $domain_root . "/" . $row->{'name'});
 
 		# chech for the imap .subscriptions
 		my $subscriptions = $domain_root . "/" . $row->{'mail_name'} . "/.subscriptions";
@@ -988,7 +987,7 @@ sub rehash_mail {
 				);
 
 				#
-				file_chown_r($VMAIL_USER.':'.$VMAIL_USER, $domain_root . "/" . $row->{'mail_name'} . "/" . $dir);
+				file_chown_r($self->{CONF}{VMAIL_USER} . ':' . $self->{CONF}{VMAIL_USER}, $domain_root . "/" . $row->{'mail_name'} . "/" . $dir);
 				chmod 0700, $domain_root . "/" . $row->{'mail_name'} . "/" . $dir;
 
 				# store the variable so we don't open / write / close the file inside this loop
@@ -1471,8 +1470,8 @@ sub rehash_named {
 	return unless $self->{db_connected};
 
 	# Some checks
-	return $self->do_error("NAMED_ROOT not defined") unless $self->{CONF}{NAMED_ROOT};
-	return $self->do_error("NAMED_CONF_FILE not defined") unless $self->{CONF}{NAMED_CONF_FILE};
+	return unless $self->{CONF}{NAMED_ROOT};
+	return unless $self->{CONF}{NAMED_CONF_FILE};
 
 	# if the directory doesn't exist, exit
 	return $self->do_error("The directory " . $self->{CONF}{NAMED_ROOT} . " does not exist") unless -d $self->{CONF}{NAMED_ROOT};
