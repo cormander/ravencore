@@ -377,30 +377,14 @@ sub checkconf {
 
 	}
 
-	# check to make sure if $httpd_user is in servgrp
+	# make sure if $httpd_user is in servgrp
 	# get rid of the newline character
 	chomp($httpd_user);
 
-	my $httpd_user_check = 0;
-	foreach my $usr (@{$shadow->{group}{'servgrp'}{'user_list'}}) {
-		$httpd_user_check = 1 if $usr eq $httpd_user;
-	}
+	$shadow->group_user_add('servgrp',$httpd_user) if $httpd_user;
 
-	# if not, add it
-	if ($httpd_user_check == 0) {
-		$shadow->group_user_add('servgrp',$httpd_user);
-	}
-
-	# check to make sure if rcadmin is in servgrp
-	my $rcadmin_user_check = 0;
-	foreach my $usr (@{$shadow->{group}{'servgrp'}{'user_list'}}) {
-		$rcadmin_user_check = 1 if $usr eq "rcadmin";
-	}
-
-	# if not, add it
-	if ($rcadmin_user_check == 0) {
-		$shadow->group_user_add('servgrp','rcadmin');
-	}
+	# make sure if rcadmin is in servgrp
+	$shadow->group_user_add('servgrp','rcadmin');
 
 	# check to see if our db_install script ran
 	if ( ! -f $self->{RC_ROOT} . '/var/run/db_install' ) {
