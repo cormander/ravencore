@@ -887,6 +887,7 @@ sub rebuild_conf_file {
 				$tmp =~ s/.*\$_\[([_A-Z]*)\].*/\1/;
 
 				my $val = ( $self->{CONF}{$tmp} ? $self->{CONF}{$tmp} : $ENV{$tmp} );
+				$val = ( $val ? $val : $self->{$tmp} );
 
 				$line =~ s/\$_\[$tmp\]/$val/;
 			}
@@ -952,6 +953,7 @@ sub rebuild_conf_file {
 						$tmp =~ s/.*\$_\[([_A-Z]*)\].*/\1/;
 
 						my $val = ( $self->{CONF}{$tmp} ? $self->{CONF}{$tmp} : $ENV{$tmp} );
+						$val = ( $val ? $val : $self->{$tmp} );
 
 						# if we don't have $val at this point, issue an error
 						$self->do_error("Warning: $service config file $conf_basename is missing a value for $tmp") unless $val;
