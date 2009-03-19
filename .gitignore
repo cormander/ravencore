@@ -6,6 +6,7 @@ ravencore/etc/httpd_modules
 ravencore/etc/logrotate.conf
 ravencore/etc/port.conf
 ravencore/etc/port_ssl.conf
+ravencore/etc/postfix/main.cf/content_filter
 ravencore/etc/server-id
 ravencore/etc/server.crt
 ravencore/etc/server.key
