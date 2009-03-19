@@ -16,6 +16,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-root
 # For now, don't preocess dependancies
 AutoReq: no
+AutoProv: no
 
 %description
 A Free Hosting Control Panel for Linux intended to replace the need
