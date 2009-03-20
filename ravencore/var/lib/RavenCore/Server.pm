@@ -121,6 +121,7 @@ sub new
 		'Time::HiRes',
 		'DBI',
 		'DBD::mysql',
+		'DBD::SQLite',
 		'Locale::gettext',
 	);
 

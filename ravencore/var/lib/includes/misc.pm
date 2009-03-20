@@ -944,6 +944,14 @@ sub rehash_mail {
 	my @sasl_users = `sasldblistusers2 2> /dev/null`;
 	chomp @sasl_users;
 
+	# clear yaa's info so we can rebuild it
+	my $slh;
+
+	if ($self->{perl_modules}{DBD::SQLite}) {
+		$slh = DBI->connect('dbi:SQLite:dbname='.$self->{RC_ROOT}."/var/apps/yaa/data/autoresponder_data","","");
+		$slh->do("delete from autoresponder_data");
+	}
+
 	# individual mail addresses
 	my $sql = "select *, m.id as mid from domains d inner join mail_users m on m.did = d.id where d.mail = 'on' order by name";
 	my $result = $self->{dbi}->prepare($sql);
@@ -1019,6 +1027,15 @@ sub rehash_mail {
 		# if this is a local mailbox, tell the alias_map to deliver locally
 		$alias_map = $email_addr unless $row->{'mailbox'} ne "true";
 
+		# if autoreply is set
+		if ($row->{autoreply} == 1 and $slh) {
+			$self->debug("$email_addr is setup to autorespond via yaa");
+			$slh->do("insert into autoresponder_data values (1, ?, ?, ?, ?, ?, ?)", undef, $row->{autoreply_body}, $row->{autoreply_subject}, '', '', $email_addr, $row->{'name'});
+
+			$alias_map = $row->{'mail_name'} . '@yaa-autoreply.' . $row->{'name'} unless $alias_map;
+			$alias_map .= ',' . $row->{'mail_name'} . '@yaa-autoreply.' . $row->{'name'} if $alias_map;
+		}
+
 		# now loop for redirects
 		my $sql = "select redirect_addr from mail_users where redirect = 'true' and id = '" . $row->{'mid'} . "'";
 		my $result_redir = $self->{dbi}->prepare($sql);
@@ -1075,6 +1092,9 @@ sub rehash_mail {
 	}
 
 	$result->finish;
+
+	# close DBD::SQLite handle if it's open
+	$slh->disconnect if $slh;
 
 	#
 	# stop spam from going off-server via a redirect
@@ -1147,6 +1167,9 @@ sub rehash_mail {
 			# only add the [ ] around the relay_host if we want to force an MX lookup
 			$vtransportmap .= $row->{'relay_host'} . "\n";
 		}
+
+		# yaa-autoreply subdomains map to yaa
+		$vtransportmap .= 'yaa-autoreply.' . $row->{'name'} . "\t\tyaa\n";
 
 	}
 

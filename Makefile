@@ -19,6 +19,7 @@ PHPSYSINFO=phpsysinfo-2.5.4
 PHPWEBFTP=phpwebftp40
 AWSTATS=awstats-6.9
 SQUIRRELMAIL=squirrelmail-1.4.17
+YAA=yaa-0.3.1
 
 # Squirrelmail plugins to install
 
@@ -74,6 +75,10 @@ build:
 # TODO: build / install third party apps in a seperate .sh file so it can be coded to be more
 #       modular
 #	./src/build_3rd_party.sh
+
+# yaa install
+	tar -C ravencore/var/apps -jxf src/$(YAA).tar.bz2; \
+	mv ravencore/var/apps/$(YAA) ravencore/var/apps/yaa
 
 # awstats install
 	tar -C ravencore/var/apps -zxf src/$(AWSTATS).tar.gz; \

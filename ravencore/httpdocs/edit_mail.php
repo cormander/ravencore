@@ -66,8 +66,8 @@ if ($action) {
 
 					if ($redir_error == 0) {
 						if (preg_match('/^' . REGEX_PASSWORD . '$/', $_POST[passwd])) {
-			  if ($page_type == "add") $sql = "insert into mail_users set mail_name = '$_POST[name]', did = '$did', passwd = '$_POST[passwd]', spam_folder = '$_POST[spam_folder]', mailbox = '$_POST[mailbox]', redirect = '$_POST[redirect]', redirect_addr = '$_POST[redirect_addr]'";
-			  else $sql = "update mail_users set passwd = '$_POST[passwd]', mailbox = '$_POST[mailbox]', spam_folder = '$_POST[spam_folder]', redirect = '$_POST[redirect]', redirect_addr = '$_POST[redirect_addr]' where id = '$mid'";
+			  if ($page_type == "add") $sql = "insert into mail_users set mail_name = '$_POST[name]', did = '$did', passwd = '$_POST[passwd]', spam_folder = '$_POST[spam_folder]', mailbox = '$_POST[mailbox]', redirect = '$_POST[redirect]', redirect_addr = '$_POST[redirect_addr]', autoreply = '$_POST[autoreply]', autoreply_subject = '$_POST[autoreply_subject]', autoreply_body = '$_POST[autoreply_body]'";
+			  else $sql = "update mail_users set passwd = '$_POST[passwd]', mailbox = '$_POST[mailbox]', spam_folder = '$_POST[spam_folder]', redirect = '$_POST[redirect]', redirect_addr = '$_POST[redirect_addr]', autoreply = '$_POST[autoreply]', autoreply_subject = '$_POST[autoreply_subject]', autoreply_body = '$_POST[autoreply_body]' where id = '$mid'";
 
 							$db->data_query($sql);
 
@@ -225,18 +225,10 @@ if ($page_type == "add") {
 if ($page_type == "add") {
 	if ($_POST[redirect]) print ' checked';
 } else {
-	if ($row_mail[redirect] == "true") print ' checked';
+	if ($row_mail[redirect] == "true" or $_POST[redirect]) print ' checked';
 }
 
-?> onclick="if(this.checked) { document.main.redirect_addr.disabled=false; if(tmp) document.main.redirect_addr.value=tmp; document.main.redirect_addr.focus(); } else { document.main.redirect_addr.disabled=true; tmp = document.main.redirect_addr.value; document.main.redirect_addr.value=''}"></td><td><font size="1"><?php e_('List email addresses here, seperate each with a comma and a space')?></font><br /><textarea nowrap rows="5" cols="40"<?php
-
-if ($page_type == "add") {
-	if (!$_POST[redirect]) print ' disabled';
-} else {
-	if (!$row_mail[redirect]) print ' disabled';
-}
-
-?> name=redirect_addr><?php
+?> onclick="if(this.checked) { document.getElementById('redir').style.display=''; if(tmp) document.main.redirect_addr.value=tmp; document.main.redirect_addr.focus(); } else { document.getElementById('redir').style.display='none'; tmp = document.main.redirect_addr.value; document.main.redirect_addr.value=''}"></td><td><span style="display: <?php if($row_mail[redirect] != "true" and ! $_POST[redirect] ) print 'none'; ?>;" name="redir" id="redir"><font size="1"><?= __('List email addresses here, seperate each with a comma and a space')?></font><br /><textarea nowrap rows="5" cols="40" name=redirect_addr><?php
 
 if ($page_type == "add") {
 	if ($_POST[redirect_addr]) print ereg_replace(',', ', ', $_POST[redirect_addr]);
@@ -244,9 +236,50 @@ if ($page_type == "add") {
 	if ($row_mail[redirect_addr]) print ereg_replace(',', ', ', $row_mail[redirect_addr]);
 }
 
-?></textarea></td></tr></table>
+?></textarea></span></td></tr></table></td></tr>
+<tr><td valign="top"><?= __('Auto-Responder')?>: </td><td valign="top">
+<table style="border: 0px; margin: 0px;"><tr>
+<td valign="top" align="left">
+<?php
+// only show autoreply if DBD::SQLite is installed
+if($status['perl_modules']['DBD::SQLite']) {
+?>
+
+<input type="checkbox" name=autoreply value="1"<?php
+
+if ($page_type == "add") {
+	if ($_POST[autoreply]) print ' checked';
+} else {
+	if ($row_mail[autoreply] == 1 or $_POST[autoreply]) print ' checked';
+}
+
+?> onclick="if(this.checked) { document.getElementById('autore').style.display=''; document.main.autoreply_subject.focus(); } else { document.getElementById('autore').style.display='none'; document.main.autoreply_subject.value=''}"></td>
+<td><span style="display: <?php if($row_mail[autoreply] != 1 and ! $_POST[autoreply] ) print 'none'; ?>;" name="autore" id="autore">
+Subject: <input type="text" name="autoreply_subject" size="40" value="<?=( $_POST[autoreply_subject] ? $_POST[autoreply_subject] : $row_mail[autoreply_subject] )?>">
+<br />
+Message:<br/><textarea nowrap rows="5" cols="40" name=autoreply_body><?php
+
+if ($page_type == "add") {
+	if ($_POST[autoreply]) print ereg_replace(',', ', ', $_POST[autoreply_body]);
+} else {
+	if ($row_mail[autoreply]) print ereg_replace(',', ', ', $row_mail[autoreply_body]);
+}
+
+?></textarea></span>
+
+<?php
+
+} else {
+	print '<font size="1"><i>The perl module DBD::SQLite needs to be installed</i></font>';
+
+}
+
+?>
+
+</td></tr></table>
+
 </td></tr>
-<tr><td colspan=2><input type="hidden" name="action" value="add">
+<tr><td colspan=2><br/><input type="hidden" name="action" value="add">
 <?php if ($page_type == "add") print '<input type="hidden" name="page_type" value="' . $page_type . '">';
 ?>
 <input type="submit" value="<?php

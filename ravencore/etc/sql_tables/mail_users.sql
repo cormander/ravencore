@@ -9,6 +9,9 @@ CREATE TABLE mail_users (
   spam_folder enum('true','false') default 'false',
   redirect enum('true','false') default 'false',
   redirect_addr blob,
+  autoreply tinyint(1) NOT NULL default '0',
+  autoreply_subject varchar(255) default NULL,
+  autoreply_body blob,
   PRIMARY KEY  (id)
 ) TYPE=MyISAM;
 /*!40000 ALTER TABLE mail_users DISABLE KEYS */;

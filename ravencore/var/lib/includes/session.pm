@@ -78,6 +78,9 @@ sub session_status {
 	# user data from this session
 	$data{user_data} = \%{$self->{session}{user_data}};
 
+	# perl modules that are loaded
+	$data{perl_modules} = $self->{perl_modules};
+
 	return \%data;
 
 }

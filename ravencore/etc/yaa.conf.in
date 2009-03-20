@@ -1,0 +1,321 @@
+
+use strict;                                          #
+
+#
+# example for sh/ksh/bash:
+# export YAA_DEBUG=1
+#
+
+######################################################
+#           LOGGING SUBSYSTEM SETTINGS               #
+######################################################
+
+# enable logging?
+# type: boolean
+# default: 1
+# $logging = 1;
+
+# enable logging to syslog?
+# type: boolean
+# default: 1
+# $log_syslog = 0;
+
+# syslog logging facility
+# type: string
+# default: "mail"
+# this setting applies only when logging to syslog is enabled
+# $log_syslog_facility = "mail";
+
+# syslog logging priority
+# type: string
+# default: "info"
+# this setting applies only when logging to syslog is enabled
+# $log_syslog_priority = "info";
+
+# log to plaintext file?
+# type: boolean
+# default: 0
+# $log_file = 1;
+
+# log filename
+# type: string
+# default: undef
+# this setting applies only when logging to file is enabled
+# $log_file_filename = "/tmp/yaa.log";
+
+# log to stderr?
+# type: boolean
+# default: 0
+# !!!! WARNING !!!!
+# when yaa debugging is turned on (environment variable YAA_DEBUG is set),
+# STDERR output is mapped to logger subsystem and nothing actually doesn't show up
+# on real stderr, so make shure to set up syslog or file based logging.
+# !!!! WARNING !!!!
+# $log_stderr = 0;
+
+# log time format when logging in file
+# type: string
+# default: "[%a, %b %e %T %Y]: "
+# see strftime(3) for more details
+# $log_time_format = undef;
+
+
+######################################################
+#               DAEMON MODE SETTINGS                 #
+######################################################
+
+# run as daemon?
+# type: boolean
+# default: 0, do not run as daemon
+# this setting enables daemon mode operation.
+# $daemon = 1;
+
+# fork into background when running as daemon?
+# default: 1
+# this setting applies only when operating in daemon mode
+# $daemon_background = 1;
+
+# daemon accept lock file
+# type: string
+# default: "/var/lock/yaa.lock"
+# this setting applies only when operating in daemon mode
+# WARNING: if running in chroot jail, this option should be
+# set relative to chroot directory
+# $daemon_lockfile = "$_[RC_ROOT]/var/apps/yaa/data/yaa.lock";
+
+# daemon pid file
+# type: string
+# default: "/var/run/yaa.lock"
+# this setting applies only when operating in daemon mode
+# $daemon_pidfile = "$_[RC_ROOT]/var/apps/yaa/data/yaa.pid";
+
+# minimum number of yaa child processes
+# type: integer
+# default: 2
+# this setting applies only when operating in daemon mode
+# $daemon_min_servers = 2;
+
+# maximum number of yaa child processes
+# type: integer
+# default: 3
+# this setting applies only when operating in daemon mode
+# $daemon_max_servers = 3;
+
+# minimum number of yaa spare child processes
+# type: integer
+# default: 1
+# this setting applies only when operating in daemon mode
+# $daemon_min_spare_servers = 0;
+
+# maximum number of yaa spare child processes
+# type: integer
+# default: 1
+# this setting applies only when operating in daemon mode
+#$daemon_max_spare_servers = 1;
+
+# daemon communication protocol
+# type: string
+# protocol which your MTA uses for communication with yaa
+#
+# NOTICE: for possible values for this configuration parameter, RUN
+# yaa.pl --list-transport-protocols
+#
+# default: "SMTP"
+# this setting applies only when operating in daemon mode
+# $daemon_protocol = "LMTP";
+
+# tcp listen port or unix domain socket on which yaa should listen
+# type: integer/string
+# default: 40000
+# to specify unix domain socket set value to: '/path/to/socket|unix'
+#
+# see also: perldoc Net::Server::Proto
+#
+# this setting applies only when operating in daemon mode
+# $daemon_listen_port = 40004;
+
+# hostname which yaa should bind to.
+# type: string
+# default: "localhost"
+# this setting applies only when operating in daemon mode
+# $daemon_listen_host = "127.0.0.1";
+
+# daemon tcpserver (Net::Server) log level
+# type: integer
+# default: 0
+# 'O' => disable logging
+# 0 => 'err'
+# 1 => 'warning'
+# 2 => 'notice'
+# 3 => 'info'
+# 4 => 'debug'
+$daemon_tcpserver_loglevel = 4;
+
+######################################################
+#               YAA OBJECT SETTINGS                  #
+######################################################
+
+# directory used to store autoresponse message sent time database.
+# type: string
+# default: "/tmp"
+$db_dir = "$_[RC_ROOT]/var/apps/yaa/data";
+
+# time in seconds between to autoresponses will be sent to the
+# same message sender from message recipient which has autoresponder
+# turned on.
+# 
+# type: integer
+# default: 7200 (2 hrs)
+# $duration_interval = 24 * 60 * 60;
+
+######################################################
+#             AUTORESPONSE SETTINGS                  #
+######################################################
+
+# method used for sending autoresponses and forwaring messages
+# type: string
+# possible values: "smtp", "sendmail"
+# - "smtp" uses smtp server to send mail
+# - "sendmail" invokes sendmail binary to send mail
+#
+# default: "smtp"
+# $mail_sending_method = "smtp";
+
+# sendmail program path
+# type string
+# default: automaticaly searched in $PATH environmental variable;
+# undef if not found in $PATH.
+#$sendmail_path = undef;
+
+# SMTP server setting
+# type: string
+#
+# see also perldoc Net::SMTP
+#
+# default: localhost
+# $smtp_server = "localhost";
+
+# Use SMTP auth?
+# type: boolean
+# default: 0
+# $smtp_auth = 0;
+
+# SMTP auth username
+# type: string
+# default: undef
+# $smtp_username = undef;
+
+# SMTP auth password
+# type: string
+# default: undef
+# $smtp_password = undef;
+
+
+######################################################
+#              LOOKUP MAP SETTINGS                   #
+######################################################
+
+# List of ALL lookup maps
+# You need to define lookup maps here and
+# then set lookup_map_query_order, where you reference to
+# the lookup name
+# 
+# NOTICE:
+# All lookup maps are initialized BEFORE Yaa! enters chroot jail (if any)
+# and BEFORE starts processing emails.
+#
+#
+# NOTICE: To obtain list of all lookup drivers, RUN
+# yaa.pl --list-lookup-map-drivers
+#
+# type: hash of hashes
+# default: empty hash (no defined lookup maps)
+
+$lookup_maps = {
+         'my_sql_map' => {
+                'driver' => 'SQL',
+		'sql_dsn' => 'DBI:SQLite:dbname=$_[RC_ROOT]/var/apps/yaa/data/autoresponder_data',
+                'sql_username' => "",
+                'sql_password' => "",
+                'sql_select' => "select active,message,subject,charset,forward,local_domains
+                                from autoresponder_data where address = %m and active='1'",
+        },
+};
+
+# lookup map query order by attribute
+# for each autoresponse except 'rewrite_recipient' and 'rewrite_sender' must
+# be defined lookup query order
+# 
+# Each item can be specified as:
+# + string   (example: 'domain.tld')
+# 
+# OR
+# 
+# lookup_map_name:result_value (example: 'my_pcre_map:result')
+#
+# Lookup map is recognized by ':' character in string.
+#
+# Lookup map 'lookup_map_name' MUST BE specified in $lookup_maps configuration
+# parameter in yaa.conf
+#
+# type: hash of hashes
+# default: empty hash (no lookups order lists defined)
+$lookup_map_query_order = {
+        active => [
+                'my_sql_map:active'
+        ],
+        subject => [
+                'my_sql_map:subject'
+        ],
+        message => [
+                'my_sql_map:message'
+        ],
+        charset => [
+                'my_sql_map:charset'
+        ],
+        forward => [
+                'my_sql_map:forward'
+        ],
+        rewrite_sender => [
+                #empty
+        ],
+        rewrite_recipient => [
+                #empty
+        ],
+        'local_domains' => [
+                'my_sql_map:local_domains'
+        ],
+};
+
+######################################################
+#                 OTHER SETTINGS                     #
+######################################################
+
+# chroot to some directory?
+# type: string
+# default: undef, do not chroot
+# Warning: yaa must be started as superuser to enable this feature.
+# this applies to daemon and single message processing mode
+# $chroot = undef;
+
+# change uid/gid before processing?
+# type: string
+# default: undef, do not change uid/gid
+# Warning: yaa must be started as superuser to enable this feature.
+# this applies to daemon and single message processing mode
+# $user = undef;
+# $group = undef;
+
+# Load additional perl modules before processing any message
+# Modules in this list will be loaded before Yaa! will process any
+# message in single process mode or become daemon, when running
+# in daemon mode.
+#
+# This configuration parameter is very handy when
+# when running in chroot jail
+#
+# type: array
+# default: empty array (don't load any additional modules)
+@extra_modules = ();
+
+1;

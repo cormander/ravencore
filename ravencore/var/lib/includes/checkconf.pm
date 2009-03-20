@@ -475,7 +475,7 @@ sub checkconf {
 	# directory permissions
 	chmod 0700, $self->{RC_ROOT} . '/conf.d';
 	chmod 0700, $self->{RC_ROOT} . '/sbin';
-	chmod 0700, $self->{RC_ROOT} . '/var/lib';
+	chmod 0750, $self->{RC_ROOT} . '/var/lib';
 	chmod 0700, $self->{RC_ROOT} . '/var/log';
 	chmod 0701, $self->{RC_ROOT} . '/etc';
 	chmod 0701, $self->{RC_ROOT} . '/var';
@@ -534,6 +534,8 @@ sub checkconf {
 
 	# remove the legacy socket
 	file_delete($self->{RC_ROOT} . '/db.sock');
+
+	file_chown('root:rcadmin', $self->{RC_ROOT} . '/var/lib');
 
 	# permissions on the socket
 	file_chown('root:rcadmin', $self->{RC_ROOT} . '/var/rc.sock');
@@ -743,10 +745,22 @@ sub checkconf_mail {
 	file_copy($self->{RC_ROOT} . '/etc/postfix_header_checks' . $dot_local, $self->{CONF}{VMAIL_CONF_DIR} . '/header_checks');
 	file_touch($self->{CONF}{VMAIL_CONF_DIR} . '/header_checks');
 
+	# var/apps/yaa
+	mkdir_p($self->{RC_ROOT} . '/var/apps/yaa/data');
+
+	# install the autoresponder_data sqlite table, if it isn't there
+	if (-x '/usr/bin/sqlite3' && ! -f $self->{RC_ROOT} . '/var/apps/yaa/data/autoresponder_data' ) {
+		system ('cat ' . $self->{RC_ROOT} . '/etc/yaa.schema.sql | /usr/bin/sqlite3 ' . $self->{RC_ROOT} . '/var/apps/yaa/data/autoresponder_data');
+	}
+
+	# make sure yaa (runs as vmail) can write to it's data dir
+	file_chown_r($self->{CONF}{VMAIL_USER}.':'.$self->{CONF}{VMAIL_USER}, $self->{RC_ROOT} . '/var/apps/yaa/data');
+
 	# rebuild configuration files
+	$self->cache_rebuild_conf_file($self->{RC_ROOT} . '/var/apps/yaa/conf/yaa.conf', '', ' ', 1);
 	$self->cache_rebuild_conf_file($self->{CONF}{VMAIL_CONF_DIR} . '/main.cf', 'postfix', ' = ');
 	$self->cache_rebuild_conf_file($self->{CONF}{VMAIL_CONF_DIR} . '/master.cf', 'postfix', "\t");
-	$self->cache_rebuild_conf_file("/usr/lib/sasl2/smtpd.conf", 'postfix', ': ');
+	$self->cache_rebuild_conf_file($self->{CONF}{SASL2_SMTPD}, 'postfix', ': ');
 
 	# dovecot 0.9x rebuilds this way
 	$self->cache_rebuild_conf_file($self->{CONF}{DOVECOT_CONF_FILE}, 'dovecot', ' = ') if $dovecot_v eq "0";
