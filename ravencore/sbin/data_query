@@ -24,7 +24,12 @@
 
 use RavenCore::Client;
 
-$rc = new RavenCore::Client('/usr/local/ravencore');
+$rc = new RavenCore::Client;
+
+if ($rc->auth_system ne "1") {
+	print "Unable to authenticate to RavenCore.\n";
+	exit;
+}
 
 # build our $sql query off of everything given on the command line
 

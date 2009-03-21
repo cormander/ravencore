@@ -37,7 +37,7 @@ sub new {
 	my ($class, $RC_ROOT) = @_;
 
 	my $self = {
-		RC_ROOT => $RC_ROOT
+		RC_ROOT => ( $RC_ROOT ? $RC_ROOT : '/usr/local/ravencore' ),
 	};
 
 	bless $self, $class;
@@ -54,6 +54,14 @@ sub new {
 
 	die "Unable to connect to RavenCore socket" unless $self->{socket};
 
+	return $self;
+}
+
+#
+
+sub auth_system {
+	my ($self) = @_;
+
 	# generate a random session_id
 	my $session_id = gen_random_id(32);
 
@@ -65,16 +73,19 @@ sub new {
 	#    my $resp = $self->do_raw_query('auth ' . $session_id . ' ' . $ipaddress . ' ' . $username . ' ' . $password);
 	# TODO: create a user-level shell API using this method
 
-	my $resp = $self->do_raw_query('auth_system ' . $session_id . ' ' . $self->get_passwd);
+	return $self->do_raw_query('auth_system ' . $session_id . ' ' . $self->get_passwd);
+}
 
-# if we got an authentication failure on the socket for some reason, die with the given error
+# authenticate as a user
 
-	if ($resp ne "1") {
-		print STDERR "Error: " . $resp . "\n";
-		exit 1;
+sub auth {
+	my ($self, $session_id, $ipaddress, $username, $password) = @_;
+
+	unless ($session_id) {
+		$session_id = gen_random_id(32);
 	}
 
-	return $self;
+	return $self->do_raw_query('auth ' . $session_id . ' ' . $ipaddress . ' ' . $username . ' ' . $password);
 }
 
 #
@@ -184,17 +195,6 @@ sub data_insert_id { my ($self) = @_; return $self->{insert_id} }
 # return the number of rows affected by the last query (update, delete). 0 if none
 
 sub data_rows_affected { my ($self) = @_; return $self->{rows_affected} }
-
-# oh no!! die with an error message!! :)
-
-sub die_error
-{
-	my ($self, $msg) = @_;
-
-	print $msg . "\n";
-
-	exit(1);
-}
 
 #
 

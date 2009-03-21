@@ -32,6 +32,11 @@ my $cmd;
 
 my $rc = new RavenCore::Client($RC_ROOT);
 
+if ($rc->auth_system ne "1") {
+	print "Unable to authenticate to RavenCore.\n";
+	exit;
+}
+
 # build our $cmd off of everything given on the command line
 
 foreach (@ARGV) {
