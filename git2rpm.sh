@@ -119,7 +119,7 @@ if [ $? -eq 0 ] && [ -n "$reinstall" ]; then
 	else
 
 		# find what we just built
-		therpm=$(ls $RPM_ROOT/RPMS/noarch/ravencore-0.3.4-0.$(date +%Y)*.noarch.rpm 2> /dev/null | sort | tail -n 1)
+		therpm=$(ls $RPM_ROOT/RPMS/noarch/ravencore-$v-0.*.noarch.rpm 2> /dev/null | sort | tail -n 1)
 
 		if [ -f $therpm ]; then
 			echo "Found: $therpm"
