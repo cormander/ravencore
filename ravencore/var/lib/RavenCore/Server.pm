@@ -540,7 +540,7 @@ sub configure_hook {
 sub pre_loop_hook {
 	my ($self) = @_;
 
-	chmod 0660, $self->{server}{port}[0];
+	chmod 0666, $self->{server}{port}[0];
 	# TODO: use perl function instead of syscall
 	CORE::system('chgrp rcadmin ' . $self->{server}{port}[0]);
 }

@@ -539,7 +539,7 @@ sub checkconf {
 
 	# permissions on the socket
 	file_chown('root:rcadmin', $self->{RC_ROOT} . '/var/rc.sock');
-	chmod 0660, $self->{RC_ROOT} . '/var/rc.sock';
+	chmod 0666, $self->{RC_ROOT} . '/var/rc.sock';
 
 	#
 	$self->database_connect;
