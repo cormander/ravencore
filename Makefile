@@ -23,10 +23,10 @@ YAA=yaa-0.3.1
 
 # Squirrelmail plugins to install
 
-webmail_cp_plugin=compatibility-2.0.4
+webmail_cp_plugin=compatibility-2.0.14-1.0
 webmail_sc_plugin=sent_confirmation-1.6-1.2
 webmail_tu_plugin=timeout_user-1.1.1-0.5
-webmail_vl_plugin=vlogin-3.8.0-1.2.7
+webmail_vl_plugin=vlogin-3.10.1-1.2.7
 webmail_pw_plugin=chg_sasl_passwd-1.4.1-1.4
 
 
@@ -157,7 +157,7 @@ build:
 	tar -C ravencore/var/apps/squirrelmail/plugins -zxf src/$(webmail_pw_plugin).tar.gz
 
 # vlogin plugin configuration file
-	cp ravencore/var/apps/squirrelmail/plugins/vlogin/data/config.php.sample \
+	cp ravencore/var/apps/squirrelmail/plugins/vlogin/data/config_default.php \
 		ravencore/var/apps/squirrelmail/plugins/vlogin/data/config.php
 
 # sent_confirmation config file
