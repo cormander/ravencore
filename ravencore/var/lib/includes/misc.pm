@@ -1952,6 +1952,21 @@ sub ip_update {
 	return 0;
 }
 
+sub ip_delete {
+	my ($self, $ip) = @_;
+
+	return $self->do_error("Not an IP address: $ip") unless is_ip($ip);
+
+	$self->{dbi}->do("delete from ip_addresses where ip_address = ?", undef, $ip);
+	$self->{dbi}->do("delete from domain_ips where ip_address = ?", undef, $ip);
+
+	$self->rehash_httpd;
+
+	$self->do_error("IP address deleted.");
+
+	return 0;
+}
+
 sub ip_list {
 	my ($self) = @_;
 

@@ -15,4 +15,5 @@ list_system_daemons
 reload
 ip_list
 ip_update
+ip_delete
 ravencore_info

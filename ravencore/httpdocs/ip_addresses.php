@@ -33,6 +33,12 @@ if ($action == "update") {
 	goto($_SERVER['PHP_SELF']);
 }
 
+if ($action == "delete") {
+	$ip = $_REQUEST['ip'];
+	$db->run('ip_delete ' . $ip);
+	goto($_SERVER['PHP_SELF']);
+}
+
 nav_top();
 
 $ips = $db->run('ip_list');
@@ -89,7 +95,11 @@ while ($row_u = $db->data_fetch_array($result)) {
 foreach ($ips as $ip => $row ) {
 	//print '<pre>'; print_r($row);print '</pre>';
 
-	print '<tr' . ( $row['active'] == "true" ? '' : ' class="redwarning"' ) . '><td class="listpad">' . $ip . '</td><td class="listpad">' . selection_array("uids", $row['uid'], $ip, "onchange=document.main.ip.value='" . $ip . "';document.main.submit()", $userlist) . '</td><td class="listpad">' . selection_array("dids", $row['default_did'], $ip, "onchange=document.main.ip.value='" . $ip . "';document.main.submit()", $domainlist[$row['uid']]) . '</td><td class="listpad">' . $row['active'] . '</td></tr>';
+	print '<tr' . ( $row['active'] == "true" ? '' : ' class="redwarning"' ) . '>' .
+		'<td class="listpad">' . $ip . '</td>' .
+		'<td class="listpad">' . selection_array("uids", $row['uid'], $ip, "onchange=document.main.ip.value='" . $ip . "';document.main.submit()", $userlist) . '</td>' .
+		'<td class="listpad">' . selection_array("dids", $row['default_did'], $ip, "onchange=document.main.ip.value='" . $ip . "';document.main.submit()", $domainlist[$row['uid']]) . '</td>' .
+		'<td class="listpad">' . $row['active'] . ( $row['active'] == 'true' ? '' : ', <a style="color: yellow" href="ip_addresses.php?action=delete&ip=' . $ip. '">remove</a>' ) . '</td></tr>';
 }
 
 print '</table></form>';
