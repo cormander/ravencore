@@ -35,8 +35,7 @@
    //       4 :    "Message Sent To:"  (with user list and
    //              optional image) (separate, intermediary screen)
    //
-   $sent_conf_message_style = 'off';
-   //$sent_conf_message_style = 3;
+   $sent_conf_message_style = '4';
 
 
 
@@ -88,7 +87,7 @@
    // in the list of recipients (so you know which address was 
    // in which header field)
    //
-   $sent_conf_show_headers = 0;
+   $sent_conf_show_headers = 1;
 
 
 
