@@ -270,19 +270,27 @@ sub auth_user {
 	#	   if a username contains an @ sign, attempt mail user auth
 	#	   if a username contains a dot, attempt domain user auth
 	#	   otherwise, attempt control panel user auth
-	my $sql = "select * from users where binary(login) = '" . $username . "' and binary(passwd) = '" . $password . "' limit 1";
-	my $result = $self->{dbi}->prepare($sql);
+	my $count;
 
-	$result->execute();
-	my %row = $result->fetchrow_hashref;
-	$result->finish();
+	$count = $self->{dbi}->selectrow_array("select count(*) from users where binary(login) = ? and binary(passwd) = ? limit 1", undef, $username, $password);
 
-	# success if %row exists
-	return 1 if $result->rows;
+	$self->debug("CP user auth result: $count");
+
+	return 1 if $count eq "1";
+
+	# try again for mail users
+	$count = $self->{dbi}->selectrow_array("select count(*) from domains d inner join mail_users mu on mu.did = d.id where concat(mail_name,'\@',d.name) = ? and binary(mu.passwd) = ? limit 1", undef, $username, $password);
+
+	$self->debug("email user auth result: $count");
+
+	if ($count eq "1") {
+		# email users get no gui, for now
+		$self->{no_gui} = 1;
+		return 1;
+	}
 
 	# we only get here if we failed auth.. call the failed auth function
 	return $self->auth_failure($username);
-
 }
 
 #

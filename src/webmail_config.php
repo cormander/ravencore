@@ -79,6 +79,7 @@ $plugins[0] = 'sent_confirmation';
 $plugins[1] = 'timeout_user';
 $plugins[2] = 'compatibility';
 $plugins[3] = 'vlogin';
+$plugins[4] = 'chg_sasl_passwd';
 
 $theme_css = '';
 $theme_default = 0;

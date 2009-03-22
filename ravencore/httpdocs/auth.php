@@ -114,6 +114,14 @@ if($action == "update_conf" and is_array($_REQUEST['CONF_UPDATE'])) {
 // so that we have the latest and greatest info
 $status = $db->do_raw_query("session_status");
 
+// if not allowed to view any pages (eg; email user) state that here
+if ($status['no_gui'] and $_SERVER['PHP_SELF'] != '/logout.php') {
+	nav_top();
+	print __('No access for now, sorry.');
+	nav_bottom();
+	exit;
+}
+
 $CONF = &$status['CONF'];
 
 // check to see if the GPL was accepted. if not, send us to that page

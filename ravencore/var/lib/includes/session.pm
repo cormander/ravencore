@@ -81,6 +81,9 @@ sub session_status {
 	# perl modules that are loaded
 	$data{perl_modules} = $self->{perl_modules};
 
+	#
+	$data{no_gui} = $self->{no_gui};
+
 	return \%data;
 
 }

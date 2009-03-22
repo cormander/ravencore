@@ -27,6 +27,7 @@ webmail_cp_plugin=compatibility-2.0.4
 webmail_sc_plugin=sent_confirmation-1.6-1.2
 webmail_tu_plugin=timeout_user-1.1.1-0.5
 webmail_vl_plugin=vlogin-3.8.0-1.2.7
+webmail_pw_plugin=chg_sasl_passwd-1.4.1-1.4
 
 
 all:
@@ -153,6 +154,7 @@ build:
 	tar -C ravencore/var/apps/squirrelmail/plugins -zxf src/$(webmail_sc_plugin).tar.gz
 	tar -C ravencore/var/apps/squirrelmail/plugins -zxf src/$(webmail_tu_plugin).tar.gz
 	tar -C ravencore/var/apps/squirrelmail/plugins -zxf src/$(webmail_vl_plugin).tar.gz
+	tar -C ravencore/var/apps/squirrelmail/plugins -zxf src/$(webmail_pw_plugin).tar.gz
 
 # vlogin plugin configuration file
 	cp ravencore/var/apps/squirrelmail/plugins/vlogin/data/config.php.sample \
@@ -160,6 +162,13 @@ build:
 
 # sent_confirmation config file
 	cp -f src/webmail_sc_config.php ravencore/var/apps/squirrelmail/plugins/sent_confirmation/config.php
+
+# change_pass script replacement, add patch, and config setup
+	cp -f src/webmail_chgsaslpasswd.pl ravencore/var/apps/squirrelmail/plugins/chg_sasl_passwd/chgsaslpasswd
+	chmod +x ravencore/var/apps/squirrelmail/plugins/chg_sasl_passwd/chgsaslpasswd
+	rm -f ravencore/var/apps/squirrelmail/plugins/chg_sasl_passwd/chgsaslpasswd.c
+	cp -f src/webmail_pw_config.php ravencore/var/apps/squirrelmail/plugins/chg_sasl_passwd/config.php 
+	patch -p1 -i src/webmail_pw_options.patch
 
 # we're done
 	@echo ""
