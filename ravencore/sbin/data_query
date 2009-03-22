@@ -23,6 +23,7 @@
 # socket, which enables logging of 100% of all sql queries, system wide
 
 use RavenCore::Client;
+use Data::Dumper;
 
 $rc = new RavenCore::Client;
 
@@ -38,15 +39,5 @@ foreach (@ARGV) {
 }
 
 # run the SQL query
-@result = $rc->data_query($sql);
+print Dumper($rc->data_query($sql));
 
-# return the resutls if there are any
-
-while ($row = $rc->data_fetch_row(\@result)) {
-
-	foreach my $key (keys %$row) {
-		print $row->{$key} . "\t";
-	}
-
-	print "\n";
-}

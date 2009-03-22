@@ -150,9 +150,10 @@ sub data_query {
 	my ($self, $sql) = @_;
 
 	my $data = $self->do_raw_query('sql ' . $sql);
+	$self->{num_rows} = $data->{rows_affected};
+	$self->{insert_id} = $data->{insert_id};
 
-	return @{$data->{rows}};
-
+	return $data->{rows};
 }
 
 #
@@ -177,25 +178,5 @@ sub passwd {
 	my ($self, $old, $new) = @_;
 	return $self->do_raw_query('passwd ' . $old . ' ' . $new);
 }
-
-# shift off and return the hash of the current data query. return undef otherwise
-# NOTE: when you pass the array here, you need to pass it as a refferent... for example,
-# @result = $db->data_query($sql); $row = $db->data_fetch_row(\@result);
-
-sub data_fetch_row { my ($self, $ptr) = @_; return shift @$ptr; }
-
-# return the number of rows of the last data query
-
-sub data_num_rows { my ($self) = @_; return $self->{num_rows} }
-
-# return the insert id of the last data query, 0 if none
-
-sub data_insert_id { my ($self) = @_; return $self->{insert_id} }
-
-# return the number of rows affected by the last query (update, delete). 0 if none
-
-sub data_rows_affected { my ($self) = @_; return $self->{rows_affected} }
-
-#
 
 1;
