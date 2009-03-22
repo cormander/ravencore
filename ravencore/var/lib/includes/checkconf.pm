@@ -475,7 +475,7 @@ sub checkconf {
 	# directory permissions
 	chmod 0700, $self->{RC_ROOT} . '/conf.d';
 	chmod 0700, $self->{RC_ROOT} . '/sbin';
-	chmod 0750, $self->{RC_ROOT} . '/var/lib';
+	chmod 0755, $self->{RC_ROOT} . '/var/lib';
 	chmod 0700, $self->{RC_ROOT} . '/var/log';
 	chmod 0701, $self->{RC_ROOT} . '/etc';
 	chmod 0701, $self->{RC_ROOT} . '/var';
