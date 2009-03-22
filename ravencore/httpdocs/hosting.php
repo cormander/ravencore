@@ -162,14 +162,18 @@ else {
 		$row['ip_addresses'][$row_ips['ip_address']] = $row_ips['ip_address'];
 	}
 
-	print __("IP Address") . ": " . selection_array("ip_addresses", $row['ip_addresses'], -1, "MULTIPLE", $ip_addresses) . "<p>";
+	// only give option if there are any possible IPs
+	if (count($ip_addresses) != 0) {
+		print __("IP Address") . ": " . selection_array("ip_addresses", $row['ip_addresses'], -1, "MULTIPLE", $ip_addresses) . "<p>";
 
-		print __("www prefix") . ": <input type=radio name=www value=true";
-		if ($row[www] == "true") print " checked";
-		print "> " . __('Yes') . " <input type=radio name=www value=false";
-		if ($row[www] == "false") print " checked";
-		print "> " . __('No') . " <p>";
+			print __("www prefix") . ": <input type=radio name=www value=true";
+			if ($row[www] == "true") print " checked";
+			print "> " . __('Yes') . " <input type=radio name=www value=false";
+			if ($row[www] == "false") print " checked";
+			print "> " . __('No') . " <p>";
+		}
 	}
+
 	// If we get here and have a $host_type value, then we got here from the 'none' case, so we need
 	// To populate our host_type with this value to use the switch correctly
 	if ($_POST[host_type]) $row[host_type] = $_POST[host_type];
