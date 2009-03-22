@@ -651,6 +651,7 @@ sub checkconf_amavisd {
 		(
 			dirname($self->{CONF}{CLAMD_PID_FILE}),
 			dirname($self->{CONF}{CLAMD_SOCKET}),
+			dirname($self->{CONF}{CLAMD_LOG_FILE}),
 			$self->{CONF}{CLAMD_LOG_FILE},
 			$self->{CONF}{AMAVISD_HOME_DIR}
 		)
