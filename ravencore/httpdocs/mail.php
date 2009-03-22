@@ -53,7 +53,7 @@ A domain name in [ ] means force MX host lookup
 
 		$db->data_query($sql);
 
-		if ($db->data_rows_affected()) $db->do_raw_query("rehash_mail --all");
+		if ($db->data_rows_affected()) $db->run("rehash_mail --all");
 
 		goto("mail.php?did=$did");
 	}
@@ -67,7 +67,7 @@ A domain name in [ ] means force MX host lookup
 	$sql = "update domains set mail = '$_POST[mail]' where id = '$did'";
 	$db->data_query($sql);
 
-	if ($db->data_rows_affected()) $db->do_raw_query("rehash_mail --all");
+	if ($db->data_rows_affected()) $db->run("rehash_mail --all");
 
 	goto("mail.php?did=$did");
 }

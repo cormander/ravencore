@@ -24,7 +24,7 @@ include "auth.php";
 req_admin();
 
 if ($_GET['cmd']) {
-  $db->do_raw_query("system " . $_GET['cmd']);
+  $db->run("system " . $_GET['cmd']);
 
   alert(__("The system will now $_GET[cmd]"));
 

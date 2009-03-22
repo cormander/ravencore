@@ -51,7 +51,7 @@ if ($action == "edit") {
 		$sql = "update sys_users set passwd = '$_POST[passwd]', shell = '$_POST[login_shell]' where id = '$row[id]'";
 		$db->data_query($sql);
 
-		$db->do_raw_query("rehash_ftp $row[login]");
+		$db->run("rehash_ftp $row[login]");
 	}
 
 	$sql = "update domains set redirect_url = '$_POST[redirect_url]', www = '$_POST[www]', host_dir = '$_POST[dir]'";
@@ -63,10 +63,10 @@ if ($action == "edit") {
 	$sql .= " where id = '$did'";
 	$db->data_query($sql);
 	// only mess with the filesystem if we affected the db
-	if ($db->data_rows_affected()) $db->do_raw_query("rehash_httpd " . $d->name());
+	if ($db->data_rows_affected()) $db->run("rehash_httpd " . $d->name());
 
 	// if this was an alias update, make sure we update the aliased domain too
-	if ($db->data_rows_affected() and $_POST[host_type] == "alias") $db->do_raw_query("rehash_httpd " . $_POST[redirect_url]);
+	if ($db->data_rows_affected() and $_POST[host_type] == "alias") $db->run("rehash_httpd " . $_POST[redirect_url]);
 
 	goto("domains.php?did=$did");
 }
@@ -96,7 +96,7 @@ else if ($action == "add")
 			$sql = "update domains set suid = '$suid' where id = '$did'";
 			$db->data_query($sql);
 			// when the rehash_ftp is fixed, we want to run it with just the new username, rather then the --all switch
-			$db->do_raw_query("rehash_ftp --all");
+			$db->run("rehash_ftp --all");
 		}
 
 		$sql = "update domains set host_type = '$_POST[host_type]', redirect_url = '$_POST[redirect_url]', www = '$_POST[www]'";
@@ -111,13 +111,13 @@ else if ($action == "add")
 		$db->data_query($sql);
 
 		// build httpd for this domain
-		$db->do_raw_query("rehash_httpd " . $d->name());
+		$db->run("rehash_httpd " . $d->name());
 
 		// do logrotation for the domain
-		$db->do_raw_query("rehash_logrotate");
+		$db->run("rehash_logrotate");
 
 		// if this was an alias update, make sure we update the aliased domain too
-		if ($_POST[host_type] == "alias") $db->do_raw_query("rehash_httpd " . $_POST[redirect_url]);
+		if ($_POST[host_type] == "alias") $db->run("rehash_httpd " . $_POST[redirect_url]);
 
 		goto("domains.php?did=$did");
 	}

@@ -70,10 +70,10 @@ sub auth_system {
 	system('touch ' . $self->{RC_ROOT} . '/var/tmp/sessions/SYSTEM_' . $session_id);
 
 	# normal auth would look something like this
-	#    my $resp = $self->do_raw_query('auth ' . $session_id . ' ' . $ipaddress . ' ' . $username . ' ' . $password);
+	#    my $resp = $self->run('auth ' . $session_id . ' ' . $ipaddress . ' ' . $username . ' ' . $password);
 	# TODO: create a user-level shell API using this method
 
-	return $self->do_raw_query('auth_system ' . $session_id . ' ' . $self->get_passwd);
+	return $self->run('auth_system ' . $session_id . ' ' . $self->get_passwd);
 }
 
 # authenticate as a user
@@ -85,7 +85,7 @@ sub auth {
 		$session_id = gen_random_id(32);
 	}
 
-	return $self->do_raw_query('auth ' . $session_id . ' ' . $ipaddress . ' ' . $username . ' ' . $password);
+	return $self->run('auth ' . $session_id . ' ' . $ipaddress . ' ' . $username . ' ' . $password);
 }
 
 #
@@ -101,7 +101,7 @@ sub get_passwd {
 
 # submit a query to the socket
 
-sub do_raw_query {
+sub run {
 	my ($self, $query, $serial) = @_;
 
 	my $c;
@@ -149,7 +149,7 @@ sub die_error {
 sub data_query {
 	my ($self, $sql) = @_;
 
-	my $data = $self->do_raw_query('sql ' . $sql);
+	my $data = $self->run('sql ' . $sql);
 	$self->{num_rows} = $data->{rows_affected};
 	$self->{insert_id} = $data->{insert_id};
 
@@ -160,14 +160,14 @@ sub data_query {
 
 sub service_running {
 	my ($self, $service) = @_;
-	return $self->do_raw_query('service_running ' . $service);
+	return $self->run('service_running ' . $service);
 }
 
 # a function to change the current database in use
 
 sub use_database {
 	my ($self, $database) = @_;
-	return $self->do_raw_query('use ' . $database);
+	return $self->run('use ' . $database);
 }
 
 # a function to change the admin password. returns true on success, false on failure
@@ -176,7 +176,7 @@ sub use_database {
 
 sub passwd {
 	my ($self, $old, $new) = @_;
-	return $self->do_raw_query('passwd ' . $old . ' ' . $new);
+	return $self->run('passwd ' . $old . ' ' . $new);
 }
 
 1;

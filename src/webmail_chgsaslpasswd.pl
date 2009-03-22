@@ -23,6 +23,6 @@ my $result = $rc->data_query("select mu.id from domains d inner join mail_users 
 
 if ($result->{0}{id}) {
 	$rc->data_query("update mail_users set passwd = '" . $new_pass . "' where id = " . $result->{0}{id});
-	$rc->do_raw_query("rehash_mail");
+	$rc->run("rehash_mail");
 }
 

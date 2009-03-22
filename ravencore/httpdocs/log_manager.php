@@ -37,14 +37,14 @@ if ($action == "delete") {
 } else if ($action == "compress" or $action == "decompress") {
 	if (ereg("\.\.", $_GET[log_file])) alert(__("Unable to $action log file"));
 	else {
-		$db->do_raw_query("log_compress --$action $domain_name $_GET[log_file]");
+		$db->run("log_compress --$action $domain_name $_GET[log_file]");
 
 		goto("log_manager.php?did=$did");
 	}
 } else if ($action == "toggle") {
 	update_parameter($did, 'log_rotate', $_POST[toggle]);
 
-	$db->do_raw_query("rehash_logrotate");
+	$db->run("rehash_logrotate");
 
 	goto("log_manager.php?did=$did");
 } else if ($action == "update") {
@@ -64,7 +64,7 @@ if ($action == "delete") {
 	update_parameter($did, 'log_compress', $_POST[log_compress]);
 	update_parameter($did, 'log_rotate_size_ext', $_POST[log_rotate_size_ext]);
 
-	$db->do_raw_query("rehash_logrotate");
+	$db->run("rehash_logrotate");
 
 	goto("log_manager.php?did=$did");
 }

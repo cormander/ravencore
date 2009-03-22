@@ -25,7 +25,7 @@ req_admin();
 
 nav_top();
 
-$info = $db->do_raw_query('ravencore_info');
+$info = $db->run('ravencore_info');
 
 ?>
 <center>

@@ -30,7 +30,7 @@ $services = array();
 if ($action == "run") {
   // authenticate $_GET[service] as an allowed service
   // make sure $_GET[service_cmd] can only be start, stop, or restart
-  $db->do_raw_query("service " . $_GET['service'] . " " . $_GET['service_cmd']);
+  $db->run("service " . $_GET['service'] . " " . $_GET['service_cmd']);
 
   if (!$_SESSION['status_mesg']) $_SESSION['status_mesg'] = $_GET['service_cmd'] . ' command sucessfull for ' . $_GET['service'];
 
@@ -54,7 +54,7 @@ nav_top();
 <?php
 
 if($_GET['showall']) {
-  $services = $db->do_raw_query('list_system_daemons');
+  $services = $db->run('list_system_daemons');
 } else {
   $services = $status['services'];
 }
@@ -64,7 +64,7 @@ if($_GET['showall']) {
 foreach ($services as $val) {
 	print '<tr><td class="listpad">' . $val . '</td><td class="listpad" align=center>';
 
-	if( $db->do_raw_query("service_running " . $val) ) {
+	if( $db->run("service_running " . $val) ) {
 
 			$running = '<img src="images/solidgr.gif" border=0>';
 			$start = '<img src="images/start_grey.gif" border=0>';

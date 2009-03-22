@@ -27,7 +27,7 @@ $resp = "";
 
 if($debug)
 {
-	$resp = $db->do_raw_query($debug);
+	$resp = $db->run($debug);
 }
 
 nav_top();

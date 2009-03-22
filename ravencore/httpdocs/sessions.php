@@ -24,13 +24,13 @@ include "auth.php";
 req_admin();
 
 if ($action == "delete") {
-  $db->do_raw_query('session_remove ' . $_POST['session']);
+  $db->run('session_remove ' . $_POST['session']);
   goto($_SERVER['PHP_SELF']);
 }
 
 nav_top();
 
-$sessions = $db->do_raw_query('session_list');
+$sessions = $db->run('session_list');
 
 //print date('Y-m-d H:i:s','1169622595');
 

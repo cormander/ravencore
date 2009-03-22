@@ -25,7 +25,7 @@ req_admin();
 
 nav_top();
 
-print $db->do_raw_query('mailq');
+print $db->run('mailq');
 
 nav_bottom();
 

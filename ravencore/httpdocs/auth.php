@@ -64,7 +64,7 @@ if($_REQUEST['lang']) $_SESSION['lang'] = $_REQUEST['lang'];
 
 // if no session variable for language, set it to the default locale
 if (!$_SESSION['lang']) {
-	$_SESSION['lang'] = $db->do_raw_query('get_default_locale');
+	$_SESSION['lang'] = $db->run('get_default_locale');
 }
 // if we still don't have it (should never happen), set it to english
 if (!$_SESSION['lang']) {
@@ -90,7 +90,7 @@ $logged_in = 1;
 
 // if we're posting the gpl_agree, tell the server so
 if($action == "gpl_agree" && $_REQUEST['gpl_agree'] == "yes") {
-	$db->do_raw_query('gpl_agree');
+	$db->run('gpl_agree');
 	goto($_SERVER['PHP_SELF']);
 }
 
@@ -98,13 +98,13 @@ if($action == "gpl_agree" && $_REQUEST['gpl_agree'] == "yes") {
 if($action == "update_conf" and is_array($_REQUEST['CONF_UPDATE'])) {
 	foreach( $_REQUEST['CONF_UPDATE'] as $key => $val ) {
 		if( $key and isset($val) ) {
-			$db->do_raw_query('set_conf_var ' . $key . ' ' . $val);
+			$db->run('set_conf_var ' . $key . ' ' . $val);
 		}
 
 	}
 
 	# tell rcserver to reload, and wait 2 seconds for it to do so
-	$db->do_raw_query('reload I called set_conf_var at least once');
+	$db->run('reload I called set_conf_var at least once');
 	sleep(2);
 
 	goto($_SERVER['PHP_SELF']);
@@ -112,7 +112,7 @@ if($action == "update_conf" and is_array($_REQUEST['CONF_UPDATE'])) {
 
 // ask for the current state of things. this needs to be done AFTER all post actions for this file
 // so that we have the latest and greatest info
-$status = $db->do_raw_query("session_status");
+$status = $db->run("session_status");
 
 // if not allowed to view any pages (eg; email user) state that here
 if ($status['no_gui'] and $_SERVER['PHP_SELF'] != '/logout.php') {
@@ -194,7 +194,7 @@ if ($_SERVER['PHP_SELF'] != '/system.php' and $status['db_panic'] and $action ==
 
 // if the config is complete, GPL accepted, and install_complete is zero, complete the install
 if ($status['config_complete'] and $status['gpl_check'] and ! $status['install_complete']) {
-	$db->do_raw_query('complete_install');
+	$db->run('complete_install');
 }
 
 // logging in - redirect to pick up any session variables

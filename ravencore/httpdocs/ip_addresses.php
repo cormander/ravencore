@@ -29,13 +29,13 @@ if ($action == "update") {
 	$did = ( $_POST['dids'] ? $_POST['dids'][$ip] : 0 );
 
 	//  print '<pre>'; print_r($_POST); exit;
-	$db->do_raw_query('ip_update ' . $ip . ' ' . $uid . ' ' . $did);
+	$db->run('ip_update ' . $ip . ' ' . $uid . ' ' . $did);
 	goto($_SERVER['PHP_SELF']);
 }
 
 nav_top();
 
-$ips = $db->do_raw_query('ip_list');
+$ips = $db->run('ip_list');
 
 if (!is_array($ips)) {
 

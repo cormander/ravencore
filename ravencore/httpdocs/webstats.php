@@ -42,6 +42,6 @@ if ($row[host_type] != "physical")
 // TODO: issue disconnect function
 //fclose($db->sock);
 
-print $db->do_raw_query('webstats ' . $did . ' ' . $_SERVER['QUERY_STRING']);
+print $db->run('webstats ' . $did . ' ' . $_SERVER['QUERY_STRING']);
 
 ?>

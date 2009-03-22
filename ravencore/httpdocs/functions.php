@@ -115,7 +115,7 @@ function delete_log($did, $log_file) {
 
 	$domain_name = $d->name();
 
-	$db->do_raw_query("log_del $domain_name $log_file");
+	$db->run("log_del $domain_name $log_file");
 }
 
 // A function to tell us whether or not given string is an ip address. I got the core

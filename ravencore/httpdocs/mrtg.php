@@ -9,13 +9,13 @@ if( $_GET['img'] )
 
   header('Content-type: image/png');
 
-  print $db->do_raw_query('mrtg image ' . $_GET['img']);
+  print $db->run('mrtg image ' . $_GET['img']);
 
 }
 else
 {
 
-  print $db->do_raw_query('mrtg html');
+  print $db->run('mrtg html');
 
 }
 

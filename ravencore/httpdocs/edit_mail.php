@@ -71,7 +71,7 @@ if ($action) {
 
 							$db->data_query($sql);
 
-							$db->do_raw_query("rehash_mail --all");
+							$db->run("rehash_mail --all");
 
 							goto("mail.php?did=$did");
 						} else {

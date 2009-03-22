@@ -85,17 +85,17 @@ class rcclient {
 		$this->status_mesg = array();
 
 		// auth $session_id $ipaddress $username $password
-		$this->auth_resp = $this->do_raw_query(
-							'auth ' .
-							 $this->session_id . ' ' .
-						 $_SERVER['REMOTE_ADDR'] .
-						 ( $_POST['user'] ? ' ' . $_POST['user'] . ' ' . $_POST['pass'] : '' )
-						);
+		$this->auth_resp = $this->run(
+			'auth ' .
+				$this->session_id . ' ' .
+				$_SERVER['REMOTE_ADDR'] .
+				( $_POST['user'] ? ' ' . $_POST['user'] . ' ' . $_POST['pass'] : '' )
+		);
 
 	}
 
 	// submit a query to the socket, and return the raw data that is the answer.
-	function do_raw_query($query, $serial = NULL) {
+	function run($query, $serial = NULL) {
 
 		// submit the query to the socket, base64 encoded to be binary safe, and the EOT character tells
 		// the socket that we're done transmitting this query
@@ -155,7 +155,7 @@ class rcclient {
 	function data_query($sql) {
 
 		// query the socket and get the data based on our question
-		$data = $this->do_raw_query('sql ' . $sql);
+		$data = $this->run('sql ' . $sql);
 
 		$this->insert_id = $data['insert_id'];
 		$this->rows_affected = $data['rows_affected'];
@@ -169,14 +169,14 @@ class rcclient {
 
 	// a function to change the current database in use
 	function use_database($database) {
-		return $this->do_raw_query('use ' . $database);
+		return $this->run('use ' . $database);
 	}
 
 	// a function to change the admin password. returns true on success, false on failure
 	// this only checks if the $old password is correct. it's up to the code that calls this to verify
 	// things like password strength, length, etc.
 	function change_passwd($old, $new) {
-		return $this->do_raw_query('passwd ' . $old . ' ' . $new);
+		return $this->run('passwd ' . $old . ' ' . $new);
 	}
 
 	// shift off and return the array of the current data query. array_shift returns FALSE if dat is empty.
@@ -229,7 +229,7 @@ function session_close() {
 function session_read($id) {
 	global $rcdb;
 
-	$data = $rcdb->do_raw_query('session_read');
+	$data = $rcdb->run('session_read');
 
 	return ( $data ? $data : "" );
 }
@@ -239,7 +239,7 @@ function session_write($id, $sess_data) {
 	global $rcdb;
 
 	// open / write / close the file
-	return $rcdb->do_raw_query('session_write ' . $sess_data);
+	return $rcdb->run('session_write ' . $sess_data);
 
 // TODO: return # of bytes written, or false
 
@@ -258,7 +258,7 @@ function session_write($id, $sess_data) {
 function session_dest($id) {
 	global $rcdb;
 
-	$rcdb->do_raw_query('session_dest User logging out');
+	$rcdb->run('session_dest User logging out');
 
 	$_SESSION = array();
 

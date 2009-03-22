@@ -95,7 +95,7 @@ if ($cmd eq "passwd") {
 # run the command
 # any output of the command will be printed
 
-my $ret = $rc->do_raw_query($cmd);
+my $ret = $rc->run($cmd);
 
 if ($ret) {
 	print ( ref($ret) ? Dumper($ret) : $ret );

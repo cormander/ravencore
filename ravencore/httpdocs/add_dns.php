@@ -51,7 +51,7 @@ if ($action == "add") {
 
 					$db->data_query($sql);
 
-					$db->do_raw_query("rehash_named --rebuild-conf --all");
+					$db->run("rehash_named --rebuild-conf --all");
 
 					goto("dns.php?did=$did");
 				}

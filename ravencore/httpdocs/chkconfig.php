@@ -22,14 +22,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 include "auth.php";
 
 if ($_GET[service] and $_GET[status]) {
-	$db->do_raw_query("chkconfig --level 3 $_GET[service] $_GET[status]");
+	$db->run("chkconfig --level 3 $_GET[service] $_GET[status]");
 
 	goto("$_SERVER[PHP_SELF]");
 }
 
 nav_top();
 
-print $db->do_raw_query("disp_chkconfig");
+print $db->run("disp_chkconfig");
 
 nav_bottom();
 

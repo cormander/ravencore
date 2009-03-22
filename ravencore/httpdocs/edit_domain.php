@@ -55,7 +55,7 @@ if ($action == "add") {
 
 				$domain_name = $d->name();
 
-				if (have_service("mail")) $db->do_raw_query("rehash_mail --all");
+				if (have_service("mail")) $db->run("rehash_mail --all");
 				// Copy over server default DNS to this domain, if the option was checked
 				if ($_POST[dns]) {
 					// First, we need the Start Of Authority record
@@ -81,7 +81,7 @@ if ($action == "add") {
 						$db->data_query($sql);
 					}
 
-					$db->do_raw_query("rehash_named --rebuild-conf --all");
+					$db->run("rehash_named --rebuild-conf --all");
 				}
 
 				// If we have the hosting variable, send us to hosting setup, because most of the time
