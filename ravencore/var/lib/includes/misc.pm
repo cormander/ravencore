@@ -766,21 +766,26 @@ sub make_virtual_host_content {
 	if ($host_dir eq "true") { $data .= "\tOptions +Indexes\n" }
 	else { $data .= "\tOptions -Indexes\n" }
 
-	# Setup php if appropriate
-	# TODO: make sure this works with apache 1.x too
-	if ($host_php eq "true") {
-		#
-		$data .= "\t<IfModule sapi_apache2.c>\n";
-		$data .= "\t\tphp_admin_flag engine on\n";
-		$data .= "\t\tphp_admin_value open_basedir \"" . $domain_root . "\"\n";
-		$data .= "\t\tphp_admin_value upload_tmp_dir \"" . $domain_root . "/tmp\"\n";
-		$data .= "\t\tphp_admin_value session.save_path \"" . $domain_root . "/tmp\"\n";
-		$data .= "\t</IfModule>\n";
-	} else {
-		# Else, explicitly disable php
-		$data .= "\t<IfModule sapi_apache2.c>\n";
-		$data .= "\t\tphp_admin_flag engine off\n";
-		$data .= "\t</IfModule>\n";
+	chomp(my $httpd_user = file_get_contents($self->{RC_ROOT} . '/var/run/httpd_user'));
+	$httpd_user = ( $httpd_user ? $httpd_user : 'apache' );
+
+	foreach my $php_v (('4','5')) {
+
+		# Setup php if appropriate
+		if ($host_php eq "true") {
+			#
+			$data .= "\t<IfModule mod_php$php_v.c>\n";
+			$data .= "\t\tphp_admin_flag engine on\n";
+			$data .= "\t\tphp_admin_value open_basedir \"" . $domain_root . "\"\n";
+			$data .= "\t\tphp_admin_value upload_tmp_dir \"" . $domain_root . "/tmp\"\n";
+			$data .= "\t\tphp_admin_value session.save_path \"" . $domain_root . "/tmp\"\n";
+			$data .= "\t</IfModule>\n";
+		} else {
+			# Else, explicitly disable php
+			$data .= "\t<IfModule mod_php$php_v.c>\n";
+			$data .= "\t\tphp_admin_flag engine off\n";
+			$data .= "\t</IfModule>\n";
+		}
 	}
 
 	# Setup cgi if appropriate
