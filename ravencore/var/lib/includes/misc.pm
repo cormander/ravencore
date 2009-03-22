@@ -779,6 +779,7 @@ sub make_virtual_host_content {
 			$data .= "\t\tphp_admin_value open_basedir \"" . $domain_root . "\"\n";
 			$data .= "\t\tphp_admin_value upload_tmp_dir \"" . $domain_root . "/tmp\"\n";
 			$data .= "\t\tphp_admin_value session.save_path \"" . $domain_root . "/tmp\"\n";
+			$data .= "\t\tphp_admin_value sendmail_path \"/usr/sbin/sendmail -t -i -f " . $httpd_user . '@' . $domain . "\"\n";
 			$data .= "\t</IfModule>\n";
 		} else {
 			# Else, explicitly disable php
