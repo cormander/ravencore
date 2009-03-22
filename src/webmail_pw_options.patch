@@ -1,0 +1,13 @@
+--- /tmp/chg_sasl_passwd/options.php	2005-03-02 20:49:31.000000000 -0500
++++ ravencore/var/apps/squirrelmail/plugins/chg_sasl_passwd/options.php	2009-03-21 21:35:08.000000000 -0400
+@@ -57,9 +57,7 @@
+         show_error('6');
+     } else {
+         if (! in_array($username, $chg_sasl_passwd_barredlist)) {
+-            $fh=popen("$chgsaslpasswd_cmd -p $username","w");
+-            fwrite($fh,"$new_pw\n");
+-            pclose($fh);
++            shell_exec("$chgsaslpasswd_cmd $username $current_pw $new_pw");
+         }
+         echo '<META HTTP-EQUIV="REFRESH" CONTENT="0;URL=../../src/signout.php?chg_sasl_passwd">' .
+              "\n<script language='javascript'>\n" .
