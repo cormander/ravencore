@@ -119,7 +119,7 @@ sub run {
 	my $output = unserialize(decode_base64($data));
 
 	# previous errors get overwritten
-	$self->{errors} = $data->{stderr};
+	$self->{errors} = $output->{stderr};
 
 	return $output->{stdout};
 }

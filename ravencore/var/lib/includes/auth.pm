@@ -379,8 +379,8 @@ sub passwd {
 	}
 
 	if ( ! $self->verify_passwd($old) ) {
-	$self->do_error("Old password incorrect.");
-	$error = 1;
+		$self->do_error("Old password incorrect.");
+		$error = 1;
 	}
 
 	# TODO: do a dictionary lookup on groups of letters, translating hackerscript as well (1 = i or l, 4 = a, etc)
