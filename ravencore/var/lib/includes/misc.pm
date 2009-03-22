@@ -805,10 +805,16 @@ sub make_virtual_host_content {
 
 	# If a vhost.conf file exists for this domain, include it
 	# TODO: do this for vhost_ssl.conf as well
-	if ( -f $domain_root . "/conf/vhost.conf" ) {
+	if ($ssl != 1 and -f $domain_root . "/conf/vhost.conf") {
 		$data .= "\tInclude " . $domain_root . "/conf/vhost.conf\n";
 
 		$self->debug($domain . " has a vhost.conf file");
+	}
+
+	if ($ssl == 1 and -f $domain_root . "/conf/vhost_ssl.conf") {
+		$data .= "\tInclude " . $domain_root . "/conf/vhost_ssl.conf\n";
+
+		$self->debug($domain . " has a vhost_sslvhost.conf file");
 	}
 
 	if ($row->{'webstats_url'} eq "yes") {
