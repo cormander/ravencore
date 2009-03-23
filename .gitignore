@@ -1,4 +1,8 @@
 *.swp
+src/awstats*tar.gz
+src/phpMyAdmin*tar.bz2
+src/phpsysinfo*tar.gz
+src/squirrelmail*tar.bz2
 ravencore/.shadow
 ravencore/database.cfg
 ravencore/etc/docroot.conf

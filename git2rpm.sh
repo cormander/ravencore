@@ -32,7 +32,7 @@ if [ ! -f GPL ] || [ ! -f LICENSE ] || [ ! -f Makefile ] || [ ! -f README.instal
 	exit 1
 fi
 
-check_packages="make rpm-build unzip patch"
+check_packages="make rpm-build unzip patch wget"
 
 rpm -q $check_packages &> /dev/null
 
@@ -72,8 +72,16 @@ fi
 # remember this directory name
 mydir=$(basename $(pwd))
 
-# remove files in .gitignore
-rm -rf $(cat .gitignore)
+# remove files based on whether this is a release or not
+if [ -n "$DO_RELEASE" ]; then
+	# remove all .gitignore files (so sources have to be re-downloaded, this
+	# keeps the size of the tarball and src.rpm files down
+	rm -rf $(cat .gitignore)
+else
+	# remove files in .gitignore, ignore wildcard matches so we don't have to
+	# re-download all the 3rd party source on each build
+	rm -rf $(cat .gitignore | grep -v '*')
+fi
 
 # go down one and make sure we are where we expect
 

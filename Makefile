@@ -21,6 +21,11 @@ AWSTATS=awstats-6.9
 SQUIRRELMAIL=squirrelmail-1.4.17
 YAA=yaa-0.3.1
 
+URL_PHPMYADMIN=http://downloads.sourceforge.net/phpmyadmin/$(PHPMYADMIN).tar.bz2
+URL_PHPSYSINFO=http://downloads.sourceforge.net/phpsysinfo/$(PHPSYSINFO).tar.gz
+URL_AWSTATS=http://downloads.sourceforge.net/awstats/$(AWSTATS).tar.gz
+URL_SQUIRRELMAIL=http://downloads.sourceforge.net/squirrelmail/$(SQUIRRELMAIL).tar.bz2
+
 # Squirrelmail plugins to install
 
 webmail_cp_plugin=compatibility-2.0.14-1.0
@@ -31,21 +36,28 @@ webmail_pw_plugin=chg_sasl_passwd-1.4.1-1.4
 
 
 all:
-	@echo "Usage: make build"
-	@echo "       This does all the required build commands for the 3rd party applications to work"
+	@echo "Usage:"
+	@echo "       make build"
+	@echo "          This does all the required commands to get everything into"
+	@echo "          the right place and ready for the install, including the"
+	@echo "          3rd party applications"
 	@echo ""
 	@echo "       make install"
-	@echo ""
-	@echo "       Run this after \"make build\" to install the files"
-	@echo "       The default target directory is: /usr/local/ravencore"
-	@echo "       You can change the default install dir via:"
+	@echo "          Run this after \"make build\" to install the files. The"
+	@echo "          default target directory is: /usr/local/ravencore"
+	@echo "          You can change the default install dir via:"
 	@echo "               make RC_ROOT=/new/target/directory install"
+	@echo "          You can change the destination root dir via:"
+	@echo "               make DESTDIR=/new/destination/directory install"
+	@echo ""
+	@echo "       make getsrc"
+	@echo "          Grab all the 3rd party source tarballs"
 	@echo ""
 	@echo "       make rpm"
-	@echo "       Build an RPM package which you can install/upgrade"
+	@echo "          Build an RPM package which you can install/upgrade"
 	@echo ""
 	@echo "       make release"
-	@echo "       Build a release RPM package"
+	@echo "          Build a release RPM package"
 	@echo ""
 
 
@@ -57,7 +69,19 @@ release:
 	DO_RELEASE=1 ./git2rpm.sh
 
 
-build:
+getsrc:
+
+# Download anything that we don't have
+	@if [ ! -f src/$(PHPMYADMIN).tar.bz2 ]; then wget -O src/$(PHPMYADMIN).tar.bz2 "$(URL_PHPMYADMIN)"; fi
+	@if [ ! -f src/$(PHPSYSINFO).tar.gz ]; then wget -O src/$(PHPSYSINFO).tar.gz "$(URL_PHPSYSINFO)"; fi
+	@if [ ! -f src/$(AWSTATS).tar.gz ]; then wget -O src/$(AWSTATS).tar.gz "$(URL_AWSTATS)"; fi
+	@if [ ! -f src/$(SQUIRRELMAIL).tar.bz2 ]; then wget -O src/$(SQUIRRELMAIL).tar.bz2 "$(URL_SQUIRRELMAIL)"; fi
+
+# check md5sums
+	md5sum -c src/md5sum.list
+
+
+build: getsrc
 
 # make sure /bin/bash exists
 	@if [ ! -f /bin/bash ] && [ -f /usr/local/bin/bash ]; then ln -s /usr/local/bin/bash /bin/bash; fi
@@ -99,7 +123,7 @@ build:
 	mv -f ravencore/var/apps/phpsysinfo/config.php.new ravencore/var/apps/phpsysinfo/config.php
 
 # phpmyadmin install
-	tar -C ravencore/var/apps -zxf src/$(PHPMYADMIN).tar.gz
+	tar -C ravencore/var/apps -jxf src/$(PHPMYADMIN).tar.bz2
 	mv ravencore/var/apps/$(PHPMYADMIN) ravencore/var/apps/phpmyadmin
 
 # lang / user / pass / db are bassed off of a session set by phpmyadmin.php
@@ -134,7 +158,7 @@ build:
 	perl -pi -e "s|\</HEAD\>|<meta http-equiv=\"Content-Type\" content=\"text/html; charset='<?php print locale_getcharset(); ?>'\"></HEAD>|gi" ravencore/var/apps/phpwebftp/index.php
 
 # squirrelmail install
-	tar -C ravencore/var/apps -zxf src/$(SQUIRRELMAIL).tar.gz
+	tar -C ravencore/var/apps -jxf src/$(SQUIRRELMAIL).tar.bz2
 	mv ravencore/var/apps/$(SQUIRRELMAIL) ravencore/var/apps/squirrelmail
 
 # hack the redirect.php file for ravencore auto-logins by appending the real redirect.php file
