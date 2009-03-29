@@ -22,6 +22,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 include "auth.php";
 
 if ($action) {
+
+	// a username isn't posted if you're not an admin... so simulate it
+	if (!is_admin()) {
+		$_POST[login] = $u->info[login];
+	}
+
 	// form sanity checks
 	if (!$_POST[name]) {
 		alert(__("You must enter a name for this user"));
