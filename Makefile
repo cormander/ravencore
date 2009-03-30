@@ -20,11 +20,7 @@ PHPWEBFTP=phpwebftp40
 AWSTATS=awstats-6.9
 SQUIRRELMAIL=squirrelmail-1.4.17
 YAA=yaa-0.3.1
-
-URL_PHPMYADMIN=http://downloads.sourceforge.net/phpmyadmin/$(PHPMYADMIN).tar.bz2
-URL_PHPSYSINFO=http://downloads.sourceforge.net/phpsysinfo/$(PHPSYSINFO).tar.gz
-URL_AWSTATS=http://downloads.sourceforge.net/awstats/$(AWSTATS).tar.gz
-URL_SQUIRRELMAIL=http://downloads.sourceforge.net/squirrelmail/$(SQUIRRELMAIL).tar.bz2
+PERL_NET_SERVER=Net-Server-0.97
 
 # Squirrelmail plugins to install
 
@@ -33,6 +29,22 @@ webmail_sc_plugin=sent_confirmation-1.6-1.2
 webmail_tu_plugin=timeout_user-1.1.1-0.5
 webmail_vl_plugin=vlogin-3.10.1-1.2.7
 webmail_pw_plugin=chg_sasl_passwd-1.4.1-1.4
+
+# URL for each 3rd party program
+
+URL_PHPMYADMIN=http://downloads.sourceforge.net/phpmyadmin/$(PHPMYADMIN).tar.bz2
+URL_PHPSYSINFO=http://downloads.sourceforge.net/phpsysinfo/$(PHPSYSINFO).tar.gz
+URL_PHPWEBFTP=http://www.phpwebftp.com/download/$(PHPWEBFTP).zip
+URL_AWSTATS=http://downloads.sourceforge.net/awstats/$(AWSTATS).tar.gz
+URL_SQUIRRELMAIL=http://downloads.sourceforge.net/squirrelmail/$(SQUIRRELMAIL).tar.bz2
+URL_YAA=http://www.sourcefiles.org/Internet/Mail/Utilities/Autoresponders/$(YAA).tar.bz2
+URL_PERL_NET_SERVER=http://search.cpan.org/CPAN/authors/id/R/RH/RHANDOM/$(PERL_NET_SERVER).tar.gz
+
+URL_webmail_cp_plugin=http://squirrelmail.org/plugins/$(webmail_cp_plugin).tar.gz
+URL_webmail_sc_plugin=http://squirrelmail.org/plugins/$(webmail_sc_plugin).tar.gz
+URL_webmail_tu_plugin=http://squirrelmail.org/plugins/$(webmail_tu_plugin).tar.gz
+URL_webmail_vl_plugin=http://squirrelmail.org/plugins/$(webmail_vl_plugin).tar.gz
+URL_webmail_pw_plugin=http://squirrelmail.org/plugins/$(webmail_pw_plugin).tar.gz
 
 
 all:
@@ -72,13 +84,19 @@ release:
 getsrc:
 
 # Download anything that we don't have
-	@if [ ! -f src/$(PHPMYADMIN).tar.bz2 ]; then wget -O src/$(PHPMYADMIN).tar.bz2 "$(URL_PHPMYADMIN)"; fi
-	@if [ ! -f src/$(PHPSYSINFO).tar.gz ]; then wget -O src/$(PHPSYSINFO).tar.gz "$(URL_PHPSYSINFO)"; fi
-	@if [ ! -f src/$(AWSTATS).tar.gz ]; then wget -O src/$(AWSTATS).tar.gz "$(URL_AWSTATS)"; fi
-	@if [ ! -f src/$(SQUIRRELMAIL).tar.bz2 ]; then wget -O src/$(SQUIRRELMAIL).tar.bz2 "$(URL_SQUIRRELMAIL)"; fi
+	./get3rdparty.sh $(URL_PHPMYADMIN)
+	./get3rdparty.sh $(URL_PHPSYSINFO)
+	./get3rdparty.sh $(URL_PHPWEBFTP)
+	./get3rdparty.sh $(URL_AWSTATS)
+	./get3rdparty.sh $(URL_SQUIRRELMAIL)
+	./get3rdparty.sh $(URL_YAA)
+	./get3rdparty.sh $(URL_PERL_NET_SERVER)
 
-# check md5sums
-	md5sum -c src/md5sum.list
+	./get3rdparty.sh $(URL_webmail_cp_plugin)
+	./get3rdparty.sh $(URL_webmail_sc_plugin)
+	./get3rdparty.sh $(URL_webmail_tu_plugin)
+	./get3rdparty.sh $(URL_webmail_vl_plugin)
+	./get3rdparty.sh $(URL_webmail_pw_plugin)
 
 
 build: getsrc
@@ -100,6 +118,11 @@ build: getsrc
 # TODO: build / install third party apps in a seperate .sh file so it can be coded to be more
 #       modular
 #	./src/build_3rd_party.sh
+
+# Net::Server install
+	tar zxf src/$(PERL_NET_SERVER).tar.gz
+	cd $(PERL_NET_SERVER) && perl Makefile.PL && make
+	cp -rp $(PERL_NET_SERVER)/blib/lib/Net ravencore/var/lib
 
 # yaa install
 	tar -C ravencore/var/apps -jxf src/$(YAA).tar.bz2; \

@@ -1,8 +1,17 @@
 *.swp
+src/Net-Server*tar.gz
 src/awstats*tar.gz
+src/chg_sasl_passwd*tar.gz
+src/compatibility*tar.gz
 src/phpMyAdmin*tar.bz2
 src/phpsysinfo*tar.gz
+src/phpwebftp*zip
+src/sent_confirmation*tar.gz
 src/squirrelmail*tar.bz2
+src/timeout_user*tar.gz
+src/vlogin*tar.gz
+src/yaa*tar.bz2
+src/*.broken
 ravencore/.shadow
 ravencore/database.cfg
 ravencore/etc/docroot.conf
