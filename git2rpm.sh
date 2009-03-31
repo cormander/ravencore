@@ -83,8 +83,7 @@ for i in $(ls src/*.md5); do
 	[ -f $file ] && mv -f $file $RPM_SOURCES
 done
 
-# remove files based on whether this is a release or not
-rm -rf $(cat .gitignore)
+make clean
 
 # remember this directory name
 mydir=$(basename $(pwd))

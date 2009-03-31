@@ -1,4 +1,5 @@
 *.swp
+Net-Server*
 src/Net-Server*tar.gz
 src/awstats*tar.gz
 src/chg_sasl_passwd*tar.gz

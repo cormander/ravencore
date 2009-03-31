@@ -54,6 +54,9 @@ all:
 	@echo "          the right place and ready for the install, including the"
 	@echo "          3rd party applications"
 	@echo ""
+	@echo "       make clean"
+	@echo "          Clean up after a build"
+	@echo ""
 	@echo "       make install"
 	@echo "          Run this after \"make build\" to install the files. The"
 	@echo "          default target directory is: /usr/local/ravencore"
@@ -71,6 +74,10 @@ all:
 	@echo "       make release"
 	@echo "          Build a release RPM package"
 	@echo ""
+
+
+clean:
+	rm -rf `cat .gitignore`
 
 
 rpm:
