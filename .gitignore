@@ -27,6 +27,7 @@ ravencore/etc/version
 ravencore/etc/vhosts.conf
 ravencore/sbin/ravencore.httpd
 ravencore/var/apps
+ravencore/var/lib/Net
 ravencore/var/log
 ravencore/var/run
 ravencore/var/tmp

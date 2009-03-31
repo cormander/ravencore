@@ -84,19 +84,19 @@ release:
 getsrc:
 
 # Download anything that we don't have
-	./get3rdparty.sh $(URL_PHPMYADMIN)
-	./get3rdparty.sh $(URL_PHPSYSINFO)
-	./get3rdparty.sh $(URL_PHPWEBFTP)
-	./get3rdparty.sh $(URL_AWSTATS)
-	./get3rdparty.sh $(URL_SQUIRRELMAIL)
-	./get3rdparty.sh $(URL_YAA)
-	./get3rdparty.sh $(URL_PERL_NET_SERVER)
+	@./get3rdparty.sh $(URL_PHPMYADMIN)
+	@./get3rdparty.sh $(URL_PHPSYSINFO)
+	@./get3rdparty.sh $(URL_PHPWEBFTP)
+	@./get3rdparty.sh $(URL_AWSTATS)
+	@./get3rdparty.sh $(URL_SQUIRRELMAIL)
+	@./get3rdparty.sh $(URL_YAA)
+	@./get3rdparty.sh $(URL_PERL_NET_SERVER)
 
-	./get3rdparty.sh $(URL_webmail_cp_plugin)
-	./get3rdparty.sh $(URL_webmail_sc_plugin)
-	./get3rdparty.sh $(URL_webmail_tu_plugin)
-	./get3rdparty.sh $(URL_webmail_vl_plugin)
-	./get3rdparty.sh $(URL_webmail_pw_plugin)
+	@./get3rdparty.sh $(URL_webmail_cp_plugin)
+	@./get3rdparty.sh $(URL_webmail_sc_plugin)
+	@./get3rdparty.sh $(URL_webmail_tu_plugin)
+	@./get3rdparty.sh $(URL_webmail_vl_plugin)
+	@./get3rdparty.sh $(URL_webmail_pw_plugin)
 
 
 build: getsrc

@@ -21,7 +21,8 @@
 # version
 v=0.3.5
 
-RPM_ROOT=/usr/src/redhat
+RPM_DIR=$(rpm --eval '%{_rpmdir}')
+RPM_SOURCES=$(rpm --eval '%{_sourcedir}')
 
 reinstall=$1
 
@@ -32,7 +33,14 @@ if [ ! -f GPL ] || [ ! -f LICENSE ] || [ ! -f Makefile ] || [ ! -f README.instal
 	exit 1
 fi
 
-check_packages="make rpm-build unzip patch wget"
+# check to make sure those RPM directories exist
+
+if [ ! -d $RPM_DIR ] || [ ! -d $RPM_SOURCES ]; then
+	echo "Please configure your RPM build tree correctly."
+	exit 1
+fi
+
+check_packages="make rpm-build unzip patch curl"
 
 rpm -q $check_packages &> /dev/null
 
@@ -69,19 +77,17 @@ if [ $v != $specversion ]; then
 	exit 1
 fi
 
-# remember this directory name
-mydir=$(basename $(pwd))
+# save 3rd party files to $RPM_SOURCES
+for i in $(ls src/*.md5); do
+	file=$(echo $i | sed 's/\.md5$//')
+	[ -f $file ] && mv -f $file $RPM_SOURCES
+done
 
 # remove files based on whether this is a release or not
-if [ -n "$DO_RELEASE" ]; then
-	# remove all .gitignore files (so sources have to be re-downloaded, this
-	# keeps the size of the tarball and src.rpm files down
-	rm -rf $(cat .gitignore)
-else
-	# remove files in .gitignore, ignore wildcard matches so we don't have to
-	# re-download all the 3rd party source on each build
-	rm -rf $(cat .gitignore | grep -v '*')
-fi
+rm -rf $(cat .gitignore)
+
+# remember this directory name
+mydir=$(basename $(pwd))
 
 # go down one and make sure we are where we expect
 
@@ -93,15 +99,17 @@ if [ ! -d $mydir ]; then
 fi
 
 mv $mydir ravencore-$v
-tar --exclude ".git" -hczpf $RPM_ROOT/SOURCES/ravencore-$v.tar.gz ravencore-$v
+tar --exclude ".git" -hczpf $RPM_SOURCES/ravencore-$v.tar.gz ravencore-$v
 mv ravencore-$v $mydir
 
 cd $mydir
 
 # build an RPM out of ravencore
 if [ -n "$DO_RELEASE" ]; then
+	echo "Doing release quality build"
 	rpmbuild -ba --with release src/ravencore.spec
 else
+	echo "Doing snapshot build"
 	rpmbuild -ba src/ravencore.spec
 fi
 
@@ -121,13 +129,13 @@ if [ $? -eq 0 ] && [ -n "$reinstall" ]; then
 
 	if [ -n "$DO_RELEASE" ]; then
 		
-		rpm -Uvh $RPM_ROOT/RPMS/noarch/ravencore-$v-1.noarch.rpm
+		rpm -Uvh $RPM_DIR/noarch/ravencore-$v-1.noarch.rpm
 		/etc/init.d/ravencore restart
 
 	else
 
 		# find what we just built
-		therpm=$(ls $RPM_ROOT/RPMS/noarch/ravencore-$v-0.*.noarch.rpm 2> /dev/null | sort | tail -n 1)
+		therpm=$(ls $RPM_DIR/noarch/ravencore-$v-0.*.noarch.rpm 2> /dev/null | sort | tail -n 1)
 
 		if [ -f $therpm ]; then
 			echo "Found: $therpm"
