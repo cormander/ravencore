@@ -27,28 +27,28 @@ sub session_status {
 	my ($self) = @_;
 
 	# hash to return
-	my %data;
+	my $data = {};
 
 	# do we have a database connection?
-	$data{db_panic} = 1;
-	$data{db_panic} = 0 if $self->{db_connected};
+	$data->{db_panic} = 1;
+	$data->{db_panic} = 0 if $self->{db_connected};
 
 	# has the GPL been accepted?
-	$data{gpl_check} = $self->{gpl_check};
+	$data->{gpl_check} = $self->{gpl_check};
 
 	# is our config complete?
-	$data{config_complete} = $self->{config_complete};
+	$data->{config_complete} = $self->{config_complete};
 
 	# is our installation complete?
-	$data{install_complete} = $self->{install_complete};
+	$data->{install_complete} = $self->{install_complete};
 
 	# are we an admin?
-	$data{is_admin} = $self->is_admin;
+	$data->{is_admin} = $self->is_admin;
 
 	# enabled modules
 	my %modules = $self->module_list_enabled;
 
-	@{$data{services}} = ();
+	@{$data->{services}} = ();
 
 	# we don't want the conf files, just the names of the modules, so replace them
 	foreach my $mod (%modules) {
@@ -59,32 +59,32 @@ sub session_status {
 		my @services = file_get_array($self->{RC_ROOT} . '/etc/services.' . $mod );
 
 		foreach (@services) {
-			if (-f $self->{INITD} . '/' . $_ && ! in_array($_, @{$data{services}})) {
+			if (-f $self->{INITD} . '/' . $_ && ! in_array($_, @{$data->{services}})) {
 				# push @{$self->{services}}, $_;
-				push @{$data{services}}, $_;
+				push @{$data->{services}}, $_;
 			}
 		}
 	}
 
 	# remember, have to pass things as a reference to the client
-	$data{modules_enabled} = \%modules;
+	$data->{modules_enabled} = \%modules;
 
 	# configuration
-	$data{CONF} = \%{$self->{CONF}};
+	$data->{CONF} = \%{$self->{CONF}};
 
 	# uninit configuration
-	$data{UNINIT_CONF} = \%{$self->{UNINIT_CONF}};
+	$data->{UNINIT_CONF} = \%{$self->{UNINIT_CONF}};
 
 	# user data from this session
-	$data{user_data} = \%{$self->{session}{user_data}};
+	$data->{user_data} = \%{$self->{session}{user_data}};
 
 	# perl modules that are loaded
-	$data{perl_modules} = $self->{perl_modules};
+	$data->{perl_modules} = $self->{perl_modules};
 
 	#
-	$data{no_gui} = $self->{no_gui};
+	$data->{no_gui} = $self->{no_gui};
 
-	return \%data;
+	return $data;
 
 }
 
