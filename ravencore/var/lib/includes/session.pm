@@ -299,3 +299,17 @@ sub session_list {
 	return \%session_list;
 }
 
+#
+
+sub uid_from_session {
+	my ($self) = @_;
+
+	return $self->{session}{uid} if $self->{session}{uid};
+
+	my ($uid) = $self->{dbi}->selectrow_array("select id from users where login = ?", undef, $self->{session}{user});
+
+	$self->{session}{uid} = $uid;
+
+	return $uid;
+}
+
