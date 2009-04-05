@@ -1738,7 +1738,7 @@ sub system {
 # a wrapper for chkconfig
 
 sub chkconfig {
-	my ($self, @args) = @_;
+	my ($self, $input) = @_;
 
 	if($self->{DEMO}) {
 		$self->do_error("You can't change services in the demo server!");
@@ -1750,7 +1750,7 @@ sub chkconfig {
 
 	$self->do_error("Unable to execute chkconfig command") unless find_in_path('chkconfig');
 
-	system ("chkconfig @args");
+	system ("chkconfig --level " . $input->{level} . " " . $input->{service} . " " . $input->{status});
 
 }
 
@@ -1788,9 +1788,11 @@ sub list_system_daemons {
 #
 
 sub disp_chkconfig {
-	my ($self, $runlevel) = @_;
+	my ($self, $input) = @_;
 
 	my $data;
+
+	my $runlevel = $input->{runlevel};
 
 	# if no runlevel is given
 	if ( ! $runlevel ) {
