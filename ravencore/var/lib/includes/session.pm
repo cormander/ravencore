@@ -93,14 +93,7 @@ sub session_status {
 sub session_set_var {
 	my ($self, $var, $data) = @_;
 
-	# the session_set_vars hash is written and deleted during session_read and session_write
-	if (ref($data) eq "HASH") {
-		%{$self->{session_set_vars}{$var}} = $data;
-	} elsif (ref($data) eq "ARRAY") {
-		@{$self->{session_set_vars}{$var}} = $data;
-	} else {
-		$self->{session_set_vars}{$var} = $data;
-	}
+	$self->{session_set_vars}{$var} = $data;
 }
 
 # get all stored variables that are destined as a PHP session variable, returned as a serialize'd string
@@ -112,13 +105,10 @@ sub session_get_vars
 	my $data;
 
 	# serialize and prepend our session_set_vars to the given session data to write
-	# TODO: call session_encode from serialize.pm ... but for some reason it's giving an undefined function error
-	foreach my $key (keys %{$self->{session_set_vars}}) {
-		$data .= $key . '|' . serialize($self->{session_set_vars}{$key});
-	}
+	my $data = session_decode($self->{session_set_vars});
 
 	# undefine our hash when we're done, we don't want the data written twice by accident
-	%{$self->{session_set_vars}} = ();
+	$self->{session_set_vars} = {};
 
 	return $data;
 }
@@ -213,10 +203,12 @@ sub session_read_file {
 # write the given data to the session file, along with our other session information
 
 sub session_write {
-	my ($self, $data) = @_;
+	my ($self, $input) = @_;
 
 	# if no session data is in memory, don't write a file
 	return 1 unless %{$self->{session}};
+
+	my $data = $input->{data};
 
 	# append perl set session vars to our session data for writting
 	$data .= $self->session_get_vars;

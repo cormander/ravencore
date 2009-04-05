@@ -3,7 +3,7 @@ package Serialize;
 use strict;
 use vars qw(@ISA @EXPORT $VERSION);
 @ISA     = qw(Exporter);
-@EXPORT  = qw(serialize unserialize session_encode);
+@EXPORT  = qw(serialize unserialize session_encode session_decode);
 $VERSION = 0.92;
 
 our $SERIALIZE_DBG = 0;

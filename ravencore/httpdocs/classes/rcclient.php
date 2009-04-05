@@ -246,7 +246,7 @@ function session_write($id, $sess_data) {
 	global $rcdb;
 
 	// open / write / close the file
-	return $rcdb->run('session_write', Array('sess_data' => $sess_data));
+	return $rcdb->run('session_write', Array('data' => $sess_data));
 
 // TODO: return # of bytes written, or false
 
