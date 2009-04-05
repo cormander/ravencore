@@ -158,12 +158,15 @@ sub get_db_conf {
 # do a database SQL statement
 
 sub sql {
-	my ($self, $query) = @_;
+	my ($self, $input) = @_;
+
 	my $data = {
 		rows_affected => undef,
 		insert_id => undef,
 		rows => [],
 	};
+
+	my $query = $input->{query};
 
 	return unless $self->{db_connected};
 

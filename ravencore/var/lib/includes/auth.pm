@@ -26,9 +26,12 @@
 # not authenticated, and no attempt to authenticate was made.
 
 sub auth {
-	my ($self, $query) = @_;
+	my ($self, $input) = @_;
 
-	my ($session_id,$ipaddress,$username,$password) = split / /, $query;
+	my $session_id = $input->{session_id};
+	my $ipaddress = $input->{ipaddress};
+	my $username = $input->{username};
+	my $password = $input->{password};
 
 	# first off, $session_id must be alphanumeric from beginning to end
 	return 'Invalid session ID.' unless $session_id =~ /^[a-zA-Z0-9]*$/;
@@ -227,9 +230,10 @@ sub auth_failure {
 # much access by even the system ( see cmd_privs_system )
 
 sub auth_system {
-	my ($self, $query) = @_;
+	my ($self, $input) = @_;
 
-	my ($session_id,$password) = split / /, $query;
+	my $session_id = $input->{session_id};
+	my $password = $input->{password};
 
 	# validate the session_id
 	return 'Invalid session ID.' unless $session_id =~ /^[a-zA-Z0-9]*$/;
@@ -263,7 +267,10 @@ sub auth_system {
 #
 
 sub auth_user {
-	my ($self, $username, $password) = @_;
+	my ($self, $input) = @_;
+
+	my $username = $input->{username};
+	my $password = $input->{password};
 
 	# query the database for this user
 	# TODO: if/else statements for different user types
@@ -351,15 +358,15 @@ sub is_admin {
 # change the admin password
 
 sub passwd {
-	my ($self, $query) = @_;
+	my ($self, $input) = @_;
 
 	if ($self->{DEMO}) {
 		$self->do_error("Can't change the password in the demo!");
 		return;
 	}
 
-	# parse out the info from the $query
-	my ($old, $new) = split / /,$query;
+	my $old = $input->{old};
+	my $new = $input->{new};
 
 	my $error = 0;
 
@@ -378,7 +385,7 @@ sub passwd {
 		$error = 1;
 	}
 
-	if ( ! $self->verify_passwd($old) ) {
+	if ( ! $self->verify_passwd({passwd => $old}) ) {
 		$self->do_error("Old password incorrect.");
 		$error = 1;
 	}
@@ -429,9 +436,9 @@ sub passwd {
 #
 
 sub verify_passwd {
-	my ($self, $passwd) = @_;
+	my ($self, $input) = @_;
 
-	return 1 if $passwd eq $self->get_passwd;
+	return 1 if $input->{passwd} eq $self->get_passwd;
 	return 0;
 }
 
@@ -510,11 +517,8 @@ sub version_outdated {
 #
 
 sub unlock_user {
-	my ($self, $user) = @_;
+	my ($self, $input) = @_;
 
-	my $sql = "delete from login_failure where login = '" . $user . "'";
-	$self->{dbi}->do($sql);
-
-	return;
+	return $self->{dbi}->do("delete from login_failure where login = ?", undef, $input->{user});
 }
 

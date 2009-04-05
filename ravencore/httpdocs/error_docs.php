@@ -49,7 +49,7 @@ if ($action == "add") {
 			$sql = "insert into error_docs set did = '$did', code = '$_POST[code]', file = '$_POST[file]'";
 			$db->data_query($sql);
 
-			$db->run("rehash_httpd " . $d->name());
+			$db->run("rehash_httpd", Array('name' => $d->name()));
 
 			goto("error_docs.php?did=$did");
 		}
@@ -58,7 +58,7 @@ if ($action == "add") {
 	$sql = "delete from error_docs where did = '$did' and code = '$_POST[code]'";
 	$db->data_query($sql);
 
-	$db->run("rehash_httpd " . $d->name());
+	$db->run("rehash_httpd", Array('name' => $d->name()));
 
 	goto("error_docs.php?did=$did");
 }

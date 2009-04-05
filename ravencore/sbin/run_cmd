@@ -80,7 +80,7 @@ if ($cmd eq "passwd") {
 		}
 
 		if ($error == 0) {
-			if (!$rc->passwd($rc->get_passwd . ' ' . $passwd)) {
+			if (!$rc->passwd($rc->get_passwd, $passwd)) {
 				map { print $rc->{errors}{$_}, "\n" } keys %{$rc->{errors}};
 				$error = 1;
 			}

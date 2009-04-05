@@ -22,7 +22,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 include "auth.php";
 
 if ($_GET[service] and $_GET[status]) {
-	$db->run("chkconfig --level 3 $_GET[service] $_GET[status]");
+	$db->run("chkconfig",
+		Array(
+			'level' => 3,
+			'service' => $_GET[service],
+			'status' => $_GET[status],
+		)
+	);
 
 	goto("$_SERVER[PHP_SELF]");
 }

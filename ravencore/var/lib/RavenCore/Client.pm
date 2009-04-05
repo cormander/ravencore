@@ -73,7 +73,7 @@ sub auth_system {
 	#    my $resp = $self->run('auth ' . $session_id . ' ' . $ipaddress . ' ' . $username . ' ' . $password);
 	# TODO: create a user-level shell API using this method
 
-	return $self->run('auth_system ' . $session_id . ' ' . $self->get_passwd);
+	return $self->run('auth_system', { session_id => $session_id, password => $self->get_passwd });
 }
 
 # authenticate as a user
@@ -85,7 +85,14 @@ sub auth {
 		$session_id = gen_random_id(32);
 	}
 
-	return $self->run('auth ' . $session_id . ' ' . $ipaddress . ' ' . $username . ' ' . $password);
+	return $self->run('auth',
+		{
+			session_id => $session_id,
+			ipaddress => $ipaddress,
+			username => $username,
+			password => $password,
+		}
+	);
 }
 
 #
@@ -102,13 +109,13 @@ sub get_passwd {
 # submit a query to the socket
 
 sub run {
-	my ($self, $query, $serial) = @_;
+	my ($self, $func, $input) = @_;
 
 	my $c;
 	my $data;
 
 	# write to the socket
-	print {$self->{socket}} $query . ( $serial ? ' -- ' . encode_base64(serialize($serial)) : '' ) . $EOT;
+	print {$self->{socket}} $func . ' ' . encode_base64(serialize($input)) . $EOT;
 
 	# read the reply a byte at a time from the socket, until we get an EOT
 	while ( read($self->{socket}, $c, 1) ) {
@@ -176,7 +183,7 @@ sub use_database {
 
 sub passwd {
 	my ($self, $old, $new) = @_;
-	return $self->run('passwd ' . $old . ' ' . $new);
+	return $self->run('passwd', { old => $old, new => $new });
 }
 
 1;

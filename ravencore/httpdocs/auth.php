@@ -98,13 +98,13 @@ if($action == "gpl_agree" && $_REQUEST['gpl_agree'] == "yes") {
 if($action == "update_conf" and is_array($_REQUEST['CONF_UPDATE'])) {
 	foreach( $_REQUEST['CONF_UPDATE'] as $key => $val ) {
 		if( $key and isset($val) ) {
-			$db->run('set_conf_var ' . $key . ' ' . $val);
+			$db->run('set_conf_var', Array('key' => $key, 'val' => $val));
 		}
 
 	}
 
 	# tell rcserver to reload, and wait 2 seconds for it to do so
-	$db->run('reload I called set_conf_var at least once');
+	$db->run('reload', Array('message' => 'I called set_conf_var at least once'));
 	sleep(2);
 
 	goto($_SERVER['PHP_SELF']);

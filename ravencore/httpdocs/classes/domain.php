@@ -138,12 +138,12 @@ class domain {
 		$sql = "delete from sys_users where id = '" . $this->info['suid'] . "'";
 		$db->data_query($sql);
 
-		foreach( $this->info['sys_users'] as $key => $val ) $db->run("ftp_del " . $val['login'] );
+		foreach( $this->info['sys_users'] as $key => $val ) $db->run("ftp_del", Array('login' => $val['login']));
 
 		$sql = "update domains set host_type = 'none' where id = '" . $this->did . "'";
 		$db->data_query($sql);
 
-		$db->run("domain_del " . $this->info['name'] );
+		$db->run("domain_del", Array('name' => $this->info['name']));
 
 	}
 
@@ -170,9 +170,9 @@ class domain {
 		$db->data_query($sql);
 
 		// run the nessisary system calls
-		$db->run("rehash_named --rebuild-conf --all");
+		$db->run("rehash_named");
 
-		$db->run("rehash_mail --all");
+		$db->run("rehash_mail");
 
 	}
 

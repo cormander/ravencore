@@ -29,13 +29,20 @@ if ($action == "update") {
 	$did = ( $_POST['dids'] ? $_POST['dids'][$ip] : 0 );
 
 	//  print '<pre>'; print_r($_POST); exit;
-	$db->run('ip_update ' . $ip . ' ' . $uid . ' ' . $did);
+	$db->run('ip_update',
+		Array(
+			'ip' => $ip,
+			'uid' => $uid,
+			'did' => $did,
+		)
+	);
+
 	goto($_SERVER['PHP_SELF']);
 }
 
 if ($action == "delete") {
 	$ip = $_REQUEST['ip'];
-	$db->run('ip_delete ' . $ip);
+	$db->run('ip_delete', Array('ip' => $ip));
 	goto($_SERVER['PHP_SELF']);
 }
 

@@ -36,7 +36,7 @@ if ($action == "delete") {
 	//echo $sql;
 	$db->data_query($sql);
 
-	if ($db->data_rows_affected()) $db->run("rehash_httpd " . $d->name());
+	if ($db->data_rows_affected()) $db->run("rehash_httpd", Array('name' => $d->name()));
 //	echo "<pre>". print_r($_SERVER,1) . "</pre>";
 //	echo basename($_SERVER['HTTP_REFERER']);
 //	die();

@@ -24,7 +24,7 @@ include "auth.php";
 req_admin();
 
 if ($action == "delete") {
-  $db->run('session_remove ' . $_POST['session']);
+  $db->run('session_remove', Array('session_id' => $_POST['session']));
   goto($_SERVER['PHP_SELF']);
 }
 

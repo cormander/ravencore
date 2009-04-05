@@ -30,7 +30,7 @@ $services = array();
 if ($action == "run") {
   // authenticate $_GET[service] as an allowed service
   // make sure $_GET[service_cmd] can only be start, stop, or restart
-  $db->run("service " . $_GET['service'] . " " . $_GET['service_cmd']);
+  $db->run("service", Array('service' => $_GET['service'], 'cmd' => $_GET['service_cmd']));
 
   if (!$_SESSION['status_mesg']) $_SESSION['status_mesg'] = $_GET['service_cmd'] . ' command sucessfull for ' . $_GET['service'];
 
@@ -64,7 +64,7 @@ if($_GET['showall']) {
 foreach ($services as $val) {
 	print '<tr><td class="listpad">' . $val . '</td><td class="listpad" align=center>';
 
-	if( $db->run("service_running " . $val) ) {
+	if ($db->run("service_running", Array('service' => $val))) {
 
 			$running = '<img src="images/solidgr.gif" border=0>';
 			$start = '<img src="images/start_grey.gif" border=0>';

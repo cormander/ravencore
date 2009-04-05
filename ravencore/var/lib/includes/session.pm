@@ -243,7 +243,15 @@ sub session_write {
 # remove a session file and all data
 
 sub session_dest {
-	my ($self, $msg) = @_;
+	my ($self, $input) = @_;
+
+	my $msg;
+
+	if (ref($input) eq "HASH") {
+		$msg = $input->{message};
+	} else {
+		$msg = $input;
+	}
 
 	# submit debugging information
 	# TODO: make this go to syslog instead, after we have a good syslog function in this object
@@ -259,15 +267,15 @@ sub session_dest {
 # remove a given session
 
 sub session_remove {
-	my ($self, $session_id) = @_;
+	my ($self, $input) = @_;
 
 	# since we're removing a file, even tho only an admin can do this, check to make sure it's actually a session ID
 	# and not something funky
-	return $self->do_error('Invalid session ID.') unless $session_id =~ /^[a-zA-Z0-9]*$/;
+	return $self->do_error('Invalid session ID.') unless $input->{session_id} =~ /^[a-zA-Z0-9]*$/;
 
-	$self->debug('Session ID ' . $session_id . ' destroyed because: Deleted by admin');
+	$self->debug('Session ID ' . $input->{session_id} . ' destroyed because: Deleted by admin');
 
-	unlink $self->{RC_ROOT} . '/var/tmp/sessions/' . $session_id;
+	unlink $self->{RC_ROOT} . '/var/tmp/sessions/' . $input->{session_id};
 }
 
 # list sessions

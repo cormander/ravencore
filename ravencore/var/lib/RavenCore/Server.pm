@@ -672,11 +672,9 @@ sub run_query {
 	my ($self, $query) = @_;
 
 	# split the string
-	my @args = split/ /, $query;
+	my ($func, $input) = split/ /, $query, 2;
 
 	# /
-	# the first argument is the command (function) name to be called
-	my $func = shift @args;
 
 	# remember that we did this $func.. we have a hash for easy lookup, and an array to remember to order
 	# in which they were called
@@ -700,9 +698,6 @@ sub run_query {
 	#
 
 	if ($ok_to_do == 1) {
-		# remove $func from query
-		$query =~ s/^$func ?//;
-
 		my $ret;
 
 		# recieve any returned data from the client into this variable. Note that if we want to pass a hash or an
@@ -716,7 +711,12 @@ sub run_query {
 		eval
 		{
 			local $SIG{__DIE__};
-			$ret = $self->$func($query);
+
+			# incoming hash ref is the one and only argument to each function called by the interface
+			my $data = unserialize(decode_base64($input));
+			$self->debug(Dumper($data));
+
+			$ret = $self->$func($data);
 		};
 
 		# if there was an error caught, tell the client

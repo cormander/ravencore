@@ -37,7 +37,7 @@ if ($action == "delete") {
 } else if ($action == "compress" or $action == "decompress") {
 	if (ereg("\.\.", $_GET[log_file])) alert(__("Unable to $action log file"));
 	else {
-		$db->run("log_compress --$action $domain_name $_GET[log_file]");
+		$db->run("log_compress", Array('action' => $action, 'name' => $domain_name, 'log_file' => $_GET[log_file]));
 
 		goto("log_manager.php?did=$did");
 	}

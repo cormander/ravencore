@@ -32,7 +32,7 @@ if ($action == "delete") {
 
 	$db->data_query($sql);
 
-	$db->run("rehash_named --rebuild-conf --all");
+	$db->run("rehash_named");
 
 	goto("dns.php?did=$did");
 }

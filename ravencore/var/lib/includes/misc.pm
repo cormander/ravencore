@@ -86,9 +86,10 @@ sub read_conf_file {
 # set a conf variable
 
 sub set_conf_var {
-	my ($self, $query) = @_;
+	my ($self, $input) = @_;
 
-	my ($key, $val) = split / /, $query;
+	my $key = $input->{key};
+	my $val = $input->{val};
 
 	# $key should always be uppercase
 	$key = uc($key);
@@ -145,9 +146,10 @@ sub get_domain_name {
 #
 
 sub webstats {
-	my ($self, $query) = @_;
+	my ($self, $input) = @_;
 
-	my ($did, $str) = split / /, $query, 2;
+	my $did = $input->{did};
+	my $str = $input->{QUERY_STRING};
 
 	my $domain_name = $self->get_domain_name($did);
 
@@ -176,7 +178,6 @@ sub webstats {
 	delete $ENV{QUERY_STRING};
 
 	return $output;
-
 }
 
 # return a hash, the keys are the module names and the values are the conf file to
@@ -257,13 +258,13 @@ sub complete_install {
 
 	$self->debug("Running post-installation process");
 
-	$self->rehash_httpd("--all");
+	$self->rehash_httpd;
 
-	$self->rehash_ftp("--all");
+	$self->rehash_ftp;
 
-	$self->rehash_mail("--all");
+	$self->rehash_mail;
 
-	$self->rehash_named("--all --rebuild-conf");
+	$self->rehash_named;
 
 	file_touch($self->{RC_ROOT} . '/var/run/install_complete');
 
@@ -279,7 +280,9 @@ sub complete_install {
 # is the given service running?
 
 sub service_running {
-	my ($self, $service) = @_;
+	my ($self, $input) = @_;
+
+	my $service = $input->{service};
 
 	# This script tries to determine if a service is running. It works just fine
 	# on most systems, but still has trouble on some distributions which do not
@@ -398,7 +401,7 @@ sub mailq {
 #
 
 sub rehash_httpd {
-	my ($self, $query) = @_;
+	my ($self, $input) = @_;
 
 	return if $self->{DEMO};
 
@@ -406,10 +409,9 @@ sub rehash_httpd {
 
 	return unless exists $modules{web};
 
-	if( ! $self->{CONF}{VHOST_ROOT} )
-	{
-	$self->do_error("VHOST_ROOT not defined");
-	return;
+	if ( !$self->{CONF}{VHOST_ROOT} ) {
+		$self->do_error("VHOST_ROOT not defined");
+		return;
 	}
 
 	my $restart_httpd;
@@ -561,12 +563,12 @@ sub rehash_httpd {
 
 		$self->debug($cmd . "ing apache");
 
-		$self->service('httpd ' . $cmd);
+		$self->service({ service => 'httpd', cmd => $cmd });
 	} else {
 		# otherwse, start apache
 		$self->debug("Apache not running, starting it");
 
-		$self->service('httpd start');
+		$self->service({ service => 'httpd', cmd => 'start' });
 	}
    
 }
@@ -914,7 +916,7 @@ sub server_alias {
 #
 
 sub rehash_mail {
-	my ($self) = @_;
+	my ($self, $input) = @_;
 
 	return if $self->{DEMO};
 
@@ -1281,7 +1283,7 @@ sub rehash_mail {
 #
 
 sub rehash_ftp {
-	my ($self, $query) = @_;
+	my ($self, $input) = @_;
 
 	return if $self->{DEMO};
 
@@ -1352,9 +1354,9 @@ sub rehash_ftp {
 #
 
 sub mail_del {
-	my ($self, $email_addr) = @_;
+	my ($self, $input) = @_;
 
-	my ($mail_name, $domain) = split /@/, $email_addr;
+	my ($mail_name, $domain) = split /@/, $input->{email_addr};
 
 	# remove the user from the sasl database
 	system("saslpasswd2 -d -p -u " . $domain . " " . $mail_name);
@@ -1363,14 +1365,15 @@ sub mail_del {
 #
 
 sub service {
-	my ($self, $query) = @_;
+	my ($self, $input) = @_;
 
 	if ($self->{DEMO}) {
 		$self->do_error("Can't stop or start services in the demo.");
 		return;
 	}
 
-	my ($service, $cmd) = split / /, $query;
+	my $service = $input->{service};
+	my $cmd = $input->{cmd};
 
 	my $ret;
 
@@ -1408,7 +1411,7 @@ sub service {
 #
 
 sub rehash_logrotate {
-	my ($self) = @_;
+	my ($self, $input) = @_;
 
 	return if $self->{DEMO};
 
@@ -1494,7 +1497,7 @@ $log {
 #
 
 sub rehash_named {
-	my ($self, $query) = @_;
+	my ($self, $input) = @_;
 
 	return if $self->{DEMO};
 
@@ -1517,7 +1520,7 @@ sub rehash_named {
 
 	return $self->do_error("Unable to find the bind server checkzone binary") unless $checkzone;
 
-	# TODO: parse $query
+	# TODO: check $input
 	my $rebuild_conf = 1;
 	my $all = 1;
 
@@ -1696,7 +1699,7 @@ sub rehash_named {
 			# tell us we restarted
 			$restarted = 1;
 			# restart named
-			$self->service($init . ' restart');
+			$self->service({ 'service' => $init, cmd => 'restart' });
 			# end the loop
 			last;
 		}
@@ -1936,7 +1939,7 @@ sub domain_del
 	# remove the domain from the apache directory
 	if (length($domain) gt 0) {
 		system ("/bin/rm -Rf --directory " . $self->{CONF}{VHOST_ROOT} . "/" . $domain);
-		$self->rehash_httpd("--all");
+		$self->rehash_httpd;
 	} else {
 		return 0;
 	}
@@ -1945,9 +1948,11 @@ sub domain_del
 #
 
 sub ip_update {
-	my ($self, $str) = @_;
+	my ($self, $input) = @_;
 
-	my ($ip, $uid, $did) = split / /, $str;
+	my $ip = $input->{ip};
+	my $uid = $input->{uid};
+	my $did = $input->{did};
 
 	return $self->do_error("Not an IP address: $ip") unless is_ip($ip);
 
@@ -1965,7 +1970,9 @@ sub ip_update {
 }
 
 sub ip_delete {
-	my ($self, $ip) = @_;
+	my ($self, $input) = @_;
+
+	my $ip = $input->{ip};
 
 	return $self->do_error("Not an IP address: $ip") unless is_ip($ip);
 

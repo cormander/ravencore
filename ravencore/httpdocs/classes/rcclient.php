@@ -85,21 +85,28 @@ class rcclient {
 		$this->status_mesg = array();
 
 		// auth $session_id $ipaddress $username $password
-		$this->auth_resp = $this->run(
-			'auth ' .
-				$this->session_id . ' ' .
-				$_SERVER['REMOTE_ADDR'] .
-				( $_POST['user'] ? ' ' . $_POST['user'] . ' ' . $_POST['pass'] : '' )
+		$this->auth_resp = $this->run('auth',
+			Array(
+				'session_id' => $this->session_id,
+				'ipaddress' => $_SERVER['REMOTE_ADDR'],
+				'username' => $_POST['user'],
+				'password' => $_POST['pass'],
+			)
 		);
-
 	}
 
 	// submit a query to the socket, and return the raw data that is the answer.
-	function run($query, $serial = NULL) {
+	function run($func, $input = Array()) {
+
+		// $func should have no spaces so it won't be confused with the second argument
+		if (preg_match('/ /', $func)) {
+			array_push($this->status_mesg, __("Error: function call contains a space; " . $func));
+			return;
+		}
 
 		// submit the query to the socket, base64 encoded to be binary safe, and the EOT character tells
 		// the socket that we're done transmitting this query
-		fwrite($this->sock, $query . ( $serial ? ' -- ' . base64_encode(serialize($serial)) : '') . $this->EOT);
+		fwrite($this->sock, $func . ' ' . base64_encode(serialize($input)) . $this->EOT);
 
 		// flush our writting to the socket so we get an imidate reply on the data
 		fflush($this->sock);
@@ -155,7 +162,7 @@ class rcclient {
 	function data_query($sql) {
 
 		// query the socket and get the data based on our question
-		$data = $this->run('sql ' . $sql);
+		$data = $this->run('sql', Array('query' => $sql));
 
 		$this->insert_id = $data['insert_id'];
 		$this->rows_affected = $data['rows_affected'];
@@ -169,14 +176,14 @@ class rcclient {
 
 	// a function to change the current database in use
 	function use_database($database) {
-		return $this->run('use ' . $database);
+		return $this->run('use', Array('database' => $database));
 	}
 
 	// a function to change the admin password. returns true on success, false on failure
 	// this only checks if the $old password is correct. it's up to the code that calls this to verify
 	// things like password strength, length, etc.
 	function change_passwd($old, $new) {
-		return $this->run('passwd ' . $old . ' ' . $new);
+		return $this->run('passwd', Array('old' => $old, 'new' => $new));
 	}
 
 	// shift off and return the array of the current data query. array_shift returns FALSE if dat is empty.
@@ -239,7 +246,7 @@ function session_write($id, $sess_data) {
 	global $rcdb;
 
 	// open / write / close the file
-	return $rcdb->run('session_write ' . $sess_data);
+	return $rcdb->run('session_write', Array('sess_data' => $sess_data));
 
 // TODO: return # of bytes written, or false
 
@@ -258,7 +265,7 @@ function session_write($id, $sess_data) {
 function session_dest($id) {
 	global $rcdb;
 
-	$rcdb->run('session_dest User logging out');
+	$rcdb->run('session_dest', Array('message' => 'User logging out'));
 
 	$_SESSION = array();
 
