@@ -102,15 +102,7 @@ sub session_get_vars
 {
 	my ($self) = @_;
 
-	my $data;
-
-	# serialize and prepend our session_set_vars to the given session data to write
-	my $data = session_decode($self->{session_set_vars});
-
-	# undefine our hash when we're done, we don't want the data written twice by accident
-	$self->{session_set_vars} = {};
-
-	return $data;
+	return $self->{session_set_vars};
 }
 
 # read in session data. return true if there is session data, false otherwise
@@ -146,7 +138,7 @@ sub session_read {
 		my $now = time;
 
 		# append perl made session vars to $sess_data
-		$sess_data .= $self->session_get_vars;
+		$sess_data .= session_encode($self->session_get_vars);
 
 		# save our session data
 		$self->{session}{ip} = $ip;
@@ -211,7 +203,7 @@ sub session_write {
 	my $data = $input->{data};
 
 	# append perl set session vars to our session data for writting
-	$data .= $self->session_get_vars;
+	$data .= session_encode($self->session_get_vars);
 
 	# write our session file
 	file_write(
