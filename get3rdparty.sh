@@ -15,6 +15,11 @@ md5sum -c src/$PROG.md5
 # failed, or file not found
 if [ $? -ne 0 ]; then
 
+	if [ ! -x "/usr/bin/curl" ]; then
+		echo "Unable to fetch $PROG because curl is not installed"
+		exit 1
+	fi
+
 	for i in "file://$(rpm --eval '%{_sourcedir}')/$PROG" "$URL" "http://download.ravencore.com/ravencore/3rdparty/$PROG"; do
 		echo "Trying to fetch from $i"
 		curl $i > src/$PROG
