@@ -22,7 +22,7 @@ if [ $? -ne 0 ]; then
 
 	for i in "file://$(rpm --eval '%{_sourcedir}')/$PROG" "$URL" "http://download.ravencore.com/ravencore/3rdparty/$PROG"; do
 		echo "Trying to fetch from $i"
-		curl $i > src/$PROG
+		curl -L $i -o src/$PROG
 
 		md5sum -c src/$PROG.md5
 
