@@ -714,6 +714,12 @@ sub run_query {
 
 			# incoming hash ref is the one and only argument to each function called by the interface
 			my $data = unserialize(decode_base64($input));
+
+			# unserialize translates NULL to actual null character, so undef them
+			foreach my $key (keys %{$data}) {
+				delete $data->{$key} if $data->{$key} eq chr(0);
+			}
+
 			$self->debug(Dumper($data));
 
 			$ret = $self->$func($data);
