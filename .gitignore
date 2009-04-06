@@ -4,6 +4,7 @@ src/Net-Server*tar.gz
 src/awstats*tar.gz
 src/chg_sasl_passwd*tar.gz
 src/compatibility*tar.gz
+src/jta*.jar
 src/phpMyAdmin*tar.bz2
 src/phpsysinfo*tar.gz
 src/phpwebftp*zip

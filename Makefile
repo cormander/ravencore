@@ -21,6 +21,7 @@ AWSTATS=awstats-6.9
 SQUIRRELMAIL=squirrelmail-1.4.17
 YAA=yaa-0.3.1
 PERL_NET_SERVER=Net-Server-0.97
+JTA=jta26
 
 # Squirrelmail plugins to install
 
@@ -39,6 +40,7 @@ URL_AWSTATS=http://downloads.sourceforge.net/awstats/$(AWSTATS).tar.gz
 URL_SQUIRRELMAIL=http://downloads.sourceforge.net/squirrelmail/$(SQUIRRELMAIL).tar.bz2
 URL_YAA=http://www.sourcefiles.org/Internet/Mail/Utilities/Autoresponders/$(YAA).tar.bz2
 URL_PERL_NET_SERVER=http://search.cpan.org/CPAN/authors/id/R/RH/RHANDOM/$(PERL_NET_SERVER).tar.gz
+URL_JTA=http://javassh.org/download/$(JTA).jar
 
 URL_webmail_cp_plugin=http://squirrelmail.org/plugins/$(webmail_cp_plugin).tar.gz
 URL_webmail_sc_plugin=http://squirrelmail.org/plugins/$(webmail_sc_plugin).tar.gz
@@ -98,6 +100,7 @@ getsrc:
 	@./get3rdparty.sh $(URL_SQUIRRELMAIL)
 	@./get3rdparty.sh $(URL_YAA)
 	@./get3rdparty.sh $(URL_PERL_NET_SERVER)
+	@./get3rdparty.sh $(URL_JTA)
 
 	@./get3rdparty.sh $(URL_webmail_cp_plugin)
 	@./get3rdparty.sh $(URL_webmail_sc_plugin)
@@ -223,6 +226,12 @@ build: getsrc
 	rm -f ravencore/var/apps/squirrelmail/plugins/chg_sasl_passwd/chgsaslpasswd.c
 	cp -f src/webmail_pw_config.php ravencore/var/apps/squirrelmail/plugins/chg_sasl_passwd/config.php 
 	patch -p1 -i src/webmail_pw_options.patch
+
+# install jta
+	mkdir -p ravencore/var/apps/jta
+	cp src/$(JTA).jar ravencore/var/apps/jta/jta.jar
+	cp src/jta.config.php ravencore/var/apps/jta/config.php
+	cp src/jta.index.php ravencore/var/apps/jta/index.php
 
 # we're done
 	@echo ""

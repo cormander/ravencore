@@ -33,3 +33,11 @@ Alias /sysinfo var/apps/phpsysinfo.local
 Alias /sysinfo var/apps/phpsysinfo
 </IfDefine>
 
+# jta configuration
+<IfDefine LOCAL_JTA>
+Alias /jta var/apps/jta.local
+</IfDefine>
+<IfDefine !LOCAL_JTA>
+Alias /jta var/apps/jta
+</IfDefine>
+
