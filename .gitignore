@@ -9,8 +9,13 @@ src/phpMyAdmin*tar.bz2
 src/phpsysinfo*tar.gz
 src/phpwebftp*zip
 src/sent_confirmation*tar.gz
+src/show_ssl_link*tar.gz
+src/show_user_and_ip*tar.gz
+src/squirrel_logger*tar.gz
 src/squirrelmail*tar.bz2
 src/timeout_user*tar.gz
+src/unsafe_image_rules*tar.gz
+src/view_as_html*tar.gz
 src/vlogin*tar.gz
 src/yaa*tar.bz2
 src/*.broken

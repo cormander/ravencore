@@ -13,7 +13,7 @@ $org_name      = "SquirrelMail";
 $org_logo      = SM_PATH . 'images/sm_logo.png';
 $org_logo_width  = '308';
 $org_logo_height = '111';
-$org_title     = "SquirrelMail $version";
+$org_title     = "SquirrelMail";
 $signout_page  = '';
 $frame_top     = '_top';
 
@@ -34,7 +34,9 @@ $useSendmail            = false;
 $smtpServerAddress      = 'localhost';
 $smtpPort               = 25;
 $sendmail_path          = '/usr/sbin/sendmail';
+$sendmail_args          = '-i -t';
 $pop_before_smtp        = false;
+$pop_before_smtp_host   = '';
 $imap_server_type       = 'other';
 $invert_time            = false;
 $optional_delimiter     = 'detect';
@@ -80,6 +82,11 @@ $plugins[1] = 'timeout_user';
 $plugins[2] = 'compatibility';
 $plugins[3] = 'vlogin';
 $plugins[4] = 'chg_sasl_passwd';
+$plugins[5] = 'show_ssl_link';
+$plugins[6] = 'show_user_and_ip';
+$plugins[7] = 'squirrel_logger';
+$plugins[8] = 'unsafe_image_rules';
+$plugins[9] = 'view_as_html';
 
 $theme_css = '';
 $theme_default = 0;
@@ -163,6 +170,8 @@ $theme[37]['NAME'] = 'Net Style';
 $default_use_javascript_addr_book = false;
 $abook_global_file = '';
 $abook_global_file_writeable = false;
+$abook_global_file_listing = true;
+$abook_file_line_length = 2048;
 
 $addrbook_dsn = '';
 $addrbook_table = 'address';
@@ -180,17 +189,15 @@ $addrbook_global_listing = false;
 $no_list_for_subscribe = false;
 $smtp_auth_mech = 'none';
 $imap_auth_mech = 'login';
+$smtp_sitewide_user = '';
+$smtp_sitewide_pass = '';
 $use_imap_tls = false;
 $use_smtp_tls = false;
 $session_name = 'SQMSESSID';
+$only_secure_cookies   = true;
+
+$config_location_base     = '';
 
 @include SM_PATH . 'config/config_local.php';
 
-/**
- * Make sure there are no characters after the PHP closing
- * tag below (including newline characters and whitespace).
- * Otherwise, that character will cause the headers to be
- * sent and regular output to begin, which will majorly screw
- * things up when we try to send more headers later.
- */
 ?>

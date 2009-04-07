@@ -25,11 +25,16 @@ JTA=jta26
 
 # Squirrelmail plugins to install
 
-webmail_cp_plugin=compatibility-2.0.14-1.0
-webmail_sc_plugin=sent_confirmation-1.6-1.2
-webmail_tu_plugin=timeout_user-1.1.1-0.5
-webmail_vl_plugin=vlogin-3.10.1-1.2.7
-webmail_pw_plugin=chg_sasl_passwd-1.4.1-1.4
+SQUIRREL_PLUGIN_COMPAT=compatibility-2.0.14-1.0
+SQUIRREL_PLUGIN_SENT_CONF=sent_confirmation-1.6-1.2
+SQUIRREL_PLUGIN_TIMEOUT=timeout_user-1.1.1-0.5
+SQUIRREL_PLUGIN_VLOGIN=vlogin-3.10.1-1.2.7
+SQUIRREL_PLUGIN_CHANGE_PASS=chg_sasl_passwd-1.4.1-1.4
+SQUIRREL_PLUGIN_SHOW_SSL=show_ssl_link-2.2-1.2.8
+SQUIRREL_PLUGIN_SHOW_IP=show_user_and_ip-3.3-re-1.2.2
+SQUIRREL_PLUGIN_LOGGER=squirrel_logger-2.3-1.2.7
+SQUIRREL_PLUGIN_UNSAFE_IMG=unsafe_image_rules.0.8-1.4
+SQUIRREL_PLUGIN_VIEW_HTML=view_as_html-3.8
 
 # URL for each 3rd party program
 
@@ -42,11 +47,16 @@ URL_YAA=http://www.sourcefiles.org/Internet/Mail/Utilities/Autoresponders/$(YAA)
 URL_PERL_NET_SERVER=http://search.cpan.org/CPAN/authors/id/R/RH/RHANDOM/$(PERL_NET_SERVER).tar.gz
 URL_JTA=http://javassh.org/download/$(JTA).jar
 
-URL_webmail_cp_plugin=http://squirrelmail.org/plugins/$(webmail_cp_plugin).tar.gz
-URL_webmail_sc_plugin=http://squirrelmail.org/plugins/$(webmail_sc_plugin).tar.gz
-URL_webmail_tu_plugin=http://squirrelmail.org/plugins/$(webmail_tu_plugin).tar.gz
-URL_webmail_vl_plugin=http://squirrelmail.org/plugins/$(webmail_vl_plugin).tar.gz
-URL_webmail_pw_plugin=http://squirrelmail.org/plugins/$(webmail_pw_plugin).tar.gz
+URL_SQUIRREL_PLUGIN_COMPAT=http://squirrelmail.org/plugins/$(SQUIRREL_PLUGIN_COMPAT).tar.gz
+URL_SQUIRREL_PLUGIN_SENT_CONF=http://squirrelmail.org/plugins/$(SQUIRREL_PLUGIN_SENT_CONF).tar.gz
+URL_SQUIRREL_PLUGIN_TIMEOUT=http://squirrelmail.org/plugins/$(SQUIRREL_PLUGIN_TIMEOUT).tar.gz
+URL_SQUIRREL_PLUGIN_VLOGIN=http://squirrelmail.org/plugins/$(SQUIRREL_PLUGIN_VLOGIN).tar.gz
+URL_SQUIRREL_PLUGIN_CHANGE_PASS=http://squirrelmail.org/plugins/$(SQUIRREL_PLUGIN_CHANGE_PASS).tar.gz
+URL_SQUIRREL_PLUGIN_SHOW_SSL=http://squirrelmail.org/plugins/$(SQUIRREL_PLUGIN_SHOW_SSL).tar.gz
+URL_SQUIRREL_PLUGIN_SHOW_IP=http://squirrelmail.org/plugins/$(SQUIRREL_PLUGIN_SHOW_IP).tar.gz
+URL_SQUIRREL_PLUGIN_LOGGER=http://squirrelmail.org/plugins/$(SQUIRREL_PLUGIN_LOGGER).tar.gz
+URL_SQUIRREL_PLUGIN_UNSAFE_IMG=http://squirrelmail.org/plugins/$(SQUIRREL_PLUGIN_UNSAFE_IMG).tar.gz
+URL_SQUIRREL_PLUGIN_VIEW_HTML=http://squirrelmail.org/plugins/$(SQUIRREL_PLUGIN_VIEW_HTML).tar.gz
 
 
 all:
@@ -102,11 +112,16 @@ getsrc:
 	@./get3rdparty.sh $(URL_PERL_NET_SERVER)
 	@./get3rdparty.sh $(URL_JTA)
 
-	@./get3rdparty.sh $(URL_webmail_cp_plugin)
-	@./get3rdparty.sh $(URL_webmail_sc_plugin)
-	@./get3rdparty.sh $(URL_webmail_tu_plugin)
-	@./get3rdparty.sh $(URL_webmail_vl_plugin)
-	@./get3rdparty.sh $(URL_webmail_pw_plugin)
+	@./get3rdparty.sh $(URL_SQUIRREL_PLUGIN_COMPAT)
+	@./get3rdparty.sh $(URL_SQUIRREL_PLUGIN_SENT_CONF)
+	@./get3rdparty.sh $(URL_SQUIRREL_PLUGIN_TIMEOUT)
+	@./get3rdparty.sh $(URL_SQUIRREL_PLUGIN_VLOGIN)
+	@./get3rdparty.sh $(URL_SQUIRREL_PLUGIN_CHANGE_PASS)
+	@./get3rdparty.sh $(URL_SQUIRREL_PLUGIN_SHOW_SSL)
+	@./get3rdparty.sh $(URL_SQUIRREL_PLUGIN_SHOW_IP)
+	@./get3rdparty.sh $(URL_SQUIRREL_PLUGIN_LOGGER)
+	@./get3rdparty.sh $(URL_SQUIRREL_PLUGIN_UNSAFE_IMG)
+	@./get3rdparty.sh $(URL_SQUIRREL_PLUGIN_VIEW_HTML)
 
 
 build: getsrc
@@ -207,11 +222,19 @@ build: getsrc
 	cp -f src/webmail_default_pref ravencore/var/apps/squirrelmail/data/default_pref
 
 # install squirrelmail plugins
-	tar -C ravencore/var/apps/squirrelmail/plugins -zxf src/$(webmail_cp_plugin).tar.gz
-	tar -C ravencore/var/apps/squirrelmail/plugins -zxf src/$(webmail_sc_plugin).tar.gz
-	tar -C ravencore/var/apps/squirrelmail/plugins -zxf src/$(webmail_tu_plugin).tar.gz
-	tar -C ravencore/var/apps/squirrelmail/plugins -zxf src/$(webmail_vl_plugin).tar.gz
-	tar -C ravencore/var/apps/squirrelmail/plugins -zxf src/$(webmail_pw_plugin).tar.gz
+	for plugin in \
+			$(SQUIRREL_PLUGIN_COMPAT) \
+			$(SQUIRREL_PLUGIN_SENT_CONF) \
+			$(SQUIRREL_PLUGIN_TIMEOUT) \
+			$(SQUIRREL_PLUGIN_VLOGIN) \
+			$(SQUIRREL_PLUGIN_CHANGE_PASS) \
+			$(SQUIRREL_PLUGIN_SHOW_SSL) \
+			$(SQUIRREL_PLUGIN_SHOW_IP) \
+			$(SQUIRREL_PLUGIN_LOGGER) \
+			$(SQUIRREL_PLUGIN_UNSAFE_IMG) \
+			$(SQUIRREL_PLUGIN_VIEW_HTML); do \
+		tar -C ravencore/var/apps/squirrelmail/plugins -zxf src/$$plugin.tar.gz; \
+	done
 
 # vlogin plugin configuration file
 	cp ravencore/var/apps/squirrelmail/plugins/vlogin/data/config_default.php \
@@ -226,6 +249,9 @@ build: getsrc
 	rm -f ravencore/var/apps/squirrelmail/plugins/chg_sasl_passwd/chgsaslpasswd.c
 	cp -f src/webmail_pw_config.php ravencore/var/apps/squirrelmail/plugins/chg_sasl_passwd/config.php 
 	patch -p1 -i src/webmail_pw_options.patch
+
+# squirrel_logger configuration file
+	cp -f src/webmail_logger_config.php ravencore/var/apps/squirrelmail/plugins/squirrel_logger/config.php
 
 # install jta
 	mkdir -p ravencore/var/apps/jta
