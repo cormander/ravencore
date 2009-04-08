@@ -267,10 +267,7 @@ sub auth_system {
 #
 
 sub auth_user {
-	my ($self, $input) = @_;
-
-	my $username = $input->{username};
-	my $password = $input->{password};
+	my ($self, $username, $password) = @_;
 
 	# query the database for this user
 	# TODO: if/else statements for different user types
