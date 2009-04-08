@@ -19,7 +19,7 @@
 #
 
 # version
-v=0.3.5
+v=0.3.6
 
 RPM_DIR=$(rpm --eval '%{_rpmdir}')
 RPM_SOURCES=$(rpm --eval '%{_sourcedir}')
