@@ -198,7 +198,9 @@ sub help {
 # reload rcserver
 
 sub reload {
-	my ($self, $msg) = @_;
+	my ($self, $input) = @_;
+
+	my $msg = $input->{message};
 
 	# tell our parent process to reload (if we are not the parent process)
 	if ($self->{server}{ppid} ne $$) {

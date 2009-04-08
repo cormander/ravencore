@@ -414,7 +414,7 @@ sub passwd {
 
 			$self->debug("Password change successful.");
 
-			$self->reload("Password change");
+			$self->reload({ message => "Password change" });
 
 			# TODO:
 			# if( ! $self->{db_connected} ) {

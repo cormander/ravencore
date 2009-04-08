@@ -21,32 +21,6 @@
 # ravencore's misc backend functions
 #
 
-sub help {
-	my ($self, $query) = @_;
-
-	my $data;
-
-	if ($query eq "") {
-		$data = "RavenCore server help. You have permission to run the following commands:\n\n";
-
-		foreach my $cmd ( @{$self->{cmd_privs}} ) {
-			$data .= $cmd . "\n";
-		}
-
-		$data .= "\nFor more information about a command, run: help <command>\n";
-	} else {
-
-		$data = file_get_contents($self->{RC_ROOT} . '/docs/commands/' . basename($query));
-
-		if ($data eq "") {
-			$data = "Sorry, there is currently no help for that command.";
-		}
-
-	}
-
-	return $data;
-}
-
 # return the default locale
 
 sub get_default_locale {
@@ -244,7 +218,7 @@ sub gpl_agree {
 	$self->{gpl_check} = 1;
 	file_touch($self->{RC_ROOT} . '/var/run/gpl_check');
 
-	$self->reload("GPL License has been agreed to");
+	$self->reload({ message => "GPL License has been agreed to" });
 
 	sleep 2;
 }
@@ -272,7 +246,7 @@ sub complete_install {
 
 	$self->checkconf;
 
-	$self->reload("Installation complete");
+	$self->reload({ message => "Installation complete" });
 
 	sleep 2;
 }
@@ -1713,12 +1687,14 @@ sub rehash_named {
 #
 
 sub system {
-	my ($self, $cmd) = @_;
+	my ($self, $input) = @_;
 
 	if ($self->{DEMO}){
 		$self->do_error("You can't reboot or shutdown the demo server!");
 		return;
 	}
+
+	my $cmd = $input->{cmd};
 
 	my $s;
 
@@ -1888,13 +1864,13 @@ sub ravencore_info {
 #
 
 sub mrtg {
-	my ($self, $query) = @_;
+	my ($self, $input) = @_;
 
-	my ($type, $image) = split / /, $query;
+	my $image = $input->{image};
 
 	my $data;
 
-	if ($type eq "html") {
+	if ($input->{html}) {
 
 		my @files = dir_list($self->{RC_ROOT} . '/var/log/mrtg');
 
@@ -1904,7 +1880,7 @@ sub mrtg {
 			$data =~ s|SRC="([a-zA-Z0-9_\-\.]*)"|SRC="?img=$1"|ig;
 		}
 
-	} elsif ($type eq "image") {
+	} else {
 		$data = file_get_contents($self->{RC_ROOT} . '/var/log/mrtg/' . basename($image));
 	}
 
@@ -1914,7 +1890,9 @@ sub mrtg {
 #
 
 sub ftp_del {
-	my ($self, $username) = @_;
+	my ($self, $input) = @_;
+
+	my $username = $input->{login};
 
 	# TODO: use RavenCore::Shadow here instead
 	# check to make sure this is a legitimate ID being deleted
