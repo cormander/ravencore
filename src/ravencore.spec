@@ -50,7 +50,8 @@ rm -rf $RPM_BUILD_ROOT
 mkdir -p \
 	$RPM_BUILD_ROOT/etc/cron.{hourly,daily} \
 	$RPM_BUILD_ROOT/etc/init.d \
-	$RPM_BUILD_ROOT/etc/logrotate.d
+	$RPM_BUILD_ROOT/etc/logrotate.d \
+	$RPM_BUILD_ROOT/etc/profile.d
 
 # Install RavenCore
 
@@ -112,6 +113,7 @@ rm -rf $RPM_BUILD_ROOT
 /etc/logrotate.d/ravencore
 /etc/cron.daily/ravencore
 /etc/cron.hourly/ravencore
+/etc/profile.d/ravencore.sh
 
 # hell, one day I was so bored I alphabatized each group of files here :P
 %{rc_root}/LICENSE
@@ -154,3 +156,4 @@ rm -rf $RPM_BUILD_ROOT
 * Sat Jul 15 2005 cormander <admin@ravencore.com>
 - version 0.0.1
 - Initial build.
+

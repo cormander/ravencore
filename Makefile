@@ -292,6 +292,8 @@ install:
 	@if [ -d $(DESTDIR)/etc/cron.daily ]; then ln -s $(RC_ROOT)/sbin/ravencore.cron $(DESTDIR)/etc/cron.daily/ravencore; fi
 	@if [ -d $(DESTDIR)/etc/init.d ]; then ln -s $(RC_ROOT)/sbin/ravencore.init $(DESTDIR)/etc/init.d/ravencore; fi
 
+	@if [ -d $(DESTDIR)/etc/profile.d ]; then ln -s $(RC_ROOT)/etc/bash-profile.sh $(DESTDIR)/etc/profile.d/ravencore.sh; fi
+
 # logrotation, only install if the directory exists
 	@if [ -d $(DESTDIR)/etc/logrotate.d ]; then ./src/mk_logrotate.sh $(RC_ROOT) > $(DESTDIR)/etc/logrotate.d/ravencore; fi
 
@@ -300,3 +302,4 @@ install:
 	@if [ -f $(DESTDIR)/etc/init.d/ravencore ]; then \
 		echo "     /etc/init.d/ravencore start"; else \
 		echo "     $(RC_ROOT)/sbin/ravencore.init start"; fi
+
