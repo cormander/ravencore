@@ -1,9 +1,4 @@
-#!/bin/bash
-
-# our argument on the command line is the ravencore root
-
-cat <<EOF
-$1/var/log/*log {
+$RC_ROOT/var/log/*log {
 
     create 644 root root
     size 1000M
@@ -15,4 +10,3 @@ $1/var/log/*log {
     endscript
 
 }
-EOF

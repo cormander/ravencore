@@ -140,10 +140,6 @@ build: getsrc
 	touch ravencore/sbin/ravencore.httpd
 	chmod 755 ravencore/sbin/ravencore.httpd
 
-# TODO: build / install third party apps in a seperate .sh file so it can be coded to be more
-#       modular
-#	./src/build_3rd_party.sh
-
 # Net::Server install
 	tar zxf src/$(PERL_NET_SERVER).tar.gz
 	cd $(PERL_NET_SERVER) && perl Makefile.PL && make
@@ -175,7 +171,9 @@ build: getsrc
 	mv ravencore/var/apps/$(PHPMYADMIN) ravencore/var/apps/phpmyadmin
 
 # lang / user / pass / db are bassed off of a session set by phpmyadmin.php
-	./src/mk_phpmyadmin_config.sh
+	cat ravencore/var/apps/phpmyadmin/libraries/config.default.php | \
+		sed "s/= 'config';/= 'http';/" > \
+		ravencore/var/apps/phpmyadmin/config.inc.php
 
 # phpwebftp install
 	unzip -qd ravencore/var/apps src/$(PHPWEBFTP).zip
@@ -295,7 +293,7 @@ install:
 	@if [ -d $(DESTDIR)/etc/profile.d ]; then ln -s $(RC_ROOT)/etc/bash-profile.sh $(DESTDIR)/etc/profile.d/ravencore.sh; fi
 
 # logrotation, only install if the directory exists
-	@if [ -d $(DESTDIR)/etc/logrotate.d ]; then ./src/mk_logrotate.sh $(RC_ROOT) > $(DESTDIR)/etc/logrotate.d/ravencore; fi
+	@if [ -d $(DESTDIR)/etc/logrotate.d ]; then cat src/logrotate-ravencore | sed "s|\$$RC_ROOT|$(RC_ROOT)|" > $(DESTDIR)/etc/logrotate.d/ravencore; fi
 
 # we're done
 	@echo "make install done. Start RavenCore with:"
