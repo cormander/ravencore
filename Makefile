@@ -93,35 +93,35 @@ clean:
 
 
 rpm:
-	./git2rpm.sh
+	./scripts/git2rpm.sh
 
 
 release:
-	DO_RELEASE=1 ./git2rpm.sh
+	DO_RELEASE=1 ./scripts/git2rpm.sh
 
 
 getsrc:
 
 # Download anything that we don't have
-	@./get3rdparty.sh $(URL_PHPMYADMIN)
-	@./get3rdparty.sh $(URL_PHPSYSINFO)
-	@./get3rdparty.sh $(URL_PHPWEBFTP)
-	@./get3rdparty.sh $(URL_AWSTATS)
-	@./get3rdparty.sh $(URL_SQUIRRELMAIL)
-	@./get3rdparty.sh $(URL_YAA)
-	@./get3rdparty.sh $(URL_PERL_NET_SERVER)
-	@./get3rdparty.sh $(URL_JTA)
+	@./scripts/get3rdparty.sh $(URL_PHPMYADMIN)
+	@./scripts/get3rdparty.sh $(URL_PHPSYSINFO)
+	@./scripts/get3rdparty.sh $(URL_PHPWEBFTP)
+	@./scripts/get3rdparty.sh $(URL_AWSTATS)
+	@./scripts/get3rdparty.sh $(URL_SQUIRRELMAIL)
+	@./scripts/get3rdparty.sh $(URL_YAA)
+	@./scripts/get3rdparty.sh $(URL_PERL_NET_SERVER)
+	@./scripts/get3rdparty.sh $(URL_JTA)
 
-	@./get3rdparty.sh $(URL_SQUIRREL_PLUGIN_COMPAT)
-	@./get3rdparty.sh $(URL_SQUIRREL_PLUGIN_SENT_CONF)
-	@./get3rdparty.sh $(URL_SQUIRREL_PLUGIN_TIMEOUT)
-	@./get3rdparty.sh $(URL_SQUIRREL_PLUGIN_VLOGIN)
-	@./get3rdparty.sh $(URL_SQUIRREL_PLUGIN_CHANGE_PASS)
-	@./get3rdparty.sh $(URL_SQUIRREL_PLUGIN_SHOW_SSL)
-	@./get3rdparty.sh $(URL_SQUIRREL_PLUGIN_SHOW_IP)
-	@./get3rdparty.sh $(URL_SQUIRREL_PLUGIN_LOGGER)
-	@./get3rdparty.sh $(URL_SQUIRREL_PLUGIN_UNSAFE_IMG)
-	@./get3rdparty.sh $(URL_SQUIRREL_PLUGIN_VIEW_HTML)
+	@./scripts/get3rdparty.sh $(URL_SQUIRREL_PLUGIN_COMPAT)
+	@./scripts/get3rdparty.sh $(URL_SQUIRREL_PLUGIN_SENT_CONF)
+	@./scripts/get3rdparty.sh $(URL_SQUIRREL_PLUGIN_TIMEOUT)
+	@./scripts/get3rdparty.sh $(URL_SQUIRREL_PLUGIN_VLOGIN)
+	@./scripts/get3rdparty.sh $(URL_SQUIRREL_PLUGIN_CHANGE_PASS)
+	@./scripts/get3rdparty.sh $(URL_SQUIRREL_PLUGIN_SHOW_SSL)
+	@./scripts/get3rdparty.sh $(URL_SQUIRREL_PLUGIN_SHOW_IP)
+	@./scripts/get3rdparty.sh $(URL_SQUIRREL_PLUGIN_LOGGER)
+	@./scripts/get3rdparty.sh $(URL_SQUIRREL_PLUGIN_UNSAFE_IMG)
+	@./scripts/get3rdparty.sh $(URL_SQUIRREL_PLUGIN_VIEW_HTML)
 
 
 build: getsrc

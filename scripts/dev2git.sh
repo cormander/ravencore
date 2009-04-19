@@ -27,7 +27,7 @@ fi
 
 # simple check to make sure we're in the right directory....
 
-if [ ! -f GPL ] || [ ! -f LICENSE ] || [ ! -f Makefile ] || [ ! -f README.install ] || [ ! -d  src ] || [ ! -d .git ] || [ ! -f git2rpm.sh ]; then
+if [ ! -f GPL ] || [ ! -f LICENSE ] || [ ! -f Makefile ] || [ ! -f README.install ] || [ ! -d  src ] || [ ! -d .git ]; then
         echo "Don't appear to be in the git directory..."
         exit 1
 fi
