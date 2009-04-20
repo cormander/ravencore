@@ -332,15 +332,17 @@ sub checkconf {
 
 	# we need to figure out what user this system is configured to run apache as, so we can add it to servgrp
 	# first check to see if we already have it cached
-	my $httpd_user = file_get_contents($self->{RC_ROOT} . '/var/run/httpd_user');
+	my $httpd_user;
+
+	chomp($httpd_user = file_get_contents($self->{RC_ROOT} . '/var/run/httpd_user'));
 
 	# if it doesn't exist, do some checks for it
-	if ($httpd_user eq "") {
+	if ($httpd_user eq "" or $httpd_user =~ /^\d+$/) {
 
 		# if apache is running, see what users it is running as
 		# TODO: redo this in perl.....
 		my $httpd_bin = $self->{HTTPD};
-		$httpd_user = `for i in \$(pidof $httpd_bin); do ls -dal /proc/\$i; done | awk '!/root/{print \$3}' | head -n 1`;
+		chomp($httpd_user = `ps -o user -p\$(pidof $httpd_bin) | sort -u | grep -v USER | grep -v root`);
 
 		# we won't have $httpd_user set if apache isn't running. Try to figure out the user from the conf file
 
