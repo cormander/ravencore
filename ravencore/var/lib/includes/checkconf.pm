@@ -342,18 +342,14 @@ sub checkconf {
 		# if apache is running, see what users it is running as
 		# TODO: redo this in perl.....
 		my $httpd_bin = $self->{HTTPD};
-		chomp($httpd_user = `ps -o user -p\$(pidof $httpd_bin) | sort -u | grep -v USER | grep -v root`);
+		chomp($httpd_user = `ps -o user -p\$(pidof $httpd_bin) 2> /dev/null | sort -u | grep -v USER | grep -v root`);
 
 		# we won't have $httpd_user set if apache isn't running. Try to figure out the user from the conf file
 
 		if ($httpd_user eq "") {
 
-			# get the compiled in server root and server config file
-			$httpd_config_file;
-
 			# find the user from the httpd conf file
-			$httpd_user = grep {/^User/} file_get_array($httpd_config_file);
-			$httpd_user =~ s/^User //;
+			chomp($httpd_user = `grep '^User ' $httpd_config_file | head -n1 | cut -d ' ' -f 2`);
 
 # TODO: convert to perl. didn't do this initially because I didn't have time.... and I don't like SuSE Linux!!
 # if not found, search the conf files it includes ( ex: SuSE looks in uid.conf )
