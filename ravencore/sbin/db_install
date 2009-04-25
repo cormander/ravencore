@@ -31,6 +31,7 @@ MYSQL_ADMIN_PORT=3306
 MYSQL_ADMIN_DB=ravencore
 MYSQL_ADMIN_PASS=$(cat $RC_ROOT/.shadow 2> /dev/null)
 CONNECT=0
+REMOTE=0
 NEW_MYSQL_ADMIN_USER="admin"
 NEW_MYSQL_ADMIN_PASS="ravencore"
 
@@ -56,37 +57,9 @@ _touch=touch
 #
 INITD=/etc/init.d
 
-# find the real name of the service script to start mysqld
+# load the database.cfg file. This will override the MYSQL_ADMIN_* stuff if it succeeds
 
-mysql_service=$($_basename $($_ls /etc/init.d/mysql* | $_head -n1))
-
-
-$_echo "Attempting to gain access to mysqld and install the ravencore database"
-$_sleep 1
-
-# start mysqld if it isn't running
-
-if [ -z "$($_pidof mysqld)" ]; then
-
-    $_echo "mysqld not running, attemping to start...."
-    
-    if [ -f $INITD/$mysql_service ]; then
-
-	$INITD/$mysql_service start
-
-    else
-
-	$_echo "Unable to find the mysql init script in $INITD . The mysql server may not be installed"
-
-	exit 1
-
-    fi
-
-fi
-
-# load the database.cfg file
-
-$_echo -n "trying to connect with database.cfg file...."
+$_echo -n "Attempting to load database.cfg file...."
 
 . $RC_ROOT/database.cfg 2> /dev/null
 
@@ -99,65 +72,99 @@ if [ $? -ne 0 ]; then
 	$_echo "failed"
 
 else
-    
-# make sure we have the MYSQL_ADMIN variables
-    
-    if [ ! -z "$MYSQL_ADMIN_PASS" ] && [ ! -z "$MYSQL_ADMIN_USER" ]; then
-	
-# attempt DB connection
-	
-	$_mysql -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS -e "" 2> /dev/null
-	
-	if [ $? -eq 0 ]; then
-	    
-# success
-	    CONNECT=1
-	    $_echo "ok"
+	$_echo "ok"
+fi
 
-	else
-	    
-# failure
-	    CONNECT=0
-	    $_echo "failed"
+# find the real name of the service script to start mysqld
+
+mysql_service=$($_basename $($_ls /etc/init.d/mysql* | $_head -n1))
+
+
+$_echo "Attempting to gain access to mysqld and install the ravencore database"
+$_sleep 1
+
+# if MYSQL_ADMIN_HOST is localhost, start mysqld if it isn't running
+
+if [ "$MYSQL_ADMIN_HOST" = "localhost" ] || [ "$MYSQL_ADMIN_HOST" = "127.0.0.1" ]; then
+
+	if [ -z "$($_pidof mysqld)" ]; then
+
+		$_echo "mysqld not running, attemping to start...."
+
+		if [ -f $INITD/$mysql_service ]; then
+
+			$INITD/$mysql_service start
+
+		else
+
+			$_echo "Unable to find the mysql init script in $INITD . The mysql server may not be installed"
+
+		exit 1
+
+		fi
 
 	fi
-	
-    else
-	
-# no MYSQL_ADMIN variables, no connection
-	
+
+else
+
+	$_echo "mysql host is not localhost or 127.0.0.1, treating it as a remote server; $MYSQL_ADMIN_HOST"
+	REMOTE=1
+
+fi
+
+$_echo -n "Attempting to connect to mysql server...."
+
+# make sure we have the MYSQL_ADMIN variables  
+if [ ! -z "$MYSQL_ADMIN_PASS" ] && [ ! -z "$MYSQL_ADMIN_USER" ]; then
+	# attempt DB connection
+	$_mysql -h $MYSQL_ADMIN_HOST -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS -e "" 2> /dev/null
+
+	if [ $? -eq 0 ]; then
+		# success
+		CONNECT=1
+		$_echo "ok"
+	else
+		# failure
+		CONNECT=0
+		$_echo "failed"
+	fi
+
+else
+	# no MYSQL_ADMIN variables, no connection
 	CONNECT=0
 	$_echo "failed"
 
-    fi
-    
 fi
 
 
 if [ $CONNECT -eq 0 ]; then
-    
+
+	# if remote and not connected at this point, exit out
+	if [ $REMOTE -eq 1 ]; then
+		echo "Unable to connect to the remote mysql server, please double check your database.cfg and .shadow files, or run $RC_ROOT/sbin/database_reconfig"
+		exit 1
+	fi
+
 # no conection, so we attempt blank password root mysql connection
 
-    $_echo -n "trying to connect with a blank password...."
+	$_echo -n "trying to connect with a blank password...."
     
-    $_mysql -u root -e "" 2> /dev/null
-    
-    if [ $? -eq 0 ]; then
-	
-# we cot a connection with the blank user
+	$_mysql -u root -e "" 2> /dev/null
 
-	CONNECT=1
-	MYSQL_ADMIN_USER="root"
-	MYSQL_ADMIN_PASS=""
+	if [ $? -eq 0 ]; then
+		# we cot a connection with the blank user
+		CONNECT=1
+		MYSQL_ADMIN_USER="root"
+		MYSQL_ADMIN_PASS=""
 
-	$_echo "ok"
-	
-    else
+		$_echo "ok"
 
-	CONNECT=0
-	$_echo "failed"
+	else
 
-    fi
+		CONNECT=0
+		$_echo "failed"
+
+	fi
 
 fi
 
@@ -165,25 +172,25 @@ if [ $CONNECT -eq 0 ]; then
 
 # attempt connection with our standard setup user / pass
 
-    $_echo -n "trying to connect with $NEW_MYSQL_ADMIN_USER / $NEW_MYSQL_ADMIN_PASS...."
+	$_echo -n "trying to connect with $NEW_MYSQL_ADMIN_USER / $NEW_MYSQL_ADMIN_PASS...."
 
-    $_mysql -u $NEW_MYSQL_ADMIN_USER -p$NEW_MYSQL_ADMIN_PASS -e "" 2> /dev/null
-    
-    if [ $? -eq 0 ]; then
+	$_mysql -u $NEW_MYSQL_ADMIN_USER -p$NEW_MYSQL_ADMIN_PASS -e "" 2> /dev/null
 
-	CONNECT=1
+	if [ $? -eq 0 ]; then
 
-	MYSQL_ADMIN_USER=$NEW_MYSQL_ADMIN_USER
-	MYSQL_ADMIN_PASS=$NEW_MYSQL_ADMIN_PASS
+		CONNECT=1
+
+		MYSQL_ADMIN_USER=$NEW_MYSQL_ADMIN_USER
+		MYSQL_ADMIN_PASS=$NEW_MYSQL_ADMIN_PASS
 	
-	$_echo "ok"
+		$_echo "ok"
 
-    else
+	else
 	
-	CONNECT=0
-	$_echo "failed"
+		CONNECT=0
+		$_echo "failed"
 
-    fi
+	fi
 
 fi
 
@@ -316,7 +323,7 @@ if [ $CONNECT -eq 0 ]; then
 
 fi
 
-MYSQL_STR="$_mysql -u $MYSQL_ADMIN_USER"
+MYSQL_STR="$_mysql -h $MYSQL_ADMIN_HOST -u $MYSQL_ADMIN_USER"
 
 # if we have a mysql password, we're good to go
 
@@ -432,7 +439,7 @@ else
 # the table .sql files were dumped with command:
 # mysqldump -d --opt -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS $MYSQL_ADMIN_DB $table | grep ' ' | grep -v '^--'
 
-	    $_mysqldump -d --opt -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS $MYSQL_ADMIN_DB $table | $_grep '^ ' | $_sed 's/`//g' > $RC_ROOT/var/tmp/diff.$$
+	    $_mysqldump -d --opt -h $MYSQL_ADMIN_HOST -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS $MYSQL_ADMIN_DB $table | $_grep '^ ' | $_sed 's/`//g' > $RC_ROOT/var/tmp/diff.$$
 
 	    new_columns=$($_cat $RC_ROOT/etc/sql_tables/$table.sql | $_grep '^ ' | $_sed 's/`//g' | $_diff $RC_ROOT/var/tmp/diff.$$ - | $_grep '^>')
 	    custom_columns=$($_cat $RC_ROOT/etc/sql_tables/$table.sql | $_grep '^ ' | $_sed 's/`//g' | $_diff $RC_ROOT/var/tmp/diff.$$ - | $_grep '^<' | $_sed 's/<//')
@@ -447,9 +454,9 @@ else
 
 # dump the table data
 		
-		$_mysqldump --add-locks --all -c --quick --lock-tables -t -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS $MYSQL_ADMIN_DB $table > $RC_ROOT/var/tmp/$table.$$.data.sql
+		$_mysqldump --add-locks --all -c --quick --lock-tables -t -h $MYSQL_ADMIN_HOST -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS $MYSQL_ADMIN_DB $table > $RC_ROOT/var/tmp/$table.$$.data.sql
 		
-		$_mysqldump --opt -d -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS $MYSQL_ADMIN_DB $table > $RC_ROOT/var/tmp/$table.$$.struct.sql
+		$_mysqldump --opt -d -h $MYSQL_ADMIN_HOST -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS $MYSQL_ADMIN_DB $table > $RC_ROOT/var/tmp/$table.$$.struct.sql
 		
 		$_echo "ok"
 		$_echo -n "loading new table structure...."
