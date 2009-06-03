@@ -1,13 +1,14 @@
 #!/bin/bash
 
 URL=$1
-PROG=$(basename $1)
 
 # require both variables
-if [ -z "$URL" ] || [ -z "$PROG" ]; then
+if [ -z "$URL" ]; then
 	echo "Usage: $0 URL"
 	exit 1
 fi
+
+PROG=$(basename $1)
 
 # check md5sum
 md5sum -c src/$PROG.md5
@@ -22,9 +23,9 @@ if [ $? -ne 0 ]; then
 
 	# search local RPM sources first, then the given vendor URL, then the ravencore
 	# download site. As soon as a valid download is found, exit
-	for i in "file://$(rpm --eval '%{_sourcedir}')/$PROG" "$URL" "http://download.ravencore.com/ravencore/3rdparty/$PROG"; do
+	for i in "file://$(rpm --eval '%{_sourcedir}' 2> /dev/null)/$PROG" "$URL" "http://download.ravencore.com/ravencore/3rdparty/$PROG"; do
 		echo "Trying to fetch from $i"
-		curl -L $i -o src/$PROG
+		curl -L "$i" -o src/$PROG
 
 		md5sum -c src/$PROG.md5
 
