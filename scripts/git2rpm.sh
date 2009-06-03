@@ -21,8 +21,8 @@
 # version
 v=0.3.6
 
-RPM_DIR=$(rpm --eval '%{_rpmdir}')
-RPM_SOURCES=$(rpm --eval '%{_sourcedir}')
+RPM_DIR=$(rpm --eval '%{_rpmdir}' 2> /dev/null)
+RPM_SOURCES=$(rpm --eval '%{_sourcedir}' 2> /dev/null)
 
 reinstall=$1
 
@@ -35,7 +35,7 @@ fi
 
 # check to make sure those RPM directories exist
 
-if [ ! -d $RPM_DIR ] || [ ! -d $RPM_SOURCES ]; then
+if [ ! -d "$RPM_DIR" ] || [ ! -d "$RPM_SOURCES" ]; then
 	echo "Please configure your RPM build tree correctly."
 	exit 1
 fi
