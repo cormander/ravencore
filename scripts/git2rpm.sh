@@ -104,6 +104,8 @@ make distclean
 
 BRANCH=$(git branch | grep '^\*' | awk '{print $2}')
 
+echo "*** Building RPM using git branch $BRANCH ***"
+
 git archive --format=tar --prefix="ravencore-$v/" $BRANCH | gzip -9 > "$RPM_SOURCES/ravencore-$v.tar.gz"
 
 if [ $? -ne 0 ]; then
