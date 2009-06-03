@@ -40,11 +40,11 @@ if [ ! -d "$RPM_DIR" ] || [ ! -d "$RPM_SOURCES" ]; then
 	exit 1
 fi
 
-check_packages="make rpm-build unzip patch curl"
+check_packages="make rpm-build unzip patch curl which git"
 
 rpm -q $check_packages &> /dev/null
 
-if [ $? -ne 0 ]; then
+if [ $? -ne 0 ] && [ ! -d "/cygdrive/c" ]; then
 
 	if [ ! -x /usr/bin/yum ]; then
 		echo "You're missing some packages to build ravencore, and don't have yum to install them"
@@ -61,6 +61,21 @@ if [ $? -ne 0 ]; then
 	fi
 
 fi
+
+# now check to make sure the actual commands exist
+
+for pkg in $check_packages; do
+
+	cmd=$(echo $pkg | sed 's/\-//g')
+
+	which $cmd &> /dev/null
+
+	if [ $? -ne 0 ]; then
+		echo "Unable to find $cmd"
+		exit 1
+	fi
+
+done
 
 # check version to make sure we match in Makefile and src/ravencore.spec
 
@@ -85,23 +100,16 @@ done
 
 make distclean
 
-# remember this directory name
-mydir=$(basename $(pwd))
+# fetch the current branch and archive it to a tar.gz file
 
-# go down one and make sure we are where we expect
+BRANCH=$(git branch | grep '^\*' | awk '{print $2}')
 
-cd ..
+git archive --format=tar --prefix="ravencore-$v/" $BRANCH | gzip -9 > "$RPM_SOURCES/ravencore-$v.tar.gz"
 
-if [ ! -d $mydir ]; then
-	echo "WTF! Our current working directory was $mydir but I don't see it now..."
+if [ $? -ne 0 ]; then
+	echo "The git-archive command failed"
 	exit 1
 fi
-
-mv $mydir ravencore-$v
-tar --exclude ".git" -hczpf $RPM_SOURCES/ravencore-$v.tar.gz ravencore-$v
-mv ravencore-$v $mydir
-
-cd $mydir
 
 # build an RPM out of ravencore
 if [ -n "$DO_RELEASE" ]; then
