@@ -69,6 +69,9 @@ all:
 	@echo "       make clean"
 	@echo "          Clean up after a build"
 	@echo ""
+	@echo "       make distclean"
+	@echo "          Clean up everything, even 3rd party source tarballs"
+	@echo ""
 	@echo "       make install"
 	@echo "          Run this after \"make build\" to install the files. The"
 	@echo "          default target directory is: /usr/local/ravencore"
@@ -89,8 +92,11 @@ all:
 
 
 clean:
-	rm -rf `cat .gitignore`
+	rm -rf `cat .gitignore | grep -v '^src/'`
 
+
+distclean:
+	rm -rf `cat .gitignore`
 
 rpm:
 	./scripts/git2rpm.sh
@@ -124,7 +130,7 @@ getsrc:
 	@./scripts/get3rdparty.sh $(URL_SQUIRREL_PLUGIN_VIEW_HTML)
 
 
-build: getsrc
+build: clean getsrc
 
 # make sure /bin/bash exists
 	@if [ ! -f /bin/bash ] && [ -f /usr/local/bin/bash ]; then ln -s /usr/local/bin/bash /bin/bash; fi

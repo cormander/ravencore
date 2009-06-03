@@ -83,7 +83,7 @@ for i in $(ls src/*.md5); do
 	[ -f $file ] && mv -f $file $RPM_SOURCES
 done
 
-make clean
+make distclean
 
 # remember this directory name
 mydir=$(basename $(pwd))
