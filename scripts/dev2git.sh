@@ -38,7 +38,7 @@ if [ ! -f .gitignore ]; then
 fi
 
 # remove files in .gitignore
-rm -rf $(cat .gitignore)
+make distclean
 
 # copy each file, ignoring ones with a wildcard match
 for file in $(cat .gitignore | grep -v '*' | sed 's|^ravencore/||'); do
