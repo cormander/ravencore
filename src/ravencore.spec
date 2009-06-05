@@ -89,16 +89,7 @@ fi
 
 if [ "$1" = "0" ] ; then # we are being completly uninstalled
 
-# walk down the list of conf files we've changed since installation, and move them back
-
-	for conf in `cat %{rc_root}/var/run/sys_orig_conf_files 2> /dev/null`; do
-
-# each line is service:conf_file. we just want the conf file
-		conf=$(echo $conf | awk -F : '{print $2}')
-	
-		[ -f $conf.sys_orig ] && mv -f $conf.sys_orig $conf
-
-	done
+	%{rc_root}/sbin/restore_orig_conf.sh
 
 fi
 

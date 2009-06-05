@@ -80,6 +80,9 @@ all:
 	@echo "          You can change the destination root dir via:"
 	@echo "               make DESTDIR=/new/destination/directory install"
 	@echo ""
+	@echo "       make uninstall"
+	@echo "          Remove all files \"make install\" creates"
+	@echo ""
 	@echo "       make getsrc"
 	@echo "          Grab all the 3rd party source tarballs"
 	@echo ""
@@ -306,4 +309,17 @@ install:
 	@if [ -f $(DESTDIR)/etc/init.d/ravencore ]; then \
 		echo "     /etc/init.d/ravencore start"; else \
 		echo "     $(RC_ROOT)/sbin/ravencore.init start"; fi
+
+uninstall:
+
+	@echo -n "Uninstalling..."
+	@if [ -x $(DESTDIR)$(RC_ROOT)/sbin/restore_orig_conf.sh ]; then $(DESTDIR)$(RC_ROOT)/sbin/restore_orig_conf.sh; fi
+	@rm -f $(DESTDIR)$(ETC_RAVENCORE) \
+		$(DESTDIR)/etc/cron.hourly/ravencore \
+		$(DESTDIR)/etc/cron.daily/ravencore \
+		$(DESTDIR)/etc/profile.d/ravencore.sh \
+		$(DESTDIR)/etc/logrotate.d/ravencore \
+		$(DESTDIR)/etc/init.d/ravencore
+	@rm -rf $(DESTDIR)$(RC_ROOT)
+	@echo "done."
 
