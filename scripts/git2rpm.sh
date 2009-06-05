@@ -104,6 +104,24 @@ make distclean
 
 BRANCH=$(git branch | grep '^\*' | awk '{print $2}')
 
+# if the branch isn't "master", prompt to continue
+
+if [ "$BRANCH" != "master" ]; then
+
+	echo "************"
+	echo "** NOTICE **"
+	echo "************"
+	echo -n "You are not on branch master. Are you sure you want to build the RPM on branch $BRANCH? y/n: "
+
+	read answer
+
+	if [ "$answer" != "y" ]; then
+		echo "Exiting."
+		exit 1
+	fi
+
+fi
+
 echo "*** Building RPM using git branch $BRANCH ***"
 
 git archive --format=tar --prefix="ravencore-$v/" $BRANCH | gzip -9 > "$RPM_SOURCES/ravencore-$v.tar.gz"
