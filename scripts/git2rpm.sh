@@ -104,6 +104,13 @@ make distclean
 
 BRANCH=$(git branch | grep '^\*' | awk '{print $2}')
 
+# make sure the tty command exists
+
+if [ ! -x "$(which tty 2> /dev/null)" ]; then
+	echo "WTF? You don't have the tty command? Fail..."
+	exit 1
+fi
+
 # if we don't have a tty, we're probably being built in hudson - skip the branch check
 
 tty &> /dev/null
