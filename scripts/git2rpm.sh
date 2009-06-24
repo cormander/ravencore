@@ -108,11 +108,11 @@ BRANCH=$(git branch | grep '^\*' | awk '{print $2}')
 
 tty &> /dev/null
 
-ret=$?
+no_tty=$?
 
 # if the branch isn't "master", prompt to continue
 
-if [ $ret -eq 0 ] && [ "$BRANCH" != "master" ]; then
+if [ $no_tty -eq 0 ] && [ "$BRANCH" != "master" ]; then
 
 	echo "************"
 	echo "** NOTICE **"
@@ -126,6 +126,12 @@ if [ $ret -eq 0 ] && [ "$BRANCH" != "master" ]; then
 		exit 1
 	fi
 
+fi
+
+# force branch to be master when no tty
+
+if [ $no_tty -ne 0 ]; then
+	BRANCH="master"
 fi
 
 echo "*** Building RPM using git branch $BRANCH ***"
