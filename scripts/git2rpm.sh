@@ -152,7 +152,9 @@ else
 	rpmbuild -ba src/ravencore.spec
 fi
 
-if [ $? -eq 0 ] && [ -n "$reinstall" ]; then
+buildret=$?
+
+if [ $buildret -eq 0 ] && [ -n "$reinstall" ]; then
 
 	# if it's a symlink, just remove the symlink
 	if [ -L /usr/local/ravencore ]; then
@@ -187,4 +189,6 @@ if [ $? -eq 0 ] && [ -n "$reinstall" ]; then
 	fi
 
 fi
+
+exit $buildret
 
