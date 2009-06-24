@@ -133,6 +133,7 @@ rm -rf $RPM_BUILD_ROOT
 %{rc_root}/sbin/ravencore.init
 %{rc_root}/sbin/ravencore.httpd
 %{rc_root}/sbin/rcserver
+%{rc_root}/sbin/restore_orig_conf.sh
 %{rc_root}/sbin/run_cmd
 
 %dir
