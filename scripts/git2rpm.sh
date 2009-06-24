@@ -104,9 +104,15 @@ make distclean
 
 BRANCH=$(git branch | grep '^\*' | awk '{print $2}')
 
+# if we don't have a tty, we're probably being built in hudson - skip the branch check
+
+tty &> /dev/null
+
+ret=$?
+
 # if the branch isn't "master", prompt to continue
 
-if [ "$BRANCH" != "master" ]; then
+if [ $ret -eq 0 ] && [ "$BRANCH" != "master" ]; then
 
 	echo "************"
 	echo "** NOTICE **"
