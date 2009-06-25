@@ -159,6 +159,8 @@ if [ $git_changes -gt 0 ]; then
 	echo "You have differences between your working tree and/or index from the current HEAD."
 	echo "Please commit them before building."
 
+	exit 1
+
 fi
 
 echo "*** Building RPM using git branch $BRANCH ***"
