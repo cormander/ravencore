@@ -11,10 +11,12 @@ fi
 PROG=$(basename $1)
 
 # check md5sum
-md5sum -c src/$PROG.md5
+md5sum -c src/$PROG.md5 2> /dev/null
 
 # failed, or file not found
 if [ $? -ne 0 ]; then
+
+	echo "Need to fetch $PROG ..."
 
 	if [ ! -x "/usr/bin/curl" ]; then
 		echo "Unable to fetch $PROG because curl is not installed"
@@ -31,6 +33,7 @@ if [ $? -ne 0 ]; then
 
 		# passed the test, don't need to look further
 		if [ $? -eq 0 ]; then
+			echo "Successfully fetched $PROG"
 			exit 0
 		fi
 	done
