@@ -257,8 +257,10 @@ build: clean getsrc
 	cp -f src/webmail_pw_config.php ravencore/var/apps/squirrelmail/plugins/chg_sasl_passwd/config.php 
 	patch -p1 -i src/webmail_pw_options.patch
 
-# squirrel_logger configuration file
+# various squirrel configuration files
 	cp -f src/webmail_logger_config.php ravencore/var/apps/squirrelmail/plugins/squirrel_logger/config.php
+	cp -f ravencore/var/apps/squirrelmail/plugins/show_user_and_ip/config.php.sample ravencore/var/apps/squirrelmail/plugins/show_user_and_ip/config.php
+	cp -f ravencore/var/apps/squirrelmail/plugins/show_ssl_link/config.php.sample ravencore/var/apps/squirrelmail/plugins/show_ssl_link/config.php
 
 # install jta
 	mkdir -p ravencore/var/apps/jta
