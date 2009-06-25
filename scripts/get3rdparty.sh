@@ -11,7 +11,7 @@ fi
 PROG=$(basename $1)
 
 # check md5sum
-md5sum -c src/$PROG.md5 2> /dev/null
+md5sum -c src/$PROG.md5 &> /dev/null
 
 # failed, or file not found
 if [ $? -ne 0 ]; then
@@ -29,12 +29,14 @@ if [ $? -ne 0 ]; then
 		echo "Trying to fetch from $i"
 		curl -L "$i" -o src/$PROG
 
-		md5sum -c src/$PROG.md5
+		md5sum -c src/$PROG.md5 &> /dev/null
 
 		# passed the test, don't need to look further
 		if [ $? -eq 0 ]; then
 			echo "Successfully fetched $PROG"
 			exit 0
+		else
+			echo "Fetch failed"
 		fi
 	done
 
