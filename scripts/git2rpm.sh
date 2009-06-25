@@ -98,6 +98,31 @@ for i in $(ls src/*.md5); do
 	[ -f $file ] && mv -f $file $RPM_SOURCES
 done
 
+# if the current working tree doesn't match the index, prompt the user
+# do this even if we have no tty, because if the build tree was manually altered
+# we would want the build to fail to let us know that
+
+git_changes_work=$(git diff 2> /dev/null | wc -l)
+git_changes_index=$(git diff --cached 2> /dev/null | wc -l)
+
+# add the two wc together
+git_changes=$(expr "$git_changes_work" "+" "$git_changes_index")
+
+if [ $git_changes -gt 0 ]; then
+
+	echo "***********"
+	echo "** ERROR **"
+	echo "***********"
+	echo "You have differences between your working tree and/or index from the current HEAD."
+	echo "Please commit them before building."
+
+	exit 1
+
+fi
+
+# make distclean after the above check to make it more obvious the things
+# that need to exist in the .gitignore file
+
 make distclean
 
 # fetch the current branch and archive it to a tar.gz file
@@ -139,28 +164,6 @@ fi
 
 if [ $no_tty -ne 0 ]; then
 	BRANCH="master"
-fi
-
-# if the current working tree doesn't match the index, prompt the user
-# do this even if we have no tty, because if the build tree was manually altered
-# we would want the build to fail to let us know that
-
-git_changes_work=$(git diff 2> /dev/null | wc -l)
-git_changes_index=$(git diff --cached 2> /dev/null | wc -l)
-
-# add the two wc together
-git_changes=$(expr "$git_changes_work" "+" "$git_changes_index")
-
-if [ $git_changes -gt 0 ]; then
-
-	echo "***********"
-	echo "** ERROR **"
-	echo "***********"
-	echo "You have differences between your working tree and/or index from the current HEAD."
-	echo "Please commit them before building."
-
-	exit 1
-
 fi
 
 echo "*** Building RPM using git branch $BRANCH ***"
