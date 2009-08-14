@@ -23,7 +23,7 @@
 
 package RavenCore::Client;
 
-use RavenCore;
+use RavenCore::Common;
 use Serialize;
 
 use IO::Socket::UNIX;

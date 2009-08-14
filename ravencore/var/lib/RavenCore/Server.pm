@@ -24,7 +24,7 @@
 package RavenCore::Server;
 
 # if these don't exist, you've got one funky installation
-use RavenCore;
+use RavenCore::Common;
 use RavenCore::Shadow;
 use Serialize;
 

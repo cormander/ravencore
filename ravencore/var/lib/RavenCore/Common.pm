@@ -21,7 +21,7 @@
 # file functions that ravencore uses all over the place
 #
 
-package RavenCore;
+package RavenCore::Common;
 
 use SEM;
 

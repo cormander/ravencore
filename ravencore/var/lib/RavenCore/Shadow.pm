@@ -62,7 +62,7 @@ package RavenCore::Shadow;
 
 # TODO: finish implementing syslog logging of errors
 use Sys::Syslog;
-use RavenCore;
+use RavenCore::Common;
 
 # as we create the class, read in all of our system configuration files for user creation, and read in our
 # passwd, shadow, group, and gshadow files. Then, do some auto-correction if possible
