@@ -474,11 +474,9 @@ sub rehash_httpd {
 
 	$result->execute;
 
-	my $wildcard_virtualhost = 0;
 
 	while( my $dom = $result->fetchrow_hashref ) {
-		$wildcard_virtualhost = 1;
-		$self->debug("Wildcard domain " . $row->{'name'});
+		$self->debug("Wildcard domain " . $dom->{'name'});
 		$domain_include_file->{$dom->{'name'}} .= $self->make_virtual_host('*', $dom, 0);
 	}
 
@@ -489,18 +487,49 @@ sub rehash_httpd {
 		file_write($self->{CONF}{VHOST_ROOT} . "/" . $domain_name . "/conf/httpd.include", $domain_include_file->{$domain_name} );
 	}
 
-	if ($wildcard_virtualhost == 1) {
-		$data .= "NameVirtualHost *:80\n";
+	$data .= "NameVirtualHost *:80\n";
 
-		# if we have no ssl domains, don't echo the 443 virtualhost
-		my $sql = "select count(*) as count from domains where host_ssl = 'true'";
-		my $result = $self->{dbi}->prepare($sql);
+	# if we have no ssl domains, don't echo the 443 virtualhost
+	my $sql = "select count(*) as count from domains where host_ssl = 'true'";
+	my $result = $self->{dbi}->prepare($sql);
 
-		$result->execute;
+	$result->execute;
 
-		my $row = $result->fetchrow_hashref;
+	my $row = $result->fetchrow_hashref;
 
-		if ($row->{'count'} != 0) { $data .= "NameVirtualHost *:443\n" }
+	if ($row->{'count'} != 0) { $data .= "NameVirtualHost *:443\n" }
+
+	# write out configs for webmail
+	$sql = "select name from domains where webmail = 'yes'";
+	$result = $self->{dbi}->prepare($sql);
+
+	$result->execute;
+
+	while (my $row = $result->fetchrow_hashref) {
+		my $squirrelmail = $self->{RC_ROOT} . "/var/apps/squirrelmail";
+		my $save_path = $self->{RC_ROOT} . "/var/tmp";
+		my $domain_name = $row->{'name'};
+
+		$data .= qq~
+<VirtualHost *:80>
+		ServerName webmail.$domain_name
+		DocumentRoot $squirrelmail
+		<IfModule mod_ssl.c>
+				SSLEngine off
+		</IfModule>
+		<Directory $squirrelmail>
+		Options -Indexes
+		<IfModule sapi_apache2.c>
+				php_admin_flag engine on
+				php_admin_value open_basedir "$squirrelmail"
+				php_admin_value upload_tmp_dir "$save_path"
+				php_admin_value session.save_path "$save_path"
+		</IfModule>
+		</Directory>
+</VirtualHost>
+
+~;
+
 	}
 
 	$data .= "\n\n" . $vhost_data;
@@ -599,33 +628,6 @@ sub make_virtual_host {
 
 		$data .= "\tRedirectPermanent / \"" . $row->{'redirect_url'} . "\"\n";
 		$data .= "</VirtualHost>\n\n";
-	}
-
-	if ($row->{'webmail'} eq "yes") {
-		my $squirrelmail = $self->{RC_ROOT} . "/var/apps/squirrelmail";
-		my $save_path = $self->{RC_ROOT} . "/var/tmp";
-		my $domain_name = $row->{'name'};
-
-		$data .= qq~
-<VirtualHost $ip:80>
-		ServerName webmail.$domain_name
-		DocumentRoot $squirrelmail
-		<IfModule mod_ssl.c>
-				SSLEngine off
-		</IfModule>
-		<Directory $squirrelmail>
-		Options -Indexes
-		<IfModule sapi_apache2.c>
-				php_admin_flag engine on
-				php_admin_value open_basedir "$squirrelmail"
-				php_admin_value upload_tmp_dir "$save_path"
-				php_admin_value session.save_path "$save_path"
-		</IfModule>
-		</Directory>
-</VirtualHost>
-
-~;
-
 	}
 
 	$self->debug("End building domain config file for " . $row->{'name'});
