@@ -115,7 +115,7 @@ sub run {
 	my $data;
 
 	# write to the socket
-	print {$self->{socket}} $func . ' ' . encode_base64(serialize($input)) . $EOT;
+	print {$self->{socket}} $func . ' ' . ( $input ? encode_base64(serialize($input)) : "" ) . $EOT;
 
 	# read the reply a byte at a time from the socket, until we get an EOT
 	while ( read($self->{socket}, $c, 1) ) {
