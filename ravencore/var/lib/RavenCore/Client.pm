@@ -156,7 +156,7 @@ sub die_error {
 sub data_query {
 	my ($self, $sql) = @_;
 
-	my $data = $self->run('sql ' . $sql);
+	my $data = $self->run('sql', { query => $sql });
 	$self->{num_rows} = $data->{rows_affected};
 	$self->{insert_id} = $data->{insert_id};
 
