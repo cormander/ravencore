@@ -383,10 +383,7 @@ sub rehash_httpd {
 
 	return unless exists $modules{web};
 
-	if ( !$self->{CONF}{VHOST_ROOT} ) {
-		$self->do_error("VHOST_ROOT not defined");
-		return;
-	}
+	return $self->do_error("VHOST_ROOT not defined") unless $self->{CONF}{VHOST_ROOT};
 
 	my $restart_httpd;
 
