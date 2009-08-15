@@ -238,7 +238,7 @@ sub parse_conf_file {
 		if(/^[A-Z0-9_]*=/) {
 			my $key = my $val = $_;
 
-			$key =~ s/^([A-Z0-9_]*)=.*/\1/;
+			$key =~ s/^([A-Z0-9_]*)=.*/$1/;
 			$val =~ s/^([A-Z0-9_]*)=//;
 
 			# remove starting and ending quotations
