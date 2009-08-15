@@ -873,6 +873,7 @@ sub rehash_mail {
 
 	my $output;
 	my $mail;
+	my $dom;
 
 	# The system user mail will run as
 	my $VMAIL_UID = getpwnam($self->{CONF}{VMAIL_USER});
@@ -1074,7 +1075,7 @@ sub rehash_mail {
 	}
 
 	# handle catchalls. we concat semicolons here because the relay_host might have a : character in it
-	foreach my $dom (@{$self->get_domains}) {
+	foreach $dom (@{$self->get_domains}) {
 
 		next unless "on" eq $dom->{mail};
 
@@ -1146,19 +1147,22 @@ sub rehash_mail {
 	# go locally will be directed straight to virtual: , while the rest will go remote because it isn't in
 	# the vmaildomains. If it was, it'll attempt to deliver those mails locally too, and give a reject message.
 
-	my $sql = "select * from domains where mail = 'on'";
-	my $result = $self->{dbi}->prepare($sql);
+	foreach $dom (@{$self->get_domains}) {
 
-	$result->execute;
+		next unless "on" eq $dom->{mail};
 
-	#
-	while (my $row = $result->fetchrow_hashref) {
+		my $name = $dom->{name};
+		my $catchall = $dom->{catchall};
 
-		if($row->{'catchall'} ne "relay") { $vmaildomains .= $row->{'name'} . "\t\tplaceholder\n"; }
+		if ("relay" ne $catchall) {
+			$vmaildomains .= $name . "\t\tplaceholder\n";
+		}
 		# build the list of domains this server is allowed to relay for
-		else { $relay_domains .= $row->{'name'} . "\t\tplaceholder\n"; }
+		else {
+			$relay_domains .= $name . "\t\tplaceholder\n";
+		}
 
-		$data .= "\t\t'" . $row->{'name'} . "' => array('org_name' => '" . $row->{'name'} . "'),\n";
+		$data .= "\t\t'" . $name . "' => array('org_name' => '" . $name . "'),\n";
 
 	}
 
