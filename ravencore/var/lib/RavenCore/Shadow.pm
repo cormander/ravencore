@@ -292,6 +292,16 @@ sub new {
 			$self->assign_id('group',$name);
 		}
 
+		my $c = 0;
+
+		# make sure each element in user_list is a valid username
+		foreach my $user (@{$self->{group}{$name}{'user_list'}}) {
+			if (!$self->valid_name($user)) {
+				# remove it
+				splice @{$self->{group}{$name}{'user_list'}}, $c;
+			}
+			$c++;
+		}
 	}
 
 	#
