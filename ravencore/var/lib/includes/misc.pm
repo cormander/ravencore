@@ -102,30 +102,15 @@ sub set_conf_var {
 
 #
 
-sub get_domain_name {
-	my ($self, $did) = @_;
-
-	return unless $self->{db_connected};
-
-	my $sql = "select name from domains where id = " . $self->{dbi}->quote($did);
-	my $result = $self->{dbi}->prepare($sql);
-
-	$result->execute();
-	my @row = $result->fetchrow_array;
-	$result->finish();
-
-	return $row[0];
-}
-
-#
-
 sub webstats {
 	my ($self, $input) = @_;
 
 	my $did = $input->{did};
 	my $str = $input->{QUERY_STRING};
 
-	my $domain_name = $self->get_domain_name($did);
+	my $dom = $self->get_domain_by_id($did);
+
+	my $domain_name = $dom->{name};
 
 	# null out the configdir in the query string so people can't hack it to look at other webstats
 	$str =~ s/configdir=([\/-\w.]+)//;
