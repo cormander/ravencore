@@ -84,6 +84,25 @@ sub get_domains_with_no_ip {
 	return $domains;
 }
 
+sub get_domains_where_webmail_true {
+	my ($self) = @_;
+
+	my $sth;
+	my $domains = [];
+
+	$sth = $self->{dbi}->prepare("select id from domains where webmail = 'yes'");
+
+	$sth->execute;
+
+	while (my ($id) = $sth->fetchrow_array) {
+		push @{$domains}, $self->get_domain_by_id($id);
+	}
+
+	$sth->finish;
+
+	return $domains;
+}
+
 sub get_sys_users_by_domain_id {
 	my ($self, $did) = @_;
 

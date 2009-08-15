@@ -485,15 +485,10 @@ sub rehash_httpd {
 	$data .= "\n\n" . $vhost_data;
 
 	# write out configs for webmail
-	$sql = "select name from domains where webmail = 'yes'";
-	$result = $self->{dbi}->prepare($sql);
-
-	$result->execute;
-
-	while (my $row = $result->fetchrow_hashref) {
+	foreach $dom (@{$self->get_domains_where_webmail_true}) {
 		my $squirrelmail = $self->{RC_ROOT} . "/var/apps/squirrelmail";
 		my $save_path = $self->{RC_ROOT} . "/var/tmp";
-		my $domain_name = $row->{'name'};
+		my $domain_name = $dom->{'name'};
 
 		$data .= qq~
 <VirtualHost *:80>
@@ -512,7 +507,6 @@ sub rehash_httpd {
 		</IfModule>
 		</Directory>
 </VirtualHost>
-
 ~;
 
 	}
