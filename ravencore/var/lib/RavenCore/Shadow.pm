@@ -261,7 +261,11 @@ sub new {
 
 			# walk down the order
 			for ($i = 0; $i < $c; $i++) {
-				$self->{group}{$group}{$self->{groupdb}{$groupdb}{order}[$i]} = $args[$i];
+				if ('user_list' eq $self->{groupdb}{$groupdb}{order}[$i]) {
+					@{$self->{group}{$group}{$self->{groupdb}{$groupdb}{order}[$i]}} = split /,/, $args[$i];
+				} else {
+					$self->{group}{$group}{$self->{groupdb}{$groupdb}{order}[$i]} = $args[$i];
+				}
 			}
 
 		}
