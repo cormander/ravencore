@@ -459,18 +459,11 @@ sub rehash_httpd {
 	$self->debug("End IP address loop");
 
 	# look for domains that don't have an IP, and build them here
-	$sql = "select d.*, u.login from domains d, sys_users u where d.suid = u.id and d.id not in (select did from domain_ips) and hosting = 'on'";
-	$result = $self->{dbi}->prepare($sql);
-
-	$result->execute;
-
-
-	while( my $dom = $result->fetchrow_hashref ) {
+	foreach $dom (@{$self->get_domains_with_no_ip}) {
+		next unless "on" eq $dom->{'hosting'};
 		$self->debug("Wildcard domain " . $dom->{'name'});
 		$domain_include_file->{$dom->{'name'}} .= $self->make_virtual_host('*', $dom, 0);
 	}
-
-	$result->finish;
 
 	foreach my $domain_name (keys %{$domain_include_file}) {
 		$vhost_data .= "Include " . $self->{CONF}{VHOST_ROOT} . "/" . $domain_name . "/conf/httpd.include\n";

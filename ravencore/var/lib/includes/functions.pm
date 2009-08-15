@@ -65,6 +65,21 @@ sub get_domains_by_ip {
 	return $domains;
 }
 
+sub get_domains_with_no_ip {
+	my ($self) = @_;
+
+	my $sth;
+	my $domains = [];
+
+	$sth = $self->{dbi}->prepare("select id from domains where id not in (select did from domain_ips)");
+
+	while (my ($id) = $sth->fetchrow_array) {
+		push @{$domains}, $self->get_domain_by_id($id);
+	}
+
+	return $domains;
+}
+
 sub get_sys_users_by_domain_id {
 	my ($self, $did) = @_;
 
