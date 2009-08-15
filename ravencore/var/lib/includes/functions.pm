@@ -122,6 +122,19 @@ sub get_sys_users_by_domain_id {
 	return $sys_users;
 }
 
+sub get_user_by_name {
+	my ($self, $username) = @_;
+
+	my $sth;
+	my $user;
+
+	$user = $self->{dbi}->selectrow_hashref("select * from users where binary(login) = ? limit 1", undef, $username);
+
+	return undef unless $user->{login} eq $username;
+
+	return $user;
+}
+
 sub get_user_by_name_and_password {
 	my ($self, $username, $password) = @_;
 

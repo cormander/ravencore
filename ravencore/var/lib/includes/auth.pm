@@ -286,17 +286,7 @@ sub set_privs {
 	@{$self->{cmd_privs}} = (@{$self->{cmd_privs}}, @{$self->{cmd_privs_system}}) if $system;
 
 	if($self->{db_connected}) {
-		# fill in user_data
-		my $sql = "select * from users where binary(login) = '" . $self->{session}{user} . "' limit 1";
-		my $result = $self->{dbi}->prepare($sql);
-
-		$result->execute();
-		my $row = $result->fetchrow_hashref;
-		$result->finish();
-
-		# success if %row exists
-		$self->{session}{user_data} = $row if $row;
-
+		$self->{session}{user_data} = $self->get_user_by_name($self->{session}{user});
 	}
 
 }
