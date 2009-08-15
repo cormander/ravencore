@@ -897,50 +897,47 @@ sub rehash_mail {
 	}
 
 	# individual mail addresses
-	my $sql = "select *, m.id as mid from domains d inner join mail_users m on m.did = d.id where d.mail = 'on' order by name";
-	my $result = $self->{dbi}->prepare($sql);
-
-	$result->execute;
-
 	my $dovecot_passwd;
 
-#
-	while (my $row = $result->fetchrow_hashref) {
+	foreach my $mail (@{$self->get_mail_users}) {
 
-		my $email_addr = $row->{'mail_name'} . '@' . $row->{'name'};
+		next unless "on" eq $mail->{mail_toggle};
+
+		my $dname = $mail->{name};
+		my $mname = $mail->{mail_name};
+		my $email_addr = $mname . '@' . $dname;
+		my $domain_root = $self->{CONF}{VMAIL_ROOT} . "/" . $dname;
 
 		$self->debug("Rebuilding configuration for " . $email_addr);
-		my $domain_root = $self->{CONF}{VMAIL_ROOT} . "/" . $row->{'name'};
 
-		mkdir_p( $domain_root . "/" . $row->{'mail_name'} );
+		mkdir_p($domain_root . "/" . $mname);
 
-		file_chown($self->{CONF}{VMAIL_USER} . ':' . $self->{CONF}{VMAIL_USER}, $domain_root, $domain_root . "/" . $row->{'name'});
+		file_chown($self->{CONF}{VMAIL_USER} . ':' . $self->{CONF}{VMAIL_USER}, $domain_root, $domain_root . "/" . $mname);
 
 		# chech for the imap .subscriptions
-		my $subscriptions = $domain_root . "/" . $row->{'mail_name'} . "/.subscriptions";
+		my $subscriptions = $domain_root . "/" . $mname . "/.subscriptions";
 
 		#
 		if ( ! -f $subscriptions ) {
 
 			#
 			my @dirs = ('.Sent', '.Trash', '.Drafts', '.');
-
 			my $append;
 
-			push @dirs, '.Spam' unless $row->{'spam_folder'} ne "true";
+			push @dirs, '.Spam' unless "true" ne $mail->{spam_folder};
 
 			foreach my $dir ( @dirs ) {
 
 				#
 				mkdir_p(
-					$domain_root . "/" . $row->{'mail_name'} . "/" . $dir . "/cur",
-					$domain_root . "/" . $row->{'mail_name'} . "/" . $dir . "/new",
-					$domain_root . "/" . $row->{'mail_name'} . "/" . $dir . "/tmp"
+					$domain_root . "/" . $mname . "/" . $dir . "/cur",
+					$domain_root . "/" . $mname . "/" . $dir . "/new",
+					$domain_root . "/" . $mname . "/" . $dir . "/tmp"
 				);
 
 				#
-				file_chown_r($self->{CONF}{VMAIL_USER} . ':' . $self->{CONF}{VMAIL_USER}, $domain_root . "/" . $row->{'mail_name'} . "/" . $dir);
-				chmod 0700, $domain_root . "/" . $row->{'mail_name'} . "/" . $dir;
+				file_chown_r($self->{CONF}{VMAIL_USER} . ':' . $self->{CONF}{VMAIL_USER}, $domain_root . "/" . $mname . "/" . $dir);
+				chmod 0700, $domain_root . "/" . $mname . "/" . $dir;
 
 				# store the variable so we don't open / write / close the file inside this loop
 				$append .= $dir . "\n" unless $dir eq ".";
@@ -957,10 +954,10 @@ sub rehash_mail {
 
 		# put this email in the virtual mailbox and transport tables
 		$vtransportmap .= $email_addr . "\t\tvirtual:\n";
-		$vmailbox .= $email_addr . "\t\t" . $row->{'name'} . "/" . $row->{'mail_name'} . "/\n";
+		$vmailbox .= $email_addr . "\t\t" . $dname . "/" . $mname . "/\n";
 
-		if ($row->{'spam_folder'} eq "true") {
-			$vmailbox .= $row->{'mail_name'} . '+spam@' . $row->{'name'} . "\t\t" . $row->{'name'} . "/" . $row->{'mail_name' } . "/.Spam/\n";
+		if ("true" eq $mail->{spam_folder}) {
+			$vmailbox .= $mname . '+spam@' . $dname . "\t\t" . $dname . "/" . $mname . "/.Spam/\n";
 		}
 
 		# check to see if this email should have any redirects
@@ -969,19 +966,19 @@ sub rehash_mail {
 		my $alias_map = "";
 
 		# if this is a local mailbox, tell the alias_map to deliver locally
-		$alias_map = $email_addr unless $row->{'mailbox'} ne "true";
+		$alias_map = $email_addr unless "true" ne $mail->{'mailbox'};
 
 		# if autoreply is set
-		if ($row->{autoreply} == 1 and $slh) {
+		if ( 1 == $mail->{autoreply} and $slh) {
 			$self->debug("$email_addr is setup to autorespond via yaa");
-			$slh->do("insert into autoresponder_data values (1, ?, ?, ?, ?, ?, ?)", undef, $row->{autoreply_body}, $row->{autoreply_subject}, '', '', $email_addr, $row->{'name'});
+			$slh->do("insert into autoresponder_data values (1, ?, ?, ?, ?, ?, ?)", undef, $mail->{autoreply_body}, $mail->{autoreply_subject}, '', '', $email_addr, $dname);
 
-			$alias_map = $row->{'mail_name'} . '@yaa-autoreply.' . $row->{'name'} unless $alias_map;
-			$alias_map .= ',' . $row->{'mail_name'} . '@yaa-autoreply.' . $row->{'name'} if $alias_map;
+			$alias_map = $mname . '@yaa-autoreply.' . $dname unless $alias_map;
+			$alias_map .= ',' . $mname . '@yaa-autoreply.' . $dname if $alias_map;
 		}
 
 		# now loop for redirects
-		my $sql = "select redirect_addr from mail_users where redirect = 'true' and id = '" . $row->{'mid'} . "'";
+		my $sql = "select redirect_addr from mail_users where redirect = 'true' and id = '" . $mail->{mid} . "'";
 		my $result_redir = $self->{dbi}->prepare($sql);
 
 		$result_redir->execute;
@@ -1021,7 +1018,7 @@ sub rehash_mail {
 		}
 
 		# set sasl passwd
-		my $cmd = "echo " . $row->{'passwd'} . " | saslpasswd2 " . $sasl_action . " -p -u " . $row->{'name'} . " " . $row->{'mail_name'};
+		my $cmd = "echo " . $mail->{passwd} . " | saslpasswd2 " . $sasl_action . " -p -u " . $dname . " " . $mname;
 		$output .= `$cmd 2>&1`;
 
 		# build a random 2 letter "salt" string for use in the perl crypt fucntion in the docevat passwd-file below
@@ -1031,11 +1028,9 @@ sub rehash_mail {
 
 		# dovecot passwd-file authentication
 
-		$dovecot_passwd .= $email_addr . ":" . crypt($row->{'passwd'},$salt_str) . ":" . $VMAIL_UID . ":" . $VMAIL_GID . "::" . $domain_root . "/" . $row->{'mail_name'} . ":/bin/false\n";
+		$dovecot_passwd .= $email_addr . ":" . crypt($mail->{passwd},$salt_str) . ":" . $VMAIL_UID . ":" . $VMAIL_GID . "::" . $domain_root . "/" . $mname . ":/bin/false\n";
 
 	}
-
-	$result->finish;
 
 	# close DBD::SQLite handle if it's open
 	$slh->disconnect if $slh;

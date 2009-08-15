@@ -163,6 +163,25 @@ sub get_mail_user_by_name_and_password {
 	return $user;
 }
 
+sub get_mail_users {
+	my ($self) = @_;
+
+	my $sth;
+	my $mails = [];
+
+	$sth = $self->{dbi}->prepare("select *, m.id as mid, d.mail as mail_toggle from domains d inner join mail_users m on m.did = d.id");
+
+	$sth->execute;
+
+	while (my $row = $sth->fetchrow_hashref) {
+		push @{$mails}, $row;
+	}
+
+	$sth->finish;
+
+	return $mails;
+}
+
 sub get_login_failure_count_by_username {
 	my ($self, $username) = @_;
 
