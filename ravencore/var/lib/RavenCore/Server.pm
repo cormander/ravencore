@@ -92,8 +92,7 @@ sub new
 
 	bless $self, $class;
 
-	# TODO: ugly ugly ugly!!!
-	my $RC_ETC = ( $ENV{'RC_ETC'} ? $ENV{'RC_ETC'} : '/etc/ravencore.conf' );
+	my $RC_ETC = '/etc/ravencore.conf';
 
 	my %rcetc = $self->parse_conf_file($RC_ETC);
 
