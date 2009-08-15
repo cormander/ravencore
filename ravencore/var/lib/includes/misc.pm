@@ -872,6 +872,7 @@ sub rehash_mail {
 	my $login_maps;
 
 	my $output;
+	my $mail;
 
 	# The system user mail will run as
 	my $VMAIL_UID = getpwnam($self->{CONF}{VMAIL_USER});
@@ -899,7 +900,7 @@ sub rehash_mail {
 	# individual mail addresses
 	my $dovecot_passwd;
 
-	foreach my $mail (@{$self->get_mail_users}) {
+	foreach $mail (@{$self->get_mail_users}) {
 
 		next unless "on" eq $mail->{mail_toggle};
 
@@ -1040,16 +1041,12 @@ sub rehash_mail {
 	#
 	my @redir_emails;
 
-	my $sql = "select lcase(redirect_addr) as redirect_addr from mail_users where redirect = 'true'";
-	my $result = $self->{dbi}->prepare($sql);
+	foreach $mail (@{$self->get_mail_users}) {
 
-	$result->execute;
-
-	#
-	while (my $row = $result->fetchrow_hashref) {
+		next unless "true" eq $mail->{redirect};
 
 		# each email is seperated by a comma
-		my @email_list = split /,/, $row->{'redirect_addr'};
+		my @email_list = split /,/, lc $mail->{redirect_addr};
 
 		foreach my $email (@email_list) {
 			# a single email can show up many times, only add it to the list if it isn't there
@@ -1057,8 +1054,6 @@ sub rehash_mail {
 		}
 
 	}
-
-	$result->finish;
 
 	# add the redir_emails to the $valiasmap
 	foreach my $email (@redir_emails) {
