@@ -686,7 +686,7 @@ sub make_virtual_host_content {
 	#
 	if ($host_cgi eq "true") {
 		mkdir_p($domain_root . "/cgi-bin");
-		chmod 0750, $domain_root . "/cgi-bin";
+		chmod 0755, $domain_root . "/cgi-bin";
 
 		# TODO: Fix me
 		#	file_chown($row->{'login'} . ":servgrp", $domain_root . "/cgi-bin");
