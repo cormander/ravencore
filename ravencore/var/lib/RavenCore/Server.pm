@@ -23,6 +23,9 @@
 
 package RavenCore::Server;
 
+use strict;
+use warnings;
+
 # if these don't exist, you've got one funky installation
 use RavenCore::Common;
 use RavenCore::Shadow;
