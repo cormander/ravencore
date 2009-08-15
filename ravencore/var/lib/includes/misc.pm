@@ -425,43 +425,36 @@ sub rehash_httpd {
 	$self->debug("Begin IP address loop");
 
 	# walk down all our IP addresses and build the domains on them
-	$sql = "select * from ip_addresses order by ip_address";
-	my $result = $self->{dbi}->prepare($sql);
+	foreach my $ip (@{$self->get_ip_addresses}) {
 
-	$result->execute;
-
-	while (my $row = $result->fetchrow_hashref) {
-		my $ip_in_use = 0;
+		my $in_use = 0;
+		my $dom;
 
 		# build the IP's default domain first
-		my $dom = $self->{dbi}->selectrow_hashref("select d.*, u.login from domains d, sys_users u where d.suid = u.id and d.id = ? and hosting = 'on'", undef, $row->{default_did});
+		$dom = $self->get_domain_by_id($ip->{default_did});
 
-		$vhost_data .= $self->make_virtual_host($row->{ip_address}, $dom);
-
-		if ($dom->{'name'}) {
-			$ip_in_use = 1;
+		if ("on" eq $dom->{'hosting'}) {
+			$vhost_data .= $self->make_virtual_host($ip->{ip_address}, $dom);
+			$in_use = 1;
 		}
 
 		# build the rest of the domains on this IP
-		$sql = "select d.*, u.login from domains d inner join domain_ips i on d.id = i.did, sys_users u where d.suid = u.id and i.ip_address = ? and d.id != ? and hosting = 'on'";
-		my $result_dom = $self->{dbi}->prepare($sql);
+		foreach $dom (@{$self->get_domains_by_ip($ip->{ip_address})}) {
 
-		$result_dom->execute($row->{ip_address}, $row->{default_did});
+			# skip the default domain since we already processed it
+			next if $dom->{id} eq $ip->{default_did};
 
-		while ($dom = $result_dom->fetchrow_hashref ) {
-			$domain_include_file->{$dom->{'name'}} .= $self->make_virtual_host($row->{ip_address}, $dom);
-			$ip_in_use = 1;
+			if ("on" eq $dom->{'hosting'}) {
+				$domain_include_file->{$dom->{'name'}} .= $self->make_virtual_host($ip->{ip_address}, $dom);
+				$in_use = 1;
+			}
 		}
 
-		$result_dom->finish;
-
-		if ($ip_in_use == 1) {
-			$data .= "NameVirtualHost " . $row->{ip_address} . ":80\n";
+		if (1 == $in_use) {
+			$data .= "NameVirtualHost " . $ip->{ip_address} . ":80\n";
 		}
 
 	}
-
-	$result->finish;
 
 	$self->debug("End IP address loop");
 
