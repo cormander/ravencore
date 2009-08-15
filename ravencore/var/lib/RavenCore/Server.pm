@@ -43,6 +43,7 @@ use Socket qw(SOCK_DGRAM);
 use Sys::Syslog;
 
 # global vars
+our $NUL = chr(0);
 our $ETX = chr(3);
 our $EOT = chr(4);
 
@@ -718,7 +719,7 @@ sub run_query {
 
 			# unserialize translates NULL to actual null character, so undef them
 			foreach my $key (keys %{$data}) {
-				delete $data->{$key} if $data->{$key} eq chr(0);
+				delete $data->{$key} if $data->{$key} eq $NUL;
 			}
 
 			$self->debug(Dumper($data));
