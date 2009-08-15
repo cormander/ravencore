@@ -73,9 +73,13 @@ sub get_domains_with_no_ip {
 
 	$sth = $self->{dbi}->prepare("select id from domains where id not in (select did from domain_ips)");
 
+	$sth->execute;
+
 	while (my ($id) = $sth->fetchrow_array) {
 		push @{$domains}, $self->get_domain_by_id($id);
 	}
+
+	$sth->finish;
 
 	return $domains;
 }
