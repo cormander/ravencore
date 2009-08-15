@@ -23,6 +23,9 @@
 
 package RavenCore::Common;
 
+use strict;
+use warnings;
+
 use SEM;
 
 use vars qw(@ISA @EXPORT);
@@ -316,7 +319,7 @@ sub in_array {
 sub find_in_path {
 	my ($file) = @_;
 
-	@dirs = split /:/, $ENV{PATH};
+	my @dirs = split /:/, $ENV{PATH};
 
 	foreach my $dir (@dirs)
 	{
