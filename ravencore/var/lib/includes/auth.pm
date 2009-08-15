@@ -253,18 +253,13 @@ sub auth_system {
 sub auth_user {
 	my ($self, $username, $password) = @_;
 
-	# query the database for this user
-	# TODO: if/else statements for different user types
-	#	   if a username contains an @ sign, attempt mail user auth
-	#	   if a username contains a dot, attempt domain user auth
-	#	   otherwise, attempt control panel user auth
-
+	# control panel user auth
 	if ($self->get_user_by_name_and_password($username, $password)) {
 		$self->debug("Auth successful for CP user");
 		return 1;
 	}
 
-	# try again for mail users
+	# mail user auth
 	if ($self->get_mail_user_by_name_and_password($username, $password)) {
 		$self->debug("Auth successful for mail user");
 		# email users get no gui, for now
