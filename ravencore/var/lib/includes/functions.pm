@@ -122,6 +122,25 @@ sub get_domains_where_webmail_true {
 	return $domains;
 }
 
+sub get_sys_users {
+	my ($self) = @_;
+
+	my $sth;
+	my $sys_users = [];
+
+	$sth = $self->{dbi}->prepare("select * from sys_users su inner join domains d on d.suid = su.id");
+
+	$sth->execute;
+
+	while (my $row = $sth->fetchrow_hashref) {
+		push @{$sys_users}, $row;
+	}
+
+	$sth->finish;
+
+	return $sys_users;
+}
+
 sub get_sys_users_by_domain_id {
 	my ($self, $did) = @_;
 

@@ -1213,46 +1213,33 @@ sub rehash_ftp {
 
 	return if $self->{DEMO};
 
-# check to make sure that this server is a webserver
+	# check to make sure that this server is a webserver
 	my %modules = $self->module_list_enabled;
 
 	return unless exists $modules{web};
 
 	return unless $self->{db_connected};
 
-	# create our shadow object
 	my $shadow = new RavenCore::Shadow($self->{ostype});
 
-	my $sql;
+	foreach my $suser (@{$self->get_sys_users}) {
 
-		$sql = "select s.login, s.passwd, s.shell, s.home_dir, d.name from sys_users s, domains d where suid = s.id";
+		my $shell = ($suser->{shell} ? $suser->{shell} : $self->{CONF}{DEFAULT_LOGIN_SHELL});
+		my $home_dir = ($suser->{home_dir} ? $suser->{home_dir} : $self->{CONF}{VHOST_ROOT}. '/' . $suser->{name});
+		my $login = $suser->{login};
+		my $passwd = $suser->{passwd};
 
-	#
-	my $result = $self->{dbi}->prepare($sql);
-
-	$result->execute;
-
-	while (my $row = $result->fetchrow_hashref) {
-
-		# Just in case we didn't get a shell value, use the default
-		$row->{'shell'} = $self->{CONF}{DEFAULT_LOGIN_SHELL} unless $row->{'shell'};
-
-		# if we don't have a home_dir, set it to default to VHOST_ROOT/domain
-		$row->{'home_dir'} = $self->{CONF}{VHOST_ROOT}. '/' . $row->{'name'} unless $row->{'home_dir'};
+		next if "root" eq $login;
 
 		# ask if the user exists
-		if ($shadow->item_exists('user', $row->{'login'})) {
-			# if so, edit it
-			# $login,$passwd,$home_dir,$shell,$uid,$gid
-			$shadow->edit_user($row->{'login'},$row->{'passwd'},$row->{'home_dir'},$row->{'shell'},'',$shadow->{group}{'servgrp'}{'gid'});
+		if ($shadow->item_exists('user', $login)) {
+			$shadow->edit_user($login,$passwd,$home_dir,$shell,'',$shadow->{group}{'servgrp'}{'gid'});
 		} else {
-			# else, add it
-			$shadow->add_user($row->{'login'},$row->{'passwd'},$row->{'home_dir'},$row->{'shell'},'',$shadow->{group}{'servgrp'}{'gid'});
+			$shadow->add_user($login,$passwd,$home_dir,$shell,'',$shadow->{group}{'servgrp'}{'gid'});
 		}
 
-	} # end while( $row = $result->fetchrow_hashref )
+	}
 
-	# commit our changes, if any
 	$shadow->commit();
 
 }
