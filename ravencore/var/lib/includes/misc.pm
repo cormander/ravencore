@@ -1220,32 +1220,12 @@ sub rehash_ftp {
 
 	return unless $self->{db_connected};
 
-# TODO: We must have one argument to run
-#	my $c = "";
-#
-#	if( $c == 0 ) {
-#
-#	$self->do_error("Usage: rehash_ftp paramater\n" .
-#			"\t--all	  Rebuild all ftp users on the server\n" .
-#			"\tftpuser	Add/Modify this ftp user\n");
-#	return;
-#	}
-
 	# create our shadow object
 	my $shadow = new RavenCore::Shadow($self->{ostype});
 
 	my $sql;
 
-# TODO: fix
-#	if($ARGV[0] eq "--all")
-#	{
 		$sql = "select s.login, s.passwd, s.shell, s.home_dir, d.name from sys_users s, domains d where suid = s.id";
-#	}
-#	else
-#	{
-#
-#	$sql = "select * from sys_users where login = '" . $ARGV[0] . "'";
-#	}
 
 	#
 	my $result = $self->{dbi}->prepare($sql);
