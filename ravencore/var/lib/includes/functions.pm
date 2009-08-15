@@ -46,6 +46,25 @@ sub get_domain_by_id {
 	return $dom;
 }
 
+sub get_domains {
+	my ($self) = @_;
+
+	my $sth;
+	my $domains = [];
+
+	$sth = $self->{dbi}->prepare("select * from domains");
+
+	$sth->execute;
+
+	while (my $row = $sth->fetchrow_hashref) {
+		push @{$domains}, $row;
+	}
+
+	$sth->finish;
+
+	return $domains;
+}
+
 sub get_domains_by_ip {
 	my ($self, $ip) = @_;
 

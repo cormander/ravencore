@@ -1074,36 +1074,38 @@ sub rehash_mail {
 	}
 
 	# handle catchalls. we concat semicolons here because the relay_host might have a : character in it
-	my $sql = "select * from domains where mail = 'on' order by name";
-	my $result = $self->{dbi}->prepare($sql);
+	foreach my $dom (@{$self->get_domains}) {
 
-	$result->execute;
+		next unless "on" eq $dom->{mail};
 
-	#
-	while ( my $row = $result->fetchrow_hashref )
-	{
+		my $name = $dom->{name};
+		my $catchall = $dom->{catchall};
 
-		if ($row->{'catchall'} eq "send_to" or $row->{'catchall'} eq "true") {
-			$valiasmap .= '@' . $row->{'name'} . "\t\t" . $row->{'catchall_addr'} . "\n";
-			$vtransportmap .= $row->{'name'} . "\t\tvirtual:\n";
-		} elsif ($row->{'catchall'} eq "bounce" ) {
-			$vtransportmap .= $row->{'name'} . "\t\terror:" . $row->{'bounce_message'} . "\n";
-		} elsif ($row->{'catchall'} eq "delete_it") {
-			$valiasmap .= '@' . $row->{'name'} . "\t\tdevnull\n";
-			$vtransportmap .= $row->{'name'} . "\t\tvirtual:\n";
-		} elsif ($row->{'catchall'} eq "alias_to") {
-			$valiasmap .= '@' . $row->{'name'} . "\t\t" . '@' . $row->{'alias_addr'} . "\n";
-			$vtransportmap .= $row->{'name'} . "\t\tvirtual:\n";
-		} elsif ($row->{'catchall'} eq "relay") {
+		if ("send_to" eq $catchall or "true" eq $catchall) {
+			$valiasmap .= '@' . $name . "\t\t" . $dom->{catchall_addr} . "\n";
+			$vtransportmap .= $name . "\t\tvirtual:\n";
+		}
+		elsif ("bounce" eq $catchall) {
+			$vtransportmap .= $name . "\t\terror:" . $dom->{bounce_message} . "\n";
+		}
+		elsif ("delete_it" eq $catchall) {
+			$valiasmap .= '@' . $name . "\t\tdevnull\n";
+			$vtransportmap .= $name . "\t\tvirtual:\n";
+		}
+		elsif ("alias_to" eq $catchall) {
+			$valiasmap .= '@' . $name . "\t\t" . '@' . $dom->{alias_addr} . "\n";
+			$vtransportmap .= $name . "\t\tvirtual:\n";
+		}
+		elsif ("relay" eq $catchall) {
 			# relay transport addition by spectro - slightly modified by cormander
-			$vtransportmap .= $row->{'name'} . "\t\trelay:";
+			$vtransportmap .= $name . "\t\trelay:";
 
 			# only add the [ ] around the relay_host if we want to force an MX lookup
-			$vtransportmap .= $row->{'relay_host'} . "\n";
+			$vtransportmap .= $dom->{relay_host} . "\n";
 		}
 
 		# yaa-autoreply subdomains map to yaa
-		$vtransportmap .= 'yaa-autoreply.' . $row->{'name'} . "\t\tyaa\n";
+		$vtransportmap .= 'yaa-autoreply.' . $name . "\t\tyaa\n";
 
 	}
 
