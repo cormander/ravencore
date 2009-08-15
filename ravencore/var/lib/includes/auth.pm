@@ -258,20 +258,15 @@ sub auth_user {
 	#	   if a username contains an @ sign, attempt mail user auth
 	#	   if a username contains a dot, attempt domain user auth
 	#	   otherwise, attempt control panel user auth
-	my $count;
 
-	$count = $self->{dbi}->selectrow_array("select count(*) from users where binary(login) = ? and binary(passwd) = ? limit 1", undef, $username, $password);
-
-	$self->debug("CP user auth result: $count");
-
-	return 1 if $count eq "1";
+	if ($self->get_user_by_name_and_password($username, $password)) {
+		$self->debug("Auth successful for CP user");
+		return 1;
+	}
 
 	# try again for mail users
-	$count = $self->{dbi}->selectrow_array("select count(*) from domains d inner join mail_users mu on mu.did = d.id where concat(mail_name,'\@',d.name) = ? and binary(mu.passwd) = ? limit 1", undef, $username, $password);
-
-	$self->debug("email user auth result: $count");
-
-	if ($count eq "1") {
+	if ($self->get_mail_user_by_name_and_password($username, $password)) {
+		$self->debug("Auth successful for mail user");
 		# email users get no gui, for now
 		$self->{no_gui} = 1;
 		return 1;

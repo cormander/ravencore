@@ -122,6 +122,34 @@ sub get_sys_users_by_domain_id {
 	return $sys_users;
 }
 
+sub get_user_by_name_and_password {
+	my ($self, $username, $password) = @_;
+
+	my $sth;
+	my $user;
+
+	$user = $self->{dbi}->selectrow_hashref("select * from users where binary(login) = ? and binary(passwd) = ? limit 1", undef, $username, $password);
+
+	return undef unless $user->{login} eq $username;
+
+	return $user;
+}
+
+sub get_mail_user_by_name_and_password {
+	my ($self, $username, $password) = @_;
+
+	my $sth;
+	my $user;
+
+	$user = $self->{dbi}->selectrow_hashref("select mu.*, concat(mail_name,'\@',d.name) as email from domains d inner join mail_users mu on mu.did = d.id
+		where concat(mail_name,'\@',d.name) = ? and binary(mu.passwd) = ? limit 1",
+		undef, $username, $password);
+
+	return undef unless $user->{email} eq $username;
+
+	return $user;
+}
+
 sub get_login_failure_count_by_username {
 	my ($self, $username) = @_;
 
