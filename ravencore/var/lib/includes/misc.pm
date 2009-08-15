@@ -397,7 +397,6 @@ sub rehash_httpd {
 	# make sure ip addresses are loaded into the db
 	$self->ip_list;
 
-	my $sql;
 	my $data = "";
 	my $vhost_data = "";
 
@@ -473,14 +472,7 @@ sub rehash_httpd {
 	$data .= "NameVirtualHost *:80\n";
 
 	# if we have no ssl domains, don't echo the 443 virtualhost
-	my $sql = "select count(*) as count from domains where host_ssl = 'true'";
-	my $result = $self->{dbi}->prepare($sql);
-
-	$result->execute;
-
-	my $row = $result->fetchrow_hashref;
-
-	if ($row->{'count'} != 0) { $data .= "NameVirtualHost *:443\n" }
+	if ($self->hosting_ssl) { $data .= "NameVirtualHost *:443\n" }
 
 	$data .= "\n\n" . $vhost_data;
 

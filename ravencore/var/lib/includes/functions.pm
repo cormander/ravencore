@@ -122,3 +122,9 @@ sub get_sys_users_by_domain_id {
 	return $sys_users;
 }
 
+sub hosting_ssl {
+	my ($self) = @_;
+
+	return ($self->{dbi}->selectrow_array("select count(*) as count from domains where host_ssl = 'true'"))[0];
+}
+
