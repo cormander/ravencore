@@ -23,6 +23,9 @@
 
 package RavenCore::Client;
 
+use strict;
+use warnings;
+
 use RavenCore::Common;
 use Serialize;
 
