@@ -122,6 +122,17 @@ sub get_sys_users_by_domain_id {
 	return $sys_users;
 }
 
+sub get_login_failure_count_by_username {
+	my ($self, $username) = @_;
+
+	my $sth;
+	my $lockout_time = ( $self->{CONF}{LOCKOUT_TIME} ? $self->{CONF}{LOCKOUT_TIME} : 300 );
+
+	return ($self->{dbi}->selectrow_array("select count(*) from login_failure where login = ? and
+			( ( to_days(date) * 24 * 60 * 60 ) + time_to_sec(date) + ? ) >
+			( ( to_days(now()) * 24 * 60 * 60 ) + time_to_sec(now() ) )", undef, $username, $lockout_time))[0];
+}
+
 sub hosting_ssl {
 	my ($self) = @_;
 

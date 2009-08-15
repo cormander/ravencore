@@ -88,9 +88,6 @@ sub auth {
 		return 1;
 	}
 
-	# default lockout time to 300 if we don't have the config value yet
-	my $lockout_time = ( $self->{CONF}{LOCKOUT_TIME} ? $self->{CONF}{LOCKOUT_TIME} : 300 );
-
 	# default lockout count to 3 if we don't have the config value yet
 	my $lockout_count = ( $self->{CONF}{LOCKOUT_COUNT} ? $self->{CONF}{LOCKOUT_COUNT} : 3 );
 
@@ -134,21 +131,8 @@ sub auth {
 	}
 
 	if ($self->{db_connected}) {
-
-		# get the login failure count for this user
-		my $sql = "select count(*) as count from login_failure
-				where login = '" . $username . "' and
-				( ( to_days(date) * 24 * 60 * 60 ) + time_to_sec(date) + " . $lockout_time . " ) >
-				( ( to_days(now()) * 24 * 60 * 60 ) + time_to_sec(now() ) )";
-		my $result = $self->{dbi}->prepare($sql);
-
-		$result->execute();
-		my @row = $result->fetchrow_array;
-		$result->finish();
-
 		# if locked out, issue error
-		return 'Too many login failures, please try again later.' if $row[0] >= $lockout_count;
-
+		return 'Too many login failures, please try again later.' if $self->get_login_failure_count_by_username($username) >= $lockout_count;
 	}
 
 	# this lets us keep the password as "ravencore" in the demo
