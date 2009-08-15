@@ -132,6 +132,8 @@ sub file_get_array {
 sub file_write {
 	my ($file, $contents) = @_;
 
+	$contents = "" unless $contents;
+
 	# lock our file for writing
 	my $sem = SEM->lock($file);
 
