@@ -330,7 +330,7 @@ sub unserialize_value {
 	# Thanks to Julian Jares [jjares at uolsinectis.com.ar]
 	elsif ($value == /^N;$/i) {
 		serialize_dbg("Unserializing NULL value ($value)");
-		return "\0";
+		return undef;
 	}
 	
 	# This is a boolean
