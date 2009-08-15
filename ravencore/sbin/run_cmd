@@ -28,6 +28,11 @@ BEGIN {
 use RavenCore::Client;
 use Data::Dumper;
 
+if (0 == scalar @ARGV) {
+	print "Please supply an argument.\n";
+	exit;
+}
+
 my $cmd;
 
 my $rc = new RavenCore::Client($RC_ROOT);
