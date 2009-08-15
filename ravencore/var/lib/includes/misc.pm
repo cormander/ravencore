@@ -499,6 +499,8 @@ sub rehash_httpd {
 
 	if ($row->{'count'} != 0) { $data .= "NameVirtualHost *:443\n" }
 
+	$data .= "\n\n" . $vhost_data;
+
 	# write out configs for webmail
 	$sql = "select name from domains where webmail = 'yes'";
 	$result = $self->{dbi}->prepare($sql);
@@ -531,8 +533,6 @@ sub rehash_httpd {
 ~;
 
 	}
-
-	$data .= "\n\n" . $vhost_data;
 
 	file_write($vhosts, $data);
 
