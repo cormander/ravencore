@@ -245,12 +245,8 @@ if (!$did) {
 
 		print '<a href="databases.php?did=' . $domain[id] . '" onmouseover="show_help(\'' . __('View/Edit databases for this domain') . '\');" onmouseout="help_rst();">' . __('Databases') . '</a>';
 
-		$sql = "select count(*) as count from data_bases where did = '$domain[id]'";
-		$result = $db->data_query($sql);
-
-		$row_count = $db->data_fetch_array($result);
-
-		print ' (' . $row_count[count] . ')<p>';
+		$databases = $db->run("get_databases_by_domain_id", Array(did => $did));
+		print ' (' . count($databases) . ')<p>';
 
 		if (have_service("dns")) {
 			print '<a href="dns.php?did=' . $did . '" onmouseover="show_help(\'' . __('Manage DNS for this domain') . '\');" onmouseout="help_rst();">' . __('DNS Records') . '</a>';

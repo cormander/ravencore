@@ -319,6 +319,27 @@ sub get_login_failure_count_by_username {
 			( ( to_days(now()) * 24 * 60 * 60 ) + time_to_sec(now() ) )", undef, $username, $lockout_time))[0];
 }
 
+sub get_databases_by_domain_id {
+	my ($self, $ref) = @_;
+
+	my $sth;
+	my $dbs = [];
+
+	my $did = $ref->{did};
+
+	$sth = $self->{dbi}->prepare("select * from data_bases where did = ?");
+
+	$sth->execute($did);
+
+	while (my $row = $sth->fetchrow_hashref) {
+		push @{$dbs}, $row;
+	}
+
+	$sth->finish;
+
+	return $dbs;
+}
+
 sub hosting_ssl {
 	my ($self) = @_;
 
