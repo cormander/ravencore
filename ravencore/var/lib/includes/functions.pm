@@ -60,7 +60,7 @@ sub get_domains_by_user_id {
 
 	$sth->execute($uid);
 
-	while (my $row = $sth->fetchrow_array) {
+	while (my $row = $sth->fetchrow_hashref) {
 		push @{$domains}, $row;
 	}
 
