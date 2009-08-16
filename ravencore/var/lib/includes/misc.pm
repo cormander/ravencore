@@ -108,7 +108,7 @@ sub webstats {
 	my $did = $input->{did};
 	my $str = $input->{QUERY_STRING};
 
-	my $dom = $self->get_domain_by_id($did);
+	my $dom = $self->get_domain_by_id({id => $did});
 
 	my $domain_name = $dom->{name};
 
@@ -416,7 +416,7 @@ sub rehash_httpd {
 		my $dom;
 
 		# build the IP's default domain first
-		$dom = $self->get_domain_by_id($ip->{default_did});
+		$dom = $self->get_domain_by_id({id => $ip->{default_did}});
 
 		if ("on" eq $dom->{'hosting'}) {
 			$vhost_data .= $self->make_virtual_host($ip->{ip_address}, $dom);
@@ -425,7 +425,7 @@ sub rehash_httpd {
 		}
 
 		# build the rest of the domains on this IP
-		foreach $dom (@{$self->get_domains_by_ip($ip->{ip_address})}) {
+		foreach $dom (@{$self->get_domains_by_ip({ip => $ip->{ip_address}})}) {
 
 			# skip the default domain since we already processed it
 			next if $dom->{id} eq $ip->{default_did};
@@ -1429,7 +1429,7 @@ sub rehash_named {
 ~;
 
 		# Loop through the records for this domain
-		foreach my $rec (@{$self->get_dns_rec_by_domain_id($dom->{id})}) {
+		foreach my $rec (@{$self->get_dns_rec_by_domain_id({did => $dom->{id}})}) {
 			# This may be an MX record. We seperate the MX token and the preference with a - symbol, so replace this with a space
 			$rec->{type} =~ s/-/ /;
 			$data .= $rec->{name} . "\t\tIN " . $rec->{type} . "\t" . $rec->{target} . "\n";

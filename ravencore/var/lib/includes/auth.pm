@@ -132,7 +132,7 @@ sub auth {
 
 	if ($self->{db_connected}) {
 		# if locked out, issue error
-		return 'Too many login failures, please try again later.' if $self->get_login_failure_count_by_username($username) >= $lockout_count;
+		return 'Too many login failures, please try again later.' if $self->get_login_failure_count_by_username({username => $username}) >= $lockout_count;
 	}
 
 	# this lets us keep the password as "ravencore" in the demo
@@ -254,13 +254,13 @@ sub auth_user {
 	my ($self, $username, $password) = @_;
 
 	# control panel user auth
-	if ($self->get_user_by_name_and_password($username, $password)) {
+	if ($self->get_user_by_name_and_password({name => $username, password => $password})) {
 		$self->debug("Auth successful for CP user");
 		return 1;
 	}
 
 	# mail user auth
-	if ($self->get_mail_user_by_name_and_password($username, $password)) {
+	if ($self->get_mail_user_by_name_and_password({name => $username, password => $password})) {
 		$self->debug("Auth successful for mail user");
 		# email users get no gui, for now
 		$self->{no_gui} = 1;
@@ -286,7 +286,7 @@ sub set_privs {
 	@{$self->{cmd_privs}} = (@{$self->{cmd_privs}}, @{$self->{cmd_privs_system}}) if $system;
 
 	if($self->{db_connected}) {
-		$self->{session}{user_data} = $self->get_user_by_name($self->{session}{user});
+		$self->{session}{user_data} = $self->get_user_by_name({name => $self->{session}{user}});
 	}
 
 }

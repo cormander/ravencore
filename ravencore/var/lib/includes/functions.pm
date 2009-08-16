@@ -32,16 +32,18 @@ sub get_ip_info_by_ip {
 }
 
 sub get_domain_by_id {
-	my ($self, $id) = @_;
+	my ($self, $ref) = @_;
 
 	my $sth;
 	my $dom;
+
+	my $id = $ref->{id};
 
 	$dom = $self->{dbi}->selectrow_hashref("select * from domains where id = ?", undef, $id);
 
 	return undef unless $dom->{id} eq $id;
 
-	$dom->{sys_users} = $self->get_sys_users_by_domain_id($id);
+	$dom->{sys_users} = $self->get_sys_users_by_domain_id({did => $id});
 
 	return $dom;
 }
@@ -66,10 +68,12 @@ sub get_domains {
 }
 
 sub get_domains_by_ip {
-	my ($self, $ip) = @_;
+	my ($self, $ref) = @_;
 
 	my $sth;
 	my $domains = [];
+
+	my $ip = $ref->{ip};
 
 	$sth = $self->{dbi}->prepare("select d.* from domains d inner join domain_ips i on d.id = i.did where i.ip_address = ?");
 
@@ -95,7 +99,7 @@ sub get_domains_with_no_ip {
 	$sth->execute;
 
 	while (my ($id) = $sth->fetchrow_array) {
-		push @{$domains}, $self->get_domain_by_id($id);
+		push @{$domains}, $self->get_domain_by_id({id => $id});
 	}
 
 	$sth->finish;
@@ -114,7 +118,7 @@ sub get_domains_where_webmail_true {
 	$sth->execute;
 
 	while (my ($id) = $sth->fetchrow_array) {
-		push @{$domains}, $self->get_domain_by_id($id);
+		push @{$domains}, $self->get_domain_by_id({id => $id});
 	}
 
 	$sth->finish;
@@ -142,10 +146,12 @@ sub get_sys_users {
 }
 
 sub get_sys_users_by_domain_id {
-	my ($self, $did) = @_;
+	my ($self, $ref) = @_;
 
 	my $sth;
 	my $sys_users = [];
+
+	my $did = $ref->{did};
 
 	$sth = $self->{dbi}->prepare("select * from sys_users where did = ?");
 
@@ -161,10 +167,12 @@ sub get_sys_users_by_domain_id {
 }
 
 sub get_dns_rec_by_domain_id {
-	my ($self, $did) = @_;
+	my ($self, $ref) = @_;
 
 	my $sth;
 	my $rec;
+
+	my $did = $ref->{did};
 
 	$rec = $self->{dbi}->selectrow_hashref("select * from dns_rec where did = ? order by type, name, target", undef, $did);
 
@@ -208,10 +216,12 @@ sub get_user_by_id {
 }
 
 sub get_user_by_name {
-	my ($self, $username) = @_;
+	my ($self, $ref) = @_;
 
 	my $sth;
 	my $user;
+
+	my $username = $ref->{name};
 
 	$user = $self->{dbi}->selectrow_hashref("select * from users where binary(login) = ? limit 1", undef, $username);
 
@@ -221,10 +231,13 @@ sub get_user_by_name {
 }
 
 sub get_user_by_name_and_password {
-	my ($self, $username, $password) = @_;
+	my ($self, $ref) = @_;
 
 	my $sth;
 	my $user;
+
+	my $username = $ref->{name};
+	my $password = $ref->{password};
 
 	$user = $self->{dbi}->selectrow_hashref("select * from users where binary(login) = ? and binary(passwd) = ? limit 1", undef, $username, $password);
 
@@ -234,10 +247,13 @@ sub get_user_by_name_and_password {
 }
 
 sub get_mail_user_by_name_and_password {
-	my ($self, $username, $password) = @_;
+	my ($self, $ref) = @_;
 
 	my $sth;
 	my $user;
+
+	my $username = $ref->{name};
+	my $password = $ref->{password};
 
 	$user = $self->{dbi}->selectrow_hashref("select mu.*, concat(mail_name,'\@',d.name) as email from domains d inner join mail_users mu on mu.did = d.id
 		where concat(mail_name,'\@',d.name) = ? and binary(mu.passwd) = ? limit 1",
@@ -268,10 +284,12 @@ sub get_mail_users {
 }
 
 sub get_login_failure_count_by_username {
-	my ($self, $username) = @_;
+	my ($self, $ref) = @_;
 
 	my $sth;
 	my $lockout_time = ( $self->{CONF}{LOCKOUT_TIME} ? $self->{CONF}{LOCKOUT_TIME} : 300 );
+
+	my $username = $ref->{username};
 
 	return ($self->{dbi}->selectrow_array("select count(*) from login_failure where login = ? and
 			( ( to_days(date) * 24 * 60 * 60 ) + time_to_sec(date) + ? ) >
