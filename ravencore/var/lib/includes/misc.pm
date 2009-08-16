@@ -979,21 +979,14 @@ sub rehash_mail {
 			$alias_map .= ',' . $mname . '@yaa-autoreply.' . $dname if $alias_map;
 		}
 
-		# now loop for redirects
-		my $sql = "select redirect_addr from mail_users where redirect = 'true' and id = '" . $mail->{mid} . "'";
-		my $result_redir = $self->{dbi}->prepare($sql);
-
-		$result_redir->execute;
-
-		while (my $row_redir = $result_redir->fetchrow_hashref) {
-
+		# if redirects
+		if ($mail->{redirect_addr}) {
 			# if $alias_map is emtpy, we don't start with a comma
 			if ($alias_map eq "") {
-				$alias_map = $row_redir->{'redirect_addr'};
+				$alias_map = $mail->{redirect_addr};
 			} else {
-				$alias_map .= "," . $row_redir->{'redirect_addr'};
+				$alias_map .= "," . $mail->{redirect_addr};
 			}
-
 		}
 
 		# only put this entry in valiasmap if the variable exists
