@@ -1344,44 +1344,6 @@ $log {
 
 	}
  
-	# TODO: finish the below when custom log rotation is put back into the interface
-   
-#	my $sql = "select * from domains where logrotate = 'on'";
-#	my @result = $self->{dbi}->prepare($sql);
-
-#	while( my $row = $result->fetchrow_hashref )
-#	{
-#	$data .= $self->{CONF}{VHOST_ROOT} . '/' . $row->{name} . '/var/log/*.processed {' . "\n";
-#	$data .= "\tcreate 644 root root\n"
-#	case $log_when_rotate in
-#	NULL);;
-#"");;
-#*)echo_e "\t$log_when_rotate";;
-#	esac
-
-#	case $log_mail_addr in
-#	NULL)mail=nomail;;
-#"");;
-#*)echo_e "\tmail $log_mail_addr";;
-#	esac
-
-#	case $log_rotate_num in
-#	NULL);;
-#*)echo_e "\trotate $log_rotate_num";;
-#	esac
-
-#	case $log_rotate_size in
-#	NULL);;
-#*)echo_e "\tsize $log_rotate_size$log_rotate_size_ext";;
-#	esac
-
-#	case $log_compress in
-#	yes)compress=compress;;
-#no)compress=nocompress;;
-#	esac
-
-#	echo_e "\t$compress\n\n}"
-
 	# write the file
 	file_write($self->{RC_ROOT} . '/etc/logrotate.conf', $data);
 
