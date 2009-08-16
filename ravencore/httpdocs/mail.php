@@ -114,34 +114,37 @@ print '<input type=radio name="catchall" value="delete_it"';
 			if ($domain[catchall] == "delete_it") print ' checked';
 			print '> ' . __('Delete it') . ' <br>';
 
-			$sql = "select count(*) as count from domains where uid = '$uid'";
-			$result_count = $db->data_query($sql);
+			$domains = $db->run("get_domains_by_user_id", Array(uid => $uid));
 
-			$row_c = $db->data_fetch_array($result_count);
+			// remove this $did and all ones with 'mail = no'
+			for ($i = 0; $i < count($domains); $i++) {
+				if ($did == $domains[$i][id] or "on" != $domains[$i][mail]) {
+					array_splice($domains, $i, 1);
+					$i--;
+				}
+			}
+
 			// for domains with no user
-			if ($row_c[count] == 0) {
+			if (0 == count($domains)) {
 				print '<input type=radio name=catchall value=alias_to';
 				if ($domain[catchall] == "alias_to") print ' checked';
 				print '> ' . __('Forward to that user') . ' @ <input type=text name=alias_addr value="' . $domain[alias_addr] . '">';
 				// for users with more then one domain setup
 			}
-			else if ($row_c[count] > 1) {
+			else if (count($domains) > 0) {
 				print '<input type=radio name=catchall value=alias_to';
 				if ($domain[catchall] == "alias_to") print ' checked';
 				print '> ' . __('Forward to that user') . ' @ <select name=alias_addr>';
-				// all other domains for this user ( with mail turned on )
-				$sql = "select name from domains where uid = '$uid' and id != '$did' and mail = 'on'";
-				$result_alias = $db->data_query($sql);
 
-				while ($row_a = $db->data_fetch_array($result_alias))
-				{
-					print '<option value="' . $row_a[name] . '"';
-					if ($domain[alias_addr] == $row_a[name]) print ' selected';
-					print '>' . $row_a[name] . '</option>';
+				// all other domains for this user ( with mail turned on )
+				foreach ($domains as $dom) {
+					print '<option value="' . $dom[name] . '"';
+					if ($domain[alias_addr] == $dom[name]) print ' selected';
+					print '>' . $dom[name] . '</option>';
 				}
 
 				print '</select>';
-			} else print '<input type=radio disabled> ' . __('You need at least two domains in the account with mail turned on to be able to alias mail');
+			} else print '<input type=radio disabled> ' . __('You need at least one other domain in the account with mail turned on to be able to alias mail');
 			print '<p>';
 
 			print '
