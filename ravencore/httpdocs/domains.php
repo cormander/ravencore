@@ -62,31 +62,10 @@ if (!$did) {
 
 	if(is_admin()) print '<a href="edit_domain.php" onmouseover="show_help(\'' . __('Add a domain to the server') . '\');" onmouseout="help_rst();">' . __('Add a Domain') . '</a><p>';
 
-	$sql = "select * from domains where 1";
+	if (!is_admin() or $uid) $domains = $db->run("get_domains_by_user_id", Array(uid => $uid));
+	else $domains = $db->run("get_domains");
 
-	if (!is_admin() or $uid) $sql .= " and uid = '$uid'";
-	if ($_GET['search']) $sql .= " and name like '%" . $_GET['search'] . "%'";
-
-	$sql .= " order by name";
-	$result = $db->data_query($sql);
-	$page = "";
-
-	if(array_key_exists('page', $_REQUEST)) {
-		$page = $_REQUEST['page'];
-	}
-
-	if(trim($page)=="" || $page<=0) {
-		$page = 1;
-	}
-
-	$CONF['DOMAINS_PER_PAGE'] = 20;
-	$intDomainsPerPage = (int)$CONF['DOMAINS_PER_PAGE'];
-	$sql .= "
-	LIMIT ".(($page-1)*$intDomainsPerPage).",".$intDomainsPerPage;
-
-	$num_domains = $db->data_num_rows();
-
-	if ($num_domains == 0 and !$_GET['search']) {
+	if (0 == count($domains)) {
 		print __('There are no domains setup') . '.';
 		// give an "add a domain" link if the user has permission to add one more
 		if (is_admin() or user_have_permission($uid, "domain")) print ' <a href="edit_domain.php">' . __('Add a Domain') . '</a>';
@@ -99,45 +78,11 @@ if (!$did) {
 		print '</form><p>';
 	}
 
-	if ($_GET['search']) print '' . __('Your search returned') . ' <i><b>' . $num_domains . '</b></i> ' . __('results') . '.<p>';
+	if ($_GET['search']) print '' . __('Your search returned') . ' <i><b>' . count($domains) . '</b></i> ' . __('results') . '.<p>';
 
-	if ($num_domains != 0) {
-		$result = $db->data_query($sql);
-
-		$pages = ceil($num_domains / $intDomainsPerPage);
-
+	if (0 != count($domains)) {
 
 		$strContent = '<table class="listpad">
-		<tr>
-			<th colspan="2">'. __('Found') . ' ' . $num_domains . ' ' . __('results').'</th>
-			<th colspan="4" style="text-align: right;">Page: ';
-
-			if($page>1) {
-				$strContent .= '<a href="domains.php?page=' . ($page-1) .($_GET['search']!="" ? '&search='.$_GET['search'] : '' ). '"> &lt;&lt; </a>';
-			} else {
-				$strContent .= ' &lt;&lt; ';
-			}
-
-			$strContent .= '<select name="page" onchange="document.location=\'domains.php?page=\'+this.value'.($_GET['search']!="" ? '+\'&search='.$_GET['search'].'\'' : '' ).'">';
-
-
-			for($i=1;$i<=$pages;$i++) {
-				if ($i==$page) {
-					$strContent .= '<option value="'.$i.'" selected="selected">'.$i.' </option>';
-				} else {
-					$strContent .= '<option value="'.$i.'">'.$i.' </option>';
-
-				}
-			}
-
-			$strContent .= '</select>';
-			if($page<$pages) {
-				$strContent .= '<a href="domains.php?page=' . ($page+1) .($_GET['search']!="" ? '&search='.$_GET['search'] : '' ). '"> &gt;&gt; </a>';
-			} else {
-				$strContent .= ' &gt;&gt; ';
-			}
-			$strContent .= '</th>
-		</tr>
 		<tr>
 			<th class="listpad" style="width: 16px">' . __('Status') . '</th>
 			<th class="listpad">' . __('Name') . '</th>
@@ -147,8 +92,8 @@ if (!$did) {
 			<th class="listpad">' . __('Traffic usage') . '</th>
 		</tr>';
 
-		while ($row = $db->data_fetch_array($result)) {
-			$d = new domain($row['id']);
+		foreach ($domains as $domain) {
+			$d = new domain($domain[id]);
 
 			$space = $d->space_usage(date("m"), date("Y"));
 			$traffic = $d->traffic_usage(date("m"), date("Y"));
@@ -158,26 +103,26 @@ if (!$did) {
 
 			$helpMessage = '';
 
-			switch ($row['host_type']) {
+			switch ($domain[host_type]) {
 				case "physical":
 					$helpMessage = __('Physical hosting') . ': ';
-					if ($row['host_php']) {	$helpMessage .= __('PHP') . ' '; };
-					if ($row['host_cgi']) {	$helpMessage .= __('CGI') . ' '; };
-					if ($row['host_ssl']) {	$helpMessage .= __('SSL') . ' '; };
-					if ($row['host_dir']) {	$helpMessage .= __('Directory indexing') . ' '; };
+					if ($domain[host_php]) $helpMessage .= __('PHP') . ' ';
+					if ($domain[host_cgi]) $helpMessage .= __('CGI') . ' ';
+					if ($domain[host_ssl]) $helpMessage .= __('SSL') . ' ';
+					if ($domain[host_dir]) $helpMessage .= __('Directory indexing') . ' ';
 					break;
 				case "redirect":
-					$helpMessage = __('Redirect to') . ' ' . $row['redirect_url']  ;
+					$helpMessage = __('Redirect to') . ' ' . $domain[redirect_url]  ;
 					break;
 				case "alias":
-					$helpMessage = __('Alias of domain') . ' ' . $row['redirect_url']  ;
+					$helpMessage = __('Alias of domain') . ' ' . $domain[redirect_url]  ;
 					break;
 				case "none":
 					$helpMessage = __('No hosting');
 					break;
 			}
 
-			if ($row['hosting']=='on') {
+			if ($domain[hosting]=='on') {
 				$strOnOffImage = '/images/solidgr.gif' ;
 				$strOnOffHelpText = __('Hosting') . ' ' . __('Status') . ': ' . __('On');
 				$strNewHosting = 'off';
@@ -188,10 +133,10 @@ if (!$did) {
 			}
 
 			$strContent .= '<tr>
-				<td class="listpad" style="width: 16px; text-align: center" onmouseover="show_help(\'' . $strOnOffHelpText. '\');" onmouseout="help_rst();"><a href="domains.php?action=hosting&did='.$row['id'].'&hosting='.$strNewHosting.'"><img src="'.$strOnOffImage.'" height="12" width="12" border="0"></a></td>
-				<td class="listpad"><a href="domains.php?did=' . $row['id'] . '" onmouseover="show_help(\'' . __('View setup information for') . ' ' . $row['name'] . '\');" onmouseout="help_rst();">' . $row['name'] . '</a></td>
-				<td class="listpad" onmouseover="show_help(\'' . $helpMessage . '\');" onmouseout="help_rst();"><a href="hosting.php?did=' . $row['id'] . '">' . $row['host_type'] . '</a></td>
-				<td class="listpad">' . $row['created'] . '</td>
+				<td class="listpad" style="width: 16px; text-align: center" onmouseover="show_help(\'' . $strOnOffHelpText. '\');" onmouseout="help_rst();"><a href="domains.php?action=hosting&did='.$domain['id'].'&hosting='.$strNewHosting.'"><img src="'.$strOnOffImage.'" height="12" width="12" border="0"></a></td>
+				<td class="listpad"><a href="domains.php?did=' . $domain['id'] . '" onmouseover="show_help(\'' . __('View setup information for') . ' ' . $domain['name'] . '\');" onmouseout="help_rst();">' . $domain['name'] . '</a></td>
+				<td class="listpad" onmouseover="show_help(\'' . $helpMessage . '\');" onmouseout="help_rst();"><a href="hosting.php?did=' . $domain['id'] . '">' . $domain['host_type'] . '</a></td>
+				<td class="listpad">' . $domain['created'] . '</td>
 				<td class="listpad" align=right>' . $space . ' MB</td>
 				<td class="listpad" align=right>' . $traffic . ' MB</td>
 			</tr>';
@@ -204,33 +149,6 @@ if (!$did) {
 
 		print $strContent;
 
-
-/*
-        print '<table class="listpad"><tr><th class="listpad">' . __('Name') . '</th><th class="listpad">' . __('Space usage') . '</th><th class="listpad">' . __('Traffic usage') . '</th></tr>';
-        // set our totals to zero
-        $total_space = 0;
-        $total_traffic = 0;
-
-        while ($row =& $result->FetchRow())
-        {
-			$d = new domain($row['id']);
-
-            $space = $d->space_usage(date("m"), date("Y"));
-            $traffic = $d->traffic_usage(date("m"), date("Y"));
-            // add to our totals
-            $total_space += $space;
-            $total_traffic += $traffic;
-
-            print '<tr><td><a href="domains.php?did=' . $row['id'] . '" onmouseover="show_help(\'' . __('View setup information for') . ' ' . $row['name'] . '\');" onmouseout="help_rst();">' . $row['name'] . '</a></td><td align=right>' . $space . ' MB</td><td align=right>' . $traffic . ' MB</td></tr>';
-        }
-
-        print '<tr><td>' . __('Totals') . '</td><td align=right>' . $total_space . ' MB</td><td align=right>' . $total_traffic . ' MB</td></tr></table><p>';
-
-*/
-        // print the link to add a domain if the user has permissions to\
-		/*
-        if (!user_can_add($uid, "domain") and !is_admin()) print '' . __('You are at your limit for the number of domains you can have') . '<p>';
-        else print '<a href="edit_domain.php" onmouseover="show_help(\'' . __('Add a domain to the server') . '\');" onmouseout="help_rst();">' . __('Add a Domain') . '</a><p>';*/
     }
 }  else {
 	nav_top();
