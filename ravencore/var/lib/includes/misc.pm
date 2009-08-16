@@ -1431,7 +1431,7 @@ sub rehash_named {
 ~;
 
 		# Loop through the records for this domain
-		foreach my $rec (@{$self->get_dns_rec_by_domain_id({did => $dom->{id}})}) {
+		foreach my $rec (@{$self->get_dns_recs_by_domain_id({did => $dom->{id}})}) {
 			# This may be an MX record. We seperate the MX token and the preference with a - symbol, so replace this with a space
 			$rec->{type} =~ s/-/ /;
 			$data .= $rec->{name} . "\t\tIN " . $rec->{type} . "\t" . $rec->{target} . "\n";

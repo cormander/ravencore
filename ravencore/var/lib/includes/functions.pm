@@ -59,7 +59,7 @@ sub get_sys_users_by_domain_id {
 	return $self->select_ref_many("select * from sys_users where did = ?", [$ref->{did}]);
 }
 
-sub get_dns_rec_by_domain_id {
+sub get_dns_recs_by_domain_id {
 	my ($self, $ref) = @_;
 
 	return $self->select_ref_many("select * from dns_rec where did = ? order by type, name, target", [$ref->{did}]);

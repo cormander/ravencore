@@ -252,7 +252,7 @@ if (!$did) {
 			print '<a href="dns.php?did=' . $did . '" onmouseover="show_help(\'' . __('Manage DNS for this domain') . '\');" onmouseout="help_rst();">' . __('DNS Records') . '</a>';
 
 			if ($domain[soa]) {
-				$rec = $db->run("get_dns_rec_by_domain_id", Array(did => $domain[id]));
+				$rec = $db->run("get_dns_recs_by_domain_id", Array(did => $domain[id]));
 				print ' (' . count($rec) . ')';
 			} else print __('( off )');
 
