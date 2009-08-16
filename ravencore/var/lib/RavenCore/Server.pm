@@ -693,6 +693,9 @@ sub run_query {
 		$ok_to_do = 1 if $_ eq $func;
 	}
 
+	# for now, all functions starting with get_ can be called
+	$ok_to_do = 1 if $func =~ /^get_/;
+
 	$self->debug("received query: " . $query);
 
 	#
