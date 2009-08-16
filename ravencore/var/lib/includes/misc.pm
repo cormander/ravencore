@@ -412,6 +412,7 @@ sub rehash_httpd {
 	foreach my $ip (@{$self->get_ip_addresses}) {
 
 		my $in_use = 0;
+		my $ssl_in_use = 0;
 		my $dom;
 
 		# build the IP's default domain first
@@ -420,6 +421,7 @@ sub rehash_httpd {
 		if ("on" eq $dom->{'hosting'}) {
 			$vhost_data .= $self->make_virtual_host($ip->{ip_address}, $dom);
 			$in_use = 1;
+			$ssl_in_use = 1 if "true" eq $dom->{host_ssl};
 		}
 
 		# build the rest of the domains on this IP
@@ -431,11 +433,16 @@ sub rehash_httpd {
 			if ("on" eq $dom->{'hosting'}) {
 				$domain_include_file->{$dom->{'name'}} .= $self->make_virtual_host($ip->{ip_address}, $dom);
 				$in_use = 1;
+				$ssl_in_use = 1 if "true" eq $dom->{host_ssl};
 			}
 		}
 
 		if (1 == $in_use) {
 			$data .= "NameVirtualHost " . $ip->{ip_address} . ":80\n";
+		}
+
+		if (1 == $ssl_in_use) {
+			$data .= "NameVirtualHost " . $ip->{ip_address} . ":443\n";
 		}
 
 	}
