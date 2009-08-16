@@ -1846,16 +1846,9 @@ sub ip_list {
 	my $ips = {};
 	my $db_ips = {};
 
-	my $sql = "select * from ip_addresses";
-	my $sth = $self->{dbi}->prepare($sql);
-
-	$sth->execute;
-
-	while (my $row = $sth->fetchrow_hashref) {
-		$db_ips->{$row->{ip_address}} = $row;
+	foreach my $ip (@{$self->get_ip_addresses}) {
+		$db_ips->{$ip->{ip_address}} = $ip;
 	}
-
-	$sth->finish;
 
 	open IF, "ifconfig |";
 	while (<IF>) {
