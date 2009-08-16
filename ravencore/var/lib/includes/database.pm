@@ -215,3 +215,33 @@ sub sql {
 
 }
 
+sub select_count {
+	my ($self, $query, $args) = @_;
+
+	return ($self->{dbi}->selectrow_array($query, undef, @{$args}))[0];
+}
+
+sub select_ref_single {
+	my ($self, $query, $args) = @_;
+
+	return $self->{dbi}->selectrow_hashref($query, undef, @{$args});
+}
+
+sub select_ref_many {
+	my ($self, $query, $args) = @_;
+
+	my $ref = [];
+
+	my $sth = $self->{dbi}->prepare($query);
+
+	$sth->execute(@{$args});
+
+	while (my $row = $sth->fetchrow_hashref) {
+		push @{$ref}, $row;
+	}
+
+	$sth->finish;
+
+	return $ref;
+}
+

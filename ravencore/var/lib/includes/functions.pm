@@ -2,46 +2,21 @@
 sub get_ip_addresses {
 	my ($self) = @_;
 
-	my $sth;
-	my $ip_info = [];
-
-	$sth = $self->{dbi}->prepare("select * from ip_addresses order by ip_address");
-
-	$sth->execute;
-
-	while (my $row = $sth->fetchrow_hashref) {
-		push @{$ip_info}, $row;
-	}
-
-	$sth->finish;
-
-	return $ip_info;
+	return $self->select_ref_many("select * from ip_addresses order by ip_address");
 }
 
 sub get_ip_info_by_ip {
 	my ($self, $ip) = @_;
 
-	my $sth;
-	my $ip_info;
-
-	$ip_info = $self->{dbi}->selectrow_hashref("select * from ip_addresses where ip_address = ?", undef, $ip);
-
-	return undef unless $ip_info->{ip_address} eq $ip;
-
-	return $ip_info;
+	return $self->select_ref_single("select * from ip_addresses where ip_address = ?", [$ip]);
 }
 
 sub get_domain_by_id {
 	my ($self, $ref) = @_;
 
-	my $sth;
-	my $dom;
-
 	my $id = $ref->{id};
 
-	$dom = $self->{dbi}->selectrow_hashref("select * from domains where id = ?", undef, $id);
-
-	return undef unless $dom->{id} eq $id;
+	my $dom = $self->select_ref_single("select * from domains where id = ?", [$id]);
 
 	$dom->{sys_users} = $self->get_sys_users_by_domain_id({did => $id});
 
@@ -51,298 +26,109 @@ sub get_domain_by_id {
 sub get_domains_by_user_id {
 	my ($self, $ref) = @_;
 
-	my $sth;
-	my $domains = [];
-
-	my $uid = $ref->{uid};
-
-	$sth = $self->{dbi}->prepare("select * from domains where uid = ?");
-
-	$sth->execute($uid);
-
-	while (my $row = $sth->fetchrow_hashref) {
-		push @{$domains}, $row;
-	}
-
-	$sth->finish;
-
-	return $domains;
+	return $self->select_ref_many("select * from domains where uid = ?", [$ref->{uid}]);
 }
 
 sub get_domains {
 	my ($self) = @_;
 
-	my $sth;
-	my $domains = [];
-
-	$sth = $self->{dbi}->prepare("select * from domains");
-
-	$sth->execute;
-
-	while (my $row = $sth->fetchrow_hashref) {
-		push @{$domains}, $row;
-	}
-
-	$sth->finish;
-
-	return $domains;
+	return $self->select_ref_many("select * from domains");
 }
 
 sub get_domains_by_ip {
 	my ($self, $ref) = @_;
 
-	my $sth;
-	my $domains = [];
-
-	my $ip = $ref->{ip};
-
-	$sth = $self->{dbi}->prepare("select d.* from domains d inner join domain_ips i on d.id = i.did where i.ip_address = ?");
-
-	$sth->execute($ip);
-
-	while (my $row = $sth->fetchrow_hashref) {
-		push @{$domains}, $row;
-	}
-
-	$sth->finish;
-
-	return $domains;
+	return $self->select_ref_many("select d.* from domains d inner join domain_ips i on d.id = i.did where i.ip_address = ?", [$ref->{ip}]);
 }
 
 sub get_domains_with_no_ip {
 	my ($self) = @_;
 
-	my $sth;
-	my $domains = [];
-
-	$sth = $self->{dbi}->prepare("select id from domains where id not in (select did from domain_ips)");
-
-	$sth->execute;
-
-	while (my ($id) = $sth->fetchrow_array) {
-		push @{$domains}, $self->get_domain_by_id({id => $id});
-	}
-
-	$sth->finish;
-
-	return $domains;
+	return $self->select_ref_many("select id from domains where id not in (select did from domain_ips)");
 }
 
 sub get_sys_users {
 	my ($self) = @_;
 
-	my $sth;
-	my $sys_users = [];
-
-	$sth = $self->{dbi}->prepare("select * from sys_users su inner join domains d on d.suid = su.id");
-
-	$sth->execute;
-
-	while (my $row = $sth->fetchrow_hashref) {
-		push @{$sys_users}, $row;
-	}
-
-	$sth->finish;
-
-	return $sys_users;
+	return $self->select_ref_many("select * from sys_users su inner join domains d on d.suid = su.id");
 }
 
 sub get_sys_users_by_domain_id {
 	my ($self, $ref) = @_;
 
-	my $sth;
-	my $sys_users = [];
-
-	my $did = $ref->{did};
-
-	$sth = $self->{dbi}->prepare("select * from sys_users where did = ?");
-
-	$sth->execute($did);
-
-	while (my $row = $sth->fetchrow_hashref) {
-		push @{$sys_users}, $row;
-	}
-
-	$sth->finish;
-
-	return $sys_users;
+	return $self->select_ref_many("select * from sys_users where did = ?", [$ref->{did}]);
 }
 
 sub get_dns_rec_by_domain_id {
 	my ($self, $ref) = @_;
 
-	my $sth;
-	my $rec;
-
-	my $did = $ref->{did};
-
-	$rec = $self->{dbi}->selectrow_hashref("select * from dns_rec where did = ? order by type, name, target", undef, $did);
-
-	return undef unless $rec->{did} eq $did;
-
-	return $rec;
+	return $self->select_ref_many("select * from dns_rec where did = ? order by type, name, target", [$ref->{did}]);
 }
 
 sub get_users {
 	my ($self) = @_;
 
-	my $sth;
-	my $users = [];
-
-	$sth = $self->{dbi}->prepare("select * from users");
-
-	$sth->execute;
-
-	while (my $row = $sth->fetchrow_hashref) {
-		push @{$users}, $row;
-	}
-
-	$sth->finish;
-
-	return $users;
+	return $self->select_ref_many("select * from users");
 }
 
 sub get_user_by_id {
 	my ($self, $ref) = @_;
 
-	my $sth;
-	my $user;
-
-	my $id = $ref->{id};
-
-	$user = $self->{dbi}->selectrow_hashref("select * from users where id = ? limit 1", undef, $id);
-
-	return undef unless $user->{id} eq $id;
-
-	return $user;
+	return $self->select_ref_single("select * from users where id = ? limit 1", [$ref->{id}]);
 }
 
 sub get_user_by_name {
 	my ($self, $ref) = @_;
 
-	my $sth;
-	my $user;
-
-	my $username = $ref->{name};
-
-	$user = $self->{dbi}->selectrow_hashref("select * from users where binary(login) = ? limit 1", undef, $username);
-
-	return undef unless $user->{login} eq $username;
-
-	return $user;
+	return $self->select_ref_single("select * from users where binary(login) = ? limit 1", [$ref->{username}]);
 }
 
 sub get_user_by_name_and_password {
 	my ($self, $ref) = @_;
 
-	my $sth;
-	my $user;
-
-	my $username = $ref->{name};
-	my $password = $ref->{password};
-
-	$user = $self->{dbi}->selectrow_hashref("select * from users where binary(login) = ? and binary(passwd) = ? limit 1", undef, $username, $password);
-
-	return undef unless $user->{login} eq $username;
-
-	return $user;
+	return $self->select_ref_single("select * from users where binary(login) = ? and binary(passwd) = ? limit 1", [$ref->{username}, $ref->{password}]);
 }
 
 sub get_mail_user_by_name_and_password {
 	my ($self, $ref) = @_;
 
-	my $sth;
-	my $user;
-
-	my $username = $ref->{name};
-	my $password = $ref->{password};
-
-	$user = $self->{dbi}->selectrow_hashref("select mu.*, concat(mail_name,'\@',d.name) as email from domains d inner join mail_users mu on mu.did = d.id
+	return $self->select_ref_single("select mu.*, concat(mail_name,'\@',d.name) as email from domains d inner join mail_users mu on mu.did = d.id
 		where concat(mail_name,'\@',d.name) = ? and binary(mu.passwd) = ? limit 1",
-		undef, $username, $password);
-
-	return undef unless $user->{email} eq $username;
-
-	return $user;
+		[$ref->{username}, $ref->{password}]);
 }
 
 sub get_mail_users {
 	my ($self) = @_;
 
-	my $sth;
-	my $mails = [];
-
-	$sth = $self->{dbi}->prepare("select *, m.id as mid, d.mail as mail_toggle from domains d inner join mail_users m on m.did = d.id");
-
-	$sth->execute;
-
-	while (my $row = $sth->fetchrow_hashref) {
-		push @{$mails}, $row;
-	}
-
-	$sth->finish;
-
-	return $mails;
+	return $self->select_ref_many("select *, m.id as mid, d.mail as mail_toggle from domains d inner join mail_users m on m.did = d.id");
 }
 
 sub get_mail_users_by_domain_id {
 	my ($self, $ref) = @_;
 
-	my $sth;
-	my $mails = [];
-
-	my $did = $ref->{did};
-
-	$sth = $self->{dbi}->prepare("select *, m.id as mid, d.mail as mail_toggle from domains d inner join mail_users m on m.did = d.id where d.id = ?");
-
-	$sth->execute($did);
-
-	while (my $row = $sth->fetchrow_hashref) {
-		push @{$mails}, $row;
-	}
-
-	$sth->finish;
-
-	return $mails;
+	return $self->select_ref_many("select *, m.id as mid, d.mail as mail_toggle from domains d inner join mail_users m on m.did = d.id where d.id = ?", [$ref->{did}]);
 }
 
 sub get_login_failure_count_by_username {
 	my ($self, $ref) = @_;
 
-	my $sth;
 	my $lockout_time = ( $self->{CONF}{LOCKOUT_TIME} ? $self->{CONF}{LOCKOUT_TIME} : 300 );
 
-	my $username = $ref->{username};
-
-	return ($self->{dbi}->selectrow_array("select count(*) from login_failure where login = ? and
+	return $self->select_count("select count(*) from login_failure where login = ? and
 			( ( to_days(date) * 24 * 60 * 60 ) + time_to_sec(date) + ? ) >
-			( ( to_days(now()) * 24 * 60 * 60 ) + time_to_sec(now() ) )", undef, $username, $lockout_time))[0];
+			( ( to_days(now()) * 24 * 60 * 60 ) + time_to_sec(now() ) )",
+		[$ref->{username}, $lockout_time]);
 }
 
 sub get_databases_by_domain_id {
 	my ($self, $ref) = @_;
 
-	my $sth;
-	my $dbs = [];
-
-	my $did = $ref->{did};
-
-	$sth = $self->{dbi}->prepare("select * from data_bases where did = ?");
-
-	$sth->execute($did);
-
-	while (my $row = $sth->fetchrow_hashref) {
-		push @{$dbs}, $row;
-	}
-
-	$sth->finish;
-
-	return $dbs;
+	return $self->select_ref_many("select * from data_bases where did = ?", [$ref->{did}]);
 }
 
 sub hosting_ssl {
 	my ($self) = @_;
 
-	return ($self->{dbi}->selectrow_array("select count(*) as count from domains where host_ssl = 'true'"))[0];
+	return $self->select_count("select count(*) as count from domains where host_ssl = 'true'");
 }
 
