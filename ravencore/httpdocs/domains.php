@@ -153,18 +153,15 @@ if (!$did) {
 }  else {
 	nav_top();
 
-	$sql = "select * from domains where id = '$did'";
-	if (!is_admin()) $sql .= " and uid = '$uid'";
-	$result = $db->data_query($sql);
+	$domain = $db->run("get_domain_by_id", Array(id => $did));
 
-	$num = $db->data_num_rows();
+	if (!is_admin() and $domain[uid] != $uid) $domain = Array();
 
-	if ($num == 0) print __('Domain does not exist');
+	if (0 == count($domain)) print __('Domain does not exist');
 	else {
-		$row = $db->data_fetch_array($result);
 
 		if (is_admin()) {
-			$uid = $row['uid'];
+			$uid = $domain[uid];
 
 			print '<form method="post">' . __('This domain belongs to') . ': ' . selection_users($uid) . ' <input type=submit value="' . __('Change') . '">
 <input type=hidden name=action value=change>
@@ -173,15 +170,15 @@ if (!$did) {
 		}
 
 		print '<table class="listpad" width="45%" style="float: left">
-<tr><th class="listpad" colspan="2">' . __('Info for') . ' ' . $row[name] . '</th></tr>
-<tr><td class="listpad">' . __('Name') . ':</td><td class="listpad">' . $row[name] . ' - <a href="domains.php?action=delete&did=' . $row[id] . '" onmouseover="show_help(\'' . __('Delete this domain off the server') . '\');" onmouseout="help_rst();" onclick="return confirm(\'' . __('Are you sure you wish to delete this domain') . '?\');">' . __('delete') . '</a></td></tr>';
+<tr><th class="listpad" colspan="2">' . __('Info for') . ' ' . $domain[name] . '</th></tr>
+<tr><td class="listpad">' . __('Name') . ':</td><td class="listpad">' . $domain[name] . ' - <a href="domains.php?action=delete&did=' . $domain[id] . '" onmouseover="show_help(\'' . __('Delete this domain off the server') . '\');" onmouseout="help_rst();" onclick="return confirm(\'' . __('Are you sure you wish to delete this domain') . '?\');">' . __('delete') . '</a></td></tr>';
 
-		print '<tr><td class="listpad">' . __('Created') . ':</td><td class="listpad">' . $row[created] . '</td></tr>';
+		print '<tr><td class="listpad">' . __('Created') . ':</td><td class="listpad">' . $domain[created] . '</td></tr>';
 
 		if (have_service("web")) {
 			print '<tr><td class="listpad"><form method="post" name=status>' . __('Status') . ':</td><td class="listpad">';
 
-			if ($row[hosting] == "on") print '' . __('ON') . ' <a href="javascript:document.status.submit();" onclick="return confirm(\'' . __('Are you sure you wish to turn off hosting for this domain') . '?\');" onmouseover="show_help(\'' . __('Turn OFF hosting for this domain') . '\');" onmouseout="help_rst();">*</a><input type=hidden name=hosting value="off">';
+			if ($domain[hosting] == "on") print '' . __('ON') . ' <a href="javascript:document.status.submit();" onclick="return confirm(\'' . __('Are you sure you wish to turn off hosting for this domain') . '?\');" onmouseover="show_help(\'' . __('Turn OFF hosting for this domain') . '\');" onmouseout="help_rst();">*</a><input type=hidden name=hosting value="off">';
 			else print '' . __('OFF') . ' <a href="javascript:document.status.submit();" onmouseover="show_help(\'' . __('Turn ON hosting for this domain') . '\');" onmouseout="help_rst();">*</a><input type=hidden name=hosting value="on">';
 
 			print '<input type=hidden name=did value=' . $did . '>
@@ -189,18 +186,18 @@ if (!$did) {
 </form></td></tr>
 <tr><td class="listpad">';
 
-			switch ($row[host_type]) {
+			switch ($domain[host_type]) {
 				case "physical":
-					print '' . __('Physical Hosting') . ':</td><td class="listpad"><a href="hosting.php?did=' . $row[id] . '" onmouseover="show_help(\'' . __('View/Edit Physical hosting for this domain') . '\');" onmouseout="help_rst();">' . __('edit') . '</a>';
+					print '' . __('Physical Hosting') . ':</td><td class="listpad"><a href="hosting.php?did=' . $domain[id] . '" onmouseover="show_help(\'' . __('View/Edit Physical hosting for this domain') . '\');" onmouseout="help_rst();">' . __('edit') . '</a>';
 					break;
 				case "redirect":
-					print '' . __('Redirect') . ':</td><td class="listpad"><a href="hosting.php?did=' . $row[id] . '" onmouseover="show_help(\'' . __('View/Edit where this domain redirects to') . '\');" onmouseout="help_rst();">' . __('edit') . '</a>';
+					print '' . __('Redirect') . ':</td><td class="listpad"><a href="hosting.php?did=' . $domain[id] . '" onmouseover="show_help(\'' . __('View/Edit where this domain redirects to') . '\');" onmouseout="help_rst();">' . __('edit') . '</a>';
 					break;
 				case "alias":
-					print '' . __('Alias of') . ' ' . $row[redirect_url] . '</td><td class="listpad"> <a href="hosting.php?did=' . $row[id] . '" onmouseover="show_help(\'' . __('View/Edit what this domain is a server alias of') . '\');" onmouseout="help_rst();">' . __('edit') . '</a>';
+					print '' . __('Alias of') . ' ' . $domain[redirect_url] . '</td><td class="listpad"> <a href="hosting.php?did=' . $row[id] . '" onmouseover="show_help(\'' . __('View/Edit what this domain is a server alias of') . '\');" onmouseout="help_rst();">' . __('edit') . '</a>';
 					break;
 				default:
-					print '' . __('No Hosting') . ':</td><td class="listpad"><a href="hosting.php?did=' . $row[id] . '" onmouseover="show_help(\'' . __('Setup hosting for this domain') . '\');" onmouseout="help_rst();">' . __('edit') . '</a>';
+					print '' . __('No Hosting') . ':</td><td class="listpad"><a href="hosting.php?did=' . $domain[id] . '" onmouseover="show_help(\'' . __('Setup hosting for this domain') . '\');" onmouseout="help_rst();">' . __('edit') . '</a>';
 					break;
 			}
 
@@ -211,7 +208,7 @@ if (!$did) {
 <tr><td class="listpad">
 ';
 
-			if ($row[host_type] == "physical") {
+			if ($domain[host_type] == "physical") {
 				// the file manager make a connection to port 21 and uses FTP to manage files. If the ftp server is
 				// offline, then we want to say that here.
 				$ftp_working = @fsockopen("localhost", 21);
@@ -228,7 +225,7 @@ if (!$did) {
 				// print '<p><a href="log_manager.php?did=' . $did . '" onmouseover="show_help(\'' . __('Go to the Log Manager for this domain') . '\');" onmouseout="help_rst();">' . __('Log Manager') . '</a><p>';
 			}
 
-			if ($row[host_type] == "physical") print '<p><a href="error_docs.php?did=' . $did . '" onmouseover="show_help(\'' . __('View/Edit Custom Error Documents for this domain') . '\');" onmouseout="help_rst();">' . __('Error Documents') . '</a></p>';
+			if ($domain[host_type] == "physical") print '<p><a href="error_docs.php?did=' . $did . '" onmouseover="show_help(\'' . __('View/Edit Custom Error Documents for this domain') . '\');" onmouseout="help_rst();">' . __('Error Documents') . '</a></p>';
 			else {
 				$sql = "delete from error_docs where did = '$did'";
 				$db->data_query($sql);
@@ -236,10 +233,10 @@ if (!$did) {
 		}
 
 		if (have_service("mail")) {
-			print '<p><a href="mail.php?did=' . $row[id] . '" onmouseover="show_help(\'' . __('View/Edit Mail for this domain') . '\');" onmouseout="help_rst();">' . __('Mail') . '</a>';
+			print '<p><a href="mail.php?did=' . $domain[id] . '" onmouseover="show_help(\'' . __('View/Edit Mail for this domain') . '\');" onmouseout="help_rst();">' . __('Mail') . '</a>';
 
-			if ($row[mail] == "on") {
-				$sql = "select count(*) as count from mail_users where did = '$row[id]'";
+			if ($domain[mail] == "on") {
+				$sql = "select count(*) as count from mail_users where did = '$domain[id]'";
 				$result = $db->data_query($sql);
 
 				$row_count = $db->data_fetch_array($result);
@@ -250,9 +247,9 @@ if (!$did) {
 			print '</p>';
 		}
 
-		print '<a href="databases.php?did=' . $row[id] . '" onmouseover="show_help(\'' . __('View/Edit databases for this domain') . '\');" onmouseout="help_rst();">' . __('Databases') . '</a>';
+		print '<a href="databases.php?did=' . $domain[id] . '" onmouseover="show_help(\'' . __('View/Edit databases for this domain') . '\');" onmouseout="help_rst();">' . __('Databases') . '</a>';
 
-		$sql = "select count(*) as count from data_bases where did = '$row[id]'";
+		$sql = "select count(*) as count from data_bases where did = '$domain[id]'";
 		$result = $db->data_query($sql);
 
 		$row_count = $db->data_fetch_array($result);
@@ -262,8 +259,8 @@ if (!$did) {
 		if (have_service("dns")) {
 			print '<a href="dns.php?did=' . $did . '" onmouseover="show_help(\'' . __('Manage DNS for this domain') . '\');" onmouseout="help_rst();">' . __('DNS Records') . '</a>';
 
-			if ($row[soa]) {
-				$sql = "select count(*) as count from dns_rec where did = '$row[id]'";
+			if ($domain[soa]) {
+				$sql = "select count(*) as count from dns_rec where did = '$domain[id]'";
 				$result = $db->data_query($sql);
 
 				$row_count = $db->data_fetch_array($result);
@@ -274,11 +271,11 @@ if (!$did) {
 			print '<p>';
 		}
 
-		if (have_service("web")) print '<a href="webstats.php?did=' . $row[id] . '" target=_blank onmouseover="show_help(\'' . __('View Webstats for this domain') . '\');" onmouseout="help_rst();">' . __('Webstats') . '</a>';
+		if (have_service("web")) print '<a href="webstats.php?did=' . $domain[id] . '" target=_blank onmouseover="show_help(\'' . __('View Webstats for this domain') . '\');" onmouseout="help_rst();">' . __('Webstats') . '</a>';
 
 		print '</td></tr></table>';
 
-		if ($row[host_type] == "physical") {
+		if ($domain[host_type] == "physical") {
 			print '<table class="listpad" width="45%" style="float: left;margin-top: 10px">
 <tr><th class="listpad" colspan="2">' . __('Domain Usage') . '</th></tr>
 <tr><td class="listpad">' . __('Disk space usage') . ': </td><td class="listpad">' . $d->space_usage(date("m"), date("Y")) . 'MB </td></tr>
