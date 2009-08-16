@@ -55,12 +55,9 @@ if (!$did) {
 	nav_top();
 	// print who the domains are for, if we're the admin and we're looking at a specific user's domains
 	if ($uid and is_admin()) {
-		$sql = "select * from users where id = '$uid'";
-		$result = $db->data_query($sql);
+		$user = $db->run("get_user_by_id", Array(id => $uid));
 
-		$row_u = $db->data_fetch_array($result);
-
-		print '' . __('Domains for') . ' ' . $row_u[name] . '<p>';
+		print '' . __('Domains for') . ' ' . $user[name] . '<p>';
 	}
 
 	if(is_admin()) print '<a href="edit_domain.php" onmouseover="show_help(\'' . __('Add a domain to the server') . '\');" onmouseout="help_rst();">' . __('Add a Domain') . '</a><p>';
