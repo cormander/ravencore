@@ -1413,25 +1413,12 @@ sub rehash_named {
 
 	return $self->do_error("Unable to find the bind server checkzone binary") unless $checkzone;
 
-	# TODO: check $input
-	my $rebuild_conf = 1;
-	my $all = 1;
-
 	my @domain_list;
+	my $dom;
 
-	# if given the "all" switch, set @domain_list to all domains
-	if ($all == 1) {
-		my $sql = "select distinct d.name from domains d, dns_rec r where r.did = d.id and d.soa is not null";
-
-		my $result = $self->{dbi}->prepare($sql);
-
-		$result->execute;
-
-		while (my $row = $result->fetchrow_hashref) {
-			unshift @domain_list, $row->{name};
-		}
-
-		$result->finish;
+	foreach $dom (@{$self->get_domains}) {
+		next unless $dom->{soa};
+		push @domain_list, $dom->{name};
 	}
 
 	# TODO: foreach domain, do basic checks to make sure it doesn't contain any funny characters
@@ -1458,16 +1445,9 @@ sub rehash_named {
 
 	# Loop through our domain list
 
-	foreach my $domain (@domain_list) {
+	foreach $dom (@domain_list) {
 
-		my $sql = "select * from domains where name = '" . $domain . "'";
-		my $result = $self->{dbi}->prepare($sql);
-
-		$result->execute;
-
-		my $row = $result->fetchrow_hashref;
-
-		$result->finish;
+		my $dname = $dom->{name};
 
 		# TODO: make this a perl command
 		my $date_str = `date +%Y%m%d`;
@@ -1477,7 +1457,7 @@ sub rehash_named {
 
 		$data = qq~\$TTL	300
 
-\@	IN	SOA	$row->{soa} admin (
+\@	IN	SOA	$dom->{soa} admin (
 		$date_str	; Serial
 		10800	; Refresh
 		3600	; Retry
@@ -1487,8 +1467,7 @@ sub rehash_named {
 ~;
 
 		# Loop through the records for this domain
-
-		my $sql = "select * from dns_rec where did = '" . $row->{id} . "' order by type, name, target";
+		my $sql = "select * from dns_rec where did = '" . $dom->{id} . "' order by type, name, target";
 		my $result = $self->{dbi}->prepare($sql);
 
 		$result->execute;
@@ -1502,40 +1481,30 @@ sub rehash_named {
 		$result->finish;
 
 		# Check to make sure this domain has enough DNS entries to be safely put into the configuration
-		my $tmp_file = $self->{RC_ROOT} . '/var/tmp/' . $row->{name} . '.' . $$;
+		my $tmp_file = $self->{RC_ROOT} . '/var/tmp/' . $dname . '.' . $$;
 
 		# write to and check the tmp file
 		file_write($tmp_file, $data);
-		my $ret = system($checkzone . " -q " . $row->{name} . " " . $tmp_file);
+		my $ret = system($checkzone . " -q " . $dname . " " . $tmp_file);
 		file_delete($tmp_file);
 
 		# if all goes well, load the file
 		if ($ret == 0) {
-			$self->debug("Loading zone " . $row->{name});
-
-			# If the zone file didn't already exists, we need to add the domain zone to named.conf. flag rebuild
-			if ( ! -f $self->{CONF}{NAMED_ROOT} . '/' . $row->{name} ) {
-				$rebuild_conf = 1;
-				$self->debug($row->{name} . " is not in named.conf, flagging for a rebuild");
-			}
-
-			# Make the zone file
-			file_write($self->{CONF}{NAMED_ROOT} . '/' . $row->{name}, $data);
+			$self->debug("Loading zone " . $dname);
+			file_write($self->{CONF}{NAMED_ROOT} . '/' . $dname, $data);
 
 		} else {
 			# bad zone file, don't write it
-			$self->debug("Bad zone file for " . $row->{name});
+			$self->debug("Bad zone file for " . $dname);
 		}
 
 	}
 
-	# if we're told to rebuild to conf file, do so
-	if ($rebuild_conf == 1) {
-		$self->debug("Rebuilding named.conf file");
+	$self->debug("Rebuilding named.conf file");
 
-		# Static stuff that will always be in the named.conf file
-		# TODO: read a template file rather then in-line static code
-		$data = qq~
+	# Static stuff that will always be in the named.conf file
+	# TODO: read a template file rather then in-line static code
+	$data = qq~
 
     options {
         directory "$self->{CONF}{NAMED_ROOT}";
@@ -1558,11 +1527,11 @@ sub rehash_named {
 
 ~;
 
-		# Loop through the domains on the server
-		# TODO: this needs to be a select statement, as @domain_list may not be all domains once the $query is parsed
-		foreach my $domain (@domain_list) {
+	# Loop through the domains on the server
+	# TODO: this needs to be a select statement, as @domain_list may not be all domains once the $query is parsed
+	foreach my $domain (@domain_list) {
 
-			$data .= qq~
+		$data .= qq~
     zone "$domain" {
         type master;
         file "$domain";
@@ -1570,12 +1539,10 @@ sub rehash_named {
 
 ~;
 
-		}
-
-		# write the named.conf file
-		file_write($self->{CONF}{NAMED_CONF_FILE}, $data) if $self->{CONF}{NAMED_CONF_FILE};
-
 	}
+
+	# write the named.conf file
+	file_write($self->{CONF}{NAMED_CONF_FILE}, $data) if $self->{CONF}{NAMED_CONF_FILE};
 
 	# Restart named
 	$self->debug("Restarting named");
