@@ -218,39 +218,31 @@ print '<input type=radio name="catchall" value="delete_it"';
 
 	print '</form><p>';
 
-	if (is_admin()) {
-		// admins get to see all domains
-		$sql = "select m.id as mid, d.id as did, m.mailbox, m.mail_name, d.name, m.passwd from mail_users m, domains d where did = d.id";
-		if ($_GET[search]) $sql .= " and ( m.mail_name like '%$_GET[search]%' or d.name like '%$_GET[search]%' or concat(m.mail_name, '@', d.name) like '%$_GET[search]%' )";
-		$sql .= " order by mail_name";
-	} else {
-		// users only get to look at their own, so we look in the users table as well
-		$sql = "select m.id as mid, d.id as did, m.mailbox, m.mail_name, d.name, m.passwd from mail_users m, domains d, users u where did = d.id and d.uid = u.id and m.did = d.id and u.id = '$uid'";
-		if ($_GET[search]) $sql .= " and ( m.mail_name like '%$_GET[search]%' or d.name like '%$_GET[search]%' or concat(m.mail_name, '@', d.name) like '%$_GET[search]%' )";
-		$sql .= " order by mail_name";
+	$mails = Array();
+
+	foreach ($domains as $domain) {
+		foreach ($db->run("get_mail_users_by_domain_id", Array(did => $domain[id])) as $mail) {
+			array_push($mails, $mail);
+		}
 	}
 
-	$result = $db->data_query($sql);
-
-	$num = $db->data_num_rows();
-
-	if ($num == 0 and !$_GET[search]) print __("There are no mail users setup");
+	if (0 == count($mails) and !$_GET[search]) print __("There are no mail users setup");
 	else if ($_GET[search]) print __('Your search returned') . ' <i><b>' . $num . '</b></i> ' . __('results') . '<p>';
 
-	if ($num != 0) print '<table class="listpad" width="45%"><tr><th class="listpad" colspan="100%">' . __('Email Addresses') . '</th></tr>';
+	if (0 != count($mails)) print '<table class="listpad" width="45%"><tr><th class="listpad" colspan="100%">' . __('Email Addresses') . '</th></tr>';
 
-	while ($row = $db->data_fetch_array($result)) {
-		print '<tr><td class="listpad"><a href="edit_mail.php?did=' . $row[did] . '&mid=' . $row[mid] . '" onmouseover="show_help(\'' . __('Edit') . ' ' . $row[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();">' . $row[mail_name] . '@' . $row[name] . '</td><td class="listpad">';
+	foreach ($mails as $mail) {
+		print '<tr><td class="listpad"><a href="edit_mail.php?did=' . $mail[did] . '&mid=' . $mail[mid] . '" onmouseover="show_help(\'' . __('Edit') . ' ' . $mail[mail_name] . '@' . $mail[name] . '\');" onmouseout="help_rst();">' . $mail[mail_name] . '@' . $mail[name] . '</td><td class="listpad">';
 
-	if ( $row[mailbox] == "true" ) {
-		//if (@fsockopen("127.0.0.1", 143)) print '<a href="webmail.php?mid=' . $row[mid] . '&did=' . $row[did] . '" target="_blank">' . __('Webmail') . '</a>';
+	if ( $mail[mailbox] == "true" ) {
+		//if (@fsockopen("127.0.0.1", 143)) print '<a href="webmail.php?mid=' . $mail[mid] . '&did=' . $mail[did] . '" target="_blank">' . __('Webmail') . '</a>';
 		//else print '<a href="#" onclick="alert(\'' . __('Webmail is currently offline') . '\')" onmouseover="show_help(\'' . __('Webmail is currently offline') . '\');" onmouseout="help_rst();">' . __('Webmail') . ' ( ' . __('offline') . ' )</a>';
 	  } else {
 		print '&nbsp;';
 	  }
 
 	print '</td>
-<td class="listpad"><a href=mail.php?did=' . $row[did] . '&mid=' . $row[mid] . '&action=delete onmouseover="show_help(\'' . __('Delete') . ' ' . $row[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();" onclick="';
+<td class="listpad"><a href=mail.php?did=' . $mail[did] . '&mid=' . $mail[mid] . '&action=delete onmouseover="show_help(\'' . __('Delete') . ' ' . $mail[mail_name] . '@' . $mail[name] . '\');" onmouseout="help_rst();" onclick="';
 
 		if (!user_can_add($uid, "email") and !is_admin()) print 'return confirm(\'' . __('If you delete this email, you may not be able to add it again.\rAre you sure you wish to do this?') . '\');';
 		else print 'return confirm(\'' . __('Are you sure you wish to delete this email?') . '\');';
@@ -258,7 +250,7 @@ print '<input type=radio name="catchall" value="delete_it"';
 	}
 }
 
-if ($num != 0) print '</table>';
+if (0 != count($mails)) print '</table>';
 
 nav_bottom();
 
