@@ -173,6 +173,25 @@ sub get_dns_rec_by_domain_id {
 	return $rec;
 }
 
+sub get_users {
+	my ($self) = @_;
+
+	my $sth;
+	my $users = [];
+
+	$sth = $self->{dbi}->prepare("select * from users");
+
+	$sth->execute;
+
+	while (my $row = $sth->fetchrow_hashref) {
+		push @{$users}, $row;
+	}
+
+	$sth->finish;
+
+	return $users;
+}
+
 sub get_user_by_name {
 	my ($self, $username) = @_;
 
