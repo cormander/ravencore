@@ -77,24 +77,19 @@ if ($did) {
 	// we'll go to the else statement and the req_admin will print out a nav_top
 	nav_top();
 
-	$sql = "select * from domains where id = '$did'";
-	$result = $db->data_query($sql);
+	$domain = $db->run("get_domain_by_id", Array(id => $did));
 
-	$num = $db->data_num_rows();
-
-	if ($num == 0) print __("Domain does not exist");
+	if (!is_array($domain)) print __("Domain does not exist");
 	else {
-		$row = $db->data_fetch_array($result);
+		print '<form method=post name=main>' . __('Mail for') . ' <a href="domains.php?did=' . $domain[id] . '" onmouseover="show_help(\'' . __('Goto') . ' ' . $domain[name] . '\');" onmouseout="help_rst();">' . $domain[name] . '</a> ' . __('is') . ' ';
 
-		print '<form method=post name=main>' . __('Mail for') . ' <a href="domains.php?did=' . $row[id] . '" onmouseover="show_help(\'' . __('Goto') . ' ' . $row[name] . '\');" onmouseout="help_rst();">' . $row[name] . '</a> ' . __('is') . ' ';
-
-		if ($row[mail] != "on") print __('OFF') . ' <a href="javascript:document.main.submit();" onmouseover="show_help(\'' . __('Turn ON mail for') . ' ' . $row[name] . '\');" onmouseout="help_rst();">*</a>
+		if ($domain[mail] != "on") print __('OFF') . ' <a href="javascript:document.main.submit();" onmouseover="show_help(\'' . __('Turn ON mail for') . ' ' . $domain[name] . '\');" onmouseout="help_rst();">*</a>
 <input type=hidden name=did value="' . $did . '">
 <input type=hidden name=action value="toggle">
 <input type=hidden name=mail value="on">
 ';
 		else {
-			print __('ON') . ' <a href="javascript:document.main.submit();" onmouseover="show_help(\'' . __('Turn OFF  mail for') . ' ' . $row[name] . '\');" onmouseout="help_rst();" onclick="return confirm(\'' . __('Are you sure you wish to disable mail for this domain?') . '\');">*</a>
+			print __('ON') . ' <a href="javascript:document.main.submit();" onmouseover="show_help(\'' . __('Turn OFF  mail for') . ' ' . $domain[name] . '\');" onmouseout="help_rst();" onclick="return confirm(\'' . __('Are you sure you wish to disable mail for this domain?') . '\');">*</a>
 <input type=hidden name=did value="' . $did . '">
 <input type=hidden name=action value="toggle">
 <input type=hidden name=mail value="off">
@@ -105,18 +100,18 @@ if ($did) {
 ' . __('Mail sent to email accounts not set up for this domain ( catchall address )') . ':
 <br>
 <input type=radio name=catchall value=send_to';
-			if ($row[catchall] == "send_to") print ' checked';
-			print '> ' . __('Send to') . ': <input type=text name=catchall_addr value="' . $row[catchall_addr] . '"> ';
+			if ($domain[catchall] == "send_to") print ' checked';
+			print '> ' . __('Send to') . ': <input type=text name=catchall_addr value="' . $domain[catchall_addr] . '"> ';
 
 			print '<br> <input type=radio name=catchall value=bounce';
-			if ($row[catchall] == "bounce") print ' checked';
-			print '> ' . __('Bounce with') . ': <input type=text name=bounce_message value="' . $row[bounce_message] . '"> <br>
+			if ($domain[catchall] == "bounce") print ' checked';
+			print '> ' . __('Bounce with') . ': <input type=text name=bounce_message value="' . $domain[bounce_message] . '"> <br>
 <input type=radio name=catchall value=relay';
-		if ($row[catchall] == "relay") print ' checked';
-		print '> ' . __('Relay to') . ': <input type=text name=relay_host value="' . $row[relay_host] . '"> <br> ';
+		if ($domain[catchall] == "relay") print ' checked';
+		print '> ' . __('Relay to') . ': <input type=text name=relay_host value="' . $domain[relay_host] . '"> <br> ';
 
 print '<input type=radio name="catchall" value="delete_it"';
-			if ($row[catchall] == "delete_it") print ' checked';
+			if ($domain[catchall] == "delete_it") print ' checked';
 			print '> ' . __('Delete it') . ' <br>';
 
 			$sql = "select count(*) as count from domains where uid = '$uid'";
@@ -126,13 +121,13 @@ print '<input type=radio name="catchall" value="delete_it"';
 			// for domains with no user
 			if ($row_c[count] == 0) {
 				print '<input type=radio name=catchall value=alias_to';
-				if ($row[catchall] == "alias_to") print ' checked';
-				print '> ' . __('Forward to that user') . ' @ <input type=text name=alias_addr value="' . $row[alias_addr] . '">';
+				if ($domain[catchall] == "alias_to") print ' checked';
+				print '> ' . __('Forward to that user') . ' @ <input type=text name=alias_addr value="' . $domain[alias_addr] . '">';
 				// for users with more then one domain setup
 			}
 			else if ($row_c[count] > 1) {
 				print '<input type=radio name=catchall value=alias_to';
-				if ($row[catchall] == "alias_to") print ' checked';
+				if ($domain[catchall] == "alias_to") print ' checked';
 				print '> ' . __('Forward to that user') . ' @ <select name=alias_addr>';
 				// all other domains for this user ( with mail turned on )
 				$sql = "select name from domains where uid = '$uid' and id != '$did' and mail = 'on'";
@@ -141,7 +136,7 @@ print '<input type=radio name="catchall" value="delete_it"';
 				while ($row_a = $db->data_fetch_array($result_alias))
 				{
 					print '<option value="' . $row_a[name] . '"';
-					if ($row[alias_addr] == $row_a[name]) print ' selected';
+					if ($domain[alias_addr] == $row_a[name]) print ' selected';
 					print '>' . $row_a[name] . '</option>';
 				}
 
@@ -150,11 +145,11 @@ print '<input type=radio name="catchall" value="delete_it"';
 			print '<p>';
 
 			print '
-<input type=submit value="' . __('Update') . '"> <input type=hidden name=did value="' . $row[id] . '"> <input type=hidden name=action value=update>
+<input type=submit value="' . __('Update') . '"> <input type=hidden name=did value="' . $domain[id] . '"> <input type=hidden name=action value=update>
 </form>
 <p>';
 
-			$sql = "select * from mail_users where did = '$row[id]' order by mail_name";
+			$sql = "select * from mail_users where did = '$domain[id]' order by mail_name";
 			$result = $db->data_query($sql);
 
 			$num = $db->data_num_rows();
@@ -166,8 +161,8 @@ print '<input type=radio name="catchall" value="delete_it"';
 
 			while ($row_email = $db->data_fetch_array($result)) {
 				print '<tr>
-<td class="listpad"><a href="edit_mail.php?did=' . $row_email[did] . '&mid=' . $row_email[id] . '" onmouseover="show_help(\'' . __('Edit') . ' ' . $row_email[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();">' . __('edit') . '</a></td>
-<td class="listpad">' . $row_email[mail_name] . '@' . $row[name] . '</td>
+<td class="listpad"><a href="edit_mail.php?did=' . $row_email[did] . '&mid=' . $row_email[id] . '" onmouseover="show_help(\'' . __('Edit') . ' ' . $row_email[mail_name] . '@' . $domain[name] . '\');" onmouseout="help_rst();">' . __('edit') . '</a></td>
+<td class="listpad">' . $row_email[mail_name] . '@' . $domain[name] . '</td>
 <td class="listpad">';
 		if ( $row_email[mailbox] == "true" ) {
 			//if (@fsockopen("127.0.0.1", 143)) print '<a href="webmail.php?mid=' . $row_email[id] . '&did=' . $row_email[did] . '" target="_blank">' . __('Webmail') . '</a>';
@@ -177,7 +172,7 @@ print '<input type=radio name="catchall" value="delete_it"';
 		  }
 
 				print '</td>
-<td class="listpad"><a href=mail.php?did=' . $row[id] . '&mid=' . $row_email[id] . '&action=delete onmouseover="show_help(\'' . __('Delete') . ' ' . $row_email[mail_name] . '@' . $row[name] . '\');" onmouseout="help_rst();" onclick="';
+<td class="listpad"><a href=mail.php?did=' . $domain[id] . '&mid=' . $row_email[id] . '&action=delete onmouseover="show_help(\'' . __('Delete') . ' ' . $row_email[mail_name] . '@' . $domain[name] . '\');" onmouseout="help_rst();" onclick="';
 
 				if (!user_can_add($uid, "email") and !is_admin()) print 'return confirm(\'' . __('If you delete this email, you may not be able to add it again.\rAre you sure you wish to do this?') . '\');';
 				else print 'return confirm(\'' . __('Are you sure you wish to delete this email?') . '\');';
@@ -187,7 +182,7 @@ print '<input type=radio name="catchall" value="delete_it"';
 			if ($num != 0) print '</table>';
 
 			if (user_can_add($uid, "email") or is_admin()) {
-				print ' <a href="edit_mail.php?did=' . $row[id] . '"';
+				print ' <a href="edit_mail.php?did=' . $domain[id] . '"';
 
 				if (!user_can_add($uid, "email") and is_admin()) print ' onclick="return confirm(\'' . __('This user is only allowed to create ' . user_have_permission($uid, "email") . ' email accounts. Are you sure you want to add another?') . '\');"';
 
