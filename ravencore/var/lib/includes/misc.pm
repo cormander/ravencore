@@ -1467,18 +1467,11 @@ sub rehash_named {
 ~;
 
 		# Loop through the records for this domain
-		my $sql = "select * from dns_rec where did = '" . $dom->{id} . "' order by type, name, target";
-		my $result = $self->{dbi}->prepare($sql);
-
-		$result->execute;
-
-		while (my $row = $result->fetchrow_hashref) {
+		foreach my $rec (@{$self->get_dns_rec_by_domain_id($dom->{id})}) {
 			# This may be an MX record. We seperate the MX token and the preference with a - symbol, so replace this with a space
-			$row->{type} =~ s/-/ /;
-			$data .= $row->{name} . "\t\tIN " . $row->{type} . "\t" . $row->{target} . "\n";
+			$rec->{type} =~ s/-/ /;
+			$data .= $rec->{name} . "\t\tIN " . $rec->{type} . "\t" . $rec->{target} . "\n";
 		}
-
-		$result->finish;
 
 		# Check to make sure this domain has enough DNS entries to be safely put into the configuration
 		my $tmp_file = $self->{RC_ROOT} . '/var/tmp/' . $dname . '.' . $$;

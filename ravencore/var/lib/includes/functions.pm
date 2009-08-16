@@ -160,6 +160,19 @@ sub get_sys_users_by_domain_id {
 	return $sys_users;
 }
 
+sub get_dns_rec_by_domain_id {
+	my ($self, $did) = @_;
+
+	my $sth;
+	my $rec;
+
+	$rec = $self->{dbi}->selectrow_hashref("select * from dns_rec where did = ? order by type, name, target", undef, $did);
+
+	return undef unless $rec->{did} eq $did;
+
+	return $rec;
+}
+
 sub get_user_by_name {
 	my ($self, $username) = @_;
 
