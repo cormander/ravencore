@@ -152,37 +152,34 @@ print '<input type=radio name="catchall" value="delete_it"';
 </form>
 <p>';
 
-			$sql = "select * from mail_users where did = '$domain[id]' order by mail_name";
-			$result = $db->data_query($sql);
+			$mails = $db->run("get_mail_users_by_domain_id", Array(did => $domain[id]));
 
-			$num = $db->data_num_rows();
-
-			if ($num == 0) print __('No mail for this domain.') . '<p>';
+			if (0 == count($mails)) print __('No mail for this domain.') . '<p>';
 			else print '<table class="listpad"><tr><th class="listpad" colspan="100%">' . __('Mail for this domain') . ':</th></tr>';
 
-			print "";
-
-			while ($row_email = $db->data_fetch_array($result)) {
+			foreach ($mails as $mail) {
 				print '<tr>
-<td class="listpad"><a href="edit_mail.php?did=' . $row_email[did] . '&mid=' . $row_email[id] . '" onmouseover="show_help(\'' . __('Edit') . ' ' . $row_email[mail_name] . '@' . $domain[name] . '\');" onmouseout="help_rst();">' . __('edit') . '</a></td>
-<td class="listpad">' . $row_email[mail_name] . '@' . $domain[name] . '</td>
-<td class="listpad">';
-		if ( $row_email[mailbox] == "true" ) {
-			//if (@fsockopen("127.0.0.1", 143)) print '<a href="webmail.php?mid=' . $row_email[id] . '&did=' . $row_email[did] . '" target="_blank">' . __('Webmail') . '</a>';
-			//else print '<a href="#" onclick="alert(\'' . __('Webmail is currently offline') . '\')" onmouseover="show_help(\'' . __('Webmail is currently offline') . '\');" onmouseout="help_rst();">' . __('Webmail') . ' ( ' . __('offline') . ' )</a>';
-		  } else {
-			print '&nbsp;';
-		  }
+				<td class="listpad"><a href="edit_mail.php?did=' .
+				$mail[did] . '&mid=' . $mail[id] .
+				'" onmouseover="show_help(\'' . __('Edit') . ' ' .
+				$mail[mail_name] . '@' . $domain[name] .
+				'\');" onmouseout="help_rst();">' . __('edit') . '</a></td>
+				<td class="listpad">' . $mail[mail_name] . '@' . $domain[name] .
+				'</td><td class="listpad">';
 
-				print '</td>
-<td class="listpad"><a href=mail.php?did=' . $domain[id] . '&mid=' . $row_email[id] . '&action=delete onmouseover="show_help(\'' . __('Delete') . ' ' . $row_email[mail_name] . '@' . $domain[name] . '\');" onmouseout="help_rst();" onclick="';
+				print '&nbsp;</td>
+				<td class="listpad"><a href=mail.php?did=' .
+				$domain[id] . '&mid=' . $mail[id] .
+				'&action=delete onmouseover="show_help(\'' . __('Delete') . ' ' .
+				$mail[mail_name] . '@' . $domain[name] .
+				'\');" onmouseout="help_rst();" onclick="';
 
 				if (!user_can_add($uid, "email") and !is_admin()) print 'return confirm(\'' . __('If you delete this email, you may not be able to add it again.\rAre you sure you wish to do this?') . '\');';
 				else print 'return confirm(\'' . __('Are you sure you wish to delete this email?') . '\');';
 				print '">' . __('delete') . '</a></td></tr>';
 			}
 
-			if ($num != 0) print '</table>';
+			if (0 != count($mails)) print '</table>';
 
 			if (user_can_add($uid, "email") or is_admin()) {
 				print ' <a href="edit_mail.php?did=' . $domain[id] . '"';
