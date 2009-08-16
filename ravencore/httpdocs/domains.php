@@ -236,12 +236,8 @@ if (!$did) {
 			print '<p><a href="mail.php?did=' . $domain[id] . '" onmouseover="show_help(\'' . __('View/Edit Mail for this domain') . '\');" onmouseout="help_rst();">' . __('Mail') . '</a>';
 
 			if ($domain[mail] == "on") {
-				$sql = "select count(*) as count from mail_users where did = '$domain[id]'";
-				$result = $db->data_query($sql);
-
-				$row_count = $db->data_fetch_array($result);
-
-				print ' (' . $row_count[count] . ')';
+				$mails = $db->run("get_mail_users_by_domain_id", Array(did => $domain[id]));
+				print ' (' . count($mails) . ')';
 			} else print __('( off )');
 
 			print '</p>';

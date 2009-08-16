@@ -285,6 +285,27 @@ sub get_mail_users {
 	return $mails;
 }
 
+sub get_mail_users_by_domain_id {
+	my ($self, $ref) = @_;
+
+	my $sth;
+	my $mails = [];
+
+	my $did = $ref->{did};
+
+	$sth = $self->{dbi}->prepare("select *, m.id as mid, d.mail as mail_toggle from domains d inner join mail_users m on m.did = d.id where d.id = ?");
+
+	$sth->execute($did);
+
+	while (my $row = $sth->fetchrow_hashref) {
+		push @{$mails}, $row;
+	}
+
+	$sth->finish;
+
+	return $mails;
+}
+
 sub get_login_failure_count_by_username {
 	my ($self, $ref) = @_;
 
