@@ -192,6 +192,19 @@ sub get_users {
 	return $users;
 }
 
+sub get_user_by_id {
+	my ($self, $id) = @_;
+
+	my $sth;
+	my $user;
+
+	$user = $self->{dbi}->selectrow_hashref("select * from users where id = ? limit 1", undef, $id);
+
+	return undef unless $user->{id} eq $id;
+
+	return $user;
+}
+
 sub get_user_by_name {
 	my ($self, $username) = @_;
 
