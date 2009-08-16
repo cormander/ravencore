@@ -135,25 +135,28 @@ else {
 	print '<p>';
 
 	if ($_POST[host_type] or $domain[host_type] != "none") {
+
  // array of possible IPs
-	$ip_addresses = Array();
-	$sql = "select ip_address from ip_addresses where uid = '$uid' or uid = 0";
-	$result_ips = $db->data_query($sql);
-	while ( $row_ips = $db->data_fetch_array($result_ips) ) {
-		$ip_addresses[$row_ips['ip_address']] = $row_ips['ip_address'];
+	$ip_addresses = $db->run("get_ip_addresses");
+	$ips = Array();
+
+	for ($i = 0; $i < count($ip_addresses); $i++) {
+		if (is_numeric($ip_addresses[$i][uid]) and $ip_addresses[$i][uid] == 0 or $ip_addresses[$i][uid] == $uid) {
+			$ips[$ip_addresses[$i][ip_address]] = $ip_addresses[$i][ip_address];
+		}
 	}
 
   // array of currently used IPs
-	$row['ip_addresses'] = Array();
-	$sql = "select ip_address from domain_ips where did = " . $domain[id];
-	$result_ips = $db->data_query($sql);
-	while ( $row_ips = $db->data_fetch_array($result_ips) ) {
-		$row['ip_addresses'][$row_ips['ip_address']] = $row_ips['ip_address'];
+	$domain_ip_addresses = $db->run("get_ip_addresses_by_domain_id", Array(did => $domain[id]));
+	$dips = Array();
+
+	foreach ($domain_ip_addresses as $ip) {
+		$dips[$ip[ip_address]] = $ip[ip_address];
 	}
 
 	// only give option if there are any possible IPs
 	if (count($ip_addresses) != 0) {
-		print __("IP Address") . ": " . selection_array("ip_addresses", $row['ip_addresses'], -1, "MULTIPLE", $ip_addresses) . "<p>";
+		print __("IP Address") . ": " . selection_array("ip_addresses", $dips, -1, "MULTIPLE", $ips) . "<p>";
 	}
 
 	print __("www prefix") . ": <input type=radio name=www value=true";

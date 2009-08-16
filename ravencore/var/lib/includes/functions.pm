@@ -5,6 +5,12 @@ sub get_ip_addresses {
 	return $self->select_ref_many("select * from ip_addresses order by ip_address");
 }
 
+sub get_ip_addresses_by_domain_id {
+	my ($self, $ref) = @_;
+
+	return $self->select_ref_many("select * from ip_addresses i inner join domain_ips di on di.ip_address = i.ip_address where di.did = ?", [$ref->{did}]);
+}
+
 sub get_ip_info_by_ip {
 	my ($self, $ip) = @_;
 
