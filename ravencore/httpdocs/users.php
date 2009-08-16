@@ -87,46 +87,42 @@ if (!$uid) {
 }
 else
 {
-	$sql = "select * from users where id = '$uid'";
-	$result = $db->data_query($sql);
+	$user = $db->run("get_user_by_id", Array( id => $uid));
 
-	$num = $db->data_num_rows();
-
-	if ($num == 0) {
+	if (!$user) {
 		print __('User does not exist');
 	} else {
-		$row = $db->data_fetch_array($result);
 		// look in the login_failure table to see if this user is locked out
-		$sql = "select count(*) as count from login_failure where login = '$row[login]' and ( ( to_days(date) * 24 * 60 * 60 ) + time_to_sec(date) + $CONF[LOCKOUT_TIME] ) > ( ( to_days(now()) * 24 * 60 * 60 ) + time_to_sec(now() ) )";
+		$sql = "select count(*) as count from login_failure where login = '$user[login]' and ( ( to_days(date) * 24 * 60 * 60 ) + time_to_sec(date) + $CONF[LOCKOUT_TIME] ) > ( ( to_days(now()) * 24 * 60 * 60 ) + time_to_sec(now() ) )";
 
 		$result = $db->data_query($sql);
 
 		$row_lock = $db->data_fetch_array($result);
 		// if they are locked out, provide a way to unlock it
-		if (is_admin() and $row_lock[count] >= $CONF['LOCKOUT_COUNT']) print '<font color="red"><b>' . __('This user is locked out due to failed login attempts') . '</b></font> - <a href="users.php?action=unlock&login=' . $row[login] . '&uid=' . $row[id] . '">' . __('Unlock') . '</a>';
+		if (is_admin() and $row_lock[count] >= $CONF['LOCKOUT_COUNT']) print '<font color="red"><b>' . __('This user is locked out due to failed login attempts') . '</b></font> - <a href="users.php?action=unlock&login=' . $user[login] . '&uid=' . $user[id] . '">' . __('Unlock') . '</a>';
 
 		print '
             <table class="listpad" width="45%" style="float: left">
                 <tr>
-         <th colspan=2 class="listpad">' . __('Info for') . ' <strong>' . $row['name'] . '</strong></th>
+         <th colspan=2 class="listpad">' . __('Info for') . ' <strong>' . $user[name] . '</strong></th>
                 </tr>
                 <tr>';
 
         print '<td class="listpad" valign="top">' . __('Company') . ':</td>
-	 <td class="listpad" valign="top">' . $row['company'] . '&nbsp;</td>
+	 <td class="listpad" valign="top">' . $user[company] . '&nbsp;</td>
                 </tr>
                 <tr>';
 
         print '<td class="listpad" valign="top">' . __('Created') . ':</td>
-	 <td class="listpad" valign="top">' . $row['created'] . '&nbsp;</td>
+	 <td class="listpad" valign="top">' . $user[created] . '&nbsp;</td>
                 </tr>
                 <tr>
 	 <td class="listpad" valign="top">' . __('Contact email') . ':</td>
-	 <td class="listpad" valign="top">' . $row['email'] . '&nbsp;</td>
+	 <td class="listpad" valign="top">' . $user[email] . '&nbsp;</td>
 	        </tr>
                 <tr>
 	 <td class="listpad" valign="top">' . __('Login ID') . ':</td>
-	 <td class="listpad" valign="top">' . $row['login'] . '&nbsp;</td>
+	 <td class="listpad" valign="top">' . $user[login] . '&nbsp;</td>
                 </tr>
                 <tr>
 	 <td class="listpad" colspan=2 valign="top">&nbsp;</td>
@@ -134,7 +130,7 @@ else
                 <tr>
 	 <td class="listpad" valign="top"><a href="edit_user.php';
 		// only the admin can see the uid
-		if (is_admin()) print '?uid=' . $row[id] . '';
+		if (is_admin()) print '?uid=' . $user[id] . '';
 
 		print '" onmouseover="show_help(\'' . __('Edit account info') . '  \');" onmouseout="help_rst();">' . __('Edit account info') . '</a></td>
 		 <td class="listpad" valign="top"><a href="user_permissions.php';
