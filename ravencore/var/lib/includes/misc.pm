@@ -469,7 +469,9 @@ sub rehash_httpd {
 	$data .= "\n\n" . $vhost_data;
 
 	# write out configs for webmail
-	foreach $dom (@{$self->get_domains_where_webmail_true}) {
+	foreach $dom (@{$self->get_domains}) {
+		next unless "yes" eq $dom->{webmail};
+
 		my $squirrelmail = $self->{RC_ROOT} . "/var/apps/squirrelmail";
 		my $save_path = $self->{RC_ROOT} . "/var/tmp";
 		my $domain_name = $dom->{'name'};
