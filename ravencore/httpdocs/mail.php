@@ -194,14 +194,10 @@ print '<input type=radio name="catchall" value="delete_it"';
 	// req_admin();
 	nav_top();
 	// check to see if we have any domains setup at all. If not, die with this error
-	$sql = "select count(*) as count from domains";
-	if ($uid) $sql .= " where uid = '$uid'";
+	if ($uid) $domains = $db->run("get_domains_by_user_id", Array(uid => $uid));
+	else $domains = $db->run("get_domains");
 
-	$result = $db->data_query($sql);
-
-	$row = $db->data_fetch_array($result);
-
-	if ($row[count] == 0) {
+	if (0 == count($domains)) {
 		print __('You have no domains setup.');
 		// give an "add a domain" link if the user has permission to add one more
 		if (is_admin() or user_have_permission($uid, "domain")) print ' <a href="edit_domain.php">' . __('Add a Domain') . '</a>';
