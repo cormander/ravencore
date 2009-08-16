@@ -256,12 +256,8 @@ if (!$did) {
 			print '<a href="dns.php?did=' . $did . '" onmouseover="show_help(\'' . __('Manage DNS for this domain') . '\');" onmouseout="help_rst();">' . __('DNS Records') . '</a>';
 
 			if ($domain[soa]) {
-				$sql = "select count(*) as count from dns_rec where did = '$domain[id]'";
-				$result = $db->data_query($sql);
-
-				$row_count = $db->data_fetch_array($result);
-
-				print ' (' . $row_count[count] . ')';
+				$rec = $db->run("get_dns_rec_by_domain_id", Array(did => $domain[id]));
+				print ' (' . count($rec) . ')';
 			} else print __('( off )');
 
 			print '<p>';
