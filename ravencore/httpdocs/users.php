@@ -166,13 +166,9 @@ mainmenu.style.visibility=\'visible\'
 
 </script>
 ';
+		$domains = $db->run("get_domains_by_user_id", Array(uid => $uid));
 
-		$sql = "select * from domains where uid = '$uid'";
-		$result = $db->data_query($sql);
-
-		$num_domains = $db->data_num_rows();
-
-		if ($num_domains == 0) {
+		if (0 == count($domains)) {
 			// users will see a different message here than the admin
 			if (!is_admin()) print __('You have no domains setup');
 			else print __('No domains setup');
@@ -181,11 +177,11 @@ mainmenu.style.visibility=\'visible\'
 			print '<form name=main><div id="didsel" style="visibility: hidden;">
 <select name="did" onchange="if(did.value!=0) document.main.submit();"><option value=0>' . __('For which domain') . '?</option>';
 
-			while ($row_domain = $db->data_fetch_array($result)) {
-				print '<option value="' . $row_domain['id'] . '">' . $row_domain['name'] . '</option>';
+			foreach ($domains as $domain) {
+				print '<option value="' . $domain[id] . '">' . $domain[name] . '</option>';
 			}
 
-			if ($num != 0) print '</select> <input type=submit value=Go><br><a href="#" onclick="men_toggle();">' . __('Back') . '</a></div></form>';
+			if (0 != count($domains)) print '</select> <input type=submit value=Go><br><a href="#" onclick="men_toggle();">' . __('Back') . '</a></div></form>';
 
 			print '<div id="mainmenu">';
 
@@ -215,8 +211,8 @@ mainmenu.style.visibility=\'visible\'
 				else print '' . __('This user is at his/her domain limit') . ' - <a href="edit_domain.php?uid=' . $uid . '">' . __('Add one anyway') . '</a>';
 			}
 		}
-		// close the div tag if we have more than 0 num_domains
-		if ($num_domains > 0) print '</div>';
+		// close the div tag if we have more than 0 domains
+		if (0 != count($domains)) print '</div>';
 
 		print '
     </td>

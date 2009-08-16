@@ -48,6 +48,27 @@ sub get_domain_by_id {
 	return $dom;
 }
 
+sub get_domains_by_user_id {
+	my ($self, $ref) = @_;
+
+	my $sth;
+	my $domains = [];
+
+	my $uid = $ref->{uid};
+
+	$sth = $self->{dbi}->prepare("select * from domains where uid = ?");
+
+	$sth->execute($uid);
+
+	while (my $row = $sth->fetchrow_array) {
+		push @{$domains}, $row;
+	}
+
+	$sth->finish;
+
+	return $domains;
+}
+
 sub get_domains {
 	my ($self) = @_;
 
