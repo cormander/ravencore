@@ -181,7 +181,7 @@ sub auth {
 sub auth_admin {
 	my ($self, $passwd) = @_;
 
-	if ($passwd eq $self->get_passwd) {
+	if ($passwd eq $self->admin_passwd) {
 		# password is correct, return true
 		# TODO: call an auth_success function here to record the login
 		return 1;
@@ -234,7 +234,7 @@ sub auth_system {
 	file_delete($session_file);
 
 	# check the password too, for good measure
-	if ($password eq $self->get_passwd) {
+	if ($password eq $self->admin_passwd) {
 		# system is authenticated. we're an admin user
 		$self->{session}{user} = $self->{MYSQL_ADMIN_USER};
 
@@ -293,7 +293,7 @@ sub set_privs {
 
 # a function use to read the password out of the .shadow file
 
-sub get_passwd {
+sub admin_passwd {
 	my ($self) = @_;
 
 	# since the .shadow file is read a lot and almost never written to, skip locking. it isn't going to be
@@ -399,7 +399,7 @@ sub passwd {
 sub verify_passwd {
 	my ($self, $input) = @_;
 
-	return 1 if $input->{passwd} eq $self->get_passwd;
+	return 1 if $input->{passwd} eq $self->admin_passwd;
 	return 0;
 }
 

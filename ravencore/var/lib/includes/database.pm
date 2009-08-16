@@ -53,7 +53,7 @@ sub database_connect {
 		if ($ret) {
 			$self->{db_connected} = 1;
 
-			if($self->get_passwd =~ m/^ravencore$/i) { $self->{initial_passwd} = 1 }
+			if($self->admin_passwd =~ m/^ravencore$/i) { $self->{initial_passwd} = 1 }
 			else { $self->{initial_passwd} = 0 }
 
 			$self->get_db_conf;
@@ -70,7 +70,7 @@ sub database_connect {
 	# might have changed since we first started, and a child process can't change a variable and have the
 	# parent process know about it
 
-	my $passwd = $self->get_passwd;
+	my $passwd = $self->admin_passwd;
 
 	# connect to the database
 
