@@ -43,26 +43,13 @@ nav_top();
 // We don't have to worry about checking if we're an admin here, because
 // the $uid variable will always be set if we're a user
 if (!$uid) {
-	print '<form method="get" name=search>
-' . __('Search') . ': <input class="textfield" type=text name=search value="' . $_GET[search] . '">
-<input type=submit value="' . __('Go') . '" onclick="if(!document.search.search.value) { alert(\'' . __('Please enter a search value!') . '\'); return
-false; }">';
 
-	if ($_GET['search']) print ' <input type=button value="' . __('Show All') . '" onclick="self.location=\'' . $_SERVER[PHP_SELF] . '\'">';
+	$users = $db->run("get_users");
 
-	print '</form><p>';
+	$num = count($users);
 
-	$sql = "select * from users";
-	if ($_GET['search']) $sql .= " where name like '%$_GET[search]%'";
-	$sql .= " order by name";
-	$result = $db->data_query($sql);
-
-	$num = $db->data_num_rows();
-
-	if ($num == 0 and !$_GET['search']) print __('There are no users setup');
-	else if ($_GET['search']) print __('Your search returned') . ' <i><b>' . $num . '</b></i> ' . __('results') . '.<p>';
-	// else print 'A total of <i><b></b></i>';
-	if ($num != 0) {
+	if ($num == 0) print __('There are no users setup');
+	else {
 		print '<table class="listpad"><tr>
 <th class="listpad">' . __('Name') . '</th>
 <th class="listpad">' . __('Domains') . '</th>
@@ -73,8 +60,8 @@ false; }">';
 		$total_space = 0;
 		$total_traffic = 0;
 
-		while ($row = $db->data_fetch_array($result)) {
-			$u = new user($row['id']);
+		foreach ($users as $user) {
+			$u = new user($user[id]);
 
 			$space = $u->space_usage(date("m"), date("Y"));
 			$traffic = $u->traffic_usage(date("m"), date("Y"));
@@ -84,7 +71,13 @@ false; }">';
 			$total_traffic += $traffic;
 			$total_domains += $domains;
 
-			print '<tr><td class="listpad"><a href="users.php?uid=' . $row[id] . '" onmouseover="show_help(\' ' . __('View user data for') . ' ' . $row[name] . '\');" onmouseout="help_rst();">' . $row[name] . '</a></td><td class="listpad" align=right>' . $domains . '</td><td class="listpad" align=right>' . $space . ' MB</td><td class="listpad" align=right>' . $traffic . ' MB</td></tr>';
+			print '<tr><td class="listpad"><a href="users.php?uid=' .
+				$user[id] . '" onmouseover="show_help(\' ' . __('View user data for') . ' ' .
+				$user[name] . '\');" onmouseout="help_rst();">' .
+				$user[name] . '</a></td><td class="listpad" align=right>' .
+				$domains . '</td><td class="listpad" align=right>' .
+				$space . ' MB</td><td class="listpad" align=right>' .
+				$traffic . ' MB</td></tr>';
 		}
 
 		print '<tr><td class="listpad">' . __('Totals') . '</td></td><td class="listpad" align=right>' . $total_domains . '</td><td class="listpad" align=right>' . $total_space . ' MB</td><td class="listpad" align=right>' . $total_traffic . ' MB</td></tr></table>';
