@@ -92,14 +92,9 @@ else
 	if (!$user) {
 		print __('User does not exist');
 	} else {
-		// look in the login_failure table to see if this user is locked out
-		$sql = "select count(*) as count from login_failure where login = '$user[login]' and ( ( to_days(date) * 24 * 60 * 60 ) + time_to_sec(date) + $CONF[LOCKOUT_TIME] ) > ( ( to_days(now()) * 24 * 60 * 60 ) + time_to_sec(now() ) )";
 
-		$result = $db->data_query($sql);
-
-		$row_lock = $db->data_fetch_array($result);
 		// if they are locked out, provide a way to unlock it
-		if (is_admin() and $row_lock[count] >= $CONF['LOCKOUT_COUNT']) print '<font color="red"><b>' . __('This user is locked out due to failed login attempts') . '</b></font> - <a href="users.php?action=unlock&login=' . $user[login] . '&uid=' . $user[id] . '">' . __('Unlock') . '</a>';
+		if (is_admin() and $db->run("get_login_failure_count_by_username", Array(username => $user[login])) >= $CONF['LOCKOUT_COUNT']) print '<font color="red"><b>' . __('This user is locked out due to failed login attempts') . '</b></font> - <a href="users.php?action=unlock&login=' . $user[login] . '&uid=' . $user[id] . '">' . __('Unlock') . '</a>';
 
 		print '
             <table class="listpad" width="45%" style="float: left">
