@@ -656,20 +656,17 @@ function selection_domains($uid = 0, $did = 0, $num = 0, $select_opt = "") {
 
 	$str = '<select name=did' . ( $num ? '[' . $num . ']' : '' ) . ' ' . $select_opt . '>';
 
-	$sql = "select * from domains" . ( $uid ? "where uid = $uid" : "" );
-
-	$result = $db->data_query($sql);
-
-	$num = $db->data_num_rows();
+	if ($uid) $domains = $db->run("get_domains_by_user_id", Array(uid => $uid));
+	else $domains = $db->run("get_domains");
 
 	$str .= '<option value=0>' . __('Select a domain') . '</option>';
 
-	while ($row_u = $db->data_fetch_array($result)) {
-		$str .= '<option value="' . $row_u['id'] . '"';
+	foreach ($domains as $domain) {
+		$str .= '<option value="' . $domain[id] . '"';
 
-		if ($row_u['id'] == $did) $str .= ' selected';
+		if ($domain[id] == $did) $str .= ' selected';
 
-		$str .= '>' . $row_u['name'] . '</option>';
+		$str .= '>' . $domain[name] . '</option>';
 	}
 
 	$str .= '</select>';
