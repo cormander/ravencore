@@ -103,6 +103,13 @@ sub get_mail_user_by_name_and_password {
 		[$ref->{username}, $ref->{password}]);
 }
 
+sub get_mail_user_by_id {
+	my ($self, $ref) = @_;
+
+	return $self->select_ref_single("select mu.*, concat(mail_name,'\@',d.name) as email from domains d inner join mail_users mu on mu.did = d.id
+		where mu.id = ?", [$ref->{id}]);
+}
+
 sub get_mail_users {
 	my ($self) = @_;
 

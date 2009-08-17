@@ -114,12 +114,9 @@ if ($did) {
 print '<script type="text/javascript"> var tmp=""</script>';
 
 if ($page_type == "edit") {
-	$sql = "select * from mail_users where id = '$mid'";
-	$result = $db->data_query($sql);
+	$mail = $db->run("get_mail_user_by_id", Array(id => $mid));
 
-	$row_mail = $db->data_fetch_array($result);
-
-	$_POST[name] = $row_mail[mail_name];
+	$_POST[name] = $mail[mail_name];
 }
 
 ?>
@@ -180,13 +177,13 @@ if ($page_type == "add" and !$did) print "</select>";
 <tr><td><?php e_('Password')?>: </td><td><input type="password" name=passwd<?php
 
 if ($_POST[passwd]) print ' value="' . $_POST[passwd] . '"';
-else print ' value="' . $row_mail[passwd] . '"';
+else print ' value="' . $mail[passwd] . '"';
 
 ?>></td></tr>
 <tr><td><?php e_('Confirm')?>: </td><td><input type="password" name=confirm_passwd<?php
 
 if ($_POST[confirm_passwd]) print ' value="' . $_POST[confirm_passwd] . '"';
-else print ' value="' . $row_mail[passwd] . '"';
+else print ' value="' . $mail[passwd] . '"';
 
 ?>></td></tr>
 <tr><td><?php e_('Mailbox')?>: </td><td><input type="checkbox" name=mailbox value="true"<?php
@@ -194,7 +191,7 @@ else print ' value="' . $row_mail[passwd] . '"';
 if ($page_type == "add") {
 	if (!$action or $_POST[mailbox]) print ' checked';
 } else {
-	if ($row_mail[mailbox] == "true") print ' checked';
+	if ($mail[mailbox] == "true") print ' checked';
 }
 
 ?> onclick="if(!this.checked) return confirm('<?php e_('Mail will not be stored on the server if you disable this option. Are you sure you wish to do this?')?>');"></td></tr>
@@ -208,7 +205,7 @@ if(have_service("amavisd")) {
 if ($page_type == "add") {
 	if (!$action or $_POST['spam_folder']) print ' checked';
 } else {
-	if ($row_mail['spam_folder'] == "true") print ' checked';
+	if ($mail['spam_folder'] == "true") print ' checked';
 }
 
 ?>></td></tr>
@@ -223,15 +220,15 @@ if ($page_type == "add") {
 if ($page_type == "add") {
 	if ($_POST[redirect]) print ' checked';
 } else {
-	if ($row_mail[redirect] == "true" or $_POST[redirect]) print ' checked';
+	if ($mail[redirect] == "true" or $_POST[redirect]) print ' checked';
 }
 
-?> onclick="if(this.checked) { document.getElementById('redir').style.display=''; if(tmp) document.main.redirect_addr.value=tmp; document.main.redirect_addr.focus(); } else { document.getElementById('redir').style.display='none'; tmp = document.main.redirect_addr.value; document.main.redirect_addr.value=''}"></td><td><span style="display: <?php if($row_mail[redirect] != "true" and ! $_POST[redirect] ) print 'none'; ?>;" name="redir" id="redir"><font size="1"><?= __('List email addresses here, seperate each with a comma and a space')?></font><br /><textarea nowrap rows="5" cols="40" name=redirect_addr><?php
+?> onclick="if(this.checked) { document.getElementById('redir').style.display=''; if(tmp) document.main.redirect_addr.value=tmp; document.main.redirect_addr.focus(); } else { document.getElementById('redir').style.display='none'; tmp = document.main.redirect_addr.value; document.main.redirect_addr.value=''}"></td><td><span style="display: <?php if($mail[redirect] != "true" and ! $_POST[redirect] ) print 'none'; ?>;" name="redir" id="redir"><font size="1"><?= __('List email addresses here, seperate each with a comma and a space')?></font><br /><textarea nowrap rows="5" cols="40" name=redirect_addr><?php
 
 if ($page_type == "add") {
 	if ($_POST[redirect_addr]) print ereg_replace(',', ', ', $_POST[redirect_addr]);
 } else {
-	if ($row_mail[redirect_addr]) print ereg_replace(',', ', ', $row_mail[redirect_addr]);
+	if ($mail[redirect_addr]) print ereg_replace(',', ', ', $mail[redirect_addr]);
 }
 
 ?></textarea></span></td></tr></table></td></tr>
@@ -248,19 +245,19 @@ if($status['perl_modules']['DBD::SQLite']) {
 if ($page_type == "add") {
 	if ($_POST[autoreply]) print ' checked';
 } else {
-	if ($row_mail[autoreply] == 1 or $_POST[autoreply]) print ' checked';
+	if ($mail[autoreply] == 1 or $_POST[autoreply]) print ' checked';
 }
 
 ?> onclick="if(this.checked) { document.getElementById('autore').style.display=''; document.main.autoreply_subject.focus(); } else { document.getElementById('autore').style.display='none'; document.main.autoreply_subject.value=''}"></td>
-<td><span style="display: <?php if($row_mail[autoreply] != 1 and ! $_POST[autoreply] ) print 'none'; ?>;" name="autore" id="autore">
-Subject: <input type="text" name="autoreply_subject" size="40" value="<?=( $_POST[autoreply_subject] ? $_POST[autoreply_subject] : $row_mail[autoreply_subject] )?>">
+<td><span style="display: <?php if($mail[autoreply] != 1 and ! $_POST[autoreply] ) print 'none'; ?>;" name="autore" id="autore">
+Subject: <input type="text" name="autoreply_subject" size="40" value="<?=( $_POST[autoreply_subject] ? $_POST[autoreply_subject] : $mail[autoreply_subject] )?>">
 <br />
 Message:<br/><textarea nowrap rows="5" cols="40" name=autoreply_body><?php
 
 if ($page_type == "add") {
 	if ($_POST[autoreply]) print ereg_replace(',', ', ', $_POST[autoreply_body]);
 } else {
-	if ($row_mail[autoreply]) print ereg_replace(',', ', ', $row_mail[autoreply_body]);
+	if ($mail[autoreply]) print ereg_replace(',', ', ', $mail[autoreply_body]);
 }
 
 ?></textarea></span>
