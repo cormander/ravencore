@@ -110,22 +110,15 @@ nav_top();
 // The admin user gets a dropdown of the users setup on the server, to assin
 // to the domain
 if (is_admin()) {
-	$sql = "select count(*) as count from users";
-	$result = $db->data_query($sql);
+	$users = $db->run("get_users");
 
-	$row = $db->data_fetch_array($result);
-
-	if ($row['count'] != 0) {
+	if (0 != count($users)) {
 		print __('Control Panel User') . ': <select name="uid"><option value="">' . __('Select One') . '</option>';
 
-		$sql = "select * from users";
-		$result = $db->data_query($sql);
-
-		while ( $row = $db->data_fetch_array($result) )
-		{
-			print "<option value=\"$row[id]\"";
-			if ($uid == $row[id]) print " selected";
-			print ">$row[name] - $row[login]</option>";
+		foreach ($users as $user) {
+			print "<option value=\"$user[id]\"";
+			if ($uid == $user[id]) print " selected";
+			print ">$user[name] - $user[login]</option>";
 		}
 
 		print '</select><p>';
