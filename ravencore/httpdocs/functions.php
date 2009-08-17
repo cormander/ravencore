@@ -219,12 +219,9 @@ function user_can_add($uid, $perm) {
 
 	switch ($perm) {
 		case "domain":
-			$sql = "select count(*) as count from domains where uid = '$uid'";
-			$result = $db->data_query($sql);
+			$domains = $db->run("get_domains_by_user_id", Array(uid => $uid));
 
-			$row = $db->data_fetch_array($result);
-
-			if ($row[count] < $lim) return true;
+			if (count($domains) < $lim) return true;
 			else return false;
 
 			break;
