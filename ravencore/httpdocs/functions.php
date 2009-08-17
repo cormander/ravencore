@@ -634,19 +634,16 @@ function selection_users($uid = 0, $num = 0, $select_opt = "") {
 
 	$str = '<select name=uid' . ( $num ? '[' . $num . ']' : '' ) . ' ' . $select_opt . '>';
 
-	$sql = "select * from users";
-	$result = $db->data_query($sql);
-
-	$num = $db->data_num_rows();
+	$users = $db->run("get_users");
 
 	$str .= '<option value=0>' . __('No One') . '</option>';
 
-	while ($row_u = $db->data_fetch_array($result)) {
-	$str .= '<option value="' . $row_u['id'] . '"';
+	foreach ($users as $user) {
+		$str .= '<option value="' . $user['id'] . '"';
 
-		if ($row_u['id'] == $uid) $str .= ' selected';
+		if ($user['id'] == $uid) $str .= ' selected';
 
-		$str .= '>' . $row_u['name'] . '</option>';
+		$str .= '>' . $user['name'] . '</option>';
 	}
 
 	$str .= '</select>';
