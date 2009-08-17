@@ -71,6 +71,12 @@ sub get_dns_recs_by_domain_id {
 	return $self->select_ref_many("select * from dns_rec where did = ? order by type, name, target", [$ref->{did}]);
 }
 
+sub get_default_dns_recs {
+	my ($self) = @_;
+
+	return $self->select_ref_many("select * from dns_def");
+}
+
 sub get_users {
 	my ($self) = @_;
 

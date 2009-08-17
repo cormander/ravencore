@@ -140,10 +140,9 @@ if (have_service("web")) {
 }
 // Only display this option if we have a DNS server in our cluster
 if (have_service("dns")) {
-	$sql = "select * from dns_def";
-	$result = $db->data_query($sql);
-	// only display this option if we have default dns record setup
-	if ($db->data_num_rows() > 0) print '<input type=checkbox name="dns" value="true" checked> ' . __('Add default DNS to this domain');
+	$dns = $db->run("get_default_dns_recs");
+
+	if (0 != count($dns)) print '<input type=checkbox name="dns" value="true" checked> ' . __('Add default DNS to this domain');
 }
 
 ?>
