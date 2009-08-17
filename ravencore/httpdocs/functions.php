@@ -237,10 +237,6 @@ function user_can_add($uid, $perm) {
 
 			break;
 
-		case "crontab":
-			// NEED TO RE-DO CRONTAB MANAGEMENT
-			break;
-
 		case "email":
 			$sql = "select count(*) as count from mail_users m, domains d where did = d.id and uid = '$uid'";
 			$result = $db->data_query($sql);
