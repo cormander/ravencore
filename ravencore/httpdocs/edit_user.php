@@ -110,12 +110,8 @@ if ($action) {
 
 nav_top();
 
-if ($uid) {
-	$sql = "select * from users where id = '$uid'";
-	$result = $db->data_query($sql);
+if ($uid) $user = $db->run("get_user_by_id", Array(id => $uid));
 
-	$row_u = $db->data_fetch_array($result);
-}
 // In this form, we print values for the input fields only if we get them as post or database variables.
 
 ?>
@@ -129,22 +125,22 @@ print ($uid ? __('Edit') : __('Add')) . ' ' . __('info');
 
 ?></th></tr>
 <tr><td>*<?php e_('Full Name')?>: </td><td><input type="text" name="name" value="<?php if ($_POST[name]) print $_POST[name];
-else print $row_u[name];
+else print $user[name];
 ?>"></td></tr>
 <tr><td>*<?php e_('Email Address')?>: </td><td><input type="text" name="email" value="<?php if ($_POST[email]) print $_POST[email];
-else print $row_u[email];
+else print $user[email];
 ?>"></td></tr>
 <tr><td>*<?php e_('Login')?>: </td><td><?php
 
-if(is_admin()) print '<input type="text" name="login" value="' . ( $_POST[login] ? $_POST[login] : $row_u[login]) . '"></td></tr>';
-else print $row_u[login];
+if(is_admin()) print '<input type="text" name="login" value="' . ( $_POST[login] ? $_POST[login] : $user[login]) . '"></td></tr>';
+else print $user[login];
 
 ?>
 <tr><td>*<?php e_('Password')?>: </td><td><input type="password" name="passwd" value="<?php if ($_POST[passwd]) print $_POST[passwd];
-else/*if(is_admin())*/ print $row_u[passwd];
+else/*if(is_admin())*/ print $user[passwd];
 ?>"></td></tr>
 <tr><td>*<?php e_('Confirm')?>: </td><td><input type="password" name="confirm_passwd" value="<?php if ($_POST[confirm_passwd]) $_POST[passwd];
-else/*if(is_admin())*/ print $row_u[passwd];
+else/*if(is_admin())*/ print $user[passwd];
 ?>"></td></tr>
 <tr><td colspan="2" align="right"><input type="hidden" name="action" value="<?php if (!$uid) print 'add';
 else print 'edit';
