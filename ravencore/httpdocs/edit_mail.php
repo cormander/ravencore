@@ -144,31 +144,27 @@ if ($page_type == "add") {
 
 print '@';
 
-$sql = "select id, name from domains where mail = 'on'";
+$domains = Array();
 
-if ($uid) $sql .= " and uid = '$uid'";
-if ($did) $sql .= " and id = '$did'";
-$result = $db->data_query($sql);
-
-$num = $db->data_num_rows();
+if (!$did and !$uid) $domains = $db->run("get_domains");
+else if (!$did and $uid) $domains = $db->run("get_domains_by_user_id", Array(uid => $uid));
+else if ($did) $domains[0] = $db->run("get_domain_by_id", Array(id => $did));
 
 if ($page_type == "add" and !$did) print "<select name=did>";
 else print "<input type=hidden name=did value=$did>";
 
 // If we're adding an email, print out a dropdown of domains
 if ($page_type == "add" and !$did) {
-	while ( $row = $db->data_fetch_array($result) ) {
-		print "<option value=$row[id]";
-		if ($row[id] == $did) print " selected";
+	foreach ($domains as $domain) {
+		if ("on" != $domain[mail]) continue;
+		print "<option value=$domain[id]";
+		if ($domain[id] == $did) print " selected";
 		print ">";
 
-		print $row[name] . '</option>';
+		print $domain[name] . '</option>';
 	}
 } else {
-	// normail edit just prints the domain name
-	  $row = $db->data_fetch_array($result);
-
-	print $row[name];
+	print $domains[0][name];
 }
 
 if ($page_type == "add" and !$did) print "</select>";
