@@ -238,12 +238,9 @@ function user_can_add($uid, $perm) {
 			break;
 
 		case "email":
-			$sql = "select count(*) as count from mail_users m, domains d where did = d.id and uid = '$uid'";
-			$result = $db->data_query($sql);
+			$mails = $db->run("get_mail_users_by_user_id", Array(uid => $uid));
 
-			$row = $db->data_fetch_array($result);
-
-			if ($row[count] < $lim) return true;
+			if (count($mails) < $lim) return true;
 			else return false;
 
 			break;

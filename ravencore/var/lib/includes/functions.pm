@@ -128,6 +128,13 @@ sub get_mail_users_by_domain_id {
 	return $self->select_ref_many("select *, m.id as mid, d.mail as mail_toggle from domains d inner join mail_users m on m.did = d.id where d.id = ?", [$ref->{did}]);
 }
 
+sub get_mail_users_by_user_id {
+	my ($self, $ref) = @_;
+
+	return $self->select_ref_many("select *, m.id as mid, d.mail as mail_toggle from domains d inner join mail_users m on m.did = d.id
+		inner join users u on d.uid = u.id where u.id = ?", [$ref->{uid}]);
+}
+
 sub get_login_failure_count_by_username {
 	my ($self, $ref) = @_;
 
