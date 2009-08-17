@@ -99,12 +99,9 @@ nav_top();
 
 // check to make sure that mail is actually turned on for the $did, if we have one
 if ($did) {
-	$sql = "select * from domains where id = '$did'";
-	$result = $db->data_query($sql);
+	$domain = $db->run("get_domain_by_id", Array(id => $did));
 
-	$row_chk = $db->data_fetch_array($result);
-
-	if ($row_chk[mail] != "on") {
+	if ("on" != $domain[mail]) {
 		print __('Mail is disabled for ' . $row_chk[name] . '. You can not add an email address for it.');
 
 		nav_bottom();
@@ -112,6 +109,7 @@ if ($did) {
 		exit;
 	}
 }
+
 // Define the javascript variable "tmp" to blank
 print '<script type="text/javascript"> var tmp=""</script>';
 
