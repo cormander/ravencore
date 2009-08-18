@@ -318,13 +318,9 @@ function perm_checked($uid, $perm) {
 // Returns zero on no, and the number of allowed on true
 
 function user_have_permission($uid, $perm) {
-
 	global $db;
 
-	$sql = "select val, lim from user_permissions where uid = '$uid' and perm = '$perm'";
-	$result = $db->data_query($sql);
-
-	$row = $db->data_fetch_array($result);
+	$row = $db->run("get_permission_by_user_id_and_perm", Array(uid => $uid, perm => $perm));
 
 	if ($row[val] == "yes") return $row[lim];
 	else return 0;

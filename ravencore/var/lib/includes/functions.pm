@@ -170,6 +170,12 @@ sub get_databases_by_user_id {
 	return $self->select_ref_many("select * from data_bases b inner join domains d on b.did = d.id and uid = ?", [$ref->{uid}]);
 }
 
+sub get_permission_by_user_id_and_perm {
+	my ($self, $ref) = @_;
+
+	return $self->select_ref_single("select * from user_permissions where uid = ? and perm = ?", [$ref->{uid}, $ref->{perm}]);
+}
+
 sub hosting_ssl {
 	my ($self) = @_;
 
