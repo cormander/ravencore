@@ -94,12 +94,9 @@ if (!$dbid and $did) {
 } else if ($dbid and $did) {
 	nav_top();
 
-	$sql = "select * from data_bases where id = '$dbid'";
-	$result = $db->data_query($sql);
+	$dd = $db->run("get_database_by_id", Array(id => $dbid));
 
-	$row = $db->data_fetch_array($result);
-
-	print __('Users for the') . ' <a href="databases.php?did=' . $did . '">' . __('database') . '</a> ' . $row[name] . ' - <a href="add_db_user.php?did=' . $did . '&dbid=' . $dbid . '">' . __('Add a database user') . '</a><p>';
+	print __('Users for the') . ' <a href="databases.php?did=' . $did . '">' . __('database') . '</a> ' . $dd[name] . ' - <a href="add_db_user.php?did=' . $did . '&dbid=' . $dbid . '">' . __('Add a database user') . '</a><p>';
 
 	$sql = "select * from data_base_users where db_id = '$dbid'";
 	$result = $db->data_query($sql);

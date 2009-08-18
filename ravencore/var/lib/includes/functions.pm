@@ -195,6 +195,12 @@ sub get_databases {
 	return $self->select_ref_many("select * from data_bases");
 }
 
+sub get_database_by_id {
+	my ($self, $ref) = @_;
+
+	return $self->select_ref_single("select * from data_bases where id = ?", [$ref->{id}]);
+}
+
 sub get_databases_by_domain_id {
 	my ($self, $ref) = @_;
 
