@@ -93,21 +93,18 @@ if (!$dbid and $did) {
 
 	print __('Users for the') . ' <a href="databases.php?did=' . $did . '">' . __('database') . '</a> ' . $dd[name] . ' - <a href="add_db_user.php?did=' . $did . '&dbid=' . $dbid . '">' . __('Add a database user') . '</a><p>';
 
-	$sql = "select * from data_base_users where db_id = '$dbid'";
-	$result = $db->data_query($sql);
+	$dbus = $db->run("get_database_users_by_database_id", Array(id => $dbid));
 
-	$num = $db->data_num_rows();
-
-	if ($num == 0) print __("No users for this database") . "<p>";
+	if (0 == count($dbus)) print __("No users for this database") . "<p>";
 	else print '<table class="listpad"><tr><th class="listpad">User</th><th class="listpad">&nbsp;</th><th class="listpad">' . __('Delete') . '</th></tr>';
 
-	while ($row = $db->data_fetch_array($result)) {
-		print '<tr><td class="listpad">' . $row[login] . '</td>
-<td class="listpad"><a href="phpmyadmin.php?did=' . $did . '&dbu=' . $row[id] . '&dbid=' . $dbid . '" target=_blank>phpMyAdmin</a></td>
-<td class="listpad"><a href="databases.php?action=userdel&dbu=' . $row[id] . '&did=' . $did . '&dbid=' . $dbid . '" onclick="return confirm(\'' . __('Are you sure you wish to delete this database user?') . '\');">' . __('delete') . '</a></td></tr>';
+	foreach ($dbus as $ddbu) {
+		print '<tr><td class="listpad">' . $ddbu[login] . '</td>
+<td class="listpad"><a href="phpmyadmin.php?did=' . $did . '&dbu=' . $ddbu[id] . '&dbid=' . $dbid . '" target=_blank>phpMyAdmin</a></td>
+<td class="listpad"><a href="databases.php?action=userdel&dbu=' . $ddbu[id] . '&did=' . $did . '&dbid=' . $dbid . '" onclick="return confirm(\'' . __('Are you sure you wish to delete this database user?') . '\');">' . __('delete') . '</a></td></tr>';
 	}
 
-	if ($num != 0) print '</table>';
+	if (0 != count($dbus)) print '</table>';
 
 	print __("Note: You may only manage one database user at a time with the phpmyadmin");
 } else {
