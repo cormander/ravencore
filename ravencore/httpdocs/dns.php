@@ -42,25 +42,27 @@ if (!$did) {
 
 	nav_top();
 
-	$sql = "select * from domains where soa is not null and soa != ''";
-	$result = $db->data_query($sql);
+	$found = 0;
 
-	$num = $db->data_num_rows();
+	$domains = $db->run("get_domains");
 
-	if ($num == 0) print __('No DNS records setup on the server');
+	foreach ($domains as $domain) {
+		if ($domain[soa]) $found = 1;
+	}
+
+	if (0 == $found) print __('No DNS records setup on the server');
 	else {
 		print __('The following domains are setup for DNS') . '<p>
 <table class="listpad"><tr><th class="listpad">' . __('Domain') . '</th><th class="listpad">' . __('Records') . '</th></tr>';
 
-		while ($row = $db->data_fetch_array($result)) {
-			print '<tr><td class="listpad"><a href="dns.php?did=' . $row['id'] . '">' . $row['name'] . '</a></td>';
+		foreach ($domains as $domain) {
+			if (!$domain[soa]) continue;
 
-			$sql = "select count(*) as count from dns_rec where did = '$row[id]'";
-			$result_rec = $db->data_query($sql);
+			print '<tr><td class="listpad"><a href="dns.php?did=' . $domain[id] . '">' . $domain[name] . '</a></td>';
 
-			$row = $db->data_fetch_array($result_rec);
+			$recs = $db->run("get_dns_recs_by_domain_id", Array(did => $domain[id]));
 
-			print '<td class="listpad" align=center>' . $row['count'] . '</td></tr>';
+			print '<td class="listpad" align=center>' . count($recs) . '</td></tr>';
 		}
 
 		print '</table>';
