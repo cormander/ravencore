@@ -68,11 +68,10 @@ print '<form name=main method=post>
 
 $alldomains = Array( 0 => __('Select a Domain') );
 
-$sql = "select * from domains";
-$result_dom = $db->data_query($sql);
+$domains = $db->run("get_domains");
 
-while ($row_d = $db->data_fetch_array($result_dom)) {
-	$alldomains[$row_d['id']] = $row_d['name'];
+foreach ($domains as $domain) {
+	$alldomains[$domain[id]] = $domain[name];
 }
 
 $userlist = Array( "NULL" => 'No One', 0 => __('Everyone') );
@@ -80,19 +79,16 @@ $userlist = Array( "NULL" => 'No One', 0 => __('Everyone') );
 $domainlist['NULL'] = $alldomains;
 $domainlist[0] = $alldomains;
 
-$sql = "select * from users";
-$result = $db->data_query($sql);
+$users = $db->run("get_users");
 
-while ($row_u = $db->data_fetch_array($result)) {
-	$userlist[$row_u['id']] = $row_u['name'];
+foreach ($users as $user) {
+	$userlist[$user[id]] = $user['name'];
 
-	$domainlist[$row_u['id']] = Array( 0 => __('Select a Domain') );
+	$domainlist[$user[id]] = Array( 0 => __('Select a Domain') );
 
-	$sql = "select * from domains" . ( $row_u['id'] ? " where uid = '" . $row_u['id'] . "'" : "" );
-	$result_dom = $db->data_query($sql);
-
-	while ($row_d = $db->data_fetch_array($result_dom)) {
-		$domainlist[$row_u['id']][$row_d['id']] = $row_d['name'];
+	foreach ($domains as $domain) {
+		if ($domain[uid] != $user[id]) continue;
+		$domainlist[$user[id]][$domain[id]] = $domain[name];
 	}
 
 }
