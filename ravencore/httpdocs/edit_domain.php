@@ -26,11 +26,9 @@ if (!user_can_add($uid, "domain") and !is_admin()) goto("users.php?uid=$uid");
 
 if ($action == "add") {
 	// Check to see that the domain isn't already setup on the server
-	$sql = "select count(*) as count from domains where name = '$_POST[name]'";
-	$result = $db->data_query($sql);
-	$row = $db->data_fetch_array($result);
+	$domain = $db->run("get_domain_by_name", Array(name => $_POST[name]));
 
-	if ($row[count] != 0) {
+	if (is_array($domain)) {
 		alert(__("The domain $_POST[name] is already setup on this server"));
 
 		$_POST[name] = "";

@@ -54,6 +54,16 @@ sub get_domain_by_id {
 	return $dom;
 }
 
+sub get_domain_by_name {
+	my ($self, $ref) = @_;
+
+	my $dom = $self->select_ref_single("select * from domains where name = ?", [$ref->{name}]);
+
+	$dom->{sys_user} = $self->get_sys_user_by_domain_id({did => $dom->{id}});
+
+	return $dom;
+}
+
 sub get_domains_by_user_id {
 	my ($self, $ref) = @_;
 
