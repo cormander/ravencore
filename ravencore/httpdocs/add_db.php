@@ -39,12 +39,9 @@ if ($action == "add") {
 
 nav_top();
 
-$sql = "select * from domains where id = '$did'";
-$result = $db->data_query($sql);
+$domain = $db->run("get_domain_by_id", Array(id => $did));
 
-$row = $db->data_fetch_array($result);
-
-print '' . $lang['add_db_adding_a_database_for'] . ' ' . $row['name'] . '<p>
+print '' . $lang[add_db_adding_a_database_for] . ' ' . $domain[name] . '<p>
 
 <form method="post">
 
