@@ -24,99 +24,25 @@ include "auth.php";
 req_service("web");
 
 if ($action) {
-	$sql = "delete from domain_ips where did = " . $did;
-	$db->data_query($sql);
 
-	if(is_array($_POST['ip_addresses'])) {
-		foreach ($_POST['ip_addresses'] as $key => $val) {
-			$sql = "insert into domain_ips values ($did, '$val')";
-			$db->data_query($sql);
-		}
-	}
-}
+	$ret = $db->run("push_hosting", Array(
+		action => $action,
+		ip_addresses => $_POST[ip_addresses],
+		sysuser_login => $_POST[login],
+		sysuser_passwd => $_POST[passwd],
+		sysuser_shell => $_POST[login_shell],
+		host_type => $_POST[host_type],
+		redirect_url => $_POST[redirect_url],
+		www => $_POST[www],
+		host_php => $_POST[php],
+		host_cgi => $_POST[cgi],
+		host_ssl => $_POST[ssl],
+		host_dir => $_POST[dir],
+		did => $did,
+	));
 
-if ($action == "edit") {
-	if (!$did) goto("domains.php");
+	if (1 == $ret) goto("domains.php?did=$did");
 
-	$suser = $db->run("get_sys_user_by_domain_id", Array(did => $did));
-
-	// only do this if we got a passwd value that is different from the current passwd
-	if ($_POST[passwd] != $suser[passwd] or $_POST[login_shell] != $suser[shell]) {
-		// Make sure someone isn't trying to change the login shell w/o permission
-		if (!user_can_add($uid, "shell_user") and !is_admin() and $suser[shell] == $CONF[DEFAULT_LOGIN_SHELL]) $_POST[login_shell] = $CONF[DEFAULT_LOGIN_SHELL];
-
-		$sql = "update sys_users set passwd = '$_POST[passwd]', shell = '$_POST[login_shell]' where id = '$suser[id]'";
-		$db->data_query($sql);
-
-		$db->run("rehash_ftp", Array('login' => $row[login]));
-	}
-
-	$sql = "update domains set redirect_url = '$_POST[redirect_url]', www = '$_POST[www]', host_dir = '$_POST[dir]'";
-
-	if (user_can_add($uid, "host_php") or is_admin() or $_POST[host_php] == "false") $sql .= ", host_php = '$_POST[php]'";
-	if (user_can_add($uid, "host_cgi") or is_admin() or $_POST[host_cgi] == "false") $sql .= ", host_cgi = '$_POST[cgi]'";
-	if (user_can_add($uid, "host_ssl") or is_admin() or $_POST[host_ssl] == "false") $sql .= ", host_ssl = '$_POST[ssl]'";
-
-	$sql .= " where id = '$did'";
-	$db->data_query($sql);
-	// only mess with the filesystem if we affected the db
-	if ($db->data_rows_affected()) $db->run("rehash_httpd", Array('name' => $d->name()));
-
-	goto("domains.php?did=$did");
-}
-else if ($action == "add")
-{
-	// get sys_users setup in db
-	$suser = $db->run("get_sys_user_by_name", Array(name => $_POST[login]));
-
-	// open up our /etc/passwd file, and input only the usernames
-	$handle = popen("cat /etc/passwd | awk -F : '{print $1}'", "r");
-
-	while (!feof($handle)) $ftp_data .= fread($handle, 1024);
-
-	pclose($handle);
-	// put each username as a value in the sys_users array
-	$sys_users = explode("\n", $ftp_data);
-
-	// make sure we don't already have the user setup in the database or in the system
-	// this prevents people from creating their ftp user as root or something
-	if ($_POST[host_type] == "physical" and ($suser[login] or in_array($_POST[login], $sys_users))) alert("You cannot create a FTP user with the login $_POST[login]!");
-	else {
-		if ($_POST[host_type] == "physical") {
-			$sql = "insert into sys_users set login = '$_POST[login]', passwd = '$_POST[passwd]'";
-			$db->data_query($sql);
-
-			$suid = $db->data_insert_id();
-
-			$sql = "update domains set suid = '$suid' where id = '$did'";
-			$db->data_query($sql);
-			// when the rehash_ftp is fixed, we want to run it with just the new username, rather then the --all switch
-			$db->run("rehash_ftp");
-		}
-
-		$sql = "update domains set host_type = '$_POST[host_type]', redirect_url = '$_POST[redirect_url]', www = '$_POST[www]'";
-
-		if (user_can_add($uid, "php") or is_admin()) $sql .= ", host_php = '$_POST[php]'";
-		if (user_can_add($uid, "cgi") or is_admin()) $sql .= ", host_cgi = '$_POST[cgi]'";
-		if (user_can_add($uid, "ssl") or is_admin()) $sql .= ", host_ssl = '$_POST[ssl]'";
-		if (user_can_add($uid, "dir") or is_admin()) $sql .= ", host_dir = '$_POST[dir]'";
-
-		$sql .= " where id = '$did'";
-
-		$db->data_query($sql);
-
-		// build httpd for this domain
-		$db->run("rehash_httpd");
-
-		// do logrotation for the domain
-		$db->run("rehash_logrotate");
-
-		goto("domains.php?did=$did");
-	}
-} else if ($action == "delete") {
-  $d->delete_hosting();
-
-  goto("domains.php?did=$did");
 }
 
 nav_top();
