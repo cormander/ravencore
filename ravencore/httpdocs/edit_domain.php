@@ -57,25 +57,22 @@ if ($action == "add") {
 				// Copy over server default DNS to this domain, if the option was checked
 				if ($_POST[dns]) {
 					// First, we need the Start Of Authority record
-					$sql = "select * from dns_def where type = 'SOA'";
-					$result = $db->data_query($sql);
+					$recs = $db->run("get_default_dns_recs");
 
-					$row = $db->data_fetch_array($result);
-					// Add the SOA to the new domain, if we got one
-					if ($row[target]) {
-						$sql = "insert into parameters set type_id = '$did', param = 'soa', value = '$row[target]'";
+					foreach ($recs as $rec) {
+						if ("SOA" != $rec[type]) continue;
+
+						$sql = "insert into parameters set type_id = '$did', param = 'soa', value = '$rec[target]'";
 						$db->data_query($sql);
 
-						$sql = "update domains set soa = '$row[target]' where id = '$did'";
+						$sql = "update domains set soa = '$rec[target]' where id = '$did'";
 						$db->data_query($sql);
 					}
 
-					// Get all other DNS records to setup
-					$sql = "select * from dns_def where type != 'SOA'";
-					$result = $db->data_query($sql);
+					foreach ($recs as $rec) {
+						if ("SOA" == $rec[type]) continue;
 
-					while ($row = $db->data_fetch_array($result)) {
-						$sql = "insert into dns_rec set did = '$did', name = '$row[name]', type = '$row[type]', target = '$row[target]'";
+						$sql = "insert into dns_rec set did = '$did', name = '$rec[name]', type = '$rec[type]', target = '$rec[target]'";
 						$db->data_query($sql);
 					}
 
