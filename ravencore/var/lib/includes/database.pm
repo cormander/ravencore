@@ -215,17 +215,43 @@ sub sql {
 
 }
 
+#
+# Database select functions
+#
+# All of these select function accept two arguments;
+#
+# 1) The SQL query to by executed
+# 2) An array ref of arguments to the given SQL query
+#
+
+# This function expects the given query to be a count(*) query as it's first and only argument to
+# select, as it does an array select and returns only the first result.
+
 sub select_count {
 	my ($self, $query, $args) = @_;
 
 	return ($self->{dbi}->selectrow_array($query, undef, @{$args}))[0];
 }
 
+# This function expects the given query to only return a single record, as it won't return any
+# more than one row. Leftover rows will be discarded; see select_ref_many if you want to run
+# through a loop. Returns a hash ref.
+
 sub select_ref_single {
 	my ($self, $query, $args) = @_;
 
 	return $self->{dbi}->selectrow_hashref($query, undef, @{$args});
 }
+
+# This function expects the given query to return N number of rows, and returns an array ref.
+# Each item on the array is a hash ref of the row data, in order as returned by the SQL engine.
+# A call to count() or scalar() on the returned array ref will effectivly give you the number
+# of rows, to save you from having to use select_count in addition to this function.
+
+# On a side note; yes I am aware that this is a potential memory hog. But this is a control panel,
+# and it isn't expected to have even a hundred rows of data returned by a single query. If someone
+# has enough of a single hosting element to fill this array ref with so much data that they run
+# into performance problems, they likely need to start using more than just one server.
 
 sub select_ref_many {
 	my ($self, $query, $args) = @_;

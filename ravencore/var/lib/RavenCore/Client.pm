@@ -60,7 +60,8 @@ sub new {
 	return $self;
 }
 
-#
+# only ran from the server itself as root; do something only the root user can do in order to
+# authenticate to the ravencore socket
 
 sub auth_system {
 	my ($self) = @_;
@@ -134,7 +135,7 @@ sub run {
 	return $output->{stdout};
 }
 
-#
+# remove a possible binary character and print the given message to STDERR
 
 sub do_error {
 	my ($self, $msg) = @_;

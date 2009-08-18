@@ -17,6 +17,13 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
+#
+# Below is a list of functions to get information. They all should really be
+# self-explanitory by their name, and really only return one sql query.
+#
+# See database.pm for the select functions used here
+#
+
 sub get_ip_addresses {
 	my ($self) = @_;
 

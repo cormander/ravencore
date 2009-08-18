@@ -284,7 +284,7 @@ sub mkdir_p {
 
 }
 
-#
+# returns an array; a directory listing of the given dir
 
 sub dir_list {
 	my ($dir) = @_;
@@ -343,6 +343,8 @@ sub pidof {
 	return split / /, $pidof;
 }
 
+# verify that the given argument is an IP address
+
 sub is_ip {
 	return $_[0] =~ /^(\d{1,3}\.){3}\d{1,3}$/;
 }
@@ -370,6 +372,7 @@ sub gen_random_id {
 
 }
 
+# an alias for the gettext function
 
 sub _ {
 	my $str = shift;
