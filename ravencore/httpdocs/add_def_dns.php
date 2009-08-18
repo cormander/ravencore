@@ -21,9 +21,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 include "auth.php";
 
-if ($action == "add") {
-	$recs = $db->run("get_default_dns_recs");
+$recs = $db->run("get_default_dns_recs");
 
+if ($action == "add") {
 	$found = 0;
 
 	foreach ($recs as $rec) {
@@ -64,18 +64,16 @@ print '<form method=post>
 
 switch ($_POST[type]) {
 	case "SOA":
+		$found = 0;
 
-		$sql = "select count(*) as count from dns_def where type = 'SOA'";
-		$result = $db->data_query($sql);
+		foreach ($recs as $rec) {
+			if ("SOA" == $rec[type]) $found = 1;
+		}
 
-	$row = $db->data_fetch_array($result);
-
-		if ($row['count'] != 0)
-		{
+		if (0 != $found) {
 			print __('You already have a default SOA record set');
 
 			nav_bottom();
-
 		}
 
 		print '<input type=hidden name=type value=SOA>
