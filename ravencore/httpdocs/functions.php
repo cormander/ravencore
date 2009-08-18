@@ -330,18 +330,17 @@ function user_have_permission($uid, $perm) {
 // returns true if true, or if the user is an admin.
 
 function user_have_domain($uid, $did) {
-
 	global $db;
 
 	if (is_admin()) return true;
 
-	$sql = "select count(*) as count from domains where uid = '$uid' and id = '$did'";
-	$result = $db->data_query($sql);
+	$domains = $db->run("get_domains_by_user_id", Array(uid => $uid));
 
-	$row = $db->data_fetch_array($result);
+	foreach ($domains as $domain) {
+		if ($domain[id] == $did) return true;
+	}
 
-	if ($row[count] == 1) return true;
-	else return false;
+	return false;
 }
 
 // A function to make a page require the user be an admin.
