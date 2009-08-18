@@ -20,19 +20,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 include("auth.php");
-// the config variable is the domain name
-$domain_name = $d->name();
+
+$domain = $db->run("get_domain_by_id", Array( id => $did));
+
 // if this domain isn't setup for "physical" hosting, there are no webstats
-$sql = "select host_type from domains where id = '$did'";
-$result = $db->data_query($sql);
-
-$row = $db->data_fetch_array($result);
-
-if ($row[host_type] != "physical")
-{
+if ("physical" != $domain[host_type]) {
     nav_top();
 
-    print $domain_name . ' ' . __('is not setup for physical hosting. Webstats are not available');
+    print $domain[name] . ' ' . __('is not setup for physical hosting. Webstats are not available');
 
     nav_bottom();
 
