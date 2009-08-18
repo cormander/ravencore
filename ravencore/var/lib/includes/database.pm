@@ -31,9 +31,12 @@ sub database_connect {
 		return;
 	}
 
-	if ( ! $self->{perl_modules}{DBD::mysql} ) {
+	if (!$self->{perl_modules}{DBD::mysql}) {
 		$self->debug("DBD::mysql not loaded");
-		return;
+	}
+
+	if (!$self->{perl_modules}{DBD::SQLite}) {
+		$self->debug("DBD::SQLite not loaded");
 	}
 
 	# test if we have the dbi object, and if so, ping it to see if it's still alive
@@ -73,13 +76,22 @@ sub database_connect {
 	my $passwd = $self->admin_passwd;
 
 	# connect to the database
-
-	$self->{dbi} = DBI->connect(
-		'DBI:mysql:database='.$self->{MYSQL_ADMIN_DB}.
-		';host='.$self->{MYSQL_ADMIN_HOST}.
-		';port='.$self->{MYSQL_ADMIN_PORT},
-		$self->{MYSQL_ADMIN_USER}, $passwd, {RaiseError => 0,PrintError => 0}
-	);
+	if ($self->{perl_modules}{DBD::SQLite}) {
+		$self->{dbi} = DBI->connect('dbi:SQLite:dbname='.$self->{RC_ROOT}.'/var/ravencore.sqlite','','');
+		$self->{dbi_type} = 'SQLite';
+	}
+	elsif ($self->{perl_modules}{DBD::mysql}) {
+		$self->{dbi} = DBI->connect(
+			'DBI:mysql:database='.$self->{MYSQL_ADMIN_DB}.
+			';host='.$self->{MYSQL_ADMIN_HOST}.
+			';port='.$self->{MYSQL_ADMIN_PORT},
+			$self->{MYSQL_ADMIN_USER}, $passwd, {RaiseError => 0,PrintError => 0}
+		);
+		$self->{dbi_type} = 'mysql';
+	}
+	else {
+		return $self->debug("No supported DBD modules are loaded.");
+	}
 
 	# set internal variable of whether or not database is actually connected
 	$self->{db_connected} = 1 if $self->{dbi}{Active};
