@@ -68,25 +68,18 @@ if (!$did) {
 } else {
 	nav_top();
 
-	$sql = "select * from domains where id = '$did' and soa is not null";
-	$result = $db->data_query($sql);
+	$domain = $db->run("get_domain_by_id", Array(id => $did));
 
-	$num = $db->data_num_rows();
-
-	if ($num == 0) print '<form method=post action=add_dns.php name=main>
+	if (!$domain[soa]) print '<form method=post action=add_dns.php name=main>
 ' . __('No SOA record setup for this domain') . ' - <a href="javascript:document.main.submit();">' . __('Add SOA record') . '</a>
 <input type=hidden name=did value="' . $did . '">
 <input type=hidden name=type value="SOA">
 </form>';
 	else {
-		$row = $db->data_fetch_array($result);
-
-		$domain_name = $row[name];
-
-		print __('DNS for') . ' <a href="domains.php?did=' . $did . '">' . $domain_name . '</a><p>';
+		print __('DNS for') . ' <a href="domains.php?did=' . $did . '">' . $domain[name] . '</a><p>';
 
 		print '<form method=post name=del>
-' . __('Start of Authority for ') . $domain_name . __(' is ') . $row[soa] . ' - <a href="javascript:document.del.submit();">' . __('delete') . '</a>
+' . __('Start of Authority for ') . $domain[name] . __(' is ') . $domain[soa] . ' - <a href="javascript:document.del.submit();">' . __('delete') . '</a>
 <input type=hidden name=did value="' . $did . '">
 <input type=hidden name=type value="SOA">
 <input type=hidden name=action value=delete>
