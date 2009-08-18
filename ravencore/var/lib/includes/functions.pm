@@ -250,3 +250,124 @@ sub hosting_ssl {
 	return $self->select_count("select count(*) as count from domains where host_ssl = 'true'");
 }
 
+#
+# Below is a list of functions to push information to the database, do
+# actions, etc. Think of "push" as the opposite of "get".
+#
+
+sub push_hosting {
+	my ($self, $ref) = @_;
+
+	my $action =		$ref->{action};
+	my $ip_addresses =	$ref->{ip_addresses};
+	my $sysuser_login =	$ref->{sysuser_login};
+	my $sysuser_passwd =	$ref->{sysuser_passwd};
+	my $sysuser_shell =	$ref->{sysuser_shell};
+	my $host_type =		$ref->{host_type};
+	my $redirect_url =	$ref->{redirect_url};
+	my $www =		$ref->{www};
+	my $host_php =		$ref->{host_php};
+	my $host_cgi =		$ref->{host_cgi};
+	my $host_ssl =		$ref->{host_ssl};
+	my $host_dir =		$ref->{host_dir};
+	my $did	=		$ref->{did};
+
+	$self->{dbi}->do("delete from domain_ips where did = ?", undef, $did);
+
+	if ("HASH" eq ref($ip_addresses)) {
+		foreach my $key (keys %{$ip_addresses}) {
+			my $val = $ip_addresses->{$key};
+			$self->{dbi}->do("insert into domain_ips values (?,?)", undef, $did, $val);
+		}
+	}
+
+	if ("edit" eq $action) {
+
+		return undef unless $did;
+
+		my $suser = $self->get_sys_user_by_domain_id({did => $did});
+
+		# only do this if we got a passwd value that is different from the current passwd
+		if ($sysuser_passwd ne $suser->{passwd} or $sysuser_shell ne $suser->{shell}) {
+			# Make sure someone isn't trying to change the login shell w/o permission
+			#if (!user_can_add($uid, "shell_user") and !is_admin() and $suser[shell] == $CONF[DEFAULT_LOGIN_SHELL]) $_POST[login_shell] = $CONF[DEFAULT_LOGIN_SHELL];
+
+			$self->{dbi}->do("update sys_users set passwd = ?, shell = ? where id = ?", undef, $sysuser_passwd, $sysuser_shell, $suser->{id});
+
+			$self->rehash_ftp;
+		}
+
+		#if (user_can_add($uid, "host_php") or is_admin() or $_POST[host_php] == "false") $sql .= ", host_php = '$_POST[php]'";
+		#if (user_can_add($uid, "host_cgi") or is_admin() or $_POST[host_cgi] == "false") $sql .= ", host_cgi = '$_POST[cgi]'";
+		#if (user_can_add($uid, "host_ssl") or is_admin() or $_POST[host_ssl] == "false") $sql .= ", host_ssl = '$_POST[ssl]'";
+
+		my $ra = $self->{dbi}->do("update domains set redirect_url = ?, www = ?, host_dir = ?,
+					host_php = ?, host_cgi = ?, host_ssl = ? where id = ?",
+				undef, $redirect_url, $www, $host_dir, $host_php, $host_cgi, $host_ssl, $did);
+
+		# only mess with the filesystem if we affected the db
+		$self->rehash_httpd if 0 < $ra;
+
+		return 1;
+	}
+	elsif ("add" eq $action) {
+
+		if ("physical" eq $host_type) {
+
+			# get sys_users setup in db
+			my $suser = $self->get_sys_user_by_name({name => $sysuser_login});
+
+			# open up our /etc/passwd file, and input only the usernames
+			my @users = split /\n/, `cat /etc/passwd | awk -F : '{print \$1}'`;
+
+			# make sure we don't already have the user setup in the database or in the system
+			# this prevents people from creating their ftp user as root or something
+			return $self->do_error("You cannot create a FTP user with the login $sysuser_login") if (in_array($sysuser_login, @users));
+
+			$self->{dbi}->do("insert into sys_users set login = ?, passwd = ?", undef, $sysuser_login, $sysuser_passwd);
+
+			my $suid = $self->{dbi}->{ q{mysql_insertid} };
+
+			$self->{dbi}->do("update domains set suid = ? where id = ?", undef, $suid, $did);
+
+			# when the rehash_ftp is fixed, we want to run it with just the new username, rather then the --all switch
+			$self->rehash_ftp;
+
+		}
+
+		#if (user_can_add($uid, "host_php") or is_admin() or $_POST[host_php] == "false") $sql .= ", host_php = '$_POST[php]'";
+		#if (user_can_add($uid, "host_cgi") or is_admin() or $_POST[host_cgi] == "false") $sql .= ", host_cgi = '$_POST[cgi]'";
+		#if (user_can_add($uid, "host_ssl") or is_admin() or $_POST[host_ssl] == "false") $sql .= ", host_ssl = '$_POST[ssl]'";
+
+		my $ra = $self->{dbi}->do("update domains set redirect_url = ?, www = ?, host_dir = ?,
+					host_php = ?, host_cgi = ?, host_ssl = ? where id = ?",
+				undef, $redirect_url, $www, $host_dir, $host_php, $host_cgi, $host_ssl, $did);
+
+		# only mess with the filesystem if we affected the db
+		if (0 < $ra) {
+			$self->rehash_httpd;
+			$self->rehash_logrotate;
+		}
+
+		return 1;
+	}
+	elsif ("delete" eq $action) {
+
+		my $suser = $self->get_sys_user_by_domain_id({did => $did});
+		my $dom = $self->get_domain_by_id({id => $did});
+
+		# delete all the system users for this domain
+		$self->{dbi}->do("delete from sys_users where id = ?", undef, $suser->{id});
+
+		$self->ftp_del({login => $suser->{login}});
+
+		$self->{dbi}->do("update domains set host_type = 'none' where id = ?", undef, $did);
+
+		$self->domain_del({name => $dom->{name}});
+
+		return 1;
+	}
+
+	return undef;
+}
+
