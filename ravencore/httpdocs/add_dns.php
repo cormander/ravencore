@@ -94,17 +94,17 @@ switch ($_POST[type]) {
 	case "MX":
 		print __('Mail for') . ': <select name=name>';
 
-		$sql = "select * from dns_rec where did = '$did' and type = 'A' order by name";
-		$result = $db->data_query($sql);
+		$recs = $db->run("get_dns_recs_by_domain_id", Array(did => $did));
 
-		while ($row = $db->data_fetch_array($result) )
-		{
-			$disp_name = $row['name'];
+		foreach ($recs as $rec) {
+			if ("A" != $rec[type]) continue;
+
+			$disp_name = $rec[name];
 
 			if ($row['name'] == "@") $disp_name = $domain[name];
 			else $disp_name .= '.' . $domain[name];
 
-			print '<option value="' . $row['name'] . '">' . $disp_name . '</option>';
+			print '<option value="' . $rec[name] . '">' . $disp_name . '</option>';
 		}
 
 		print '</select><br><input type=hidden name=type value=MX>
