@@ -34,17 +34,14 @@ if ($action == "delete") {
 
 nav_top();
 
-$sql = "select * from dns_def order by type, name, target";
-$result = $db->data_query($sql);
+$recs = $db->run("get_default_dns_recs");
 
-$num = $db->data_num_rows();
-
-if ($num == 0) print __("No default DNS records setup for this server");
+if (0 == count($recs)) print __("No default DNS records setup for this server");
 else {
 	print '<h3>' . __('Default DNS for domains setup on this server') . '</h3><form method=post><table class="listpad"><tr><th class="listpad">&nbsp;</th><th class="listpad">' . __('Record Name') . '</th><th class="listpad">' . __('Record Type') . '</th><th class="listpad">' . __('Record Target') . '</th></tr>';
 
-	while ($row = $db->data_fetch_array($result)) {
-		print '<tr><td class="listpad"><input type=radio name=delete value="' . $row[id] . '"></td><td class="listpad">' . $row[name] . '</td><td class="listpad">' . $row[type] . '</td><td class="listpad">' . $row[target] . '</td></tr>';
+	foreach ($recs as $rec) {
+		print '<tr><td class="listpad"><input type=radio name=delete value="' . $rec[id] . '"></td><td class="listpad">' . $rec[name] . '</td><td class="listpad">' . $rec[type] . '</td><td class="listpad">' . $rec[target] . '</td></tr>';
 	}
 
 	print '<tr><td class="listpad" colspan=4><input type=submit value="' . __('Delete Selected') . '"></tr>
