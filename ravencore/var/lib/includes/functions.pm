@@ -24,7 +24,7 @@ sub get_domain_by_id {
 
 	my $dom = $self->select_ref_single("select * from domains where id = ?", [$id]);
 
-	$dom->{sys_users} = $self->get_sys_users_by_domain_id({did => $id});
+	$dom->{sys_user} = $self->get_sys_user_by_domain_id({did => $id});
 
 	return $dom;
 }
@@ -59,10 +59,10 @@ sub get_sys_users {
 	return $self->select_ref_many("select * from sys_users su inner join domains d on d.suid = su.id");
 }
 
-sub get_sys_users_by_domain_id {
+sub get_sys_user_by_domain_id {
 	my ($self, $ref) = @_;
 
-	return $self->select_ref_many("select * from sys_users where did = ?", [$ref->{did}]);
+	return $self->select_ref_single("select * from sys_users su inner join domains d on d.suid = su.id where d.id = ?", [$ref->{did}]);
 }
 
 sub get_sys_users_by_user_id {
