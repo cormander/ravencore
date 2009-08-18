@@ -326,6 +326,7 @@ sub find_in_path {
 	foreach my $dir (@dirs)
 	{
 		return $dir . '/' . $file if -f $dir . '/' . $file;
+		return $dir . '/' . $file . '.exe' if $dir . '/' . $file . '.exe';
 	}
 
 	return;
