@@ -38,17 +38,14 @@ if ($action) {
 if ($action == "edit") {
 	if (!$did) goto("domains.php");
 
-	$sql = "select u.id, login, passwd, shell from sys_users u, domains d where d.suid = u.id and d.id = '$did'";
-	$result = $db->data_query($sql);
-
-	$row = $db->data_fetch_array($result);
+	$suser = $db->run("get_sys_user_by_domain_id", Array(did => $did));
 
 	// only do this if we got a passwd value that is different from the current passwd
-	if ($_POST[passwd] != $row[passwd] or $_POST[login_shell] != $row[shell]) {
+	if ($_POST[passwd] != $suser[passwd] or $_POST[login_shell] != $suser[shell]) {
 		// Make sure someone isn't trying to change the login shell w/o permission
-		if (!user_can_add($uid, "shell_user") and !is_admin() and $row[shell] == $CONF[DEFAULT_LOGIN_SHELL]) $_POST[login_shell] = $CONF[DEFAULT_LOGIN_SHELL];
+		if (!user_can_add($uid, "shell_user") and !is_admin() and $suser[shell] == $CONF[DEFAULT_LOGIN_SHELL]) $_POST[login_shell] = $CONF[DEFAULT_LOGIN_SHELL];
 
-		$sql = "update sys_users set passwd = '$_POST[passwd]', shell = '$_POST[login_shell]' where id = '$row[id]'";
+		$sql = "update sys_users set passwd = '$_POST[passwd]', shell = '$_POST[login_shell]' where id = '$suser[id]'";
 		$db->data_query($sql);
 
 		$db->run("rehash_ftp", Array('login' => $row[login]));
