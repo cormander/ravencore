@@ -192,7 +192,7 @@ sub get_login_failure_count_by_username {
 sub get_databases {
 	my ($self) = @_;
 
-	return $self->select_ref_many("select * from data_bases");
+	return $self->select_ref_many("select b.*, d.name as domain_name from data_bases d inner join domains d on b.did = d.id");
 }
 
 sub get_database_by_id {
