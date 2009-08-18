@@ -756,6 +756,8 @@ sub do_error {
 	push @{$self->{errors}}, $msg;
 
 	$self->debug(_('Sent error: %s', $msg));
+
+	return undef;
 }
 
 #
