@@ -65,10 +65,22 @@ sub get_sys_users_by_domain_id {
 	return $self->select_ref_many("select * from sys_users where did = ?", [$ref->{did}]);
 }
 
+sub get_sys_users_by_user_id {
+	my ($self, $ref) = @_;
+
+	return $self->select_ref_many("select * from sys_users su inner join domains d on su.did = d.id where d.uid = ?", [$ref->{uid}]);
+}
+
 sub get_dns_recs_by_domain_id {
 	my ($self, $ref) = @_;
 
 	return $self->select_ref_many("select * from dns_rec where did = ? order by type, name, target", [$ref->{did}]);
+}
+
+sub get_dns_recs_by_user_id {
+	my ($self, $ref) = @_;
+
+	return $self->select_ref_many("select * from dns_rec dr inner join domains d on d.id = dr.did where d.uid = ? order by type, name, target", [$ref->{uid}]);
 }
 
 sub get_default_dns_recs {
@@ -150,6 +162,12 @@ sub get_databases_by_domain_id {
 	my ($self, $ref) = @_;
 
 	return $self->select_ref_many("select * from data_bases where did = ?", [$ref->{did}]);
+}
+
+sub get_databases_by_user_id {
+	my ($self, $ref) = @_;
+
+	return $self->select_ref_many("select * from data_bases b inner join domains d on b.did = d.id and uid = ?", [$ref->{uid}]);
 }
 
 sub hosting_ssl {

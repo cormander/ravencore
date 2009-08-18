@@ -227,12 +227,9 @@ function user_can_add($uid, $perm) {
 			break;
 
 		case "database":
-			$sql = "select count(*) as count from data_bases b, domains d where did = d.id and uid = '$uid'";
-			$result = $db->data_query($sql);
+			$dbs = $db->run("get_databases_by_user_id", Array(uid => $uid));
 
-			$row = $db->data_fetch_array($result);
-
-			if ($row[count] < $lim) return true;
+			if (count($dbs) < $lim) return true;
 			else return false;
 
 			break;
@@ -246,57 +243,56 @@ function user_can_add($uid, $perm) {
 			break;
 
 		case "dns_rec":
-			$sql = "select count(*) as count from dns_rec r, domains d where did = d.id and uid = '$uid'";
-			$result = $db->data_query($sql);
+			$dns = $db->run("get_dns_recs_by_user_id", Array(uid => $uid));
 
-			$row = $db->data_fetch_array($result);
-
-			if ($row[count] < $lim) return true;
+			if (count($dns) < $lim) return true;
 			else return false;
 
 			break;
 
 		case "host_cgi":
-			$sql = "select count(*) as count from domains where host_cgi = 'true' and uid = '$uid'";
-			$result = $db->data_query($sql);
+			$domains = $db->run("get_domains_by_user_id", Array(uid => $uid));
 
-			$row = $db->data_fetch_array($result);
+			$count = 0;
 
-			if ($row[count] < $lim) return true;
+			foreach ($domains as $domain)
+				if ("true" == $domain[host_cgi]) $count++;
+
+			if ($count < $lim) return true;
 			else return false;
 
 			break;
 
 		case "host_php":
-			$sql = "select count(*) as count from domains where host_php = 'true' and uid = '$uid'";
-			$result = $db->data_query($sql);
+			$domains = $db->run("get_domains_by_user_id", Array(uid => $uid));
 
-			$row = $db->data_fetch_array($result);
+			$count = 0;
 
-			if ($row[count] < $lim) return true;
+			foreach ($domains as $domain)
+				if ("true" == $domain[host_php]) $count++;
+
+			if ($count < $lim) return true;
 			else return false;
 
 			break;
 
 		case "host_ssl":
-			$sql = "select count(*) as count from domains where host_ssl = 'true' and uid = '$uid'";
-			$result = $db->data_query($sql);
+			$domains = $db->run("get_domains_by_user_id", Array(uid => $uid));
 
-			$row = $db->data_fetch_array($result);
+			$count = 0;
 
-			if ($row[count] < $lim) return true;
+			foreach ($domains as $domain)
+				if ("true" == $domain[host_ssl]) $count++;
+
+			if ($count < $lim) return true;
 			else return false;
 
 			break;
 
 		case "shell_user":
+			$susers = $db->run("get_sys_users_by_user_id", Array(uid => $uid));
 
-			$sql = "select count(*) as count from sys_users f, domains d where uid = '$uid' and shell != '$CONF[DEFAULT_LOGIN_SHELL]'";
-			$result = $db->data_query($sql);
-
-			$row = $db->data_fetch_array($result);
-
-			if ($row[count] < $lim) return true;
+			if (count($susers) < $lim) return true;
 			else return false;
 
 			break;
