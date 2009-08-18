@@ -130,30 +130,19 @@ if (!$dbid and $did) {
 
 	print '</form><p>';
 
-	$sql = "select d.name as domain_name, b.name as db_name, b.id, b.did from data_bases b inner join domains d on d.id = b.did";
-	if ($_GET['search']) {
-		$sql .= " where b.name like '%$_GET[search]%'";
-	}
-	$sql .= " order by d.name, b.name";
-	$result = $db->data_query($sql);
+	$dbs = $db->run("get_databases");
 
-	$num = $db->data_num_rows();
-
-	if ($num == 0 and !$_GET['search']) {
+	if (0 == count($dbs)) {
 		print __('There are no databases setup');
-	} else if ($_GET['search']) {
-		print __('Your search returned') . ' <i><b>' . $num . '</b></i> ' . __('results') . '<p>';
-	}
-
-	if ($num != 0) {
+	} else {
 		print '<table class="listpad"><tr><th class="listpad">' . __('Domain') . '</th><th class="listpad">' . __('Database') . '</th></tr>';
 	}
 
-	while ($row = $db->data_fetch_array($result)) {
-		print '<tr><td class="listpad">' . $row['domain_name'] . '</td><td class="listpad"><a href="databases.php?dbid=' . $row['id'] . '&did=' . $row['did'] . '">' . $row[db_name] . '</a></td></tr>';
+	foreach ($dbs as $dd) {
+		print '<tr><td class="listpad">' . $dd[domain_name] . '</td><td class="listpad"><a href="databases.php?dbid=' . $dd[id] . '&did=' . $dd[did] . '">' . $dd[db_name] . '</a></td></tr>';
 	}
 
-	if ($num != 0) print '</table>';
+	if (0 != count($dbs)) print '</table>';
 }
 
 nav_bottom();
