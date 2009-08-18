@@ -129,24 +129,6 @@ class domain {
 		// rehash_mail
 	}
 
-	function delete_hosting()
-	{
-
-		global $db;
-
-		// delete all the system users
-		$sql = "delete from sys_users where id = '" . $this->info['suid'] . "'";
-		$db->data_query($sql);
-
-		foreach( $this->info['sys_users'] as $key => $val ) $db->run("ftp_del", Array('login' => $val['login']));
-
-		$sql = "update domains set host_type = 'none' where id = '" . $this->did . "'";
-		$db->data_query($sql);
-
-		$db->run("domain_del", Array('name' => $this->info['name']));
-
-	}
-
 	function delete() {
 
 		global $db;
@@ -158,8 +140,6 @@ class domain {
 		// delete all the DNS records
 		$sql = "delete from dns_rec where did = '" . $this->did . "'";
 		$db->data_query($sql);
-
-		$this->delete_hosting();
 
 		// TODO:
 		// delete databases
