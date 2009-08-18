@@ -67,8 +67,8 @@ if ($action == "edit") {
 else if ($action == "add")
 {
 	// get sys_users setup in db
-	$sql = "select count(*) as count from sys_users where login = '$_POST[login]'";
-	$result = $db->data_query($sql);
+	$suser = $db->run("get_sys_user_by_name", Array(name => $_POST[login]));
+
 	// open up our /etc/passwd file, and input only the usernames
 	$handle = popen("cat /etc/passwd | awk -F : '{print $1}'", "r");
 
@@ -77,9 +77,10 @@ else if ($action == "add")
 	pclose($handle);
 	// put each username as a value in the sys_users array
 	$sys_users = explode("\n", $ftp_data);
+
 	// make sure we don't already have the user setup in the database or in the system
 	// this prevents people from creating their ftp user as root or something
-	if ($_POST[host_type] == "physical" and ($row[count] != 0 or in_array($_POST[login], $sys_users))) alert("You cannot create a FTP user with the login $_POST[login]!");
+	if ($_POST[host_type] == "physical" and ($suser[login] or in_array($_POST[login], $sys_users))) alert("You cannot create a FTP user with the login $_POST[login]!");
 	else {
 		if ($_POST[host_type] == "physical") {
 			$sql = "insert into sys_users set login = '$_POST[login]', passwd = '$_POST[passwd]'";
