@@ -23,17 +23,14 @@ include "auth.php";
 
 if (!$did) goto("users.php");
 
-$sql = "select login, passwd from sys_users s, domains d where d.id = '$did' and d.suid = s.id";
-$result = $db->data_query($sql);
+$suser = $db->run("get_sys_user_by_domain_id", Array(did => $did));
 
-$row = $db->data_fetch_array($result);
+$_SESSION[user] = $suser[login];
+$_SESSION[password] = $suser[passwd];
 
-$_SESSION['user'] = $row[login];
-$_SESSION['password'] = $row[passwd];
-
-$_SESSION['server'] = "127.0.0.1";
-$_SESSION['language'] = $locales[$current_locale]['filemanager'];
-$_SESSION['port'] = 21;
+$_SESSION[server] = "127.0.0.1";
+$_SESSION[language] = $locales[$current_locale][filemanager];
+$_SESSION[port] = 21;
 
 goto("filemanager/");
 
