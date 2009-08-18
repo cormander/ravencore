@@ -219,6 +219,12 @@ sub get_database_user_by_id {
 	return $self->select_ref_single("select * from data_base_users where id = ?", [$ref->{id}]);
 }
 
+sub get_database_user_by_name {
+        my ($self, $ref) = @_;
+
+	return $self->select_ref_single("select * from data_base_users where login = ?", [$ref->{name}]);
+}
+
 sub get_database_users_by_database_id {
 	my ($self, $ref) = @_;
 

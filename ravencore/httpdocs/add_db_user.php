@@ -25,23 +25,19 @@ if (!$dbid or !$did) goto("users.php?user=$uid");
 
 if ($action == "add") {
 	// does user already exist?
-	$sql = "select count(*) as count from data_base_users where login = '$_POST[login]'";
-	$result = $db->data_query($sql);
+	$ddbu = $db->run("get_database_user_by_name", Array(name => $_POST[login]));
 
-	$row = $db->data_fetch_array($result);
+	$count = ( $ddbu[id] ? 1 : 0 );
 
 	// we can't use the admin username
-	if ($_POST['login'] == $CONF['MYSQL_ADMIN_USER']) $row['count'] = 1;
+	if ($_POST['login'] == $CONF['MYSQL_ADMIN_USER']) $count = 1;
 
-	if ($row['count'] != 0) $_SESSION['status_mesg'] = $_POST[login] . __(" user already exists");
+	if (0 != $count) $_SESSION['status_mesg'] = $_POST[login] . __(" user already exists");
 	else {
 		if (preg_match('/^' . REGEX_PASSWORD . '$/', $_POST[passwd]) and valid_passwd($_POST[passwd])) {
-			$sql = "select * from data_bases where id = '$dbid'";
-			$result = $db->data_query($sql);
+			$dd = $db->run("get_database_by_id", Array(id => $dbid));
 
-			$row = $db->data_fetch_array($result);
-
-			$sql = "grant select,insert,update,delete,create,drop,alter on $row[name].* to $_POST[login]@localhost identified by '$_POST[passwd]'";
+			$sql = "grant select,insert,update,delete,create,drop,alter on $dd[name].* to $_POST[login]@localhost identified by '$_POST[passwd]'";
 
 			$db->data_query($sql);
 
@@ -59,12 +55,9 @@ if ($action == "add") {
 
 nav_top();
 
-$sql = "select * from data_bases where id = '$dbid'";
-$result = $db->data_query($sql);
+$dd = $db->run("get_database_by_id", Array(id => $dbid));
 
-$row = $db->data_fetch_array($result);
-
-print __('Adding a user for database') . ' ' . $row['name'] . '<p>
+print __('Adding a user for database') . ' ' . $dd[name] . '<p>
 
 <form method="post">
 
