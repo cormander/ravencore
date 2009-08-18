@@ -178,6 +178,13 @@ sub get_mail_users_by_user_id {
 		inner join users u on d.uid = u.id where u.id = ?", [$ref->{uid}]);
 }
 
+sub get_mail_user_by_name_and_domain_id {
+	my ($self, $ref) = @_;
+
+	return $self->select_ref_single("select mu.*, concat(mail_name,'\@',d.name) as email from domains d inner join mail_users mu on mu.did = d.id
+		where mu.mail_name = ? and d.id = ?", [$ref->{name}, $ref->{did}]);
+}
+
 sub get_login_failure_count_by_username {
 	my ($self, $ref) = @_;
 

@@ -34,11 +34,9 @@ if ($page_type == "add" and $row_email_user) goto("edit_mail.php");
 if (!user_can_add($uid, "email") and !is_admin() and $page_type == "add") goto("users.php?uid=$uid");
 
 if ($action) {
-	$sql = "select count(*) as count from mail_users where mail_name = '$_POST[name]' and did = '$did'";
-	$result = $db->data_query($sql);
-	$row = $db->data_fetch_array($result);
+	$mails = $db->run("get_mail_user_by_name_and_domain_id", Array(name => $_POST[name], did => $did));
 
-	if ($row[count] != 0 and $page_type == "add") alert(__("That email address already exists"));
+	if (0 != count($mails) and $page_type == "add") alert(__("That email address already exists"));
 	else {
 		// Make sure that the passwords match
 		if ($_POST[confirm_passwd] != $_POST[passwd]) {
