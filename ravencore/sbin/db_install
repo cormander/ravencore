@@ -388,9 +388,9 @@ if [ $? -ne 0 ]; then
     
     $_echo -n "attempting to load the data structure...."
 
-    for table in `$_ls $RC_ROOT/etc/sql_tables | $_sed 's/\.sql$//'`; do
+    for table in `$_ls $RC_ROOT/etc/sql_tables/mysql | $_sed 's/\.sql$//'`; do
 
-	$MYSQL_STR $MYSQL_ADMIN_DB < $RC_ROOT/etc/sql_tables/$table.sql
+	$MYSQL_STR $MYSQL_ADMIN_DB < $RC_ROOT/etc/sql_tables/mysql/$table.sql
 
     done
 
@@ -410,7 +410,7 @@ else
 
     table_info=$($MYSQL_STR $MYSQL_ADMIN_DB -e "show tables" | $_sed '1d')
 
-    for table in `$_ls $RC_ROOT/etc/sql_tables | $_sed 's/\.sql$//'`; do
+    for table in `$_ls $RC_ROOT/etc/sql_tables/mysql | $_sed 's/\.sql$//'`; do
 
 # reset our variable of whether to show a dot
 	show_dot=1
@@ -427,7 +427,7 @@ else
 
 	    $_echo -n "found new table \"$table\". loading it into the database...."
 
-	    $MYSQL_STR $MYSQL_ADMIN_DB < $RC_ROOT/etc/sql_tables/$table.sql
+	    $MYSQL_STR $MYSQL_ADMIN_DB < $RC_ROOT/etc/sql_tables/mysql/$table.sql
 
 	    $_echo "ok"
 	    
@@ -441,8 +441,8 @@ else
 
 	    $_mysqldump -d --opt -h $MYSQL_ADMIN_HOST -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS $MYSQL_ADMIN_DB $table | $_grep '^ ' | $_sed 's/`//g' > $RC_ROOT/var/tmp/diff.$$
 
-	    new_columns=$($_cat $RC_ROOT/etc/sql_tables/$table.sql | $_grep '^ ' | $_sed 's/`//g' | $_diff $RC_ROOT/var/tmp/diff.$$ - | $_grep '^>')
-	    custom_columns=$($_cat $RC_ROOT/etc/sql_tables/$table.sql | $_grep '^ ' | $_sed 's/`//g' | $_diff $RC_ROOT/var/tmp/diff.$$ - | $_grep '^<' | $_sed 's/<//')
+	    new_columns=$($_cat $RC_ROOT/etc/sql_tables/mysql/$table.sql | $_grep '^ ' | $_sed 's/`//g' | $_diff $RC_ROOT/var/tmp/diff.$$ - | $_grep '^>')
+	    custom_columns=$($_cat $RC_ROOT/etc/sql_tables/mysql/$table.sql | $_grep '^ ' | $_sed 's/`//g' | $_diff $RC_ROOT/var/tmp/diff.$$ - | $_grep '^<' | $_sed 's/<//')
 	    
 # if the table structures differ ( new columns in the .sql file )
 	    
@@ -463,7 +463,7 @@ else
 		
 # load the new table structure
 		
-		$MYSQL_STR $MYSQL_ADMIN_DB < $RC_ROOT/etc/sql_tables/$table.sql
+		$MYSQL_STR $MYSQL_ADMIN_DB < $RC_ROOT/etc/sql_tables/mysql/$table.sql
 		
 		$_echo "ok"
 
@@ -481,7 +481,7 @@ else
 
 # attempt to add them back
 
-	       	    $_cat $RC_ROOT/etc/sql_tables/$table.sql | $_grep '^ ' | $_sed 's/`//g' | $_diff $RC_ROOT/var/tmp/diff.$$ - | $_grep '^<' | $_sed 's/<//' | $_sed 's/,$//g' | while read line; do
+	       	    $_cat $RC_ROOT/etc/sql_tables/mysql/$table.sql | $_grep '^ ' | $_sed 's/`//g' | $_diff $RC_ROOT/var/tmp/diff.$$ - | $_grep '^<' | $_sed 's/<//' | $_sed 's/,$//g' | while read line; do
 
 # if this line is not blank
 
