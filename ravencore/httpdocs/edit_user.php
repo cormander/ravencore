@@ -70,11 +70,9 @@ if ($action) {
 			// only an admin can add a user
 			req_admin();
 			// The procedue to add a user. First check to see if the login provided is already in use
-			$sql = "select count(*) as count from users where login = '$_POST[login]'";
-			$result = $db->data_query($sql);
-			$row = $db->data_fetch_array($result);
+			$user = $db->run("get_user_by_name", Array(username => $_POST[login]));
 
-			if ($row[count] != 0) {
+			if (0 != count($user)) {
 				alert(__("The user login '$_POST[login]' already exists"));
 				// Unset the login variable, so that we don't print it in the form below
 				$_POST[login] = "";
@@ -92,12 +90,9 @@ if ($action) {
 				else goto("users.php?uid=$uid");
 			}
 		} else if ($action == "edit") {
-			$sql = "select count(*) as count from users where id != '$uid' and login = '$login'";
-			$result = $db->data_query($sql);
+			$user = $db->run("get_user_by_name", Array(username => $login));
 
-			$row = $db->data_fetch_array($result);
-
-			if ($row[count] != 0) alert(__("The user login '$_POST[login]' already exists"));
+			if ($user[id] == $uid) alert(__("The user login '$_POST[login]' already exists"));
 			else {
 				$sql = "update users set name = '$_POST[name]', email = '$_POST[email]', passwd = '$_POST[passwd]' " . ( is_admin() ? ", login = '$_POST[login]'" : "" ). " where id = '$uid'";
 				$db->data_query($sql);
