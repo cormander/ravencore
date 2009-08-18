@@ -22,15 +22,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 include "auth.php";
 
 if ($action == "userdel") {
-	$sql = "select * from data_base_users where id = '$dbu'";
-	$result = $db->data_query($sql);
 
-	$row = $db->data_fetch_array($result);
+	$ddbu = $db->run("get_database_user_by_id", Array(id => $dbu));
 
 	// Connect to the mysql database
 	$db->use_database('mysql');
 
-	$sql = "delete from user where User = '$row[login]'";
+	$sql = "delete from user where User = '$ddbu[login]'";
 
 	$db->data_query($sql);
 
@@ -44,14 +42,11 @@ if ($action == "userdel") {
 	goto("databases.php?did=$did&dbid=$dbid");
 
 } else if ($action == "dbdel") {
-	$sql = "select * from data_bases where id = '$dbid'";
-	$result = $db->data_query($sql);
+	$dd = $db->run("get_database_by_id", Array(id => $dbid));
 
-	$row = $db->data_fetch_array($result);
-
-	if (!$row) $error = __("That database does not exist");
+	if ($dd[id] != $dbid) $error = __("That database does not exist");
 	else {
-		$sql = "drop database " . $row['name'];
+		$sql = "drop database " . $dd[name];
 
 		$db->data_query($sql);
 

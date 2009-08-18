@@ -213,6 +213,12 @@ sub get_databases_by_user_id {
 	return $self->select_ref_many("select * from data_bases b inner join domains d on b.did = d.id and uid = ?", [$ref->{uid}]);
 }
 
+sub get_database_user_by_id {
+	my ($self, $ref) = @_;
+
+	return $self->select_ref_single("select * from data_base_users where id = ?", [$ref->{id}]);
+}
+
 sub get_permission_by_user_id_and_perm {
 	my ($self, $ref) = @_;
 
