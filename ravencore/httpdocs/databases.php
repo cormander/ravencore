@@ -77,23 +77,17 @@ if ($action == "userdel") {
 if (!$dbid and $did) {
 	nav_top();
 
-	$sql = "select * from domains where id = '$did'";
-	$result = $db->data_query($sql);
-
-	$row = $db->data_fetch_array($result);
+	$domain = $db->run("get_domain_by_id", Array(id => $did));
 
 	if (user_can_add($user, "database") or is_admin()) print '<a href="add_db.php?did=' . $did . '">' . __('Add a Database') . '</a><br /><br />';
 
-	$sql = "select * from data_bases where did = '$did'";
-	$result = $db->data_query($sql);
+	$dbs = $db->run("get_databases_by_domain_id", Array(did => $did));
 
-	$num = $db->data_num_rows();
+	if (0 == count($dbs)) print __("No databases setup");
+	else print '<table class="listpad"><tr><th  class="listpad"colspan="2">' . __('Databases for') . ' <a href="domains.php?did=' . $did . '">' . $domain[name] . '</a></th></tr>';
 
-	if ($num == 0) print __("No databases setup");
-	else print '<table class="listpad"><tr><th  class="listpad"colspan="2">' . __('Databases for') . ' <a href="domains.php?did=' . $did . '">' . $row[name] . '</a></th></tr>';
-
-	while ($row = $db->data_fetch_array($result)) {
-		print '<tr><td class="listpad"><a href="databases.php?did=' . $did . '&dbid=' . $row[id] . '">' . $row[name] . '</a></td><td class="listpad"><a href="databases.php?action=dbdel&dbid=' . $row[id] . '&did=' . $did . '" onclick="return confirm(\'' . __('Are you sure you wish to delete this database?') . '\');">' . __('delete') . '</a></td></tr>';
+	foreach ($dbs as $dd) {
+		print '<tr><td class="listpad"><a href="databases.php?did=' . $did . '&dbid=' . $dd[id] . '">' . $dd[name] . '</a></td><td class="listpad"><a href="databases.php?action=dbdel&dbid=' . $dd[id] . '&did=' . $did . '" onclick="return confirm(\'' . __('Are you sure you wish to delete this database?') . '\');">' . __('delete') . '</a></td></tr>';
 	}
 
 	if ($num != 0) print '</table>';
