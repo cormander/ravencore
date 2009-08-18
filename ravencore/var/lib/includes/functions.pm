@@ -158,6 +158,12 @@ sub get_login_failure_count_by_username {
 		[$ref->{username}, $lockout_time]);
 }
 
+sub get_databases {
+	my ($self) = @_;
+
+	return $self->select_ref_many("select * from data_bases");
+}
+
 sub get_databases_by_domain_id {
 	my ($self, $ref) = @_;
 
