@@ -433,24 +433,18 @@ function nav_top() {
 
 				print '<li class="menu"><a href="users.php" onmouseover="show_help(\'' . __('List control panel users') . '\');" onmouseout="help_rst();">' . __('Users') . ' (';
 
-				$sql = "select count(*) as count from users";
-				$result = $db->data_query($sql);
+				$users = $db->run("get_users");
 
-				$row = $db->data_fetch_array($result);
-
-				print $row['count'];
+				print count($users);
 
 				print ')</a></li>';
 
 				if (have_domain_services()) {
 					print '<li class="menu"><a href="domains.php" onmouseover="show_help(\'' . __('List domains') . '\');" onmouseout="help_rst();">' . __('Domains') . ' (';
 
-					$sql = "select count(*) as count from domains";
-					$result = $db->data_query($sql);
+					$domains = $db->run("get_domains");
 
-					$row = $db->data_fetch_array($result);
-
-					print $row['count'];
+					print count($domains);
 
 					print ')</a></li>';
 				}
@@ -458,12 +452,9 @@ function nav_top() {
 				if (have_service("mail")) {
 					print '<li class="menu"><a href="mail.php" onmouseover="show_help(\'' . __('List email addresses') . '\');" onmouseout="help_rst();">' . __('Mail') . ' (';
 
-					$sql = "select count(*) as count from mail_users";
-					$result = $db->data_query($sql);
+					$mails = $db->run("get_mail_users");
 
-					$row = $db->data_fetch_array($result);
-
-					print $row[count];
+					print count($mails);
 
 					print ')</a></li>';
 				}
@@ -471,12 +462,9 @@ function nav_top() {
 				if (have_database_services()) {
 					print '<li class="menu"><a href="databases.php" onmouseover="show_help(\'' . __('List databases') . '\');" onmouseout="help_rst();">' . __('Databases') . ' (';
 
-					$sql = "select count(*) as count from data_bases";
-					$result = $db->data_query($sql);
+					$dbs = $db->run("get_databases");
 
-					$row = $db->data_fetch_array($result);
-
-					print $row[count];
+					print count($dbs);
 
 					print ')</a></li>';
 				}
@@ -484,12 +472,15 @@ function nav_top() {
 				if (have_service("dns")) {
 					print '<li class="menu"><a href="dns.php" onmouseover="show_help(\'' . __('DNS for domains on this server') . '\');" onmouseout="help_rst();">' . __('DNS') . ' (';
 
-					$sql = "select count(*) as count from domains where soa is not null";
-					$result = $db->data_query($sql);
+					$count = 0;
 
-					$row = $db->data_fetch_array($result);
+					$domains = $db->run("get_domains");
 
-					print $row[count];
+					foreach ($domains as $domain) {
+						if ($domain[soa]) $count++;
+					}
+
+					print $count;
 
 					print ')</a></li>';
 				}
