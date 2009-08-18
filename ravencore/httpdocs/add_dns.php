@@ -60,16 +60,9 @@ if ($action == "add") {
 	}
 }
 
-$sql = "select * from domains where id = '$did'";
-$result = $db->data_query($sql);
+$domain = $db->run("get_domain_by_id", Array(id => $did));
 
-$num = $db->data_num_rows();
-
-if ($num == 0) goto("domains.php");
-
-$row = $db->data_fetch_array($result);
-
-$domain_name = $row['name'];
+if (0 == count($domain)) goto("domains.php");
 
 nav_top();
 
@@ -78,10 +71,10 @@ print '<form method=post>
 <input type=hidden name=action value=add>
 ';
 
-switch ($_POST['type']) {
+switch ($_POST[type]) {
 	case "SOA":
 		print '<input type=hidden name=type value=SOA>
-' . __('Start of Authority for') . ' ' . $domain_name . ': <input type=text name=target>
+' . __('Start of Authority for') . ' ' . $domain[name] . ': <input type=text name=target>
 ';
 		break;
 	case "A":
@@ -106,12 +99,10 @@ switch ($_POST['type']) {
 
 		while ($row = $db->data_fetch_array($result) )
 		{
-			$domain_name = $d->name();
-
 			$disp_name = $row['name'];
 
-			if ($row['name'] == "@") $disp_name = $domain_name;
-			else $disp_name .= '.' . $domain_name;
+			if ($row['name'] == "@") $disp_name = $domain[name];
+			else $disp_name .= '.' . $domain[name];
 
 			print '<option value="' . $row['name'] . '">' . $disp_name . '</option>';
 		}
