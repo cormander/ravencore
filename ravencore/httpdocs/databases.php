@@ -53,13 +53,10 @@ if ($action == "userdel") {
 		$sql = "delete from data_bases where id = '$dbid'";
 		$db->data_query($sql);
 
-		$sql = "select * from data_base_users where db_id = '$dbid'";
-		$result = $db->data_query($sql);
+		$ddbu = $db->run("get_database_users_by_database_id", Array(id => $dbid));
 
-		$db->use_database('mysql');
-
-		while ($row = $db->data_fetch_array($result)) {
-			$sql = "delete from user where User = '$row[login]'";
+		foreach ($ddbu as $ddu) {
+			$sql = "delete from user where User = '$ddu[login]'";
 			$db->data_query($sql);
 		}
 
