@@ -86,28 +86,27 @@ if (!$did) {
 </form>
 <p>';
 
-		$sql = "select * from dns_rec where did = '$did' order by type, name, target";
-		$result = $db->data_query($sql);
+		$recs = $db->run("get_dns_recs_by_domain_id", Array(did => $did));
 
-		$num = $db->data_num_rows();
-
-		if ($num == 0) print __("No DNS records setup for this domain");
+		if (0 == count($recs)) print __("No DNS records setup for this domain");
 		else {
+			$found_a = 0;
+			$found_ns = 0;
 
-			// check to see if at least an A and a NS record exist.. if not, print a warning
-			$sql = "select distinct type from dns_rec where did = '$did' and ( type = 'A' or type = 'NS' )";
-			$result_type = $db->data_query($sql);
-			$num = $db->data_num_rows();
+			foreach ($recs as $rec) {
+				if ("A" == $rec[type]) $found_a = 1;
+				if ("NS" == $rec[type]) $found_ns = 1;
+			}
 
 			// need to have both or else...
-			if($num != 2) print '<font color="red"><b>' . __("You need at least one A record and one NS record for your zone file to be created") . '</b></font>';
+			if(0 == $found_a or 0 == $found_ns) print '<font color="red"><b>' . __("You need at least one A record and one NS record for your zone file to be created") . '</b></font>';
 
 			print '<form method=post>';
 
 			print '<table class="listpad"><tr><th class="listpad">&nbsp;</th><th class="listpad">' . __('Record Name') . '</th><th class="listpad">' . __('Record Type') . '</th><th class="listpad">' . __('Record Target') . '</th></tr>';
 
-			while ($row = $db->data_fetch_array($result)) {
-				print '<tr><td class="listpad"><input type=radio name=delete value="' . $row[id] . '"></td><td class="listpad">' . $row[name] . '</td><td class="listpad">' . $row[type] . '</td><td class="listpad">' . $row[target] . '</td></tr>';
+			foreach ($recs as $rec) {
+				print '<tr><td class="listpad"><input type=radio name=delete value="' . $rec[id] . '"></td><td class="listpad">' . $rec[name] . '</td><td class="listpad">' . $rec[type] . '</td><td class="listpad">' . $rec[target] . '</td></tr>';
 			}
 
 			print '<tr><td class="listpad" colspan=4><input type=submit value="' . __('Delete Selected') . '"></tr>';
