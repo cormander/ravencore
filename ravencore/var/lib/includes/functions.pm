@@ -411,3 +411,36 @@ sub push_domain {
 	return 1;
 }
 
+sub push_user {
+	my ($self, $ref) = @_;
+
+	my $action =	$ref->{action};
+	my $uid = 	$ref->{uid};
+	my $login =	$ref->{login};
+
+	# TODO: Only an admin can call this function
+
+	if ("delete" eq $action) {
+		# delete this users domains
+		my $domains = $self->get_domains_by_user_id({uid => $uid});
+
+		foreach my $domain (@{$domains}) {
+			$self->push_domain({
+				action => "delete",
+				did => $domain->{id},
+			});
+		}
+
+		# remove this users permissions
+		$self->{dbi}->do("delete from user_permissions where uid = ?", undef, $uid);
+
+		# get rid of the user
+                $self->{dbi}->do("delete from users where id = ?", undef, $uid);
+	}
+	elsif ("unlock" eq $action) {
+	        $self->{dbi}->do("delete from login_failure where login = ?", undef, $login);
+	}
+
+	return 1;
+}
+
