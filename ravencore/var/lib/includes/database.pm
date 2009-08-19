@@ -234,7 +234,7 @@ sub sql {
 sub pre_sql_query {
 	my ($self, $query, $args, $tm) = @_;
 
-	$self->debug("Doing SQL query: $query; args: " . ( scalar(@{$args}) ? join(',', @{$args}) : "(none)"));
+	$self->debug("Doing SQL query: $query; args: " . ( scalar(@{$args}) ? join(', ', map { $self->{dbi}->quote($_) } @{$args}) : "(none)"));
 
 	if ($self->{perl_modules}{Time::HiRes}) {
 		$tm->[0] = Time::HiRes::time();
