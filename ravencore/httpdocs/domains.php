@@ -23,32 +23,38 @@ include "auth.php";
 
 if($did) $domain_name = $d->name();
 
-if ($action == "delete") {
+if ($action) {
+
 	$uid = $d->info['uid'];
 
-	$d->delete();
+	switch ($action) {
+		case "delete":
+			if (is_admin()) $dest = "domains.php?uid=$uid";
+			else $dest = "domains.php";
+			break;
+		case "hosting":
+			$dest = basename($_SERVER['HTTP_REFERER']);
+			break;
+		case "change":
+			// only an admin can do this
+			if (!is_admin()) goto("users.php");
+			break;
+		default:
+			// ????
+			goto("users.php");
+			break;
+	}
 
-	// the admin user is redirected with the uid in the url
-	if (is_admin()) goto("domains.php?uid=$uid");
-	else goto("domains.php");
-} else if ($action == "hosting") {
-	$sql = "update domains set hosting = '$_REQUEST[hosting]' where id = '$did'";
-	//echo $sql;
-	$db->data_query($sql);
+	$ret = $db->run("push_domain", Array(
+		action => $action,
+		hosting => $_REQUEST[hosting],
+		did => $did,
+	));
 
-	if ($db->data_rows_affected()) $db->run("rehash_httpd", Array('name' => $d->name()));
-//	echo "<pre>". print_r($_SERVER,1) . "</pre>";
-//	echo basename($_SERVER['HTTP_REFERER']);
-//	die();
-	goto(basename($_SERVER['HTTP_REFERER']));
-} else if ($action == "change") {
-	// only an admin can do this
-	if (!is_admin()) goto("users.php");
 
-	$sql = "update domains set uid = '$_POST[uid]' where id = '$did'";
-	$db->data_query($sql);
+	if (1 == $ret)
+		goto($dest);
 
-	goto("domains.php?did=$did");
 }
 
 if (!$did) {
