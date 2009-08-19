@@ -237,7 +237,7 @@ sub pre_sql_query {
 	$self->debug("Doing SQL query: $query; args: " . ( scalar(@{$args}) ? join(',', @{$args}) : "(none)"));
 
 	if ($self->{perl_modules}{Time::HiRes}) {
-		$tm = Time::HiRes::time();
+		$tm->[0] = Time::HiRes::time();
 	}
 }
 
@@ -245,7 +245,7 @@ sub post_sql_query {
 	my ($self, $tm, $ref) = @_;
 
 	if ($self->{perl_modules}{Time::HiRes}) {
-		$self->debug("SQL query took: " . (Time::HiRes::time() - $tm) . " seconds");
+		$self->debug("SQL query took: " . (Time::HiRes::time() - $tm->[0]) . " seconds");
 	}
 
 	if (0 != scalar(@{$ref})) {
@@ -300,9 +300,9 @@ sub select_ref_many {
 	my ($self, $query, $args) = @_;
 
 	my $ref = [];
-	my $tm;
+	my $tm = [];
 
-	$self->pre_sql_query($query, $args, \$tm);
+	$self->pre_sql_query($query, $args, $tm);
 
 	my $sth = $self->{dbi}->prepare($query);
 
@@ -314,7 +314,7 @@ sub select_ref_many {
 
 	$sth->finish;
 
-	$self->post_sql_query(\$tm, $ref);
+	$self->post_sql_query($tm, $ref);
 
 	return $ref;
 }
@@ -330,13 +330,13 @@ sub xsql {
 
 	my $ra;
 	my $id;
-	my $tm;
+	my $tm = [];
 
-	$self->pre_sql_query($query, $args, \$tm);
+	$self->pre_sql_query($query, $args, $tm);
 
 	$ra = $self->{dbi}->do($query, undef, @{$args});
 
-	$self->post_sql_query(\$tm);
+	$self->post_sql_query($tm);
 
 	$self->debug("Rows affected: " . $ra);
 
