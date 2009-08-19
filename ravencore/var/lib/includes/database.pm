@@ -249,7 +249,7 @@ sub post_sql_query {
 	}
 
 	if (0 != scalar(@{$ref})) {
-		$self->debug("Number of rows: " . scalar(@{$ref}));
+		$self->debug("Number of rows returned: " . scalar(@{$ref}));
 	}
 }
 
