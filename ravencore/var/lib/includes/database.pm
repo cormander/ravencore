@@ -338,6 +338,8 @@ sub xsql {
 
 	$self->post_sql_query(\$tm);
 
+	$self->debug("Rows affected: " . $ra);
+
 	if ($query =~ /^insert/) {
 		$id = $self->{dbi}->{ q{mysql_insertid} };
 	}
