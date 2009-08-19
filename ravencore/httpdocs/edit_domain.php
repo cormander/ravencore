@@ -20,78 +20,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 include "auth.php";
-// If we're not an admin, and this user doens't have permissions to add another domain,
-// redirect them back to their main page
-if (!user_can_add($uid, "domain") and !is_admin()) goto("users.php?uid=$uid");
 
-if ($action == "add") {
-	// Check to see that the domain isn't already setup on the server
-	$domain = $db->run("get_domain_by_name", Array(name => $_POST[name]));
+if ($action) {
+	$ret = $db->run("push_domain", Array(
+		action => $action,
+		name => $_POST[name],
+		dns => $_POST[dns],
+	));
 
-	if (is_array($domain)) {
-		alert(__("The domain $_POST[name] is already setup on this server"));
+	if ($ret) {
+		$domain = $db->run("get_domain_by_name", Array(name => $_POST[name]));
 
-		$_POST[name] = "";
-		$select = "name";
-		// Each of these checks provides the $select variable, which tells the page to focus on that
-		// form element when the page loads.
-	} else if (!$_POST[name]) {
-		alert(__("Please enter the domain name you wish to setup"));
-		$select = "name";
-	} else {
-		// Match the incoming string against the valid syntax of a domain/subdomain
-		if (preg_match('/^' . REGEX_DOMAIN_NAME . '$/', $_POST[name])) {
-			if (!preg_match('/^www\./', $_POST[name])) {
-				// If we get this far, we have a valid domain name to setup. Continue
-				// If we don't get a www post variable, set it to 'false' for db insert purposes
-				$sql = "insert into domains set name = '$_POST[name]', uid = '$uid', created = now()";
-				$db->data_query($sql);
+		if (_POST[hosting]) $url = "hosting.php?did=" . $domain[id];
+		else $url = "domains.php?did=" . $domain[id];
 
-				$did = $db->data_insert_id();
-
-				$d = new domain($did);
-
-				$domain_name = $d->name();
-
-				if (have_service("mail")) $db->run("rehash_mail");
-				// Copy over server default DNS to this domain, if the option was checked
-				if ($_POST[dns]) {
-					// First, we need the Start Of Authority record
-					$recs = $db->run("get_default_dns_recs");
-
-					foreach ($recs as $rec) {
-						if ("SOA" != $rec[type]) continue;
-
-						$sql = "insert into parameters set type_id = '$did', param = 'soa', value = '$rec[target]'";
-						$db->data_query($sql);
-
-						$sql = "update domains set soa = '$rec[target]' where id = '$did'";
-						$db->data_query($sql);
-					}
-
-					foreach ($recs as $rec) {
-						if ("SOA" == $rec[type]) continue;
-
-						$sql = "insert into dns_rec set did = '$did', name = '$rec[name]', type = '$rec[type]', target = '$rec[target]'";
-						$db->data_query($sql);
-					}
-
-					$db->run("rehash_named");
-				}
-
-				// If we have the hosting variable, send us to hosting setup, because most of the time
-				// that is the next logical thing to do when adding a domain.
-				if ($_POST[hosting]) $url = "hosting.php?did=$did";
-				else $url = "domains.php?did=$did";
-
-				goto($url);
-			} else {
-				alert(__("Invalid domain name. Please re-enter the domain name without the www."));
-			}
-		} else {
-			// We failed against the regex provided above
-			alert(__("Invalid domain name. May only contain letters, numbers, dashes and dots. Must not start or end with a dash or a dot, and a dash and a dot cannot be next to each other"));
-		}
+		goto($url);
 	}
 }
 

@@ -376,6 +376,8 @@ sub push_domain {
 
 	my $action =	$ref->{action};
 	my $hosting = 	$ref->{hosting};
+	my $dns =	$ref->{dns};
+	my $name =	$ref->{name};
 	my $uid =	$ref->{uid};
 	my $did =	$ref->{did};
 
@@ -406,6 +408,51 @@ sub push_domain {
 		# TODO: only an admin can do this
 
 		$self->{dbi}->do("update domains set uid = ? where id = ?", undef, $uid, $did);
+	}
+	elsif ("add" eq $action) {
+
+		# TODO: If we're not an admin, and this user doens't have permissions to add another domain,
+		# redirect them back to their main page
+		# if (!user_can_add($uid, "domain") and !is_admin()) { return undef }
+
+		# Check to see that the domain isn't already setup on the server
+		my $domain = $self->get_domain_by_name({name => $name});
+
+		if ($domain->{id}) {
+			return $self->do_error(_("The domain $name is already setup on this server"));
+		}
+		elsif(!$name) {
+			return $self->do_error(_("Please enter the domain name you wish to setup"));
+		} else {
+			# TODO: validate that $name is a valid name for a domain
+			$self->{dbi}->do("insert into domains set name = ?, uid = ?, created = now()", undef, $name, $uid);
+
+			$did = $self->{dbi}->{ q{mysql_insertid} };
+
+			$self->rehash_mail;
+
+			# Copy over server default DNS to this domain, if the option was checked
+			if ($dns) {
+				my $recs = $self->get_default_dns_recs;
+
+				# handle SOA record
+				foreach my $rec (@{$recs}) {
+					next if "SOA" ne $rec->{type};
+
+					$self->{dbi}->do("insert into parameters set type_id = ?, param = ?, value = ?", undef, $did, 'soa', $rec->{target});
+					$self->{dbi}->do("update domains set soa = ? where id = ?", undef, $rec->{target}, $did);
+				}
+
+				# handle everything else
+				foreach my $rec (@{$recs}) {
+					next if "SOA" eq $rec->{type};
+
+					$self->{dbi}->do("insert into dns_rec set did = ?, name = ?, type = ?, target = ?", undef, $did, $rec->{name}, $rec->{type}, $rec->{target});
+				}
+
+				$self->rehash_named;
+			}
+		}
 	}
 
 	return 1;
