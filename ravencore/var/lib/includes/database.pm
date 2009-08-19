@@ -283,3 +283,24 @@ sub select_ref_many {
 	return $ref;
 }
 
+#
+# Database modification functions
+#
+
+# this function is soon to replace the above sql function, and won't be called externally anymore
+
+sub xsql {
+	my ($self, $query, $args) = @_;
+
+	my $ra;
+	my $id;
+
+	$ra = $self->{dbi}->do($query, undef, @{$args});
+
+	if ($query =~ /^insert/) {
+		$id = $self->{dbi}->{ q{mysql_insertid} };
+	}
+
+	return ($ra, $id);
+}
+
