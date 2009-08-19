@@ -80,30 +80,6 @@ class user {
 		return $this->info['num_domains'];
 	}
 
-	// delete this user
-	function delete() {
-
-		global $db;
-
-		// delete this users domains
-		foreach( $this->info['domains'] as $did ) {
-
-			$d = new domain($did);
-
-			$d->delete();
-
-		}
-
-		// remove this users permissions
-		$sql = "delete from user_permissions where uid = '" . $this->uid . "'";
-		$db->data_query($sql);
-
-		// get rid of the user
-		$sql = "delete from users where id = '" . $this->uid . "'";
-		$db->data_query($sql);
-
-	}
-
 }
 
 ?>
