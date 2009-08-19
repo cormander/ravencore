@@ -272,12 +272,12 @@ sub push_hosting {
 	my $host_dir =		$ref->{host_dir};
 	my $did	=		$ref->{did};
 
-	$self->{dbi}->do("delete from domain_ips where did = ?", undef, $did);
+	$self->xsql("delete from domain_ips where did = ?", [$did]);
 
 	if ("HASH" eq ref($ip_addresses)) {
 		foreach my $key (keys %{$ip_addresses}) {
 			my $val = $ip_addresses->{$key};
-			$self->{dbi}->do("insert into domain_ips values (?,?)", undef, $did, $val);
+			$self->xsql("insert into domain_ips values (?,?)", [$did, $val]);
 		}
 	}
 
@@ -292,7 +292,7 @@ sub push_hosting {
 			# Make sure someone isn't trying to change the login shell w/o permission
 			#if (!user_can_add($uid, "shell_user") and !is_admin() and $suser[shell] == $CONF[DEFAULT_LOGIN_SHELL]) $_POST[login_shell] = $CONF[DEFAULT_LOGIN_SHELL];
 
-			$self->{dbi}->do("update sys_users set passwd = ?, shell = ? where id = ?", undef, $sysuser_passwd, $sysuser_shell, $suser->{id});
+			$self->xsql("update sys_users set passwd = ?, shell = ? where id = ?", [$sysuser_passwd, $sysuser_shell, $suser->{id}]);
 
 			$self->rehash_ftp;
 		}
@@ -301,9 +301,9 @@ sub push_hosting {
 		#if (user_can_add($uid, "host_cgi") or is_admin() or $_POST[host_cgi] == "false") $sql .= ", host_cgi = '$_POST[cgi]'";
 		#if (user_can_add($uid, "host_ssl") or is_admin() or $_POST[host_ssl] == "false") $sql .= ", host_ssl = '$_POST[ssl]'";
 
-		my $ra = $self->{dbi}->do("update domains set redirect_url = ?, www = ?, host_dir = ?,
+		my $ra = $self->xsql("update domains set redirect_url = ?, www = ?, host_dir = ?,
 					host_php = ?, host_cgi = ?, host_ssl = ? where id = ?",
-				undef, $redirect_url, $www, $host_dir, $host_php, $host_cgi, $host_ssl, $did);
+				[$redirect_url, $www, $host_dir, $host_php, $host_cgi, $host_ssl, $did]);
 
 		# only mess with the filesystem if we affected the db
 		$self->rehash_httpd if 0 < $ra;
@@ -324,11 +324,9 @@ sub push_hosting {
 			# this prevents people from creating their ftp user as root or something
 			return $self->do_error("You cannot create a FTP user with the login $sysuser_login") if (in_array($sysuser_login, @users));
 
-			$self->{dbi}->do("insert into sys_users set login = ?, passwd = ?", undef, $sysuser_login, $sysuser_passwd);
+			my ($ra, $suid) = $self->xsql("insert into sys_users set login = ?, passwd = ?", [$sysuser_login, $sysuser_passwd]);
 
-			my $suid = $self->{dbi}->{ q{mysql_insertid} };
-
-			$self->{dbi}->do("update domains set suid = ? where id = ?", undef, $suid, $did);
+			$self->xsql("update domains set suid = ? where id = ?", [$suid, $did]);
 
 			# when the rehash_ftp is fixed, we want to run it with just the new username, rather then the --all switch
 			$self->rehash_ftp;
@@ -339,9 +337,9 @@ sub push_hosting {
 		#if (user_can_add($uid, "host_cgi") or is_admin() or $_POST[host_cgi] == "false") $sql .= ", host_cgi = '$_POST[cgi]'";
 		#if (user_can_add($uid, "host_ssl") or is_admin() or $_POST[host_ssl] == "false") $sql .= ", host_ssl = '$_POST[ssl]'";
 
-		my $ra = $self->{dbi}->do("update domains set redirect_url = ?, www = ?, host_dir = ?,
+		my ($ra) = $self->xsql("update domains set redirect_url = ?, www = ?, host_dir = ?,
 					host_php = ?, host_cgi = ?, host_ssl = ? where id = ?",
-				undef, $redirect_url, $www, $host_dir, $host_php, $host_cgi, $host_ssl, $did);
+				[$redirect_url, $www, $host_dir, $host_php, $host_cgi, $host_ssl, $did]);
 
 		# only mess with the filesystem if we affected the db
 		if (0 < $ra) {
@@ -357,11 +355,11 @@ sub push_hosting {
 		my $dom = $self->get_domain_by_id({id => $did});
 
 		# delete all the system users for this domain
-		$self->{dbi}->do("delete from sys_users where id = ?", undef, $suser->{id});
+		$self->xsql("delete from sys_users where id = ?", [$suser->{id}]);
 
 		$self->ftp_del({login => $suser->{login}});
 
-		$self->{dbi}->do("update domains set host_type = 'none' where id = ?", undef, $did);
+		$self->xsql("update domains set host_type = 'none' where id = ?", [$did]);
 
 		$self->domain_del({name => $dom->{name}});
 
@@ -381,18 +379,20 @@ sub push_domain {
 	my $uid =	$ref->{uid};
 	my $did =	$ref->{did};
 
+	my $ra;
+
 	if ("delete" eq $action) {
 
 		# delete all the email
-		$self->{dbi}->do("delete from mail_users where did = ?", undef, $did);
+		$self->xsql("delete from mail_users where did = ?", [$did]);
 
 		# delete all the DNS records
-		$self->{dbi}->do("delete from dns_rec where did = ?", undef, $did);
+		$self->xsql("delete from dns_rec where did = ?", [$did]);
 
 		# TODO: delete databases
 
 		# delete the domain
-		$self->{dbi}->do("delete from domains where id = ?", undef, $did);
+		$self->xsql("delete from domains where id = ?", [$did]);
 
 		# run the nessisary system calls
 		$self->rehash_named;
@@ -400,14 +400,14 @@ sub push_domain {
 
 	}
 	elsif ("hosting" eq $action) {
-		my $ra = $self->{dbi}->do("update domains set hosting = ? where id = ?", undef, $hosting, $did);
+		($ra) = $self->xsql("update domains set hosting = ? where id = ?", [$hosting, $did]);
 
 		$self->rehash_httpd if 0 < $ra;
 	}
 	elsif ("change" eq $action) {
 		# TODO: only an admin can do this
 
-		$self->{dbi}->do("update domains set uid = ? where id = ?", undef, $uid, $did);
+		$self->xsql("update domains set uid = ? where id = ?", [$uid, $did]);
 	}
 	elsif ("add" eq $action) {
 
@@ -425,9 +425,7 @@ sub push_domain {
 			return $self->do_error(_("Please enter the domain name you wish to setup"));
 		} else {
 			# TODO: validate that $name is a valid name for a domain
-			$self->{dbi}->do("insert into domains set name = ?, uid = ?, created = now()", undef, $name, $uid);
-
-			$did = $self->{dbi}->{ q{mysql_insertid} };
+			($ra, $did) = $self->xsql("insert into domains set name = ?, uid = ?, created = now()", [$name, $uid]);
 
 			$self->rehash_mail;
 
@@ -439,15 +437,15 @@ sub push_domain {
 				foreach my $rec (@{$recs}) {
 					next if "SOA" ne $rec->{type};
 
-					$self->{dbi}->do("insert into parameters set type_id = ?, param = ?, value = ?", undef, $did, 'soa', $rec->{target});
-					$self->{dbi}->do("update domains set soa = ? where id = ?", undef, $rec->{target}, $did);
+					$self->xsql("insert into parameters set type_id = ?, param = ?, value = ?", [$did, 'soa', $rec->{target}]);
+					$self->xsql("update domains set soa = ? where id = ?", [$rec->{target}, $did]);
 				}
 
 				# handle everything else
 				foreach my $rec (@{$recs}) {
 					next if "SOA" eq $rec->{type};
 
-					$self->{dbi}->do("insert into dns_rec set did = ?, name = ?, type = ?, target = ?", undef, $did, $rec->{name}, $rec->{type}, $rec->{target});
+					$self->xsql("insert into dns_rec set did = ?, name = ?, type = ?, target = ?", [$did, $rec->{name}, $rec->{type}, $rec->{target}]);
 				}
 
 				$self->rehash_named;
@@ -479,13 +477,13 @@ sub push_user {
 		}
 
 		# remove this users permissions
-		$self->{dbi}->do("delete from user_permissions where uid = ?", undef, $uid);
+		$self->xsql("delete from user_permissions where uid = ?", [$uid]);
 
 		# get rid of the user
-                $self->{dbi}->do("delete from users where id = ?", undef, $uid);
+                $self->xsql("delete from users where id = ?", [$uid]);
 	}
 	elsif ("unlock" eq $action) {
-	        $self->{dbi}->do("delete from login_failure where login = ?", undef, $login);
+	        $self->xsql("delete from login_failure where login = ?", [$login]);
 	}
 
 	return 1;
