@@ -49,6 +49,7 @@ if ($action) {
 		action => $action,
 		hosting => $_REQUEST[hosting],
 		did => $did,
+		uid => $uid,
 	));
 
 
