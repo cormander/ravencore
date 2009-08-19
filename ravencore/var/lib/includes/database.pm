@@ -228,6 +228,37 @@ sub sql {
 }
 
 #
+# Database logging functions
+#
+
+sub pre_sql_query {
+	my ($self, $query, $args, $tm) = @_;
+
+	$self->debug("Doing SQL query: $query; args: " . ( scalar(@{$args}) ? join(',', @{$args}) : "(none)"));
+
+	if ($self->{perl_modules}{Time::HiRes}) {
+		$tm = Time::HiRes::time();
+	}
+}
+
+sub post_sql_query {
+	my ($self, $tm, $ref) = @_;
+
+	if ($self->{perl_modules}{Time::HiRes}) {
+		$self->debug("SQL query took: " . (Time::HiRes::time() - $tm) . " seconds");
+	}
+
+	if (0 != scalar(@{$ref})) {
+		$self->debug("Number of rows: " . scalar(@{$ref}));
+	}
+}
+
+# TODO: a function to wrap select_count and select_ref_single
+sub wrap_sql_query {
+	my ($self) = @_;
+}
+
+#
 # Database select functions
 #
 # All of these select function accept two arguments;
@@ -269,6 +300,9 @@ sub select_ref_many {
 	my ($self, $query, $args) = @_;
 
 	my $ref = [];
+	my $tm;
+
+	$self->pre_sql_query($query, $args, \$tm);
 
 	my $sth = $self->{dbi}->prepare($query);
 
@@ -279,6 +313,8 @@ sub select_ref_many {
 	}
 
 	$sth->finish;
+
+	$self->post_sql_query(\$tm, $ref);
 
 	return $ref;
 }
@@ -294,8 +330,13 @@ sub xsql {
 
 	my $ra;
 	my $id;
+	my $tm;
+
+	$self->pre_sql_query($query, $args, \$tm);
 
 	$ra = $self->{dbi}->do($query, undef, @{$args});
+
+	$self->post_sql_query(\$tm);
 
 	if ($query =~ /^insert/) {
 		$id = $self->{dbi}->{ q{mysql_insertid} };
