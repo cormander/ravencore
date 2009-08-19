@@ -129,33 +129,6 @@ class domain {
 		// rehash_mail
 	}
 
-	function delete() {
-
-		global $db;
-
-		// delete all the email
-		$sql = "delete from mail_users where did = '" . $this->did . "'";
-		$db->data_query($sql);
-
-		// delete all the DNS records
-		$sql = "delete from dns_rec where did = '" . $this->did . "'";
-		$db->data_query($sql);
-
-		// TODO:
-		// delete databases
-		//
-
-		// delete the domain
-		$sql = "delete from domains where id = '" . $this->did . "'";
-		$db->data_query($sql);
-
-		// run the nessisary system calls
-		$db->run("rehash_named");
-
-		$db->run("rehash_mail");
-
-	}
-
 }
 
 ?>
