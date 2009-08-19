@@ -371,3 +371,43 @@ sub push_hosting {
 	return undef;
 }
 
+sub push_domain {
+	my ($self, $ref) = @_;
+
+	my $action =	$ref->{action};
+	my $hosting = 	$ref->{hosting};
+	my $uid =	$ref->{uid};
+	my $did =	$ref->{did};
+
+	if ("delete" eq $action) {
+
+		# delete all the email
+		$self->{dbi}->do("delete from mail_users where did = ?", undef, $did);
+
+		# delete all the DNS records
+		$self->{dbi}->do("delete from dns_rec where did = ?", undef, $did);
+
+		# TODO: delete databases
+
+		# delete the domain
+		$self->{dbi}->do("delete from domains where id = ?", undef, $did);
+
+		# run the nessisary system calls
+		$self->rehash_named;
+		$self->rehash_mail;
+
+	}
+	elsif ("hosting" eq $action) {
+		my $ra = $self->{dbi}->do("update domains set hosting = ? where id = ?", undef, $hosting, $did);
+
+		$self->rehash_httpd if 0 < $ra;
+	}
+	elsif ("change" eq $action) {
+		# TODO: only an admin can do this
+
+		$self->{dbi}->do("update domains set uid = ? where id = ?", undef, $uid, $did);
+	}
+
+	return 1;
+}
+
