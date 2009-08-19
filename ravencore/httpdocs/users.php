@@ -21,20 +21,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 include("auth.php");
 
-if ($action == "delete" and is_admin())
-{
+if ($action) {
+	$ret = $db->run("push_user", Array(
+		action => $action,
+		uid => $uid,
+		login => $_REQUEST[login],
+	));
 
-  $u->delete();
-
-  goto($_SERVER[PHP_SELF]);
-
-}
-else if ($action == "unlock" and is_admin())
-{
-	$sql = "delete from login_failure where login = '$_GET[login]'";
-	$db->data_query($sql);
-
-	goto("users.php?uid=$uid");
+	if ($ret) goto("users.php" . ("delete" == $action ? "" : "?uid=$uid"));
 }
 
 nav_top();
