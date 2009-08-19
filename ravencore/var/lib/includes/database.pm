@@ -253,11 +253,6 @@ sub post_sql_query {
 	}
 }
 
-# TODO: a function to wrap select_count and select_ref_single
-sub wrap_sql_query {
-	my ($self) = @_;
-}
-
 #
 # Database select functions
 #
@@ -273,7 +268,13 @@ sub wrap_sql_query {
 sub select_count {
 	my ($self, $query, $args) = @_;
 
-	return ($self->{dbi}->selectrow_array($query, undef, @{$args}))[0];
+	my $tm = [];
+
+	$self->pre_sql_query($query, $args, $tm);
+	my $count = ($self->{dbi}->selectrow_array($query, undef, @{$args}))[0];
+	$self->post_sql_query($tm);
+
+	return $count;
 }
 
 # This function expects the given query to only return a single record, as it won't return any
@@ -283,7 +284,13 @@ sub select_count {
 sub select_ref_single {
 	my ($self, $query, $args) = @_;
 
-	return $self->{dbi}->selectrow_hashref($query, undef, @{$args});
+	my $tm = [];
+
+	$self->pre_sql_query($query, $args, $tm);
+	my $ref = $self->{dbi}->selectrow_hashref($query, undef, @{$args});
+	$self->post_sql_query($tm);
+
+	return $ref;
 }
 
 # This function expects the given query to return N number of rows, and returns an array ref.
