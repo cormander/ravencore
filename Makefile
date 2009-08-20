@@ -216,6 +216,9 @@ build: clean getsrc
 	tar -C ravencore/var/apps -jxf src/$(SQUIRRELMAIL).tar.bz2
 	mv ravencore/var/apps/$(SQUIRRELMAIL) ravencore/var/apps/squirrelmail
 
+# rearrange docs
+	mv ravencore/var/apps/squirrelmail/doc/ReleaseNotes ravencore/var/apps/squirrelmail/doc/ReleaseNotes.txt
+
 # hack the redirect.php file for ravencore auto-logins by appending the real redirect.php file
 #	./src/mk_webmail_redirect.sh
 
