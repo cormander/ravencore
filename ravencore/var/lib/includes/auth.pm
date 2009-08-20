@@ -285,7 +285,7 @@ sub set_privs {
 	@{$self->{cmd_privs}} = (@{$self->{cmd_privs}}, @{$self->{cmd_privs_system}}) if $system;
 
 	if($self->{db_connected}) {
-		$self->{session}{user_data} = $self->get_user_by_name({name => $self->{session}{user}});
+		$self->{session}{user_data} = $self->get_user_by_name({username => $self->{session}{user}});
 	}
 
 }
