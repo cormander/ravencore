@@ -89,7 +89,8 @@ fi
 
 if [ "$1" = "0" ] ; then # we are being completly uninstalled
 
-	%{rc_root}/sbin/restore_orig_conf.sh
+
+	[ -x %{rc_root}/sbin/restore_orig_conf.sh ] && %{rc_root}/sbin/restore_orig_conf.sh
 
 fi
 
