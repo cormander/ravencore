@@ -234,22 +234,26 @@ sub sql {
 sub pre_sql_query {
 	my ($self, $query, $args, $tm) = @_;
 
-	$self->debug("Doing SQL query: $query; args: " . ( scalar(@{$args}) ? join(', ', map { $self->{dbi}->quote($_) } @{$args}) : "(none)"));
+	if ($self->{debug_flag}) {
+		$self->debug("Doing SQL query: $query; args: " . ( scalar(@{$args}) ? join(', ', map { $self->{dbi}->quote($_) } @{$args}) : "(none)"));
 
-	if ($self->{perl_modules}{Time::HiRes}) {
-		$tm->[0] = Time::HiRes::time();
+		if ($self->{perl_modules}{Time::HiRes}) {
+			$tm->[0] = Time::HiRes::time();
+		}
 	}
 }
 
 sub post_sql_query {
 	my ($self, $tm, $ref) = @_;
 
-	if ($self->{perl_modules}{Time::HiRes}) {
-		$self->debug("SQL query took: " . (Time::HiRes::time() - $tm->[0]) . " seconds");
-	}
+	if ($self->{debug_flag}) {
+		if ($self->{perl_modules}{Time::HiRes}) {
+			$self->debug("SQL query took: " . (Time::HiRes::time() - $tm->[0]) . " seconds");
+		}
 
-	if (0 != scalar(@{$ref})) {
-		$self->debug("Number of rows returned: " . scalar(@{$ref}));
+		if (0 != scalar(@{$ref})) {
+			$self->debug("Number of rows returned: " . scalar(@{$ref}));
+		}
 	}
 }
 
