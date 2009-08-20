@@ -83,16 +83,11 @@ sub set_conf_var {
 
 	if ($count[0] > 0) {
 		# if it's there, update it
-		$sql = "update settings set value = " . $self->{dbi}->quote($val) .
-			" where setting = " . $self->{dbi}->quote($key);
+		$self->xsql("update settings set value = ? where setting = ?", [$val, $key]);
 	} else {
 		# if it's not there, insert it
-		$sql = "insert into settings set setting = " . $self->{dbi}->quote($key) . 
-			", value = " . $self->{dbi}->quote($val);
+		$self->xsql("insert into settings (setting, value) values (?,?)", [$key, $val);
 	}
-
-	# execute the query
-	$self->{dbi}->do($sql);
 
 	# store it in this sessions's CONF
 	$self->{CONF}{$key} = $val;
@@ -1833,10 +1828,10 @@ sub ip_list {
 
 		# not in the database?
 		if ( ! $db_ips->{$ip} ) {
-			$self->{dbi}->do("insert into ip_addresses set ip_address = ?, active = ?", undef, $ip, "true");
+			$self->xsql("insert into ip_addresses (ip_address, active) values (?,?)", [$ip, "true"]);
 			$db_ips->{$ip} = { active => "true" };
 		} elsif ( $db_ips->{$ip}{active} ne "true" ) {
-			$self->{dbi}->do("update ip_addresses set active = ? where ip_address = ?", undef, "true", $ip);
+			$self->xsql("update ip_addresses set active = ? where ip_address = ?", ["true", $ip]);
 			$db_ips->{$ip}{active} = "true";
 		}
 
@@ -1848,7 +1843,7 @@ sub ip_list {
 	foreach my $ip (keys %{$db_ips}) {
 
 		if ( ! defined($ips->{$ip}) ) {
-			$self->{dbi}->do("update ip_addresses set active = ? where ip_address = ?", undef, "false", $ip);
+			$self->xsql("update ip_addresses set active = ? where ip_address = ?", ["false", $ip]);
 			$ips->{$ip} = $db_ips->{$ip};
 			$ips->{$ip}{active} = "false";
 		}

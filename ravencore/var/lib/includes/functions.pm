@@ -324,7 +324,7 @@ sub push_hosting {
 			# this prevents people from creating their ftp user as root or something
 			return $self->do_error("You cannot create a FTP user with the login $sysuser_login") if (in_array($sysuser_login, @users));
 
-			my ($ra, $suid) = $self->xsql("insert into sys_users set login = ?, passwd = ?", [$sysuser_login, $sysuser_passwd]);
+			my ($ra, $suid) = $self->xsql("insert into sys_users (login, passwd) values (?,?)", [$sysuser_login, $sysuser_passwd]);
 
 			$self->xsql("update domains set suid = ? where id = ?", [$suid, $did]);
 
@@ -425,7 +425,7 @@ sub push_domain {
 			return $self->do_error(_("Please enter the domain name you wish to setup"));
 		} else {
 			# TODO: validate that $name is a valid name for a domain
-			($ra, $did) = $self->xsql("insert into domains set name = ?, uid = ?, created = now()", [$name, $uid]);
+			($ra, $did) = $self->xsql("insert into domains (name, uid, created) values(?,?,now())", [$name, $uid]);
 
 			$self->rehash_mail;
 
@@ -437,7 +437,7 @@ sub push_domain {
 				foreach my $rec (@{$recs}) {
 					next if "SOA" ne $rec->{type};
 
-					$self->xsql("insert into parameters set type_id = ?, param = ?, value = ?", [$did, 'soa', $rec->{target}]);
+					$self->xsql("insert into parameters (type_id, param, value) values (?,?,?)", [$did, 'soa', $rec->{target}]);
 					$self->xsql("update domains set soa = ? where id = ?", [$rec->{target}, $did]);
 				}
 
@@ -445,7 +445,7 @@ sub push_domain {
 				foreach my $rec (@{$recs}) {
 					next if "SOA" eq $rec->{type};
 
-					$self->xsql("insert into dns_rec set did = ?, name = ?, type = ?, target = ?", [$did, $rec->{name}, $rec->{type}, $rec->{target}]);
+					$self->xsql("insert into dns_rec (did, name, type, target) values (?,?,?,?)", [$did, $rec->{name}, $rec->{type}, $rec->{target}]);
 				}
 
 				$self->rehash_named;
