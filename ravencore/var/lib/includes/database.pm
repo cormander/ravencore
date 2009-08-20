@@ -232,23 +232,23 @@ sub sql {
 #
 
 sub pre_sql_query {
-	my ($self, $query, $args, $tm) = @_;
+	my ($self, $query, $args) = @_;
 
 	if ($self->{debug_flag}) {
 		$self->debug("Doing SQL query: $query; args: " . ( scalar(@{$args}) ? join(', ', map { $self->{dbi}->quote($_) } @{$args}) : "(none)"));
 
 		if ($self->{perl_modules}{Time::HiRes}) {
-			$tm->[0] = Time::HiRes::time();
+			$self->{sql_tm} = Time::HiRes::time();
 		}
 	}
 }
 
 sub post_sql_query {
-	my ($self, $tm, $ref) = @_;
+	my ($self, $ref) = @_;
 
 	if ($self->{debug_flag}) {
 		if ($self->{perl_modules}{Time::HiRes}) {
-			$self->debug("SQL query took: " . (Time::HiRes::time() - $tm->[0]) . " seconds");
+			$self->debug("SQL query took: " . (Time::HiRes::time() - $self->{sql_tm}) . " seconds");
 		}
 
 		if (0 != scalar(@{$ref})) {
@@ -272,11 +272,9 @@ sub post_sql_query {
 sub select_count {
 	my ($self, $query, $args) = @_;
 
-	my $tm = [];
-
-	$self->pre_sql_query($query, $args, $tm);
+	$self->pre_sql_query($query, $args);
 	my $count = ($self->{dbi}->selectrow_array($query, undef, @{$args}))[0];
-	$self->post_sql_query($tm);
+	$self->post_sql_query;
 
 	return $count;
 }
@@ -288,11 +286,9 @@ sub select_count {
 sub select_ref_single {
 	my ($self, $query, $args) = @_;
 
-	my $tm = [];
-
-	$self->pre_sql_query($query, $args, $tm);
+	$self->pre_sql_query($query, $args);
 	my $ref = $self->{dbi}->selectrow_hashref($query, undef, @{$args});
-	$self->post_sql_query($tm);
+	$self->post_sql_query;
 
 	return $ref;
 }
@@ -311,9 +307,8 @@ sub select_ref_many {
 	my ($self, $query, $args) = @_;
 
 	my $ref = [];
-	my $tm = [];
 
-	$self->pre_sql_query($query, $args, $tm);
+	$self->pre_sql_query($query, $args);
 
 	my $sth = $self->{dbi}->prepare($query);
 
@@ -325,7 +320,7 @@ sub select_ref_many {
 
 	$sth->finish;
 
-	$self->post_sql_query($tm, $ref);
+	$self->post_sql_query($ref);
 
 	return $ref;
 }
@@ -341,13 +336,12 @@ sub xsql {
 
 	my $ra;
 	my $id;
-	my $tm = [];
 
-	$self->pre_sql_query($query, $args, $tm);
+	$self->pre_sql_query($query, $args);
 
 	$ra = $self->{dbi}->do($query, undef, @{$args});
 
-	$self->post_sql_query($tm);
+	$self->post_sql_query;
 
 	$self->debug("Rows affected: " . $ra);
 
