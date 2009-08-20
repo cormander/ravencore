@@ -135,20 +135,20 @@ sub get_user_by_id {
 sub get_user_by_name {
 	my ($self, $ref) = @_;
 
-	return $self->select_ref_single("select * from users where binary(login) = ? limit 1", [$ref->{username}]);
+	return $self->select_ref_single("select * from users where login = ? limit 1", [$ref->{username}]);
 }
 
 sub get_user_by_name_and_password {
 	my ($self, $ref) = @_;
 
-	return $self->select_ref_single("select * from users where binary(login) = ? and binary(passwd) = ? limit 1", [$ref->{username}, $ref->{password}]);
+	return $self->select_ref_single("select * from users where login = ? and passwd = ? limit 1", [$ref->{username}, $ref->{password}]);
 }
 
 sub get_mail_user_by_name_and_password {
 	my ($self, $ref) = @_;
 
 	return $self->select_ref_single("select mu.*, concat(mail_name,'\@',d.name) as email from domains d inner join mail_users mu on mu.did = d.id
-		where concat(mail_name,'\@',d.name) = ? and binary(mu.passwd) = ? limit 1",
+		where concat(mail_name,'\@',d.name) = ? and mu.passwd = ? limit 1",
 		[$ref->{username}, $ref->{password}]);
 }
 
@@ -199,7 +199,7 @@ sub get_login_failure_count_by_username {
 sub get_databases {
 	my ($self) = @_;
 
-	return $self->select_ref_many("select b.*, d.name as domain_name from data_bases d inner join domains d on b.did = d.id");
+	return $self->select_ref_many("select b.*, d.name as domain_name from data_bases b inner join domains d on b.did = d.id");
 }
 
 sub get_database_by_id {
