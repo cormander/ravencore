@@ -273,6 +273,8 @@ sub select_count {
 	my $count = ($self->{dbi}->selectrow_array($query, undef, @{$args}))[0];
 	$self->post_sql_query;
 
+	return $self->do_sql_error if $self->{dbi}->errstr;
+
 	return $count;
 }
 
@@ -286,6 +288,8 @@ sub select_ref_single {
 	$self->pre_sql_query($query, $args);
 	my $ref = $self->{dbi}->selectrow_hashref($query, undef, @{$args});
 	$self->post_sql_query;
+
+	return $self->do_sql_error if $self->{dbi}->errstr;
 
 	return $ref;
 }
@@ -307,7 +311,7 @@ sub select_ref_many {
 
 	$self->pre_sql_query($query, $args);
 
-	my $sth = $self->{dbi}->prepare($query);
+	my $sth = $self->{dbi}->prepare($query) or return $self->do_sql_error;
 
 	$sth->execute(@{$args});
 
@@ -325,6 +329,16 @@ sub select_ref_many {
 }
 
 #
+# Database error handling
+#
+
+sub do_sql_error {
+	my ($self) = @_;
+
+	return $self->do_error("Unable to execute SQL query; " . $self->{dbi}->errstr);
+}
+
+#
 # Database modification functions
 #
 
@@ -338,7 +352,7 @@ sub xsql {
 
 	$self->pre_sql_query($query, $args);
 
-	$ra = $self->{dbi}->do($query, undef, @{$args});
+	$ra = $self->{dbi}->do($query, undef, @{$args}) or return $self->do_sql_error;
 
 	$self->post_sql_query;
 
