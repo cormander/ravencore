@@ -86,7 +86,7 @@ sub set_conf_var {
 		$self->xsql("update settings set value = ? where setting = ?", [$val, $key]);
 	} else {
 		# if it's not there, insert it
-		$self->xsql("insert into settings (setting, value) values (?,?)", [$key, $val);
+		$self->xsql("insert into settings (setting, value) values (?,?)", [$key, $val]);
 	}
 
 	# store it in this sessions's CONF
