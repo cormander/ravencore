@@ -244,16 +244,13 @@ sub pre_sql_query {
 }
 
 sub post_sql_query {
-	my ($self, $ref) = @_;
+	my ($self) = @_;
 
 	if ($self->{debug_flag}) {
 		if ($self->{perl_modules}{Time::HiRes}) {
 			$self->debug("SQL query took: " . (Time::HiRes::time() - $self->{sql_tm}) . " seconds");
 		}
 
-		if (0 != scalar(@{$ref})) {
-			$self->debug("Number of rows returned: " . scalar(@{$ref}));
-		}
 	}
 }
 
@@ -320,7 +317,9 @@ sub select_ref_many {
 
 	$sth->finish;
 
-	$self->post_sql_query($ref);
+	$self->post_sql_query;
+
+	$self->debug("Rows returned: " . scalar(@{$ref}));
 
 	return $ref;
 }
