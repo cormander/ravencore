@@ -19,7 +19,7 @@
 #
 
 # version
-v=0.3.6
+v=0.4.0
 
 RPM_DIR=$(rpm --eval '%{_rpmdir}' 2> /dev/null)
 RPM_SOURCES=$(rpm --eval '%{_sourcedir}' 2> /dev/null)

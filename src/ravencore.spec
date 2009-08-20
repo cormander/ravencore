@@ -4,7 +4,7 @@
 
 Summary: RavenCore Hosting Control Panel
 Name: ravencore
-Version: 0.3.6
+Version: 0.4.0
 Release: %{reltag}
 Packager: Corey Henderson <corman@cormander.com>
 Vendor: RavenCore
