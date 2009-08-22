@@ -444,6 +444,12 @@ sub AUTOLOAD {
 }
 
 #
+
+sub DESTROY {
+	undef @_;
+}
+
+#
 # functions on Net::Server startup
 #
 
