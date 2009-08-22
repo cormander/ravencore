@@ -438,7 +438,7 @@ sub start_webserver {
 
 sub AUTOLOAD {
 	my ($self) = @_;
-	$self->debug("WARNING: Caught undefined function via AUTOLOAD");
+	warn "WARNING: Caught undefined function via AUTOLOAD";
 }
 
 #
