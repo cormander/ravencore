@@ -31,7 +31,7 @@ if ($action) {
 	if ($ret) {
 		$domain = $db->run("get_domain_by_name", Array(name => $_POST[name]));
 
-		if (_POST[hosting]) $url = "hosting.php?did=" . $domain[id];
+		if ($_POST[hosting]) $url = "hosting.php?did=" . $domain[id];
 		else $url = "domains.php?did=" . $domain[id];
 
 		goto($url);
