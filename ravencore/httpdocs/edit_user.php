@@ -27,6 +27,7 @@ if ($action) {
 		name => $_POST[name],
 		login => $_POST[login],
 		passwd => $_POST[passwd],
+		confirm_passwd => $_POST[confirm_passwd],
 		email => $_POST[email],
 		uid => $uid,
 	));
