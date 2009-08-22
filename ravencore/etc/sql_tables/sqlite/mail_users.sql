@@ -1,6 +1,6 @@
 DROP TABLE IF EXISTS mail_users;
 CREATE TABLE mail_users (
-  id int(10),
+  id integer not null primary key autoincrement unique,
   did int(10),
   mail_name varchar(20),
   passwd varchar(15),

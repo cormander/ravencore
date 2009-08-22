@@ -1,6 +1,6 @@
 DROP TABLE IF EXISTS dns_rec;
 CREATE TABLE dns_rec (
-  id int(10),
+  id integer not null primary key autoincrement unique,
   did int(10),
   name varchar(255),
   type varchar(255),

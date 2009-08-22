@@ -1,6 +1,6 @@
 DROP TABLE IF EXISTS domains;
 CREATE TABLE domains (
-  id int(10),
+  id integer not null primary key autoincrement unique,
   created varchar(10),
   name varchar(80),
   subdomain int(10),

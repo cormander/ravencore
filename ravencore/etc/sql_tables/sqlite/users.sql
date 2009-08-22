@@ -1,6 +1,6 @@
 DROP TABLE IF EXISTS users;
 CREATE TABLE users (
-  id int(10),
+  id integer not null primary key autoincrement unique,
   created varchar(10),
   company varchar(80),
   name varchar(80),

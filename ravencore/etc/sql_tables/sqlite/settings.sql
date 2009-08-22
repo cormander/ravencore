@@ -1,6 +1,6 @@
 DROP TABLE IF EXISTS settings;
 CREATE TABLE settings (
-  id int(10),
+  id integer not null primary key autoincrement unique,
   setting varchar(255),
   value varchar(255)
 );
