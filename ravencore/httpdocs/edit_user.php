@@ -37,6 +37,8 @@ if ($action) {
 			$uid = $user[id];
 		}
 
+		if ($_POST[permissions]) goto("user_permissions.php?uid=$uid");
+
 		goto("users.php?uid=$uid");
 	}
 }
