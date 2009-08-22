@@ -101,7 +101,10 @@ sub new
 {
 	my ($class) = @_;
 
-	my $self = { DEMO => 0 };
+	my $self = {
+		ADMIN_USER => "admin",
+		DEMO => 0,
+	};
 
 	bless $self, $class;
 

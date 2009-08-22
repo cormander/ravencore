@@ -188,7 +188,7 @@ sub auth_admin {
 	}
 
 	# return false ( a call to auth_fauluire returns false, and records the attempt )
-	return $self->auth_failure($self->{MYSQL_ADMIN_USER});
+	return $self->auth_failure($self->{ADMIN_USER});
 
 }
 
@@ -235,7 +235,7 @@ sub auth_system {
 	# check the password too, for good measure
 	if ($password eq $self->admin_passwd) {
 		# system is authenticated. we're an admin user
-		$self->{session}{user} = $self->{MYSQL_ADMIN_USER};
+		$self->{session}{user} = $self->{ADMIN_USER};
 
 		# set privs with the system flag
 		$self->set_privs(1);
@@ -311,7 +311,7 @@ sub is_admin {
 	# if we're not given a username, assume the session as the user to check
 	$username = $self->{session}{user} unless $username;
 
-	return 1 if $username eq $self->{MYSQL_ADMIN_USER};
+	return 1 if $username eq $self->{ADMIN_USER};
 	return 0;
 }
 
@@ -355,7 +355,7 @@ sub passwd {
 	if ($error == 0) {
 
 		if ($self->{db_connected}) {
-			$self->{dbi}->do("SET PASSWORD FOR '" . $self->{MYSQL_ADMIN_USER} . "'\@'" . $self->{MYSQL_ADMIN_HOST} . "' = PASSWORD('" . $new . "')");
+			$self->{dbi}->do("SET PASSWORD FOR '" . $self->{ADMIN_USER} . "'\@'" . $self->{ADMIN_HOST} . "' = PASSWORD('" . $new . "')");
 
 			if ($self->{dbi}->errstr) {
 				$error = 1;

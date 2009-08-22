@@ -31,10 +31,6 @@ sub database_connect {
 		return;
 	}
 
-	if (!$self->{perl_modules}{DBD::mysql}) {
-		$self->debug("DBD::mysql not loaded");
-	}
-
 	if (!$self->{perl_modules}{DBD::SQLite}) {
 		$self->debug("DBD::SQLite not loaded");
 	}
@@ -79,15 +75,6 @@ sub database_connect {
 	if ($self->{perl_modules}{DBD::SQLite}) {
 		$self->{dbi} = DBI->connect('dbi:SQLite:dbname='.$self->{RC_ROOT}.'/var/ravencore.sqlite','','');
 		$self->{dbi_type} = 'SQLite';
-	}
-	elsif ($self->{perl_modules}{DBD::mysql}) {
-		$self->{dbi} = DBI->connect(
-			'DBI:mysql:database='.$self->{MYSQL_ADMIN_DB}.
-			';host='.$self->{MYSQL_ADMIN_HOST}.
-			';port='.$self->{MYSQL_ADMIN_PORT},
-			$self->{MYSQL_ADMIN_USER}, $passwd, {RaiseError => 0,PrintError => 0}
-		);
-		$self->{dbi_type} = 'mysql';
 	}
 	else {
 		return $self->debug("No supported DBD modules are loaded.");
