@@ -462,10 +462,16 @@ sub push_user {
 	my $action =	$ref->{action};
 	my $uid = 	$ref->{uid};
 	my $login =	$ref->{login};
+	my $passwd =	$ref->{passwd};
+	my $confirm_passwd = $ref->{confirm_passwd};
+	my $name =	$ref->{name};
+	my $email =	$ref->{email};
 
-	# TODO: Only an admin can call this function
+	# TODO: verify $uid and $login against session if not admin
 
 	if ("delete" eq $action) {
+		return undef unless $self->is_admin();
+
 		# delete this users domains
 		my $domains = $self->get_domains_by_user_id({uid => $uid});
 
@@ -482,7 +488,51 @@ sub push_user {
 		# get rid of the user
                 $self->xsql("delete from users where id = ?", [$uid]);
 	}
+	elsif ("add" eq $action or "edit" eq $action) {
+		# input sanity checks
+		if (!$name) {
+			return $self->do_error(_("You must enter a name for this user"));
+		}
+		elsif (!$name) {
+			return $self->do_error(_("You must enter a name for this user"));
+		}
+		elsif ("add" eq $action and !$login) {
+			return $self->do_error(_("You must enter a login for this user"));
+		}
+		elsif (!$passwd) {
+			return $self->do_error(_("You must enter a password for this user"));
+		}
+		elsif ($confirm_passwd ne $passwd){
+			return $self->do_error(_("Your passwords do not match"));
+		}
+# TODO: RavenCore::Common needs a valid_passwd function
+#		elsif (!valid_passwd($passwd)) {
+#			return $self->do_error(_("Your password must be atleast 5 characters long, and not a dictionary word."));
+#		}
+# TODO: need an is_email function
+#		elsif (!is_email($email)) {
+#			return $self->do_error(_("The email address entered is invalid"));
+#		}
+		elsif ($login eq $self->{ADMIN_USER}) {
+			return $self->do_error(_("$login is not a valid user name"));
+		}
+
+		my $user = $self->get_user_by_name({username => $login});
+
+		if ("add" eq $action) {
+			return undef unless $self->is_admin();
+
+			# The procedue to add a user. First check to see if the login provided is already in use
+			return $self->do_error(_("The user login $login already exists")) if $user->{login};
+
+			$self->xsql("insert into users (created, name, email, login, passwd) values (?,?,?,?,?)", ['now', $name, $email, $login, $passwd]);
+		}
+		elsif ("edit" eq $action) {
+			$self->xsql("update users set name = ?, email = ?, passwd = ? where id = ?", [$name, $email, $passwd, $uid]);
+		}
+	}
 	elsif ("unlock" eq $action) {
+		return undef unless $self->is_admin();
 	        $self->xsql("delete from login_failure where login = ?", [$login]);
 	}
 
