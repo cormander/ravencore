@@ -36,6 +36,13 @@ use File::Basename;
 use Data::Dumper;
 use MIME::Base64;
 
+use Carp qw(cluck);
+
+$Carp::MaxArgLen = 0;
+$Carp::CarpLevel = 1;
+
+$SIG{__WARN__} = sub { cluck @_ };
+
 # likewise; these are needed by Net::Server
 use IO::Handle;
 use IO::Select;
