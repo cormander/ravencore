@@ -354,41 +354,22 @@ sub passwd {
 
 	if ($error == 0) {
 
-		if ($self->{db_connected}) {
-			$self->{dbi}->do("SET PASSWORD FOR '" . $self->{ADMIN_USER} . "'\@'" . $self->{ADMIN_HOST} . "' = PASSWORD('" . $new . "')");
+		# the password change was successful. commit the password to the .shadow file and return true
+		my $shadow_file = $self->{RC_ROOT} . "/.shadow";
 
-			if ($self->{dbi}->errstr) {
-				$error = 1;
-				$self->do_error("Unable to execute \"SET PASSWORD\" database query: " . $self->{dbi}->errstr);
-			}
+		chmod 0600, $shadow_file;
+		file_write($shadow_file, $new . "\n");
+		chmod 0400, $shadow_file;
 
-		}
+		$self->debug("Password change successful.");
 
-		if ($error == 0) {
-			# the password change was successful. commit the password to the .shadow file and return true
-			my $shadow_file = $self->{RC_ROOT} . "/.shadow";
+		$self->reload({ message => "Password change" });
 
-			chmod 0600, $shadow_file;
-			file_write($shadow_file, $new . "\n");
-			chmod 0400, $shadow_file;
-
-			$self->debug("Password change successful.");
-
-			$self->reload({ message => "Password change" });
-
-			# TODO:
-			# if( ! $self->{db_connected} ) {
-			#	   ... check to see if this new password actually connects us to the database
-			#	   ... if not, issue: do_error("Warning: unable to sync new password to mysql server");
-			# }
-
-			return 1;
-		}
+		return 1;
 
 	} else {
 		# failed
-		$self->debug("Password change NOT successful.");
-		return;
+		return $self->do_error("Password change NOT successful.");
 	}
 
 }
