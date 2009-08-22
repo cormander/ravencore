@@ -503,7 +503,7 @@ function nav_top() {
 
 	}
 
-	print '<div><!--ERRORS--></div>';
+	print '<div align="center"><!--ERRORS--></div>';
 
 }
 
