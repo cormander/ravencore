@@ -57,6 +57,8 @@ our $NUL = chr(0);
 our $ETX = chr(3);
 our $EOT = chr(4);
 
+our $AUTOLOAD;
+
 =pod
 *** NOTES ***
 Here are my general notes for things to keep in mind when coding in this module:
@@ -438,7 +440,7 @@ sub start_webserver {
 
 sub AUTOLOAD {
 	my ($self) = @_;
-	warn "WARNING: Caught undefined function via AUTOLOAD";
+	warn "WARNING: Caught undefined function via AUTOLOAD; $AUTOLOAD";
 }
 
 #
