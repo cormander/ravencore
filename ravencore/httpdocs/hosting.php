@@ -49,7 +49,7 @@ nav_top();
 
 $domain = $db->run("get_domain_by_id", Array(id => $did));
 
-if (!is_array($domain)) print __("Domain does not exist");
+if (!$domain[id] or $did != $domain[id]) print __("Domain does not exist");
 else {
 	print '<form name=main method=POST>' . __('Name') . ': ' . $domain[name];
 
