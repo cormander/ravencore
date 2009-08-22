@@ -78,8 +78,6 @@ $logged_in = 0;
 
 // check if we're authenticated.
 if($db->auth_resp != 1) {
-	$login_error = $db->auth_resp;
-
 	include "login.php";
 }
 

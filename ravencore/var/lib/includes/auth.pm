@@ -34,10 +34,10 @@ sub auth {
 	my $password = $input->{password};
 
 	# first off, $session_id must be alphanumeric from beginning to end
-	return 'Invalid session ID.' unless $session_id =~ /^[a-zA-Z0-9]*$/;
+	return $self->do_error('Invalid session ID.') unless $session_id =~ /^[a-zA-Z0-9]*$/;
 
 	# validate IP address
-	return 'Invalid IP address.' unless is_ip($ipaddress);
+	return $self->do_error('Invalid IP address.') unless is_ip($ipaddress);
 
 	# cache the current time
 	my $now = time;
@@ -73,10 +73,10 @@ sub auth {
 		($now - $session_timeout) > $self->{session}{accessed};
 
 		# if the session file no longer exists after the above checks - we're not authenticated
-		return "Session has expired" unless -f $self->{session_file};
+		return $self->do_error("Session has expired") unless -f $self->{session_file};
 
 		if ( ! $self->is_admin($username) && ! $self->{db_connected} ) {
-			return "Database error.";
+			return $self->do_error("Database error.");
 		}
 
 		# if we made it here, we're authenticated. Update the access time and access permissions
@@ -111,7 +111,7 @@ sub auth {
 
 	if ( ! $self->{config_complete} || ! $self->{gpl_check} ) {
 		if ( ! $self->is_admin($username)) {
-			return 'Login locked by the administrator.';
+			return $self->do_error('Login locked by the administrator.');
 		}
 	}
 
@@ -123,10 +123,10 @@ sub auth {
 		if ($self->is_admin($username)) {
 			# TODO: find out what happens to the session var if the admin actually failed to authenticate
 			# set our session "status_mesg" variable for admin to see after they login
-			$self->session_set_var('status_mesg', 'Warning: Your version of RavenCore is out of date. Please visit www.ravencore.com and download/install the latest version.');
+			$self->do_error('status_mesg', 'Warning: Your version of RavenCore is out of date. Please visit www.ravencore.com and download/install the latest version.');
 		} else {
 			# users can't login if outdated and we're configured to lock them out.... give a cryptic reason as to why
-			return 'Login locked by the administrator.' if $self->{CONF}{LOCK_IF_OUTDATED} == 1;
+			return $self->do_error('Login locked by the administrator.') if $self->{CONF}{LOCK_IF_OUTDATED} == 1;
 		}
 	}
 
@@ -149,19 +149,19 @@ sub auth {
 	# admin user auth
 	if ($self->is_admin($username)) {
 		# check to see if the admin password has been set - if not, return false and tell them to set it
-		return 'You have not set your admin password yet. Please run the following command as root:<p>' . $self->{RC_ROOT} . '/sbin/run_cmd passwd'
+		return $self->do_error('You have not set your admin password yet. Please run the following command as root:<p>' . $self->{RC_ROOT} . '/sbin/run_cmd passwd')
 		if $self->{initial_passwd};
 
 		# TODO: set the db_panic value in session_info, giving a logical reason why as to the admin user only sees the
 		# system page... (no database connection, for example)
 
-		return "Login failed." unless $self->auth_admin($password);
+		return $self->do_error("Login failed.") unless $self->auth_admin($password);
 	} else {
 		# user auth
 		# no database connection, users can't login
-		return "Sorry, there is a problem with the login system." unless $self->{db_connected};
+		return $self->do_error("Sorry, there is a problem with the login system.") unless $self->{db_connected};
 
-		return "Login failed." unless $self->auth_user($username, $password);
+		return $self->do_error("Login failed.") unless $self->auth_user($username, $password);
 	}
 
 	# if we get here, we are authenticated. tie the session to this client and update the access time

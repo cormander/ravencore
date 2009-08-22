@@ -44,11 +44,6 @@ nav_top();
 ?>method="POST" name="f">
 
 <div align="center">
-<?php
-
-if ($login_error) print "<br><b><font color=red>" . $login_error . "</font></b>";
-
-?>
 </div>
 <div align=center>
 	  <table class="listpad">

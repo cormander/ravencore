@@ -501,9 +501,9 @@ function nav_top() {
 		print '<li class="menu right"><a href="logout.php" onmouseover="show_help(\'' . __('Logout') . '\');" onmouseout="help_rst();" onclick="return confirm(\'' . __('Are you sure you wish to logout?') . '\');">' . __('Logout') . '</a></li></ul>
 <hr style="visibility: hidden;">';
 
-		print '<div><!--ERRORS--></div>';
-
 	}
+
+	print '<div><!--ERRORS--></div>';
 
 }
 
