@@ -85,6 +85,8 @@ _sleep=sleep
 
 _sort=sort
 
+_sqlite3=sqlite3
+
 _sudo=sudo
 
 _tail=tail

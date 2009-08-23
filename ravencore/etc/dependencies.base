@@ -20,5 +20,6 @@ perl
 pidof
 sed
 sleep
+sqlite3
 tail
 touch
