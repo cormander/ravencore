@@ -103,6 +103,7 @@ sub new
 
 	my $self = {
 		DEMO => 0,
+		class => $class,
 	};
 
 	bless $self, $class;
@@ -174,8 +175,6 @@ sub new
 		$self->do_error(_("Warning: %s might not have completly loaded, it appears to have syntax errors", $pm)) if $!;
 
 	}
-
-	$self->{class} = $_[0];
 
 	@{$self->{errors}} = ();
 
