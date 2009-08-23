@@ -756,7 +756,7 @@ sub run_query {
 		$self->do_error($@) if $@;
 
 		$self->debug("End of function call " . $func);
-		$self->debug(_('Sent data: %s', ( ref($ret) ? Dumper($ret) : $ret )));
+		$self->debug(_('Sent data: %s', ( ref($ret) ? Dumper($ret) : ( defined $ret ? $ret : 'undef' ))));
 
 		return $ret;
 	}
