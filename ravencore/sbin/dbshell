@@ -20,14 +20,5 @@
 
 . /etc/ravencore.conf || exit 1
 
-db_cfg=$RC_ROOT/database.cfg
-
-if [ ! -f $db_cfg ]; then
-	echo "Missing database.cfg file."
-	exit 1
-fi
-
-. $db_cfg
-
-mysql -h $MYSQL_ADMIN_HOST -P $MYSQL_ADMIN_PORT -u $MYSQL_ADMIN_USER -p$(cat $RC_ROOT/.shadow) $MYSQL_ADMIN_DB
+sqlite3 $RC_ROOT/var/ravencore.sqlite
 
