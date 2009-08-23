@@ -183,7 +183,7 @@ sub sql {
 		$self->debug("Rows affected: ". $data->{rows_affected});
 
 		if ( ! $self->{dbi}->errstr ) {
-			$data->{insert_id} = $self->{dbi}->{ q{mysql_insertid} };
+			$data->{insert_id} = $self->{dbi}->func('last_insert_rowid');
 		} else {
 			$self->do_error("DBI Error: " . $self->{dbi}->errstr);
 		}
@@ -343,11 +343,11 @@ sub xsql {
 
 	$self->post_sql_query;
 
-	$self->debug("Rows affected: " . $ra);
-
 	if ($query =~ /^insert/) {
-		$id = $self->{dbi}->{ q{mysql_insertid} };
+		$id = $self->{dbi}->func('last_insert_rowid');
 	}
+
+	$self->debug("Rows affected: " . $ra . ( $id ? "; Insert ID: $id" : "" ));
 
 	return ($ra, $id);
 }
