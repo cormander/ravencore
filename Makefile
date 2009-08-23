@@ -1,7 +1,9 @@
 
 # RC_ROOT is where RavenCore is going to be installed
-
 RC_ROOT=/usr/local/ravencore
+
+# The RavenCore administrator user
+ADMIN_USER=admin
 
 # Changing this will break everything! You'll have to edit each of the shell scripts to
 # reference the new conf file.... later on I'll build a tool to do automatically for you
@@ -291,6 +293,8 @@ install:
 # Create the etc ravencore.conf file
 	@echo "# RavenCore Root Directory" > $(DESTDIR)$(ETC_RAVENCORE)
 	@echo -e "RC_ROOT=$(RC_ROOT)\n" >> $(DESTDIR)$(ETC_RAVENCORE)
+	@echo "# RavenCore Administrator User" >> $(DESTDIR)$(ETC_RAVENCORE)
+	@echo -e "ADMIN_USER=$(ADMIN_USER)\n" >> $(DESTDIR)$(ETC_RAVENCORE)
 
 # Install all the files
 	mkdir -p $(DESTDIR)$(RC_ROOT)
