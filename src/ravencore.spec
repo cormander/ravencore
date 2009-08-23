@@ -125,7 +125,6 @@ rm -rf $RPM_BUILD_ROOT
 %{rc_root}/conf.d/postgrey.conf.debian
 %{rc_root}/conf.d/web.conf
 
-%{rc_root}/sbin/database_reconfig
 %{rc_root}/sbin/data_query
 %{rc_root}/sbin/db_install
 %{rc_root}/sbin/dbshell
