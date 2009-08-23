@@ -1,4 +1,3 @@
-DROP TABLE IF EXISTS settings;
 CREATE TABLE settings (
   id integer not null primary key autoincrement unique,
   setting varchar(255),

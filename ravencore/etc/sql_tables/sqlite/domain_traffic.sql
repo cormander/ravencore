@@ -1,4 +1,3 @@
-DROP TABLE IF EXISTS domain_traffic;
 CREATE TABLE domain_traffic (
   id integer not null primary key autoincrement unique,
   did int(10),

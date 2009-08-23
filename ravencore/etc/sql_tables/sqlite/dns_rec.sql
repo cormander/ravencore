@@ -1,4 +1,3 @@
-DROP TABLE IF EXISTS dns_rec;
 CREATE TABLE dns_rec (
   id integer not null primary key autoincrement unique,
   did int(10),

@@ -1,4 +1,3 @@
-DROP TABLE IF EXISTS users;
 CREATE TABLE users (
   id integer not null primary key autoincrement unique,
   created varchar(10),

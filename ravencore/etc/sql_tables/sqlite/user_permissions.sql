@@ -1,4 +1,3 @@
-DROP TABLE IF EXISTS user_permissions;
 CREATE TABLE user_permissions (
   id integer not null primary key autoincrement unique,
   uid int(10),

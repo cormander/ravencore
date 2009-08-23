@@ -1,4 +1,3 @@
-DROP TABLE IF EXISTS domains;
 CREATE TABLE domains (
   id integer not null primary key autoincrement unique,
   created varchar(10),

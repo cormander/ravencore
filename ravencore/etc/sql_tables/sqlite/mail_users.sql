@@ -1,4 +1,3 @@
-DROP TABLE IF EXISTS mail_users;
 CREATE TABLE mail_users (
   id integer not null primary key autoincrement unique,
   did int(10),

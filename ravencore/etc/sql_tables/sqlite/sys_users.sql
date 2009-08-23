@@ -1,4 +1,3 @@
-DROP TABLE IF EXISTS sys_users;
 CREATE TABLE sys_users (
   id integer not null primary key autoincrement unique,
   login varchar(15),
