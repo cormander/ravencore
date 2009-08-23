@@ -132,7 +132,7 @@ sub auth {
 
 	if ($self->{db_connected}) {
 		# if locked out, issue error
-		return 'Too many login failures, please try again later.' if $self->get_login_failure_count_by_username({username => $username}) >= $lockout_count;
+		return $self->do_error('Too many login failures, please try again later.') if $self->get_login_failure_count_by_username({username => $username}) >= $lockout_count;
 	}
 
 	# this lets us keep the password as "ravencore" in the demo
