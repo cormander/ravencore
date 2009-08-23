@@ -102,7 +102,6 @@ sub new
 	my ($class) = @_;
 
 	my $self = {
-		DEMO => 0,
 		class => $class,
 	};
 
@@ -120,6 +119,8 @@ sub new
 	$self->die_error(_('The root directory %s does not exist!', $self->{RC_ROOT})) unless -d $self->{RC_ROOT};
 
 	$self->die_error(_('Variable %s is undefined! Please check the file: %s', 'ADMIN_USER', $RC_ETC)) unless $self->{ADMIN_USER};
+
+	$self->{DEMO} = 0 unless $self->{DEMO};
 
 	#
 	# load required modules that we need from our own lib; they may not nessisarily exist with a standard perl install
