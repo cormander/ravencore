@@ -116,6 +116,9 @@ sub new
 		$self->{$key} = $rcetc{$key};
 	}
 
+	$self->die_error(_('Variable %s is undefined! Please check the file: %s', 'RC_ROOT', $RC_ETC)) unless $self->{RC_ROOT};
+	$self->die_error(_('The root directory %s does not exist!', $self->{RC_ROOT})) unless -d $self->{RC_ROOT};
+
 	#
 	# load required modules that we need from our own lib; they may not nessisarily exist with a standard perl install
 	#
@@ -170,9 +173,6 @@ sub new
 		$self->do_error(_("Warning: %s might not have completly loaded, it appears to have syntax errors", $pm)) if $!;
 
 	}
-
-	$self->die_error(_('Variable %s is undefined! Please check the file: %s', 'RC_ROOT', $RC_ETC)) unless $self->{RC_ROOT};
-	$self->die_error(_('The root directory %s does not exist!', $self->{RC_ROOT})) unless -d $self->{RC_ROOT};
 
 	$self->{class} = $_[0];
 
