@@ -198,7 +198,7 @@ sub auth_failure {
 	my ($self, $username) = @_;
 
 	if ($self->{db_connected}) {
-		$self->xsql("insert into login_failure (date, login) values (now(),?)", [$username])
+		$self->xsql("insert into login_failure (date, login) values (strftime('%s','now'),?)", [$username])
 	}
 
 	return 0;

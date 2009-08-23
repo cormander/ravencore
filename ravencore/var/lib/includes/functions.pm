@@ -190,9 +190,7 @@ sub get_login_failure_count_by_username {
 
 	my $lockout_time = ( $self->{CONF}{LOCKOUT_TIME} ? $self->{CONF}{LOCKOUT_TIME} : 300 );
 
-	return $self->select_count("select count(*) from login_failure where login = ? and
-			( ( to_days(date) * 24 * 60 * 60 ) + time_to_sec(date) + ? ) >
-			( ( to_days(now()) * 24 * 60 * 60 ) + time_to_sec(now() ) )",
+	return $self->select_count("select count(*) from login_failure where login = ? and date > ( strftime('%s','now') - ? )",
 		[$ref->{username}, $lockout_time]);
 }
 
@@ -425,7 +423,7 @@ sub push_domain {
 			return $self->do_error(_("Please enter the domain name you wish to setup"));
 		} else {
 			# TODO: validate that $name is a valid name for a domain
-			($ra, $did) = $self->xsql("insert into domains (name, uid, created) values(?,?,now())", [$name, $uid]);
+			($ra, $did) = $self->xsql("insert into domains (name, uid, created) values(?,?,strftime('%s','now'))", [$name, $uid]);
 
 			$self->rehash_mail;
 
