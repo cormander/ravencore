@@ -212,6 +212,7 @@ if( ! $status['db_panic'] ) {
 		nav_top();
 
 		print "Unable to load page, no uid from session";
+		session_destroy();
 
 		nav_bottom();
 
