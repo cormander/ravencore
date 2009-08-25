@@ -108,7 +108,7 @@ if ($ret) {
 	print ( ref($ret) ? Dumper($ret) : $ret );
 }
 
-map { print $rc->{errors}{$_}, "\n" } keys %{$rc->{errors}};
+map { print $rc->{errors}{$_}, "\n" } @{$rc->{errors}};
 
 # a password prompt
 

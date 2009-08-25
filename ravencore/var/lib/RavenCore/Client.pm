@@ -27,7 +27,7 @@ use strict;
 use warnings;
 
 use RavenCore::Common;
-use Serialize;
+use PHP::Serialization qw(serialize unserialize);
 
 use IO::Socket::UNIX;
 use MIME::Base64;
