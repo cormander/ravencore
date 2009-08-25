@@ -766,6 +766,36 @@ sub run_query {
 	return;
 }
 
+#
+
+sub session_encode {
+	my ($value) = @_;
+	my $str = "";
+
+	if ("HASH" eq ref($value)) {
+		foreach my $key (keys %{$value}) {
+			$str .= "$key|". serialize($$value{$key});
+		}
+	}
+	elsif ("ARRAY" eq ref($value)) {
+		for (my $key = 0; $key < scalar @{$value}; $key++ ) {
+			$str .= "$key|". serialize($$value[$key]);
+		}
+	}
+
+	return $str;
+}
+
+#
+
+sub session_decode {
+	my ($string) = @_;
+
+	my %res = $string =~ /([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)\|([^\|]*[\;\}])/g;
+
+	return \%res;
+}
+
 # simple error facility
 
 sub do_error {
