@@ -29,7 +29,7 @@ use warnings;
 # if these don't exist, you've got one funky installation
 use RavenCore::Common;
 use RavenCore::Shadow;
-use Serialize;
+use PHP::Serialization qw(serialize unserialize);
 
 # these modules should come with perl, and it's OK to die here if they don't exist
 use File::Basename;
@@ -739,16 +739,14 @@ sub run_query {
 		eval
 		{
 			local $SIG{__DIE__};
+			my $data;
 
 			# incoming hash ref is the one and only argument to each function called by the interface
-			my $data = unserialize(decode_base64($input));
+			if ($input) {
+				$data = unserialize(decode_base64($input));
 
-			# unserialize translates NULL to actual null character, so undef them
-			foreach my $key (keys %{$data}) {
-				delete $data->{$key} if $data->{$key} eq $NUL;
+				$self->debug(Dumper($data));
 			}
-
-			$self->debug(Dumper($data));
 
 			$ret = $self->$func($data);
 		};

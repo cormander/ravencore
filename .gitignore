@@ -1,6 +1,8 @@
 *.swp
 Net-Server*
+PHP-Serialization*
 src/Net-Server*tar.gz
+src/PHP-Serialization*tar.gz
 src/awstats*tar.gz
 src/chg_sasl_passwd*tar.gz
 src/compatibility*tar.gz
@@ -35,6 +37,7 @@ ravencore/etc/vhosts.conf
 ravencore/sbin/ravencore.httpd
 ravencore/var/apps
 ravencore/var/lib/Net
+ravencore/var/lib/PHP
 ravencore/var/log
 ravencore/var/run
 ravencore/var/tmp

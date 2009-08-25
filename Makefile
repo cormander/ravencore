@@ -23,6 +23,7 @@ AWSTATS=awstats-6.9
 SQUIRRELMAIL=squirrelmail-1.4.20-RC2
 YAA=yaa-0.3.1
 PERL_NET_SERVER=Net-Server-0.97
+PERL_PHP_SERIALIZATION=PHP-Serialization-0.33
 JTA=jta26
 
 # Squirrelmail plugins to install
@@ -47,6 +48,7 @@ URL_AWSTATS=http://downloads.sourceforge.net/awstats/$(AWSTATS).tar.gz
 URL_SQUIRRELMAIL=http://downloads.sourceforge.net/squirrelmail/$(SQUIRRELMAIL).tar.bz2
 URL_YAA=http://www.sourcefiles.org/Internet/Mail/Utilities/Autoresponders/$(YAA).tar.bz2
 URL_PERL_NET_SERVER=http://search.cpan.org/CPAN/authors/id/R/RH/RHANDOM/$(PERL_NET_SERVER).tar.gz
+URL_PERL_PHP_SERIALIZATION=http://search.cpan.org//CPAN/authors/id/B/BO/BOBTFISH/$(PERL_PHP_SERIALIZATION).tar.gz
 URL_JTA=http://javassh.org/download/$(JTA).jar
 
 URL_SQUIRREL_PLUGIN_COMPAT=http://squirrelmail.org/plugins/$(SQUIRREL_PLUGIN_COMPAT).tar.gz
@@ -121,6 +123,7 @@ getsrc:
 	@./scripts/get3rdparty.sh $(URL_SQUIRRELMAIL)
 	@./scripts/get3rdparty.sh $(URL_YAA)
 	@./scripts/get3rdparty.sh $(URL_PERL_NET_SERVER)
+	@./scripts/get3rdparty.sh $(URL_PERL_PHP_SERIALIZATION)
 	@./scripts/get3rdparty.sh $(URL_JTA)
 
 	@./scripts/get3rdparty.sh $(URL_SQUIRREL_PLUGIN_COMPAT)
@@ -155,6 +158,11 @@ build: clean getsrc
 	tar zxf src/$(PERL_NET_SERVER).tar.gz
 	cd $(PERL_NET_SERVER) && perl Makefile.PL && make
 	cp -rp $(PERL_NET_SERVER)/blib/lib/Net ravencore/var/lib
+
+# PHP::Serialization install
+	tar zxf src/$(PERL_PHP_SERIALIZATION).tar.gz
+	cd $(PERL_PHP_SERIALIZATION) && perl Makefile.PL && make
+	cp -rp $(PERL_PHP_SERIALIZATION)/blib/lib/PHP ravencore/var/lib
 
 # yaa install
 	tar -C ravencore/var/apps -jxf src/$(YAA).tar.bz2; \
