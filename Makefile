@@ -163,6 +163,7 @@ build: clean getsrc
 	tar zxf src/$(PERL_PHP_SERIALIZATION).tar.gz
 	cd $(PERL_PHP_SERIALIZATION) && perl Makefile.PL && make
 	cp -rp $(PERL_PHP_SERIALIZATION)/blib/lib/PHP ravencore/var/lib
+	rm -f ravencore/var/lib/PHP/.exists
 
 # yaa install
 	tar -C ravencore/var/apps -jxf src/$(YAA).tar.bz2; \
