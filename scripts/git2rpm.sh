@@ -178,10 +178,10 @@ fi
 # build an RPM out of ravencore
 if [ -n "$DO_RELEASE" ]; then
 	echo "Doing release quality build"
-	rpmbuild -ba --with release src/ravencore.spec
+	rpmbuild -bb --with release src/ravencore.spec
 else
 	echo "Doing snapshot build"
-	rpmbuild -ba src/ravencore.spec
+	rpmbuild -bb src/ravencore.spec
 fi
 
 buildret=$?
