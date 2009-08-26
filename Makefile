@@ -49,7 +49,7 @@ URL_AWSTATS=http://downloads.sourceforge.net/awstats/$(AWSTATS).tar.gz
 URL_SQUIRRELMAIL=http://downloads.sourceforge.net/squirrelmail/$(SQUIRRELMAIL).tar.bz2
 URL_YAA=http://www.sourcefiles.org/Internet/Mail/Utilities/Autoresponders/$(YAA).tar.bz2
 URL_PERL_NET_SERVER=http://search.cpan.org/CPAN/authors/id/R/RH/RHANDOM/$(PERL_NET_SERVER).tar.gz
-URL_PERL_PHP_SERIALIZATION=http://search.cpan.org//CPAN/authors/id/B/BO/BOBTFISH/$(PERL_PHP_SERIALIZATION).tar.gz
+URL_PERL_PHP_SERIALIZATION=http://search.cpan.org/CPAN/authors/id/B/BO/BOBTFISH/$(PERL_PHP_SERIALIZATION).tar.gz
 URL_PERL_SHA_PUREPERL=http://search.cpan.org/CPAN/authors/id/M/MS/MSHELOR/$(PERL_SHA_PUREPERL).tar.gz
 URL_JTA=http://javassh.org/download/$(JTA).jar
 
