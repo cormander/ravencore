@@ -40,7 +40,7 @@ echo "Building %{name}-%{version}-%{release}"
 
 # build RavenCore
 
-make build
+make %{?_with_bare:bare} build
 
 %install
 rm -rf $RPM_BUILD_ROOT

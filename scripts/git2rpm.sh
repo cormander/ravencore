@@ -120,6 +120,10 @@ if [ $git_changes -gt 0 ]; then
 
 fi
 
+# was this a bare build?
+BARE_BUILD=0
+[ -f bare.info ] && BARE_BUILD=1
+
 # make distclean after the above check to make it more obvious the things
 # that need to exist in the .gitignore file
 
@@ -175,13 +179,22 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
+if [ "$BARE_BUILD" = 0 ]; then
+	RPM_ARGS=""
+else
+	RPM_ARGS="--with bare"
+fi
+
+# append -bb to RPM_ARGS
+RPM_ARGS="$RPM_ARGS -bb"
+
 # build an RPM out of ravencore
 if [ -n "$DO_RELEASE" ]; then
 	echo "Doing release quality build"
-	rpmbuild -bb --with release src/ravencore.spec
+	rpmbuild $RPM_ARGS --with release src/ravencore.spec
 else
 	echo "Doing snapshot build"
-	rpmbuild -bb src/ravencore.spec
+	rpmbuild $RPM_ARGS src/ravencore.spec
 fi
 
 buildret=$?
