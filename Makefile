@@ -24,6 +24,7 @@ SQUIRRELMAIL=squirrelmail-1.4.20-RC2
 YAA=yaa-0.3.1
 PERL_NET_SERVER=Net-Server-0.97
 PERL_PHP_SERIALIZATION=PHP-Serialization-0.33
+PERL_SHA_PUREPERL=Digest-SHA-PurePerl-5.47
 JTA=jta26
 
 # Squirrelmail plugins to install
@@ -49,6 +50,7 @@ URL_SQUIRRELMAIL=http://downloads.sourceforge.net/squirrelmail/$(SQUIRRELMAIL).t
 URL_YAA=http://www.sourcefiles.org/Internet/Mail/Utilities/Autoresponders/$(YAA).tar.bz2
 URL_PERL_NET_SERVER=http://search.cpan.org/CPAN/authors/id/R/RH/RHANDOM/$(PERL_NET_SERVER).tar.gz
 URL_PERL_PHP_SERIALIZATION=http://search.cpan.org//CPAN/authors/id/B/BO/BOBTFISH/$(PERL_PHP_SERIALIZATION).tar.gz
+URL_PERL_SHA_PUREPERL=http://search.cpan.org/CPAN/authors/id/M/MS/MSHELOR/$(PERL_SHA_PUREPERL).tar.gz
 URL_JTA=http://javassh.org/download/$(JTA).jar
 
 URL_SQUIRREL_PLUGIN_COMPAT=http://squirrelmail.org/plugins/$(SQUIRREL_PLUGIN_COMPAT).tar.gz
@@ -139,6 +141,7 @@ getsrc:
 	@./scripts/get3rdparty.sh $(URL_YAA)
 	@./scripts/get3rdparty.sh $(URL_PERL_NET_SERVER)
 	@./scripts/get3rdparty.sh $(URL_PERL_PHP_SERIALIZATION)
+	@./scripts/get3rdparty.sh $(URL_PERL_SHA_PUREPERL)
 
 	# only download GPL 3rd party applications if the bare target is not specified
 	@if [ ! -f bare.info ]; then \
@@ -179,6 +182,11 @@ dobuild: clean getsrc
 	cd $(PERL_PHP_SERIALIZATION) && perl Makefile.PL && make
 	cp -rp $(PERL_PHP_SERIALIZATION)/blib/lib/PHP ravencore/var/lib
 	rm -f ravencore/var/lib/PHP/.exists
+
+	# Digest::SHA::PurePerl install
+	tar zxf src/$(PERL_SHA_PUREPERL).tar.gz
+	cd $(PERL_SHA_PUREPERL) && perl Makefile.PL && make
+	cp -rp $(PERL_SHA_PUREPERL)/blib/lib/Digest ravencore/var/lib
 
 	@if [ ! -f bare.info ]; then \
 		$(MAKE) gplbuild; \

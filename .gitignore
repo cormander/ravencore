@@ -1,7 +1,9 @@
 *.swp
 bare.info
+Digest-SHA-PurePerl*
 Net-Server*
 PHP-Serialization*
+src/Digest-SHA-PurePerl*tar.gz
 src/Net-Server*tar.gz
 src/PHP-Serialization*tar.gz
 src/awstats*tar.gz
@@ -37,6 +39,7 @@ ravencore/etc/version
 ravencore/etc/vhosts.conf
 ravencore/sbin/ravencore.httpd
 ravencore/var/apps
+ravencore/var/lib/Digest
 ravencore/var/lib/Net
 ravencore/var/lib/PHP
 ravencore/var/log
