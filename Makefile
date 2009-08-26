@@ -181,12 +181,14 @@ dobuild: clean getsrc
 	tar zxf src/$(PERL_PHP_SERIALIZATION).tar.gz
 	cd $(PERL_PHP_SERIALIZATION) && perl Makefile.PL && make
 	cp -rp $(PERL_PHP_SERIALIZATION)/blib/lib/PHP ravencore/var/lib
-	rm -f ravencore/var/lib/PHP/.exists
 
 	# Digest::SHA::PurePerl install
 	tar zxf src/$(PERL_SHA_PUREPERL).tar.gz
 	cd $(PERL_SHA_PUREPERL) && perl Makefile.PL && make
 	cp -rp $(PERL_SHA_PUREPERL)/blib/lib/Digest ravencore/var/lib
+
+	# remove perl .exists files
+	rm -f ravencore/var/lib/PHP/.exists ravencore/var/lib/Digest/SHA/.exists ravencore/var/lib/Net/.exists
 
 	@if [ ! -f bare.info ]; then \
 		$(MAKE) gplbuild; \
