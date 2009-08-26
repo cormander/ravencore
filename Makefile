@@ -108,6 +108,7 @@ clean:
 distclean:
 	rm -rf `cat .gitignore`
 
+
 rpm:
 	./scripts/git2rpm.sh
 
@@ -291,6 +292,7 @@ build: clean getsrc
 	@echo ""
 	@echo "run \"make install\" to install the RavenCore files"
 
+
 install:
 
 # check to make sure the "make build" ran
@@ -330,6 +332,7 @@ install:
 	@if [ -f $(DESTDIR)/etc/init.d/ravencore ]; then \
 		echo "     /etc/init.d/ravencore start"; else \
 		echo "     $(RC_ROOT)/sbin/ravencore.init start"; fi
+
 
 uninstall:
 
