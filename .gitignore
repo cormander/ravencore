@@ -1,4 +1,5 @@
 *.swp
+bare.info
 Net-Server*
 PHP-Serialization*
 src/Net-Server*tar.gz

@@ -63,8 +63,8 @@ URL_SQUIRREL_PLUGIN_UNSAFE_IMG=http://squirrelmail.org/plugins/$(SQUIRREL_PLUGIN
 URL_SQUIRREL_PLUGIN_VIEW_HTML=http://squirrelmail.org/plugins/$(SQUIRREL_PLUGIN_VIEW_HTML).tar.gz
 
 
-.PHONY: all clean cleansrc distclean rpm release getsrc build install uninstall
-
+.PHONY: all clean cleansrc distclean rpm release getsrc dobuild gplbuild build install uninstall
+.SUFFIXES: .info
 
 all:
 	@echo "Usage:"
@@ -72,6 +72,11 @@ all:
 	@echo "          This does all the required commands to get everything into"
 	@echo "          the right place and ready for the install, including the"
 	@echo "          3rd party applications"
+	@echo ""
+	@echo "       make bare"
+	@echo "          This tells all subsequent build processes to not include"
+	@echo "          any 3rd party sources that are licensed under the GPL; must"
+	@echo "          be used before the others, eg; make bare build"
 	@echo ""
 	@echo "       make clean"
 	@echo "          Clean up after a build"
@@ -105,11 +110,11 @@ all:
 
 
 clean:
-	rm -rf `cat .gitignore | grep -v '^src/'`
+	rm -rf `cat .gitignore | grep -v bare.info | grep -v '^src/'`
 
 
 cleansrc:
-	rm -rf `cat .gitignore | grep '^src/'`
+	rm -rf `cat .gitignore | grep -v bare.info | grep '^src/'`
 
 
 distclean:
@@ -124,32 +129,31 @@ release:
 	DO_RELEASE=1 ./scripts/git2rpm.sh
 
 
+bare:
+	@touch bare.info
+
+
 getsrc:
 
 	# Download anything that we don't have
-	@./scripts/get3rdparty.sh $(URL_PHPMYADMIN)
-	@./scripts/get3rdparty.sh $(URL_PHPSYSINFO)
-	@./scripts/get3rdparty.sh $(URL_PHPWEBFTP)
-	@./scripts/get3rdparty.sh $(URL_AWSTATS)
-	@./scripts/get3rdparty.sh $(URL_SQUIRRELMAIL)
 	@./scripts/get3rdparty.sh $(URL_YAA)
 	@./scripts/get3rdparty.sh $(URL_PERL_NET_SERVER)
 	@./scripts/get3rdparty.sh $(URL_PERL_PHP_SERIALIZATION)
-	@./scripts/get3rdparty.sh $(URL_JTA)
 
-	@./scripts/get3rdparty.sh $(URL_SQUIRREL_PLUGIN_COMPAT)
-	@./scripts/get3rdparty.sh $(URL_SQUIRREL_PLUGIN_SENT_CONF)
-	@./scripts/get3rdparty.sh $(URL_SQUIRREL_PLUGIN_TIMEOUT)
-	@./scripts/get3rdparty.sh $(URL_SQUIRREL_PLUGIN_VLOGIN)
-	@./scripts/get3rdparty.sh $(URL_SQUIRREL_PLUGIN_CHANGE_PASS)
-	@./scripts/get3rdparty.sh $(URL_SQUIRREL_PLUGIN_SHOW_SSL)
-	@./scripts/get3rdparty.sh $(URL_SQUIRREL_PLUGIN_SHOW_IP)
-	@./scripts/get3rdparty.sh $(URL_SQUIRREL_PLUGIN_LOGGER)
-	@./scripts/get3rdparty.sh $(URL_SQUIRREL_PLUGIN_UNSAFE_IMG)
-	@./scripts/get3rdparty.sh $(URL_SQUIRREL_PLUGIN_VIEW_HTML)
+	# only download GPL 3rd party applications if the bare target is not specified
+	@if [ ! -f bare.info ]; then \
+		for target in \
+			$(URL_JTA) $(URL_AWSTATS) $(URL_PHPSYSINFO) $(URL_PHPWEBFTP) $(URL_PHPMYADMIN) \
+			$(URL_SQUIRRELMAIL) $(URL_SQUIRREL_PLUGIN_COMPAT) $(URL_SQUIRREL_PLUGIN_SENT_CONF) \
+			$(URL_SQUIRREL_PLUGIN_TIMEOUT) $(URL_SQUIRREL_PLUGIN_VLOGIN) $(URL_SQUIRREL_PLUGIN_CHANGE_PASS) \
+			$(URL_SQUIRREL_PLUGIN_SHOW_SSL) $(URL_SQUIRREL_PLUGIN_SHOW_IP) $(URL_SQUIRREL_PLUGIN_LOGGER) \
+			$(URL_SQUIRREL_PLUGIN_UNSAFE_IMG) $(URL_SQUIRREL_PLUGIN_VIEW_HTML); do \
+			./scripts/get3rdparty.sh $$target; \
+		done \
+	fi
 
 
-build: clean getsrc
+dobuild: clean getsrc
 
 	# make sure /bin/bash exists
 	@if [ ! -f /bin/bash ] && [ -f /usr/local/bin/bash ]; then ln -s /usr/local/bin/bash /bin/bash; fi
@@ -175,6 +179,13 @@ build: clean getsrc
 	cd $(PERL_PHP_SERIALIZATION) && perl Makefile.PL && make
 	cp -rp $(PERL_PHP_SERIALIZATION)/blib/lib/PHP ravencore/var/lib
 	rm -f ravencore/var/lib/PHP/.exists
+
+	@if [ ! -f bare.info ]; then \
+		$(MAKE) gplbuild; \
+	fi
+
+
+gplbuild:
 
 	# yaa install
 	tar -C ravencore/var/apps -jxf src/$(YAA).tar.bz2; \
@@ -285,6 +296,9 @@ build: clean getsrc
 	cp src/$(JTA).jar ravencore/var/apps/jta/jta.jar
 	cp src/jta.config.php ravencore/var/apps/jta/config.php
 	cp src/jta.index.php ravencore/var/apps/jta/index.php
+
+
+build: dobuild
 
 	# we're done
 	@echo ""
