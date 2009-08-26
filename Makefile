@@ -63,6 +63,9 @@ URL_SQUIRREL_PLUGIN_UNSAFE_IMG=http://squirrelmail.org/plugins/$(SQUIRREL_PLUGIN
 URL_SQUIRREL_PLUGIN_VIEW_HTML=http://squirrelmail.org/plugins/$(SQUIRREL_PLUGIN_VIEW_HTML).tar.gz
 
 
+.PHONY: all clean distclean rpm release getsrc build install uninstall
+
+
 all:
 	@echo "Usage:"
 	@echo "       make build"
