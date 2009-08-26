@@ -63,7 +63,7 @@ URL_SQUIRREL_PLUGIN_UNSAFE_IMG=http://squirrelmail.org/plugins/$(SQUIRREL_PLUGIN
 URL_SQUIRREL_PLUGIN_VIEW_HTML=http://squirrelmail.org/plugins/$(SQUIRREL_PLUGIN_VIEW_HTML).tar.gz
 
 
-.PHONY: all clean distclean rpm release getsrc build install uninstall
+.PHONY: all clean cleansrc distclean rpm release getsrc build install uninstall
 
 
 all:
@@ -103,6 +103,10 @@ all:
 
 clean:
 	rm -rf `cat .gitignore | grep -v '^src/'`
+
+
+cleansrc:
+	rm -rf `cat .gitignore | grep '^src/'`
 
 
 distclean:
