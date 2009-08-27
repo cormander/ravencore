@@ -43,5 +43,6 @@ ravencore/var/lib/Digest
 ravencore/var/lib/Net
 ravencore/var/lib/PHP
 ravencore/var/log
+ravencore/var/ravencore.sqlite
 ravencore/var/run
 ravencore/var/tmp
