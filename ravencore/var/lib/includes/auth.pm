@@ -300,6 +300,15 @@ sub admin_passwd_hash {
 	my $passwd = file_get_contents($self->{RC_ROOT} . "/.shadow", 1);
 	chomp $passwd;
 
+	# if this doesn't look like a valid hash, rewrite it as one
+	if ($passwd and length($passwd) != 64 and "ravencore" ne $passwd) {
+		my $shadow_file = $self->{RC_ROOT} . "/.shadow";
+
+		chmod 0600, $shadow_file;
+		file_write($shadow_file, make_passwd_hash($passwd) . "\n");
+		chmod 0400, $shadow_file;
+	}
+
 	return $passwd;
 }
 
