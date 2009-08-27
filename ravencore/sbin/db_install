@@ -69,12 +69,15 @@ if [ -f $MYSQL_CFG ]; then
 
 	$_echo "Found legacy MySQL database.cfg file, attempting to convert data into new sqlite database"
 
-	if [ ! -f $RC_ROOT/.shadow.save ]; then
-		$_echo "Unable to find mysql password file, should be $RC_ROOT/.shadow.save"
+	# look for MYSQL_ADMIN_PASS, checking the .save file first
+	if [ -f $RC_ROOT/.shadow.save ]; then
+		MYSQL_ADMIN_PASS=$(cat $RC_ROOT/.shadow.save)
+	elif [ -f $RC_ROOT/.shadow ]; then
+		MYSQL_ADMIN_PASS=$(cat $RC_ROOT/.shadow)
+	else
+		$_echo "Unable to find mysql password file, should be $RC_ROOT/.shadow"
 		exit 1
 	fi
-
-	MYSQL_ADMIN_PASS=$(cat $RC_ROOT/.shadow.save)
 
 	# load the database.cfg file. This will override the MYSQL_ADMIN_* stuff if it succeeds
 	source $MYSQL_CFG
@@ -142,9 +145,11 @@ if [ -f $MYSQL_CFG ]; then
 	if [ $? -eq 0 ]; then
 		rm -f $RC_ROOT/.shadow.save $MYSQL_CFG
 	else
-		echo "Something went wrong with the mysqldump, exiting"
+		$_echo "Something went wrong with the mysqldump, exiting"
 		exit 1
 	fi
+
+	$_echo "Success!!"
 
 fi
 
