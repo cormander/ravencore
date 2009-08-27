@@ -26,6 +26,7 @@ BEGIN {
 };
 
 use RavenCore::Client;
+use RavenCore::Common;
 use Data::Dumper;
 
 if (0 == scalar @ARGV) {
@@ -85,10 +86,7 @@ if ($cmd eq "passwd") {
 		}
 
 		if ($error == 0) {
-			if (!$rc->passwd($rc->get_passwd, $passwd)) {
-				map { print $rc->{errors}{$_}, "\n" } keys %{$rc->{errors}};
-				$error = 1;
-			}
+			file_write($RC_ROOT.'/.shadow', make_passwd_hash($passwd) . "\n");
 		}
 
 	} while( $error );

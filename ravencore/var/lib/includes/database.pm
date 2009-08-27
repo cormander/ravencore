@@ -52,7 +52,7 @@ sub database_connect {
 		if ($ret) {
 			$self->{db_connected} = 1;
 
-			if($self->admin_passwd =~ m/^ravencore$/i) { $self->{initial_passwd} = 1 }
+			if ($self->admin_passwd_hash =~ m/^ravencore$/i) { $self->{initial_passwd} = 1 }
 			else { $self->{initial_passwd} = 0 }
 
 			$self->get_db_conf;
@@ -64,12 +64,6 @@ sub database_connect {
 		$self->{db_connected} = 0;
 
 	}
-
-	# read in our database password. currently we have to do this each time we connect, because the password
-	# might have changed since we first started, and a child process can't change a variable and have the
-	# parent process know about it
-
-	my $passwd = $self->admin_passwd;
 
 	# connect to the database
 	if ($self->{perl_modules}{DBD::SQLite}) {
@@ -88,7 +82,7 @@ sub database_connect {
 	$self->debug("Unable to get a database connection: " . DBI->errstr) unless $self->{db_connected};
 
 	# cache our "initial_passwd" response, telling us if we need to set our admin password or not
-	if ($passwd =~ m/^ravencore$/i) { $self->{initial_passwd} = 1 }
+	if ($self->admin_passwd_hash =~ m/^ravencore$/i) { $self->{initial_passwd} = 1 }
 	else { $self->{initial_passwd} = 0 }
 
 	$self->get_db_conf;

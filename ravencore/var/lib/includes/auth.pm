@@ -181,7 +181,7 @@ sub auth {
 sub auth_admin {
 	my ($self, $passwd) = @_;
 
-	if ($passwd eq $self->admin_passwd) {
+	if ($self->verify_admin_passwd($passwd)) {
 		# password is correct, return true
 		# TODO: call an auth_success function here to record the login
 		return 1;
@@ -216,7 +216,7 @@ sub auth_system {
 	my ($self, $input) = @_;
 
 	my $session_id = $input->{session_id};
-	my $password = $input->{password};
+	my $passwd_hash = $input->{passwd_hash};
 
 	# validate the session_id
 	return 'Invalid session ID.' unless $session_id =~ /^[a-zA-Z0-9]*$/;
@@ -232,8 +232,8 @@ sub auth_system {
 	# for now, just remove the session file so it doesn't hang around forever
 	file_delete($session_file);
 
-	# check the password too, for good measure
-	if ($password eq $self->admin_passwd) {
+	# check the password hash too, for good measure
+	if ($passwd_hash eq $self->admin_passwd_hash) {
 		# system is authenticated. we're an admin user
 		$self->{session}{user} = $self->{ADMIN_USER};
 
@@ -292,7 +292,7 @@ sub set_privs {
 
 # a function use to read the password out of the .shadow file
 
-sub admin_passwd {
+sub admin_passwd_hash {
 	my ($self) = @_;
 
 	# since the .shadow file is read a lot and almost never written to, skip locking. it isn't going to be
@@ -358,7 +358,7 @@ sub passwd {
 		my $shadow_file = $self->{RC_ROOT} . "/.shadow";
 
 		chmod 0600, $shadow_file;
-		file_write($shadow_file, $new . "\n");
+		file_write($shadow_file, make_passwd_hash($new) . "\n");
 		chmod 0400, $shadow_file;
 
 		$self->debug("Password change successful.");
@@ -379,8 +379,16 @@ sub passwd {
 sub verify_passwd {
 	my ($self, $input) = @_;
 
-	return 1 if $input->{passwd} eq $self->admin_passwd;
-	return 0;
+	return $self->verify_admin_passwd($input->{passwd});
+}
+
+#
+
+sub verify_admin_passwd {
+	my ($self, $passwd) = @_;
+
+	# verify the password hash
+	return verify_passwd_by_hash($passwd, $self->admin_passwd_hash);
 }
 
 #

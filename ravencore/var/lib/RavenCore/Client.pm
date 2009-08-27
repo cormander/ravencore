@@ -77,7 +77,7 @@ sub auth_system {
 	#    my $resp = $self->run('auth ' . $session_id . ' ' . $ipaddress . ' ' . $username . ' ' . $password);
 	# TODO: create a user-level shell API using this method
 
-	return $self->run('auth_system', { session_id => $session_id, password => $self->get_passwd });
+	return $self->run('auth_system', { session_id => $session_id, passwd_hash => $self->get_passwd_hash });
 }
 
 # authenticate as a user
@@ -101,7 +101,7 @@ sub auth {
 
 #
 
-sub get_passwd {
+sub get_passwd_hash {
 	my ($self) = @_;
 
 	my $password = file_get_contents($self->{RC_ROOT} . '/.shadow');

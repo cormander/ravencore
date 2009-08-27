@@ -26,11 +26,15 @@ package RavenCore::Common;
 use strict;
 use warnings;
 
+use Digest::SHA::PurePerl qw(sha1_hex);
 use SEM;
 
 use vars qw(@ISA @EXPORT);
 @ISA     = qw(Exporter);
-@EXPORT  = qw(file_get_contents file_touch file_move file_get_array file_write file_append file_move file_delete file_copy file_chown file_chown_r file_chmod_r file_diff mkdir_p dir_list find_in_path in_array pidof is_ip gen_random_id _ );
+@EXPORT  = qw(file_get_contents file_touch file_move file_get_array file_write file_append file_move file_delete file_copy file_chown file_chown_r file_chmod_r file_diff mkdir_p dir_list find_in_path in_array pidof is_ip gen_random_id make_passwd_hash verify_passwd_by_hash _ );
+
+# constants
+use constant SALT_LENGTH => 24;
 
 #
 # File function calls... read/write/append/delete/move/etc, with locking support
@@ -370,6 +374,31 @@ sub gen_random_id {
 
 	return $str;
 
+}
+
+#
+
+sub make_passwd_hash {
+	my ($passwd) = @_;
+
+	# salt the password and sha1sum it
+	my $salt = gen_random_id(SALT_LENGTH);
+
+	return $salt . sha1_hex($salt.$passwd);
+}
+
+#
+
+sub verify_passwd_by_hash {
+	my ($passwd, $hash) = @_;
+
+	# retrieve the salt from the hash
+	my $salt = substr $hash, 0, SALT_LENGTH;
+
+	# retrieve the sha1sum
+	my $sha1sum = substr $hash, SALT_LENGTH;
+
+	return 1 if $sha1sum eq sha1_hex($salt.$passwd);
 }
 
 # an alias for the gettext function
