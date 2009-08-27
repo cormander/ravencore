@@ -161,8 +161,13 @@ sub checkconf {
 	# flag that we're starting for the first time after either a fresh install, or an upgrade
 	$first_time_run = file_diff($self->{RC_ROOT}.'/var/run/version', $self->{RC_ROOT}.'/etc/version');
 
-	# 
-	if ( ! -f $self->{RC_ROOT} . '/database.cfg' ) {
+	# if .shadow.save and no database.cfg, remove the .shadow.save
+	if ( -f $self->{RC_ROOT} . '/.shadow.save' && ! -f $self->{RC_ROOT} . '/database.cfg' ) {
+		file_delete($self->{RC_ROOT} . '/.shadow.save');
+	}
+
+	# no sqlite db, this is a first time run
+	if ( ! -f $self->{RC_ROOT} . '/var/ravencore.sqlite' ) {
 		$first_time_run = 1;
 	}
 
