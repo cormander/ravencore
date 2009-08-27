@@ -256,6 +256,8 @@ sub select_count {
 
 	return $self->do_sql_error if $self->{dbi}->errstr;
 
+	$self->debug("Count returned: " . $count);
+
 	return $count;
 }
 
@@ -271,6 +273,8 @@ sub select_ref_single {
 	$self->post_sql_query;
 
 	return $self->do_sql_error if $self->{dbi}->errstr;
+
+	$self->debug("Rows returned: " . ( scalar keys %{$ref} ? 1 : 0));
 
 	return $ref;
 }
