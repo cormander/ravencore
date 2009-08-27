@@ -284,7 +284,7 @@ sub set_privs {
 	# if this user is a system user, tie it with system privs
 	@{$self->{cmd_privs}} = (@{$self->{cmd_privs}}, @{$self->{cmd_privs_system}}) if $system;
 
-	if($self->{db_connected}) {
+	if ($self->{db_connected} and !$self->is_admin) {
 		$self->{session}{user_data} = $self->get_user_by_name({username => $self->{session}{user}});
 	}
 
