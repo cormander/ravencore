@@ -120,6 +120,8 @@ sub new
 
 	$self->die_error(_('Variable %s is undefined! Please check the file: %s', 'ADMIN_USER', $RC_ETC)) unless $self->{ADMIN_USER};
 
+	# initialize some defaults if they were not set in the above conf file
+	$self->{DEBUG} = 0 unless $self->{DEBUG};
 	$self->{DEMO} = 0 unless $self->{DEMO};
 
 	#
@@ -472,7 +474,7 @@ sub configure_hook {
 	}
 
 	# toggle debugging
-	$self->{debug_flag} = 1 if -f $self->{RC_ROOT} . '/var/run/debug';
+	$self->{DEBUG} = 1 if -f $self->{RC_ROOT} . '/var/run/debug';
 
 	# cmd_privs_unauth: commands anybody can run. very few commands, and not able to do much
 	# cmd_privs_client: commands a non-admin user can run
@@ -647,7 +649,7 @@ sub debug {
 	my ($self, $msg) = @_;
 
 	# only log in debug mode
-	$self->log(2, $msg) if $self->{debug_flag};
+	$self->log(2, $msg) if $self->{DEBUG};
 }
 
 # receive a chunk of data followed by a binary "end of transmission" character,

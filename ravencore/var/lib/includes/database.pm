@@ -215,7 +215,7 @@ sub sql {
 sub pre_sql_query {
 	my ($self, $query, $args) = @_;
 
-	if ($self->{debug_flag}) {
+	if ($self->{DEBUG}) {
 		$self->debug("Doing SQL query: $query; args: " . ( scalar(@{$args}) ? join(', ', map { $self->{dbi}->quote($_) } @{$args}) : "(none)"));
 
 		if ($self->{perl_modules}{Time::HiRes}) {
@@ -227,7 +227,7 @@ sub pre_sql_query {
 sub post_sql_query {
 	my ($self) = @_;
 
-	if ($self->{debug_flag}) {
+	if ($self->{DEBUG}) {
 		if ($self->{perl_modules}{Time::HiRes}) {
 			$self->debug("SQL query took: " . (Time::HiRes::time() - $self->{sql_tm}) . " seconds");
 		}
