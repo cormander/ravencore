@@ -45,6 +45,7 @@ ravencore/var/lib/Digest
 ravencore/var/lib/Net
 ravencore/var/lib/PHP
 ravencore/var/lib/Template
+ravencore/var/lib/Template.pm
 ravencore/var/log
 ravencore/var/ravencore.sqlite
 ravencore/var/run

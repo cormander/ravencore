@@ -193,7 +193,8 @@ dobuild: clean getsrc
 	# Template::Toolkit install
 	tar zxf src/$(PERL_TEMPLATE_TOOLKIT).tar.gz
 	cd $(PERL_TEMPLATE_TOOLKIT) && perl Makefile.PL TT_XS_ENABLE=n TT_ACCEPT=y && make
-	cp -a $(PERL_TEMPLATE_TOOLKIT)/blib/lib/Template* ravencore/var/lib/
+	cp -a $(PERL_TEMPLATE_TOOLKIT)/blib/lib/Template ravencore/var/lib
+	cp -a $(PERL_TEMPLATE_TOOLKIT)/blib/lib/Template.pm ravencore/var/lib
 
 	# remove perl .exists files
 	rm -f ravencore/var/lib/PHP/.exists ravencore/var/lib/Digest/SHA/.exists ravencore/var/lib/Net/.exists
