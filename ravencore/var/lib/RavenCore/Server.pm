@@ -649,7 +649,15 @@ sub debug {
 	my ($self, $msg) = @_;
 
 	# only log in debug mode
-	$self->log(2, $msg) if $self->{DEBUG};
+	if ($self->{DEBUG}) {
+		# kill Data::Dumper's prepended whitespace
+		$msg =~ s/^\s*//mg;
+
+		# kill newlines
+		$msg =~ s/\n/ /g;
+
+		$self->log(2, $msg) if $self->{DEBUG};
+	}
 }
 
 # receive a chunk of data followed by a binary "end of transmission" character,
