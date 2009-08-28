@@ -123,6 +123,7 @@ sub new
 	# initialize some defaults if they were not set in the above conf file
 	$self->{DEBUG} = 0 unless $self->{DEBUG};
 	$self->{DEBUG_SHOW_PASSWORDS} = 0 unless $self->{DEBUG_SHOW_PASSWORDS};
+	$self->{DEBUG_STRING_LENGTH} = 2500 unless $self->{DEBUG_STRING_LENGTH};
 	$self->{DEMO} = 0 unless $self->{DEMO};
 
 	#
@@ -660,6 +661,11 @@ sub debug {
 		# replace password values with ******
 		if (!$self->{DEBUG_SHOW_PASSWORDS}) {
 			$msg =~ s/'(\w*?passwo?r?d\w*?)' => '(.*?)'(,?) /'$1' => '******'$3 /g;
+		}
+
+		# only let the debug message be so long
+		if (length($msg) > $self->{DEBUG_STRING_LENGTH}) {
+			$msg = substr($msg, 0, $self->{DEBUG_STRING_LENGTH});
 		}
 
 		$self->log(2, $msg);
