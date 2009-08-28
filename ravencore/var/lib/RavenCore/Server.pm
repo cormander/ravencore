@@ -36,13 +36,6 @@ use File::Basename;
 use Data::Dumper;
 use MIME::Base64;
 
-use Carp qw(cluck);
-
-$Carp::MaxArgLen = 0;
-$Carp::CarpLevel = 1;
-
-$SIG{__WARN__} = sub { cluck @_ };
-
 # likewise; these are needed by Net::Server
 use IO::Handle;
 use IO::Select;
@@ -51,6 +44,39 @@ use IO::Socket::UNIX;
 use POSIX;
 use Socket qw(SOCK_DGRAM);
 use Sys::Syslog;
+
+use Carp;
+
+$Carp::MaxArgLen = 0;
+
+#
+# RavenCore::Server warning handler -
+#    Since in most cases the warnings get sent to syslog, and syslog doesn't handle
+#    multi-line output very gracefully, convert the stacktrace to an array ref and
+#    handle the conversion the same way Data::Dumper info gets squished onto one line
+
+$SIG{__WARN__} = sub {
+	my $str = Carp::longmess @_;
+
+	# kill all prepended whitespace
+	$str =~ s/^\s*//mg;
+
+	# convert $str into an array ref; each line is an element in the array, and then
+	# back into a string via Data::Dumper so we get a nice and pretty one-liner msg
+	$str = Dumper([ split /\n/, $str ]);
+
+	# kill all prepended whitespace, again
+	$str =~ s/^\s*//mg;
+
+	# replace newlines
+	$str =~ s/\n/ /g;
+
+	# replace \' with double quotes
+	$str =~ s/\\'/"/g;
+
+	# re-throw the warning
+	warn $str;
+};
 
 # global vars
 our $NUL = chr(0);
