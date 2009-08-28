@@ -122,6 +122,7 @@ sub new
 
 	# initialize some defaults if they were not set in the above conf file
 	$self->{DEBUG} = 0 unless $self->{DEBUG};
+	$self->{DEBUG_SHOW_PASSWORDS} = 0 unless $self->{DEBUG_SHOW_PASSWORDS};
 	$self->{DEMO} = 0 unless $self->{DEMO};
 
 	#
@@ -657,7 +658,9 @@ sub debug {
 		$msg =~ s/\n/ /g;
 
 		# replace password values with ******
-		$msg =~ s/'(\w*?passwo?r?d\w*?)' => '(.*?)'(,?) /'$1' => '******'$3 /g;
+		if (!$self->{DEBUG_SHOW_PASSWORDS}) {
+			$msg =~ s/'(\w*?passwo?r?d\w*?)' => '(.*?)'(,?) /'$1' => '******'$3 /g;
+		}
 
 		$self->log(2, $msg);
 	}
