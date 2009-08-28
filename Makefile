@@ -178,22 +178,22 @@ dobuild: clean getsrc
 	# Net::Server install
 	tar zxf src/$(PERL_NET_SERVER).tar.gz
 	cd $(PERL_NET_SERVER) && perl Makefile.PL && make
-	cp -rp $(PERL_NET_SERVER)/blib/lib/Net ravencore/var/lib
+	cp -a $(PERL_NET_SERVER)/blib/lib/Net ravencore/var/lib
 
 	# PHP::Serialization install
 	tar zxf src/$(PERL_PHP_SERIALIZATION).tar.gz
 	cd $(PERL_PHP_SERIALIZATION) && perl Makefile.PL && make
-	cp -rp $(PERL_PHP_SERIALIZATION)/blib/lib/PHP ravencore/var/lib
+	cp -a $(PERL_PHP_SERIALIZATION)/blib/lib/PHP ravencore/var/lib
 
 	# Digest::SHA::PurePerl install
 	tar zxf src/$(PERL_SHA_PUREPERL).tar.gz
 	cd $(PERL_SHA_PUREPERL) && perl Makefile.PL && make
-	cp -rp $(PERL_SHA_PUREPERL)/blib/lib/Digest ravencore/var/lib
+	cp -a $(PERL_SHA_PUREPERL)/blib/lib/Digest ravencore/var/lib
 
 	# Template::Toolkit install
 	tar zxf src/$(PERL_TEMPLATE_TOOLKIT).tar.gz
 	cd $(PERL_TEMPLATE_TOOLKIT) && perl Makefile.PL TT_XS_ENABLE=n TT_ACCEPT=y && make
-	cp -rp blib/lib/Template* ravencore/var/lib/
+	cp -a blib/lib/Template* ravencore/var/lib/
 
 	# remove perl .exists files
 	rm -f ravencore/var/lib/PHP/.exists ravencore/var/lib/Digest/SHA/.exists ravencore/var/lib/Net/.exists
