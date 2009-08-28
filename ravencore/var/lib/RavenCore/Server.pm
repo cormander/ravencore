@@ -656,6 +656,9 @@ sub debug {
 		# kill newlines
 		$msg =~ s/\n/ /g;
 
+		# replace password values with ******
+		$msg =~ s/'(\w*?passwo?r?d\w*?)' => '(.*?)'(,?) /'$1' => '******'$3 /g;
+
 		$self->log(2, $msg);
 	}
 }
