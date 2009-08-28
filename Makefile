@@ -25,6 +25,7 @@ YAA=yaa-0.3.1
 PERL_NET_SERVER=Net-Server-0.97
 PERL_PHP_SERIALIZATION=PHP-Serialization-0.33
 PERL_SHA_PUREPERL=Digest-SHA-PurePerl-5.47
+PERL_TEMPLATE_TOOLKIT=Template-Toolkit-2.22
 JTA=jta26
 
 # Squirrelmail plugins to install
@@ -51,6 +52,7 @@ URL_YAA=http://www.sourcefiles.org/Internet/Mail/Utilities/Autoresponders/$(YAA)
 URL_PERL_NET_SERVER=http://search.cpan.org/CPAN/authors/id/R/RH/RHANDOM/$(PERL_NET_SERVER).tar.gz
 URL_PERL_PHP_SERIALIZATION=http://search.cpan.org/CPAN/authors/id/B/BO/BOBTFISH/$(PERL_PHP_SERIALIZATION).tar.gz
 URL_PERL_SHA_PUREPERL=http://search.cpan.org/CPAN/authors/id/M/MS/MSHELOR/$(PERL_SHA_PUREPERL).tar.gz
+URL_PERL_TEMPLATE_TOOLKIT=http://search.cpan.org/CPAN/authors/id/A/AB/ABW/$(PERL_TEMPLATE_TOOLKIT).tar.gz
 URL_JTA=http://javassh.org/download/$(JTA).jar
 
 URL_SQUIRREL_PLUGIN_COMPAT=http://squirrelmail.org/plugins/$(SQUIRREL_PLUGIN_COMPAT).tar.gz
@@ -138,10 +140,11 @@ bare:
 getsrc:
 
 	# Download anything that we don't have
-	@./scripts/get3rdparty.sh $(URL_YAA)
-	@./scripts/get3rdparty.sh $(URL_PERL_NET_SERVER)
-	@./scripts/get3rdparty.sh $(URL_PERL_PHP_SERIALIZATION)
-	@./scripts/get3rdparty.sh $(URL_PERL_SHA_PUREPERL)
+	@for target in \
+		$(URL_YAA) $(URL_PERL_NET_SERVER) $(URL_PERL_PHP_SERIALIZATION) $(URL_PERL_SHA_PUREPERL) \
+		$(URL_PERL_TEMPLATE_TOOLKIT); do \
+		./scripts/get3rdparty.sh $$target; \
+	done
 
 	# only download GPL 3rd party applications if the bare target is not specified
 	@if [ ! -f bare.info ]; then \
@@ -186,6 +189,11 @@ dobuild: clean getsrc
 	tar zxf src/$(PERL_SHA_PUREPERL).tar.gz
 	cd $(PERL_SHA_PUREPERL) && perl Makefile.PL && make
 	cp -rp $(PERL_SHA_PUREPERL)/blib/lib/Digest ravencore/var/lib
+
+	# Template::Toolkit install
+	tar zxf src/$(PERL_TEMPLATE_TOOLKIT).tar.gz
+	cd $(PERL_TEMPLATE_TOOLKIT) && perl Makefile.PL TT_XS_ENABLE=n TT_ACCEPT=y && make
+	cp -rp blib/lib/Template* ravencore/var/lib/
 
 	# remove perl .exists files
 	rm -f ravencore/var/lib/PHP/.exists ravencore/var/lib/Digest/SHA/.exists ravencore/var/lib/Net/.exists
