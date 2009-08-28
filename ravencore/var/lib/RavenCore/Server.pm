@@ -656,7 +656,7 @@ sub debug {
 		# kill newlines
 		$msg =~ s/\n/ /g;
 
-		$self->log(2, $msg) if $self->{DEBUG};
+		$self->log(2, $msg);
 	}
 }
 
