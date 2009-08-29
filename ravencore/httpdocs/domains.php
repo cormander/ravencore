@@ -21,11 +21,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 include "auth.php";
 
-if($did) $domain_name = $d->name();
-
 if ($action) {
 
-	$uid = $d->info['uid'];
+	$uid = $domain[uid];
 
 	switch ($action) {
 		case "delete":
@@ -100,10 +98,10 @@ if (!$did) {
 		</tr>';
 
 		foreach ($domains as $domain) {
-			$d = new domain($domain[id]);
 
-			$space = $d->space_usage(date("m"), date("Y"));
-			$traffic = $d->traffic_usage(date("m"), date("Y"));
+			$space = 0; //$d->space_usage(date("m"), date("Y"));
+			$traffic = 0; //$d->traffic_usage(date("m"), date("Y"));
+
 			// add to our totals
 			$total_space += $space;
 			$total_traffic += $traffic;
@@ -273,8 +271,8 @@ if (!$did) {
 		if ($domain[host_type] == "physical") {
 			print '<table class="listpad" width="45%" style="float: left;margin-top: 10px">
 <tr><th class="listpad" colspan="2">' . __('Domain Usage') . '</th></tr>
-<tr><td class="listpad">' . __('Disk space usage') . ': </td><td class="listpad">' . $d->space_usage(date("m"), date("Y")) . 'MB </td></tr>
-<tr><td class="listpad">' . __('This month\'s bandwidth') . ': </td><td class="listpad">' . $d->traffic_usage(date("m"), date("Y")) . 'MB</td></tr></table>';
+<tr><td class="listpad">' . __('Disk space usage') . ': </td><td class="listpad">' . $domain[space_usage] . 'MB </td></tr>
+<tr><td class="listpad">' . __('This month\'s bandwidth') . ': </td><td class="listpad">' . $domain[traffic_usage] . 'MB</td></tr></table>';
 		}
 	}
 }

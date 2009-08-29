@@ -219,22 +219,17 @@ if( ! $status['db_panic'] ) {
 	}
 
 	if ($uid) {
-		$u = new user($uid);
+		$user = $db->run("get_user_by_id", Array(id => $uid));
 	}
 
 	if ($did) {
-		$d = new domain($did);
+		$dom = $db->run("get_domain_by_id", Array(id => $did));
 	}
 
 	// If we have a $did and no $uid, we're an admin looking at a user's domain page. Get the $uid
 	if (!$uid and $did) {
-		$u = new user($d->info['uid']);
-		$uid = $u->uid;
-	}
-
-	// If we have a $did, match it with the given $uid. If we fail, goto the user's main page
-	if ($did and $u and ! $u->owns_domain($did) and !is_admin()) {
-		goto("users.php");
+		$user = $db->run("get_user_by_id", Array(id => $dom[id]));
+		$uid = $user[id];
 	}
 
 }

@@ -55,11 +55,11 @@ if (!$uid) {
 		$total_traffic = 0;
 
 		foreach ($users as $user) {
-			$u = new user($user[id]);
 
-			$space = $u->space_usage(date("m"), date("Y"));
-			$traffic = $u->traffic_usage(date("m"), date("Y"));
-			$domains = $u->info['num_domains'];
+			$space = $user[space_usage];
+			$traffic = $user[traffic_usage];
+			$domains = $user[num_domains];
+
 			// add to our totals
 			$total_space += $space;
 			$total_traffic += $traffic;
@@ -215,8 +215,8 @@ mainmenu.style.visibility=\'visible\'
 
 <table width="45%" style="float: left; margin-top: 10px" class="listpad">
 <tr><th class="listpad" colspan=2>' . __('Domain usage') . '</th></tr>
-<tr><td class="listpad">' . __('Space usage') . ':</td><td class="listpad" align=right>' . $u->space_usage(date("m"), date("Y")) . ' MB</td></tr>
-<tr><td class="listpad">' . __('Traffic usage (This month)') . ':</td><td class="listpad" lign=right>' . $u->traffic_usage(date("m"), date("Y")) . ' MB</td></tr></table>';
+<tr><td class="listpad">' . __('Space usage') . ':</td><td class="listpad" align=right>' . $user[space_usage] . ' MB</td></tr>
+<tr><td class="listpad">' . __('Traffic usage (This month)') . ':</td><td class="listpad" lign=right>' . $user[traffic_usage] . ' MB</td></tr></table>';
     }
 }
 
