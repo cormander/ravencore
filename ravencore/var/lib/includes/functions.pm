@@ -75,7 +75,7 @@ sub get_domains_by_ip {
 sub get_domains_with_no_ip {
 	my ($self) = @_;
 
-	return $self->select_ref_many("select id from domains where id not in (select did from domain_ips)");
+	return $self->select_ref_many("select * from domains where id not in (select did from domain_ips)");
 }
 
 sub get_sys_users {
