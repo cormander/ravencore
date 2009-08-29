@@ -1,0 +1,17 @@
+#!/usr/bin/perl -w -I/usr/local/ravencore/var/lib
+
+use strict;
+use warnings;
+
+use MIME::Base64;
+use Data::Dumper;
+
+use PHP::Serialization qw(unserialize);
+
+if (1 != scalar @ARGV) {
+	print "Usage: $0 <query string>\n";
+	exit;
+}
+
+print Dumper(unserialize(decode_base64($ARGV[0])));
+
