@@ -404,18 +404,6 @@ sub checkconf {
 	# if we made changes to users/groups, commit
 	$shadow->commit;
 
-	# If database.cfg exists, then read in its contents (if we did this before db_install ran for the first time,
-	# the file won't exist)
-	if (-f $self->{RC_ROOT} . "/database.cfg") {
-		my %dbcfg = $self->parse_conf_file($self->{RC_ROOT} . "/database.cfg");
-
-		foreach my $key (keys %dbcfg) {
-			$self->{$key} = $dbcfg{$key};
-		}
-	} else {
-		$self->do_error("database.cfg file does not exist. Please run " . $self->{RC_ROOT} . "/sbin/database_reconfig");
-	}
-
 	# Check if we don't have something in the server-id.conf file
 
 	my $SERVER_ID = file_get_contents($self->{RC_ROOT} . '/etc/server-id');

@@ -57,8 +57,6 @@ else
 
 fi
 
-[ -f $RC_ROOT/database.cfg ] &&	source $RC_ROOT/database.cfg
-
 RETVAL=0
 
 start() {
