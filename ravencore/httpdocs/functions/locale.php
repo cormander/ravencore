@@ -32,31 +32,6 @@ $locale_dir = 'locales/';
 
 $locales = array();
 
-// first we scan the locales directory
-$d = dir($locale_dir);
-
-// fill an array with the data
-while (false !== ($entry = $d->read())) $locales_sorted[] = $entry;
-
-// sort the data
-sort($locales_sorted);
-
-// walk down the array and pick out what exists
-foreach ($locales_sorted as $entry) {
-  
-	// if this element is a directory, and not an implied "." or ".."
-	if (is_dir($locale_dir . $entry) and !ereg('^\.',$entry)) {
-
-		// search for the "info.php" file. It contains the data we need to know about the language
-		if (file_exists($locale_dir . $entry . '/info.php')) {
-			// it does an "array_push" on the $locales array, with the language pack header info
-			include $locale_dir . $entry . '/info.php';
-		}
-
-	}
-
-}
-
 
 
 function __($string) {
