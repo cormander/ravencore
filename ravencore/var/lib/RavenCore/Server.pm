@@ -30,6 +30,7 @@ use warnings;
 use RavenCore::Common;
 use RavenCore::Shadow;
 use PHP::Serialization qw(serialize unserialize);
+use Template;
 
 # these modules should come with perl, and it's OK to die here if they don't exist
 use File::Basename;

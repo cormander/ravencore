@@ -377,17 +377,8 @@ sub rehash_httpd {
 	# make sure ip addresses are loaded into the db
 	$self->ip_list;
 
-	my $data = "";
-	my $vhost_data = "";
-
 	# set the vhosts file
 	my $vhosts = $self->{RC_ROOT} . "/etc/vhosts.conf";
-
-	# make sure that no other apache configuration denies access to the domains
-	$data .= "<Directory " . $self->{CONF}{VHOST_ROOT} . ">\n";
-	$data .= "Order allow,deny\n";
-	$data .= "Allow from all\n";
-	$data .= "</Directory>\n";
 
 	# check to make sure we're included in the apache conf file
 	my $output = file_get_contents($self->{httpd_config_file});
@@ -399,103 +390,88 @@ sub rehash_httpd {
 	#
 	# Rebuild the vhosts.conf file
 	#
-	$domain_include_file = {};
 
-	$self->debug("Begin IP address loop");
+	chomp(my $httpd_user = file_get_contents($self->{RC_ROOT} . '/var/run/httpd_user'));
+	$httpd_user = ( $httpd_user ? $httpd_user : 'apache' );
+
+	my $hosts = {
+		apache_user => $httpd_user,
+		rc_root => $self->{RC_ROOT},
+		vhost_root => $self->{CONF}{VHOST_ROOT},
+	};
 
 	# walk down all our IP addresses and build the domains on them
 	foreach my $ip (@{$self->get_ip_addresses}) {
 
-		my $in_use = 0;
-		my $ssl_in_use = 0;
 		my $dom;
+		my $ip_addr = $ip->{ip_address};
+
+		# define the nested structure for our template
+		my $ref = {
+			ip_addr => $ip_addr,
+			ports => {
+				80 => [],
+				443 => [],
+			},
+		};
 
 		# build the IP's default domain first
 		$dom = $self->get_domain_by_id({id => $ip->{default_did}});
 
 		if ("on" eq $dom->{'hosting'}) {
-			$vhost_data .= $self->make_virtual_host($ip->{ip_address}, $dom);
-			$in_use = 1;
-			$ssl_in_use = 1 if "true" eq $dom->{host_ssl};
+			$self->make_virtual_host($dom);
+			push @{$ref->{ports}{80}}, $self->domain_to_tt_ref($dom);
+			push @{$ref->{ports}{443}}, $self->domain_to_tt_ref($dom) if "true" eq $dom->{host_ssl};
 		}
 
 		# build the rest of the domains on this IP
-		foreach $dom (@{$self->get_domains_by_ip({ip => $ip->{ip_address}})}) {
+		foreach $dom (@{$self->get_domains_by_ip({ip => $ip_addr})}) {
 
 			# skip the default domain since we already processed it
 			next if $dom->{id} eq $ip->{default_did};
 
 			if ("on" eq $dom->{'hosting'}) {
-				$domain_include_file->{$dom->{'name'}} .= $self->make_virtual_host($ip->{ip_address}, $dom);
-				$in_use = 1;
-				$ssl_in_use = 1 if "true" eq $dom->{host_ssl};
+				$self->make_virtual_host($dom);
+				push @{$ref->{ports}{80}}, $self->domain_to_tt_ref($dom);
+				push @{$ref->{ports}{443}}, $self->domain_to_tt_ref($dom) if "true" eq $dom->{host_ssl};
 			}
 		}
 
-		if (1 == $in_use) {
-			$data .= "NameVirtualHost " . $ip->{ip_address} . ":80\n";
-		}
-
-		if (1 == $ssl_in_use) {
-			$data .= "NameVirtualHost " . $ip->{ip_address} . ":443\n";
-		}
+		push @{$hosts->{ip_addresses}}, $ref;
 
 	}
 
-	$self->debug("End IP address loop");
+	# wildcards are identical to ip_addresses, except the ip_addr is a *, and there is only one
+	my $ref = {
+		ip_addr => '*',
+		ports => {
+			80 => [],
+			443 => [],
+		},
+	};
 
 	# look for domains that don't have an IP, and build them here
 	foreach $dom (@{$self->get_domains_with_no_ip}) {
 		next unless "on" eq $dom->{'hosting'};
-		$self->debug("Wildcard domain " . $dom->{'name'});
-		$domain_include_file->{$dom->{'name'}} .= $self->make_virtual_host('*', $dom, 0);
+
+		$self->make_virtual_host($dom);
+		push @{$ref->{ports}{80}}, $self->domain_to_tt_ref($dom);
+		push @{$ref->{ports}{443}}, $self->domain_to_tt_ref($dom) if "true" eq $dom->{host_ssl};
 	}
 
-	foreach my $domain_name (keys %{$domain_include_file}) {
-		$vhost_data .= "Include " . $self->{CONF}{VHOST_ROOT} . "/" . $domain_name . "/conf/httpd.include\n";
-		file_write($self->{CONF}{VHOST_ROOT} . "/" . $domain_name . "/conf/httpd.include", $domain_include_file->{$domain_name} );
-	}
+	push @{$hosts->{wildcard}}, $ref;
 
-	$data .= "NameVirtualHost *:80\n";
+	# template toolkit
+	my $tt = Template->new({ INCLUDE_PATH => [ $self->{RC_ROOT}."/etc/tt2" ] });
+	my $data;
 
-	# if we have no ssl domains, don't echo the 443 virtualhost
-	if ($self->hosting_ssl) { $data .= "NameVirtualHost *:443\n" }
+	# process the template
+	$tt->process('vhosts.tpl', $hosts, \$data);
 
-	$data .= "\n\n" . $vhost_data;
-
-	# write out configs for webmail
-	foreach $dom (@{$self->get_domains}) {
-		next unless "yes" eq $dom->{webmail};
-
-		my $squirrelmail = $self->{RC_ROOT} . "/var/apps/squirrelmail";
-		my $save_path = $self->{RC_ROOT} . "/var/tmp";
-		my $domain_name = $dom->{'name'};
-
-		$data .= qq~
-<VirtualHost *:80>
-		ServerName webmail.$domain_name
-		DocumentRoot $squirrelmail
-		<IfModule mod_ssl.c>
-				SSLEngine off
-		</IfModule>
-		<Directory $squirrelmail>
-		Options -Indexes
-		<IfModule sapi_apache2.c>
-				php_admin_flag engine on
-				php_admin_value open_basedir "$squirrelmail"
-				php_admin_value upload_tmp_dir "$save_path"
-				php_admin_value session.save_path "$save_path"
-		</IfModule>
-		</Directory>
-</VirtualHost>
-~;
-
-	}
-
+	# write out the template
 	file_write($vhosts, $data);
 
 	# Test to be sure we can restart apache. Save the results to http_tmp
-
 	my $tmp_file = $self->{RC_ROOT} . '/var/tmp/rehash_httpd.' . $$;
 
 	$self->debug("Checking apache conf file syntax");
@@ -534,22 +510,34 @@ sub rehash_httpd {
    
 }
 
-# build all the directories, and return the resulting config file
+# convert the database values to things Template can understand
+
+sub domain_to_tt_ref {
+	my ($self, $dom) = @_;
+
+	my $ref = {
+		name => $dom->{name},
+		root => $self->{CONF}{VHOST_ROOT} . '/' . $dom->{name},
+		ssl => ( "true" eq $dom->{host_ssl} ? 1 : 0 ),
+		php => ( "true" eq $dom->{host_php} ? 1 : 0 ),
+		cgi => ( "true" eq $dom->{host_cgi} ? 1 : 0 ),
+		dir_index => ( "true" eq $dom->{host_dir} ? 1 : 0 ),
+		webmail => ( "yes" eq $dom->{webmail} ? 1 : 0 ),
+		webstats => ( "yes" eq $dom->{webstats_url} ? 1 : 0 ),
+	};
+
+	return $ref;
+}
+
+# build all the directories
 
 sub make_virtual_host {
-	my ($self, $ip, $row) = @_;
+	my ($self, $row) = @_;
 
 	return unless $row->{'name'};
 
-	my $data = "";
-
-	$self->debug("make_virtual_host for $ip " . $row->{'name'});
-
 	# Make sure the proper directories exist and that they are set to the correct permissions
-
 	my $domain_root = $self->{CONF}{VHOST_ROOT} . "/" . $row->{'name'};
-
-	$self->debug("Building conf file for " . $row->{'name'});
 
 	if ($row->{'host_type'} eq "physical") {
 		mkdir_p(
@@ -563,6 +551,12 @@ sub make_virtual_host {
 			)
 		);
 
+		# cgi-bin if cgi
+		mkdir_p($domain_root . "/cgi-bin") if "true" eq $row->{host_cgi};
+
+		# make sure ssl keys exist if this is over ssl
+		$self->ssl_genkey_pair($domain_root . "/conf") if "true" eq $row->{host_ssl};
+
 		# chmod / chown the directories
 		file_chown("root:servgrp", $domain_root);
 		file_chown($row->{'login'} . ":servgrp", $domain_root . "/httpdocs", $domain_root . "/tmp");
@@ -572,212 +566,30 @@ sub make_virtual_host {
 
 		chmod 0770, $domain_root . "/tmp";
 
-		$data .= $self->make_virtual_host_content($ip, 0, $row);
-		if ($row->{'host_ssl'} eq "true") {
-			$data .= $self->make_virtual_host_content($ip, 1, $row);
+		# If the awstats configuration file doesn't exist, build it
+		if ( ! -f $domain_root . "/conf/awstats." . $domain . ".conf" ) {
+			my $awstats_conf = file_get_contents($self->{RC_ROOT} . "/etc/awstats.model.conf.in");
+
+			# Run the needed substitution statements to edit the config file appropriatly
+			$awstats_conf =~ s|LogFile=".*"|LogFile="$domain_root/var/log/access_log.1"|;
+			$awstats_conf =~ s|SiteDomain=".*"|SiteDomain="$domain"|;
+			$awstats_conf =~ s|DirData=".*"|DirData="$domain_root/var/awstats"|;
+
+			file_write($domain_root . "/conf/awstats." . $domain . ".conf", $awstats_conf);
 		}
 
-	} elsif ($row->{'host_type'} eq "redirect") {
+		# make sure a symlink to it exists in /etc/awstats
+		if ($row->{'webstats_url'} eq "yes" and ! -l "/etc/awstats/" . $domain . ".conf") {
+			mkdir_p("/etc/awstats");
+			unlink ("/etc/awstats/awstats." . $domain . ".conf");
+			system ("ln -s " . $domain_root . "/conf/awstats." . $domain . ".conf /etc/awstats/awstats." . $domain . ".conf");
+		}
 
-		$data .= "<VirtualHost $ip:80>\n";
-		$data .= "\tServerName\t" . $row->{'name'} . "\n";
-
-		$data .= $self->server_alias($row->{'name'}, $row->{'www'});
-
-		$data .= "\tRedirectPermanent / \"" . $row->{'redirect_url'} . "\"\n";
-		$data .= "</VirtualHost>\n\n";
-	}
-
-	$self->debug("End building domain config file for " . $row->{'name'});
-
-	return $data;
-
-}
-
-#
-
-sub make_virtual_host_content {
-	my ($self, $ip, $ssl, $row) = @_;
-
-	$domain = $row->{'name'};
-	$www = $row->{'www'};
-	$host_dir = $row->{'host_dir'};
-	$host_cgi = $row->{'host_cgi'};
-	$host_php = $row->{'host_php'};
-
-	my $data;
-	my $port;
-
-	# If this tag is ssl, the port is 443
-	if ($ssl == 1) {
-		$port = 443;
-		$self->debug($domain . " is setup for ssl");
-		$data = "<IfModule mod_ssl.c>\n";
-	} else {
-		$port = 80;
-	}
-
-	#
-	$data .= "<VirtualHost " . $ip . ":" . $port . ">\n";
-	$data .= "\tServerName   " . $domain . ":" . $port . "\n";
-
-	# Does this domain have any aliases for it?
-	$data .= $self->server_alias($domain, $www);
-
-	# Define the directory's document root
-	my $domain_root = $self->{CONF}{VHOST_ROOT} . "/" . $domain;
-
-	$data .= "\tDocumentRoot " . $domain_root . "/httpdocs\n";
-
-	# Make sure that the access and error log files exist
-	my $domain_log_root = $domain_root . "/var/log";
-
-	#
-	my $ssl_log = ( $ssl == 1 ? "ssl_" : "" );
-
-	file_touch($domain_log_root . "/" . $ssl_log . "access_log");
-	$data .= "\tCustomLog  " . $domain_log_root . "/" . $ssl_log . "access_log combined\n";
-
-	file_touch($domain_log_root . "/" . $ssl_log . "error_log");
-	$data .= "\tErrorLog   " . $domain_log_root . "/" . $ssl_log . "error_log\n";
-
-	#
-	if ($host_cgi eq "true") {
-		mkdir_p($domain_root . "/cgi-bin");
-		chmod 0755, $domain_root . "/cgi-bin";
-
-		# TODO: Fix me
-		#	file_chown($row->{'login'} . ":servgrp", $domain_root . "/cgi-bin");
-
-		$data .= "\tScriptAlias  /cgi-bin/ " . $domain_root . "/cgi-bin/\n";
-	}
-
-	# If the awstats configuration file doesn't exist, build it
-	if ( ! -f $domain_root . "/conf/awstats." . $domain . ".conf" ) {
-
-		my $awstats_conf = file_get_contents($self->{RC_ROOT} . "/etc/awstats.model.conf.in");
-
-		# Run the needed substitution statements to edit the config file appropriatly
-		$awstats_conf =~ s|LogFile=".*"|LogFile="$domain_root/var/log/access_log.1"|;
-		$awstats_conf =~ s|SiteDomain=".*"|SiteDomain="$domain"|;
-		$awstats_conf =~ s|DirData=".*"|DirData="$domain_root/var/awstats"|;
-
-		file_write($domain_root . "/conf/awstats." . $domain . ".conf", $awstats_conf);
-
-	}
-
-	# make sure a symlink to it exists in /etc/awstats
-	if ($row->{'webstats_url'} eq "yes" and ! -l "/etc/awstats/" . $domain . ".conf") {
-		mkdir_p("/etc/awstats");
-		unlink ("/etc/awstats/awstats." . $domain . ".conf");
-		system ("ln -s " . $domain_root . "/conf/awstats." . $domain . ".conf /etc/awstats/awstats." . $domain . ".conf");
-	}
-
-	# make sure it doesn't exist if webstats_url is no
-	if ($row->{'webstats_url'} ne "yes") {
-		unlink ("/etc/awstats/awstats." . $domain . ".conf");
-	}
-
-	if ($ssl == 1) {
-
-		$data .= "\tSSLEngine on\n";
-		$data .= "\tSSLVerifyClient none\n";
-
-		$self->ssl_genkey_pair($domain_root . "/conf");
-
-		$data .= "\tSSLCertificateFile " . $domain_root . "/conf/server.crt\n";
-		$data .= "\tSSLCertificateKeyFile " . $domain_root . "/conf/server.key\n";
-
-	} else {
-		# no ssl, so make sure it's disabled
-		$data .= "\t<IfModule mod_ssl.c>\n";
-		$data .= "\t\tSSLEngine off\n";
-		$data .= "\t</IfModule>\n";
-	}
-
-	# Begin the setup fir the virtual directory of this domain's web root
-	$data .= "\t<Directory " . $domain_root . "/httpdocs>\n";
-
-	# Add directory listing if set
-	if ($host_dir eq "true") { $data .= "\tOptions +Indexes\n" }
-	else { $data .= "\tOptions -Indexes\n" }
-
-	chomp(my $httpd_user = file_get_contents($self->{RC_ROOT} . '/var/run/httpd_user'));
-	$httpd_user = ( $httpd_user ? $httpd_user : 'apache' );
-
-	foreach my $php_v (('4','5')) {
-
-		# Setup php if appropriate
-		if ($host_php eq "true") {
-			#
-			$data .= "\t<IfModule mod_php$php_v.c>\n";
-			$data .= "\t\tphp_admin_flag engine on\n";
-			$data .= "\t\tphp_admin_value open_basedir \"" . $domain_root . "\"\n";
-			$data .= "\t\tphp_admin_value upload_tmp_dir \"" . $domain_root . "/tmp\"\n";
-			$data .= "\t\tphp_admin_value session.save_path \"" . $domain_root . "/tmp\"\n";
-			$data .= "\t\tphp_admin_value sendmail_path \"/usr/sbin/sendmail -t -i -f " . $httpd_user . '@' . $domain . "\"\n";
-			$data .= "\t</IfModule>\n";
-		} else {
-			# Else, explicitly disable php
-			$data .= "\t<IfModule mod_php$php_v.c>\n";
-			$data .= "\t\tphp_admin_flag engine off\n";
-			$data .= "\t</IfModule>\n";
+		# make sure it doesn't exist if webstats_url is no
+		if ($row->{'webstats_url'} ne "yes") {
+			unlink ("/etc/awstats/awstats." . $domain . ".conf");
 		}
 	}
-
-	# Setup cgi if appropriate
-	if ($host_cgi eq "true") {
-		$data .= "\t\tOptions +Includes +ExecCGI\n";
-		$data .= "\t<IfModule mod_perl.c>\n";
-		$data .= "\t<Files ~ (\\.pl)>\n";
-		$data .= "\t\tSetHandler perl-script\n";
-		$data .= "\t\tPerlHandler ModPerl::Registry\n";
-		$data .= "\t\tallow from all\n";
-		$data .= "\t\tPerlSendHeader On\n";
-		$data .= "\t</Files>\n";
-		$data .= "\t</IfModule>\n";
-	}
-
-	# We're done with the virtual directory setup
-	$data .= "\t</Directory>\n";
-
-	# Setup this domains error documents
-	# TODO: finish this
-	#	$sql = "select * from error_docs where did = '$did'";
-
-	# If a vhost.conf file exists for this domain, include it
-	# TODO: do this for vhost_ssl.conf as well
-	if ($ssl != 1 and -f $domain_root . "/conf/vhost.conf") {
-		$data .= "\tInclude " . $domain_root . "/conf/vhost.conf\n";
-
-		$self->debug($domain . " has a vhost.conf file");
-	}
-
-	if ($ssl == 1 and -f $domain_root . "/conf/vhost_ssl.conf") {
-		$data .= "\tInclude " . $domain_root . "/conf/vhost_ssl.conf\n";
-
-		$self->debug($domain . " has a vhost_sslvhost.conf file");
-	}
-
-	if ($row->{'webstats_url'} eq "yes") {
-		$data .= qq~
-	Alias /icon/  $self->{RC_ROOT}/var/apps/awstats/wwwroot/icon/
-
-	ScriptAlias /awstats/ $self->{RC_ROOT}/var/apps/awstats/wwwroot/cgi-bin/
-
-	<Directory $self->{RC_ROOT}/var/apps/awstats/wwwroot/cgi-bin/>
-		DirectoryIndex awstats.pl
-	</Directory>
-
-~;
-	}
-
-	# End our virtual host tag
-	$data .= "</VirtualHost>\n\n";
-
-	if ($ssl == 1) { $data .= "</IfModule>\n" }
-
-	return $data;
 }
 
 #
