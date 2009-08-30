@@ -48,7 +48,7 @@ sub checkconf {
 	if ( ! -f $httpd_path || ! -d $httpd_modules_path ) {
 
 		# define our directories to search in
-		my @httpd_search_dir = file_get_array($self->{RC_ROOT} . '/etc/paths.httpd');
+		my @httpd_search_dir = file_get_array($self->{RC_ROOT} . '/etc/modules/web/paths');
 
 		my @httpd_search_bin = (
 			'apache2',
@@ -184,9 +184,11 @@ sub checkconf {
 		# if the dependency file doesn't exist, this loop won't happen, and we assume that it's OK that this
 		# module be enabled
 
-		my @reqs = file_get_array($self->{RC_ROOT} . '/etc/dependencies.' . $dep);
+		my $module_dir = $self->{RC_ROOT} . '/etc/modules/' . $dep;
 
-		my @cmd_map = file_get_array($self->{RC_ROOT} . '/etc/cmd_maps.' . $dep);
+		my @reqs = file_get_array($module_dir . '/dependencies');
+
+		my @cmd_map = file_get_array($module_dir . '/cmd_maps');
 
 		# unset our dep_check flag
 		my $dep_check_failed = 0;
@@ -222,11 +224,11 @@ sub checkconf {
 
 		}
 
-		# toggle our conf file with the executable bit, based on if the module has all its dependencies
+		# toggle the existance of the "installed" file based on if the module has all its dependencies
 		if ($dep_check_failed == 0) {
-			chmod 0744, $dep_file;
+			file_touch($module_dir . "/installed");
 		} else {
-			chmod 0644, $dep_file;
+			file_delete($module_dir . "/installed");
 		}
 
 	}
@@ -454,7 +456,6 @@ sub checkconf {
 	file_chown_r('root:rcadmin', $self->{RC_ROOT} . '/httpdocs');
 
 	# directory permissions
-	chmod 0700, $self->{RC_ROOT} . '/conf.d';
 	chmod 0700, $self->{RC_ROOT} . '/sbin';
 	chmod 0755, $self->{RC_ROOT} . '/var/lib';
 	chmod 0700, $self->{RC_ROOT} . '/var/log';

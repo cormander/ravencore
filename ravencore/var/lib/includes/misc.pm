@@ -135,32 +135,19 @@ sub webstats {
 }
 
 # return a hash, the keys are the module names and the values are the conf file to
-# use for checks on said module (eg: base.conf vs. base.conf.debian )
+# use for checks on said module
 
 sub module_list {
 	my ($self) = @_;
 
 	my %modules, $mod;
 
-	my @confs = dir_list($self->{RC_ROOT} . '/conf.d/*.conf');
+	my @confs = dir_list($self->{RC_ROOT} . '/etc/modules/*/default_settings');
 
-	foreach my $conf (@confs)
-	{
-		# since we did a wildcard look, we get the full path of the filename.... get just the basename
-		$conf = basename($conf);
-
-		# strip the .conf off of the name for the module name
+	foreach my $conf (@confs) {
 		$mod = $conf;
-		$mod =~ s/\.conf//;
-
-		# if a ".dist" file exists for this conf file, use it instead ( like .debian or .gentoo )
-		if ($self->{dist} && -f $self->{RC_ROOT} . '/conf.d/' . $conf . '.' . $self->{dist}) {
-			$conf .= '.' . $self->{dist};
-		}
-
-		# value is the full path to the referenced file
-		$modules{$mod} = $self->{RC_ROOT} . '/conf.d/' . $conf;
-
+		$mod =~ s|.*/etc/modules/(\w*?)/default_settings$|$1|;
+		$modules{$mod} = $conf;
 	}
 
 	return %modules;
@@ -176,15 +163,13 @@ sub module_list_enabled {
 	my %modules = $self->module_list;
 
 	foreach my $mod (keys %modules) {
+		# if there is a "disable" file for this module, skip it
+		next if -f $self->{RC_ROOT} . '/etc/modules/' . $mod . '/disabled';
 
-		# if there is a .ignore for this module, skip it
-		next if -f $self->{RC_ROOT} . '/conf.d/' . $mod . '.conf.ignore';
+		# if there is not an "installed" file for this module, skip it
+		next unless -f $self->{RC_ROOT} . '/etc/modules/' . $mod . '/installed';
 
-		# if the executable bit is set on the file, it's an enabled module
-		if (-x $modules{$mod}) {
-			$enabled{$mod} = $modules{$mod};
-		}
-
+		$enabled{$mod} = $modules{$mod};
 	}
 
 	return %enabled;

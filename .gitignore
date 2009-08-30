@@ -31,6 +31,8 @@ ravencore/database.cfg
 ravencore/etc/docroot.conf
 ravencore/etc/httpd_modules
 ravencore/etc/logrotate.conf
+ravencore/etc/modules/*/disabled
+ravencore/etc/modules/*/installed
 ravencore/etc/port.conf
 ravencore/etc/port_ssl.conf
 ravencore/etc/postfix/main.cf/content_filter
