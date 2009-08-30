@@ -1,2 +1,0 @@
-default "%h %l %u %t "%r" %s %b"
-auth "%v [%P] %h %t "%r" %s"

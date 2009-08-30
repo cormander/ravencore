@@ -443,16 +443,6 @@ sub checkconf {
 		$self->cache_rebuild_conf_file($vsftpd_conf, "vsftpd", "=");
 	}
 
-	# check to make sure the proftpd.conf file is correct
-	my $proftpd_conf;
-
-	$proftpd_conf = '/etc/proftpd.conf' if -f '/etc/proftpd.conf';
-
-	# only rebuild proftpd.conf if it exists and we don't have vsftpd.conf
-	if (-f $proftpd_conf && ! -f $vsftpd_conf) {
-		$self->cache_rebuild_conf_file($proftpd_conf, "proftpd", "\t");
-	}
-
 	# set permissions and ownship of files in the ravencore root
 	# get rid of the wrapper, if it's still there
 	unlink $self->{RC_ROOT} . '/sbin/wrapper';
