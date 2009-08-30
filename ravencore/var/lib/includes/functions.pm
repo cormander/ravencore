@@ -272,10 +272,9 @@ sub push_hosting {
 
 	$self->xsql("delete from domain_ips where did = ?", [$did]);
 
-	if ("HASH" eq ref($ip_addresses)) {
-		foreach my $key (keys %{$ip_addresses}) {
-			my $val = $ip_addresses->{$key};
-			$self->xsql("insert into domain_ips values (?,?)", [$did, $val]);
+	if ("ARRAY" eq ref($ip_addresses)) {
+		foreach my $ip (@{$ip_addresses}) {
+			$self->xsql("insert into domain_ips values (?,?)", [$did, $ip]);
 		}
 	}
 
