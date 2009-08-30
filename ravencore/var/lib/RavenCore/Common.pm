@@ -327,10 +327,9 @@ sub find_in_path {
 
 	my @dirs = split /:/, $ENV{PATH};
 
-	foreach my $dir (@dirs)
-	{
+	foreach my $dir (@dirs) {
 		return $dir . '/' . $file if -f $dir . '/' . $file;
-		return $dir . '/' . $file . '.exe' if $dir . '/' . $file . '.exe';
+		return $dir . '/' . $file . '.exe' if -f $dir . '/' . $file . '.exe';
 	}
 
 	return;
