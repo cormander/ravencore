@@ -130,12 +130,12 @@ sub get_db_conf {
 	delete $self->{UNINIT_CONF};
 
 	# walk down the list of our enabled modules
-	my %modules = $self->module_list_enabled;
+	my @modules = $self->module_list_enabled;
 
-	foreach my $dep_file (values %modules) {
+	foreach my $dep (@modules) {
 
 		# parse the conf file to get all the variable names needed for this module
-		my %data = $self->parse_conf_file($dep_file);
+		my %data = $self->parse_conf_file($self->{RC_ROOT} . '/etc/modules/' . $dep . '/default_settings');
 
 		foreach my $key (keys %data) {
 
