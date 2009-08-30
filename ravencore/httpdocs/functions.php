@@ -74,7 +74,7 @@ function have_database_services() {
 function have_service($service) {
 	global $status;
 
-	if ($status['modules_enabled'][$service])
+	if (in_array($service, $status['modules_enabled']))
 		return true;
 
 	return false;

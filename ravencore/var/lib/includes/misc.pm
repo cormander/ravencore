@@ -140,17 +140,17 @@ sub webstats {
 sub module_list {
 	my ($self) = @_;
 
-	my %modules, $mod;
+	my @modules, $mod;
 
 	my @confs = dir_list($self->{RC_ROOT} . '/etc/modules/*/default_settings');
 
 	foreach my $conf (@confs) {
 		$mod = $conf;
 		$mod =~ s|.*/etc/modules/(\w*?)/default_settings$|$1|;
-		$modules{$mod} = $conf;
+		push @modules, $mod;
 	}
 
-	return %modules;
+	return @modules;
 }
 
 # just like module_list, but only returns modules that are enabled
@@ -158,21 +158,21 @@ sub module_list {
 sub module_list_enabled {
 	my ($self) = @_;
 
-	my %enabled;
+	my @enabled;
 
-	my %modules = $self->module_list;
+	my @modules = $self->module_list;
 
-	foreach my $mod (keys %modules) {
+	foreach my $mod (@modules) {
 		# if there is a "disable" file for this module, skip it
 		next if -f $self->{RC_ROOT} . '/etc/modules/' . $mod . '/disabled';
 
 		# if there is not an "installed" file for this module, skip it
 		next unless -f $self->{RC_ROOT} . '/etc/modules/' . $mod . '/installed';
 
-		$enabled{$mod} = $modules{$mod};
+		push @enabled, $mod;
 	}
 
-	return %enabled;
+	return @enabled;
 }
 
 #
@@ -344,9 +344,9 @@ sub rehash_httpd {
 
 	return if $self->{DEMO};
 
-	my %modules = $self->module_list_enabled;
+	my @modules = $self->module_list_enabled;
 
-	return unless exists $modules{web};
+	return unless in_array('web', @modules);
 
 	return $self->do_error("VHOST_ROOT not defined") unless $self->{CONF}{VHOST_ROOT};
 
@@ -652,9 +652,9 @@ sub rehash_mail {
 	return if $self->{DEMO};
 
 	# check to make sure that this server is a mail server
-	my %modules = $self->module_list_enabled;
+	my @modules = $self->module_list_enabled;
 
-	return unless exists $modules{mail};
+	return unless in_array('mail', @modules);
 
 	#
 	return unless $self->{CONF}{VMAIL_ROOT};
@@ -1008,9 +1008,9 @@ sub rehash_ftp {
 	return if $self->{DEMO};
 
 	# check to make sure that this server is a webserver
-	my %modules = $self->module_list_enabled;
+	my @modules = $self->module_list_enabled;
 
-	return unless exists $modules{web};
+	return unless in_array('web', @modules);
 
 	return unless $self->{db_connected};
 
@@ -1102,9 +1102,9 @@ sub rehash_logrotate {
 
 	return if $self->{DEMO};
 
-	my %modules = $self->module_list_enabled;
+	my @modules = $self->module_list_enabled;
 
-	return unless exists $modules{web};
+	return unless in_array('web', @modules);
 
 	#
 	my $dir = $self->{CONF}{VHOST_ROOT};
@@ -1150,9 +1150,9 @@ sub rehash_named {
 
 	return if $self->{DEMO};
 
-	my %modules = $self->module_list_enabled;
+	my @modules = $self->module_list_enabled;
 
-	return unless exists $modules{dns};
+	return unless in_array('dns', @modules);
 
 	return unless $self->{db_connected};
 

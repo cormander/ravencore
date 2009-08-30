@@ -173,12 +173,9 @@ sub checkconf {
 
 	# dependancy checks
 
-	my %deps = $self->module_list;
+	my @deps = $self->module_list;
 
-	foreach my $dep (keys %deps) {
-
-		# define our conf file
-		my $dep_file = $deps{$dep};
+	foreach my $dep (@deps) {
 
 		# loop thru the dependencies of this module
 		# if the dependency file doesn't exist, this loop won't happen, and we assume that it's OK that this
@@ -265,13 +262,13 @@ sub checkconf {
 		# do dependency check
 		$self->do_error("Running dependency check....");
 
-		my %deps = $self->module_list;
+		my @deps = $self->module_list;
 
-		foreach my $dep (keys %deps) {
+		foreach my $dep (@deps) {
 
-			my $dep_file = $deps{$dep};
+			my $dep_file = $self->{RC_ROOT} . '/etc/modules/ ' . $dep . '/installed';
 
-			if (-x $dep_file) {
+			if (-f $dep_file) {
 				$self->do_error($dep . " ok");
 			} else {
 				$self->do_error($dep . " failed");
@@ -567,9 +564,9 @@ sub checkconf_cron {
 	$self->debug("Running other checkconf scripts");
 
 	# loop through enabled modules and run checkconf for them
-	my %modules = $self->module_list_enabled;
+	my @modules = $self->module_list_enabled;
 
-	foreach my $mod (keys %modules) {
+	foreach my $mod (@modules) {
 		# running a $func that doesn't exist shouldn't ever happen, but just in case, do an eval on it to catch
 		# an "object method" error and prevent the child process from crashing
 		eval {
