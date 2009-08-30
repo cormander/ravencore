@@ -52,8 +52,7 @@ sub database_connect {
 		if ($ret) {
 			$self->{db_connected} = 1;
 
-			if ($self->admin_passwd_hash =~ m/^ravencore$/i) { $self->{initial_passwd} = 1 }
-			else { $self->{initial_passwd} = 0 }
+			$self->check_if_initial_passwd;
 
 			$self->get_db_conf;
 
@@ -81,12 +80,22 @@ sub database_connect {
 
 	$self->debug("Unable to get a database connection: " . DBI->errstr) unless $self->{db_connected};
 
-	# cache our "initial_passwd" response, telling us if we need to set our admin password or not
-	if ($self->admin_passwd_hash =~ m/^ravencore$/i) { $self->{initial_passwd} = 1 }
-	else { $self->{initial_passwd} = 0 }
+	$self->check_if_initial_passwd;
 
 	$self->get_db_conf;
 
+}
+
+# cache our "initial_passwd" response, telling us if we need to set our admin password or not
+
+sub check_if_initial_passwd {
+	my ($self) = @_;
+
+	my $hash = $self->admin_passwd_hash;
+
+	$self->{initial_passwd} = 0;
+
+	$self->{initial_passwd} = 1 if !$hash or $hash =~ m/^ravencore$/i;
 }
 
 # read in our settings from the database
