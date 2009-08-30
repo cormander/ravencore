@@ -111,23 +111,10 @@ rm -rf $RPM_BUILD_ROOT
 %{rc_root}/LICENSE
 %{rc_root}/README.install
 
-%{rc_root}/conf.d/amavisd.conf
-%{rc_root}/conf.d/amavisd.conf.debian
-%{rc_root}/conf.d/base.conf
-%{rc_root}/conf.d/dns.conf
-%{rc_root}/conf.d/dns.conf.debian
-%{rc_root}/conf.d/mail.conf
-%{rc_root}/conf.d/mail.conf.debian
-%{rc_root}/conf.d/mrtg.conf
-%{rc_root}/conf.d/mrtg.conf.debian
-%{rc_root}/conf.d/mysql.conf
-%{rc_root}/conf.d/postgrey.conf
-%{rc_root}/conf.d/postgrey.conf.debian
-%{rc_root}/conf.d/web.conf
-
 %{rc_root}/sbin/data_query
 %{rc_root}/sbin/db_install
 %{rc_root}/sbin/dbshell
+%{rc_root}/sbin/decode_query
 %{rc_root}/sbin/process_logs
 %{rc_root}/sbin/ravencore.cron
 %{rc_root}/sbin/ravencore.init
