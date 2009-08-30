@@ -98,17 +98,17 @@ sub new
 
 	bless $self, $class;
 
+	# read core configuration; these variables go directly into $self
 	my $RC_ETC = '/etc/ravencore.conf';
-
 	my %rcetc = $self->parse_conf_file($RC_ETC);
 
 	foreach my $key (keys %rcetc) {
 		$self->{$key} = $rcetc{$key};
 	}
 
+	# sanity check that we got RC_ROOT, RC_ROOT exists, and ADMIN_USER is defined
 	$self->die_error(_('Variable %s is undefined! Please check the file: %s', 'RC_ROOT', $RC_ETC)) unless $self->{RC_ROOT};
 	$self->die_error(_('The root directory %s does not exist!', $self->{RC_ROOT})) unless -d $self->{RC_ROOT};
-
 	$self->die_error(_('Variable %s is undefined! Please check the file: %s', 'ADMIN_USER', $RC_ETC)) unless $self->{ADMIN_USER};
 
 	# initialize some defaults if they were not set in the above conf file
@@ -145,6 +145,7 @@ sub new
 
 		eval "use " . $mod . ";";
 
+		# if eval succeeded, record that we have the module in use
 		if (!$@) {
 			$self->{perl_modules}{$mod} = 1;
 		}
@@ -172,6 +173,7 @@ sub new
 
 	}
 
+	# initialize errors array
 	@{$self->{errors}} = ();
 
 	return $self;
@@ -219,8 +221,6 @@ sub reload {
 
 		kill "HUP", $self->{server}{ppid};
 	}
-
-	return;
 }
 
 # reload ravencore.httpd
@@ -266,7 +266,7 @@ sub parse_conf_file {
 	return %data;
 }
 
-#
+# bind to a high port and serve up the interface to RavenCore
 
 sub start_webserver {
 	my ($self, $graceful) = @_;
@@ -435,7 +435,7 @@ sub start_webserver {
 
 }
 
-#
+# catch undefined function and dump a stacktrace
 
 sub AUTOLOAD {
 	my ($self) = @_;
@@ -523,8 +523,7 @@ sub configure_hook {
 		# walk down the rest of the array.. they are files to check for
 		foreach my $file (@arr) {
 		# if this file exists, we're this dist... don't check again once the {dist} is set
-			if( -f $file && !$self->{dist})
-			{
+			if( -f $file && !$self->{dist}) {
 				$self->{dist} = $maybe_this;
 			}
 
@@ -731,13 +730,6 @@ sub run_query {
 
 	$self->debug("received query: " . $query);
 
-	#
-	# TODO: implement query logging. part of the whole reason why everything talks to the socket for data
-	# queries and such, is so that there is a central point of logging... set different logging verbose levels,
-	# so we'll know whather to report just insert/update/delete queries, just report commands, or report
-	# ALL queries, directed to a logfile somewhere
-	#
-
 	if ($ok_to_do == 1) {
 		my $ret;
 
@@ -779,7 +771,7 @@ sub run_query {
 	return;
 }
 
-#
+# serialize values in the same manner that PHP does session data
 
 sub session_encode {
 	my ($value) = @_;
@@ -799,7 +791,7 @@ sub session_encode {
 	return $str;
 }
 
-#
+# the reverse of session_encode
 
 sub session_decode {
 	my ($string) = @_;
