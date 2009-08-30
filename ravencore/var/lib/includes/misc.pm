@@ -706,8 +706,8 @@ sub rehash_mail {
 
 		next unless "on" eq $mail->{mail_toggle};
 
-		my $dname = $mail->{name};
-		my $mname = $mail->{mail_name};
+		my $dname = lc $mail->{name};
+		my $mname = lc $mail->{mail_name};
 		my $email_addr = $mname . '@' . $dname;
 		my $domain_root = $self->{CONF}{VMAIL_ROOT} . "/" . $dname;
 
@@ -873,8 +873,8 @@ sub rehash_mail {
 
 		next unless "on" eq $dom->{mail};
 
-		my $name = $dom->{name};
-		my $catchall = $dom->{catchall};
+		my $name = lc $dom->{name};
+		my $catchall = lc $dom->{catchall};
 
 		if ("send_to" eq $catchall or "true" eq $catchall) {
 			$valiasmap .= '@' . $name . "\t\t" . $dom->{catchall_addr} . "\n";
@@ -945,8 +945,8 @@ sub rehash_mail {
 
 		next unless "on" eq $dom->{mail};
 
-		my $name = $dom->{name};
-		my $catchall = $dom->{catchall};
+		my $name = lc $dom->{name};
+		my $catchall = lc $dom->{catchall};
 
 		if ("relay" ne $catchall) {
 			$vmaildomains .= $name . "\t\tplaceholder\n";
