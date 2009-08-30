@@ -213,7 +213,7 @@ sub checkconf {
 				my $path = find_in_path($cmd);
 
 				unless ($path) {
-					$self->do_error("WARNING: dependancy '" . $req . "' not found for " . $dep . " module.") if $first_time_run;
+					$self->debug("WARNING: dependancy '" . $req . "' not found for " . $dep . " module.") if $first_time_run;
 					$dep_check_failed = 1;
 				}
 
@@ -223,8 +223,10 @@ sub checkconf {
 
 		# toggle the existance of the "installed" file based on if the module has all its dependencies
 		if ($dep_check_failed == 0) {
+			$self->debug("$dep is installed");
 			file_touch($module_dir . "/installed");
 		} else {
+			$self->debug("$dep is not installed");
 			file_delete($module_dir . "/installed");
 		}
 
@@ -256,11 +258,11 @@ sub checkconf {
 		# we are a different version of ravencore. Remove some things from the var/run/ directory
 		# only say our version number changed if we actually had a previous version
 		if (-f $self->{RC_ROOT} . '/var/run/version') {
-			$self->do_error("Version number changed since we last ran, running upgrade steps");
+			$self->debug("Version number changed since we last ran, running upgrade steps");
 		}
 
 		# do dependency check
-		$self->do_error("Running dependency check....");
+		$self->debug("Running dependency check....");
 
 		my @deps = $self->module_list;
 
@@ -269,9 +271,9 @@ sub checkconf {
 			my $dep_file = $self->{RC_ROOT} . '/etc/modules/ ' . $dep . '/installed';
 
 			if (-f $dep_file) {
-				$self->do_error($dep . " ok");
+				$self->debug($dep . " ok");
 			} else {
-				$self->do_error($dep . " failed");
+				$self->debug($dep . " failed");
 
 				# a failed base configuration check is a fatal error
 				if ($dep eq "base") {
@@ -286,7 +288,7 @@ sub checkconf {
 
 		}
 
-		$self->do_error("Dependency check complete.");
+		$self->debug("Dependency check complete.");
 
 		# remove the install_complete so our interface will know to run all the rehash scripts when the conf is complete
 		# remove the db_install so that we'll run that script
