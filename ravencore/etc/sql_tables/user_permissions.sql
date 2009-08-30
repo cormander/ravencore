@@ -1,7 +1,7 @@
 CREATE TABLE user_permissions (
   id integer not null primary key autoincrement unique,
-  uid int(10),
-  perm varchar(255),
-  val varchar(5),
-  lim int(11)
+  uid int,
+  perm text,
+  val text,
+  lim int
 );
