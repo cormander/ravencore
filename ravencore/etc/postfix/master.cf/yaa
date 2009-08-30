@@ -1,1 +1,0 @@
-unix  -       n       n       -       -       pipe user=vmail argv=$_[RC_ROOT]/var/apps/yaa/bin/yaa.pl

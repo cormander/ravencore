@@ -1,1 +1,0 @@
-unix  -       n       n       -       -       pipe flags=R user=cyrus argv=/usr/lib/cyrus-imapd/deliver -e -m ${extension} ${user}

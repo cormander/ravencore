@@ -1,2 +1,0 @@
-inet  n       -       n       -       -       smtpd
-unix  -       -       n       -       -       smtp

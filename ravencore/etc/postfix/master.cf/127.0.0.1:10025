@@ -1,1 +1,0 @@
-inet n  -       n     -       -  smtpd -o content_filter= -o cleanup_service_name=amavisd-cleanup
