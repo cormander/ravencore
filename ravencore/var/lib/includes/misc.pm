@@ -462,7 +462,7 @@ sub rehash_httpd {
 	push @{$hosts->{wildcard}}, $ref;
 
 	# template toolkit
-	my $tt = Template->new({ INCLUDE_PATH => [ $self->{RC_ROOT}."/etc/tt2" ] });
+	my $tt = Template->new({ INCLUDE_PATH => [ $self->{RC_ROOT}."/etc/tt2/httpd" ] });
 	my $data;
 
 	# process the template
