@@ -342,7 +342,7 @@ install:
 	@echo -e "RC_ROOT=$(RC_ROOT)\n" >> $(DESTDIR)$(ETC_RAVENCORE)
 	@echo "# RavenCore Administrator User" >> $(DESTDIR)$(ETC_RAVENCORE)
 	@echo -e "ADMIN_USER=$(ADMIN_USER)\n" >> $(DESTDIR)$(ETC_RAVENCORE)
-	@echo "# Debugging level"
+	@echo "# Debugging level" >> $(DESTDIR)$(ETC_RAVENCORE)
 	@echo -e "DEBUG=0\n" >> $(DESTDIR)$(ETC_RAVENCORE)
 
 	# Install all the files
