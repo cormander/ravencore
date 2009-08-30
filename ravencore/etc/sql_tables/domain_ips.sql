@@ -1,4 +1,4 @@
 CREATE TABLE domain_ips (
-  did int,
+  did integer,
   ip_address
 );

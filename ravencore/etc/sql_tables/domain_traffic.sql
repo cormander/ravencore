@@ -1,7 +1,7 @@
 CREATE TABLE domain_traffic (
   id integer not null primary key autoincrement unique,
-  did int,
+  did integer,
   type text,
-  date int,
-  bytes int
+  date integer,
+  bytes integer
 );

@@ -1,6 +1,6 @@
 CREATE TABLE mail_users (
   id integer not null primary key autoincrement unique,
-  did int,
+  did integer,
   mail_name text,
   passwd text,
   spamassassin text,
@@ -8,7 +8,7 @@ CREATE TABLE mail_users (
   spam_folder text,
   redirect text,
   redirect_addr text,
-  autoreply int,
+  autoreply integer,
   autoreply_subject text,
   autoreply_body text
 );
