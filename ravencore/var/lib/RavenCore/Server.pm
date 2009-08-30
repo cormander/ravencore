@@ -658,7 +658,12 @@ sub debug {
 			$msg = substr($msg, 0, $self->{DEBUG_STRING_LENGTH});
 		}
 
-		$self->log(2, $msg);
+		# use Net::Server log() if it exists
+		if ($self->{server}{log_file}) {
+			$self->log(2, $msg);
+		} else {
+			print STDERR scalar localtime(), ": ", $msg, "\n";
+		}
 	}
 }
 
