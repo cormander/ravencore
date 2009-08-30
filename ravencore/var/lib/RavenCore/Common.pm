@@ -391,6 +391,9 @@ sub make_passwd_hash {
 sub verify_passwd_by_hash {
 	my ($passwd, $hash) = @_;
 
+	return unless $passwd;
+	return unless $hash;
+
 	# retrieve the salt from the hash
 	my $salt = substr $hash, 0, SALT_LENGTH;
 
