@@ -299,7 +299,7 @@ sub push_hosting {
 		#if (user_can_add($uid, "host_cgi") or is_admin() or $_POST[host_cgi] == "false") $sql .= ", host_cgi = '$_POST[cgi]'";
 		#if (user_can_add($uid, "host_ssl") or is_admin() or $_POST[host_ssl] == "false") $sql .= ", host_ssl = '$_POST[ssl]'";
 
-		my $ra = $self->xsql("update domains set redirect_url = ?, www = ?, host_dir = ?,
+		my ($ra) = $self->xsql("update domains set redirect_url = ?, www = ?, host_dir = ?,
 					host_php = ?, host_cgi = ?, host_ssl = ? where id = ?",
 				[$redirect_url, $www, $host_dir, $host_php, $host_cgi, $host_ssl, $did]);
 
