@@ -86,42 +86,6 @@ our $EOT = chr(4);
 
 our $AUTOLOAD;
 
-=pod
-*** NOTES ***
-Here are my general notes for things to keep in mind when coding in this module:
-
-* if you edit anything in this file, you must restart ravencore for it to take effect! This may be a little
-bit inconvienent, but it's a big part of what makes ravencore a lot faster then it used to be
-
-* a function is either internal or external:
-  1) a function is external if it exists in any of the "cmd_privs" hashes, otherwise it is internal
-  2) an external function shouldn't be called by an internal function, with a few exceptions
-  3) internal functions are can't be called externally, for security reasons
-
-* an external function should only return an intiger, double, string, or hash. Not an array, because it'll be
-interpreted as a hash on the other end anyway, which makes building an array pretty useless
-
-* if an external function returns a hash, return it as a reference, eg: return \%{$self->{CONF}}. Otherwise,
-you'll get a funky string instead of the hash data when it passes through the serialize function
-
-* anything that causes the rcserver process to stop running, other then a TERM signal, is considered a crash
-and should be bugreported / fixed so that it will be prevented
-
-* anything that causes a connected client to wait indefinatly for input from the server is considered a major
-bug, and should be bugreported / fixed
-
-* this is code is accessed by both the parent and child processes of the rcserver script. Keep in mind that a
-change in a variable in a child process won't affect the parent process
-
-* we want as much configuration as possible to take place on startup, and as little as possible to happen when
-a client connects, to optimize runtime and code flow.
-
-* it would be ideal to be to the point where the PHP does no SQL statements, instead it calls functions from
-this code to get all the data it needs. That way we can get rid of the 'sql' external command, which will 
-greatly reduce the risk of sql injection
-
-=cut
-
 # combind this object with Net::Server, and load other nessisary functions from various files
 
 sub new
