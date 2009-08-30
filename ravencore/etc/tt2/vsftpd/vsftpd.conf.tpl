@@ -1,0 +1,15 @@
+anonymous_enable=NO
+chroot_local_user=YES
+connect_from_port_20=YES
+dirmessage_enable=YES
+ftpd_banner=vsFTPd
+listen=YES
+local_enable=YES
+local_umask=022
+pam_service_name=vsftpd
+secure_chroot_dir=[% vhost_root %]
+tcp_wrappers=YES
+userlist_enable=NO
+write_enable=YES
+xferlog_enable=YES
+xferlog_std_format=YES
