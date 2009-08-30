@@ -268,7 +268,7 @@ sub checkconf {
 
 		foreach my $dep (@deps) {
 
-			my $dep_file = $self->{RC_ROOT} . '/etc/modules/ ' . $dep . '/installed';
+			my $dep_file = $self->{RC_ROOT} . '/etc/modules/' . $dep . '/installed';
 
 			if (-f $dep_file) {
 				$self->debug($dep . " ok");
