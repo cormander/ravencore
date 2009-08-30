@@ -3,7 +3,7 @@
 	ServerName   [% domain.name %]:[% port %]
 [% FOREACH alias = aliases %]
 	ServerAlias [% alias %]
-[% END %]
+[% END %][% IF domain.physical_hosting %]
 	DocumentRoot [% domain.root %]/httpdocs
 	CustomLog    [% domain.root %]/var/log/access_log combined
 	ErrorLog     [% domain.root %]/var/log/error_log
@@ -47,7 +47,8 @@
 				PerlSendHeader On
 			</Files>
 		</IfModule>[% END %]
-	</Directory>
+	</Directory>[% ELSE %]
+	RedirectPermanent / "[% domain.redirect_url %]"[% END %]
 </VirtualHost>
 [% IF domain.webmail %]
 <VirtualHost [% ip_addr.ip_addr %]:[% port %]>

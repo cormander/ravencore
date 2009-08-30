@@ -503,6 +503,8 @@ sub domain_to_tt_ref {
 	my $ref = {
 		name => $dom->{name},
 		root => $self->{CONF}{VHOST_ROOT} . '/' . $dom->{name},
+		physical_hosting => ( "physical" eq $dom->{host_type} ? 1 : 0 ),
+		redirect_url => $dom->{redirect_url},
 		ssl => ( "true" eq $dom->{host_ssl} ? 1 : 0 ),
 		php => ( "true" eq $dom->{host_php} ? 1 : 0 ),
 		cgi => ( "true" eq $dom->{host_cgi} ? 1 : 0 ),
