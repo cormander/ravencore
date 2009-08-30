@@ -64,6 +64,9 @@ fi
 # load the schema
 cat $RC_ROOT/etc/sql_tables/*.sql | $_sqlite3 $RC_ROOT/var/ravencore.sqlite
 
+# secure the file
+chmod 640 $RC_ROOT/var/ravencore.sqlite
+
 # if MYSQL_CFG exists, source it and attempt to dump info out of mysql into sqlite
 if [ -f $MYSQL_CFG ]; then
 
