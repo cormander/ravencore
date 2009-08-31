@@ -57,6 +57,13 @@ mkdir -p \
 
 make DESTDIR=$RPM_BUILD_ROOT RC_ROOT=%{rc_root} install
 
+%pre
+if [ -L %{rc_root} ]; then
+	echo "%{rc_root} is a symlink; not installing"
+	exit 1
+fi
+
+
 %post 
 if [ -x /sbin/chkconfig ]; then
 
