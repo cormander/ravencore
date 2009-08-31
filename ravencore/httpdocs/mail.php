@@ -21,55 +21,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 include "auth.php";
 
-if ($action == "update") {
-	if (
-	$_POST[catchall] == "send_to" and
-	!preg_match('/^' . REGEX_MAIL_NAME . '@' . REGEX_DOMAIN_NAME . '$/', $_POST[catchall_addr])
-	) {
-	alert("Invalid email address for catchall");
-	  }
-	/*
+if ($action) {
 
-Examples of allowable input for relay_host:
+	$ret = $db->run("push_mail", Array(
+		action => $action,
+		did => $did,
+		catchall => $_POST[catchall],
+		catchall_addr => $_POST[catchall_addr],
+		relay_host => $_POST[relay_host],
+		bounce_message => $_POST[bounce_message],
+		alias_addr => $_POST[alias_addr],
+	));
 
-ravencore.com
-ravencore.com:2525
-[ravencore.com]
-[ravencore.com]:2525
-192.168.1.115
-192.168.1.115:2525
-
-A domain name in [ ] means force MX host lookup
-
-	*/
-	else if(
-		$_POST[catchall] == "relay" and
-		!preg_match('/^\[?' . REGEX_DOMAIN_NAME . '\]?(:\d*)?$/', $_POST[relay_host]) and
-		!is_ip(preg_replace('/:\d*$/','',$_POST[relay_host]))
-		) {
-	alert("Relay to must be a hostname or IP address");
-	  } else {
-		$sql = "update domains set catchall = '$_POST[catchall]', catchall_addr = '$_POST[catchall_addr]', bounce_message = '$_POST[bounce_message]', relay_host = '$_POST[relay_host]', alias_addr = '$_POST[alias_addr]' where id = '$did'";
-
-		$db->data_query($sql);
-
-		if ($db->data_rows_affected()) $db->run("rehash_mail");
-
-		goto("mail.php?did=$did");
-	}
-} else if ($action == "delete") {
-
-  $d->delete_email($mid);
-
-  goto("mail.php?did=$did");
-
-} else if ($action == "toggle") {
-	$sql = "update domains set mail = '$_POST[mail]' where id = '$did'";
-	$db->data_query($sql);
-
-	if ($db->data_rows_affected()) $db->run("rehash_mail");
-
-	goto("mail.php?did=$did");
+	if (1 == $ret) goto("mail.php?did=$did");
 }
 
 if ($did) {
