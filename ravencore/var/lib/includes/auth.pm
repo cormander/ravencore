@@ -339,22 +339,9 @@ sub passwd {
 	my $old = $input->{old};
 	my $new = $input->{new};
 
-	my $error = 0;
+	my ($error, $error_msg) = is_ok_password($new);
 
-	if (length($new) < 5) {
-		$self->do_error("Your password must be at least 5 characters long.");
-		$error = 1;
-	}
-
-	if ($new !~ /\d/) {
-		$self->do_error("Your password must contain at least one digit.");
-		$error = 1;
-	}
-
-	if ($new !~ /[a-zA-Z]/) {
-		$self->do_error("Your password must contain at least one alphabetical character.");
-		$error = 1;
-	}
+	$self->do_error($error_msg) if 0 != $error;
 
 	if ( ! $self->verify_passwd({passwd => $old}) ) {
 		$self->do_error("Old password incorrect.");
