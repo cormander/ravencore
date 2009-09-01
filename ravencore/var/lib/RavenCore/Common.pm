@@ -427,7 +427,7 @@ sub is_ok_password {
 	}
 
 	if ($passwd !~ /\d/) {
-		$msg = ("Your password must contain at least one digit.";
+		$msg = "Your password must contain at least one digit.";
 		$error = 1;
 	}
 
