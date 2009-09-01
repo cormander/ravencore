@@ -31,7 +31,7 @@ use SEM;
 
 use vars qw(@ISA @EXPORT);
 @ISA     = qw(Exporter);
-@EXPORT  = qw(file_get_contents file_touch file_move file_get_array file_write file_append file_move file_delete file_copy file_chown file_chown_r file_chmod_r file_diff mkdir_p dir_list find_in_path in_array pidof is_ip gen_random_id make_passwd_hash verify_passwd_by_hash is_email _ );
+@EXPORT  = qw(file_get_contents file_touch file_move file_get_array file_write file_append file_move file_delete file_copy file_chown file_chown_r file_chmod_r file_diff mkdir_p dir_list find_in_path in_array pidof is_ip gen_random_id make_passwd_hash verify_passwd_by_hash is_email is_ok_password _ );
 
 # constants
 use constant SALT_LENGTH => 24;
@@ -411,6 +411,32 @@ sub is_email {
 	return 1 if $email =~ /^([a-zA-Z\d]+((\.||\-||_)[a-zA-Z\d]?)?)*[a-zA-Z\d]@([a-zA-Z\d]+((\.||\-)[a-zA-Z\d]?)?)*[a-zA-Z\d]\.[a-zA-Z]+$/;
 
 	return 0;
+}
+
+# central place to check if a given password is OK to use
+
+sub is_ok_password {
+	my ($passwd) = @_;
+
+	my $error;
+	my $msg;
+
+	if (length($passwd) < 5) {
+		$msg = "Your password must be at least 5 characters long.";
+		$error = 1;
+	}
+
+	if ($passwd !~ /\d/) {
+		$msg = ("Your password must contain at least one digit.";
+		$error = 1;
+	}
+
+	if ($passwd !~ /[a-zA-Z]/) {
+		$msg = "Your password must contain at least one alphabetical character.";
+		$error = 1;
+	}
+
+	return ($error, $msg);
 }
 
 # an alias for the gettext function
