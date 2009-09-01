@@ -536,3 +536,57 @@ sub push_user {
 	return 1;
 }
 
+sub push_mail {
+	my ($self, $ref) = @_;
+
+	my $action =	$ref->{action};
+	my $did =	$ref->{did};
+	my $mid =	$ref->{mid};
+	my $mail =	$ref->{mail};
+	my $catchall =	$ref->{catchall};	
+	my $relay_host = $ref->{relay_host};
+	my $alias_addr = $ref->{alias_addr};
+	my $catchall_addr = $ref->{catchall_addr};
+	my $bounce_message = $ref->{bounce_message};
+
+	my $ra;
+
+	if ("update" eq $action) {
+
+		if ("send_to" eq $catchall) {
+			return $self->do_error("Invalid email address for catchall") unless is_email($catchall_addr);
+		}
+		elsif ("relay" eq $catchall) {
+			# Examples of allowable input for relay_host:
+			#   ravencore.com
+			#   ravencore.com:2525
+			#   [ravencore.com]
+			#   [ravencore.com]:2525
+			#   192.168.1.115
+			#   192.168.1.115:2525
+			# A domain name in [ ] means force MX host lookup
+
+			my $error = 1;
+
+			$error = 0 if $relay_host =~ /\[?([a-zA-Z\d]+((\.||\-)[a-zA-Z\d]?)?)*[a-zA-Z\d]\.[a-zA-Z]+\]?(:\d*)?/;
+			$error = 0 if is_ip($relay_host);
+
+			return $self->do_error("Relay to must be a hostname or IP address") if $error;
+		}
+
+		($ra) = $self->xsql("update domains set catchall = ?, catchall_addr = ?, bounce_message = ?, relay_host = ?, alias_addr = ? where id = ?",
+			[$catchall, $catchall_addr, $bounce_message, $relay_host, $alias_addr, $did]);
+
+	}
+	elsif ("delete" eq $action) {
+		($ra) = $self->xsql("delete from mail_users where did = ? and id = ?", [$did, $mid]);
+	}
+	elsif ("toggle" eq $action) {
+		($ra) = $self->xsql("update domains set mail = ? where id = ?", [$mail, $did]);
+	}
+
+	$self->rehash_mail if 0 < $ra;
+
+	return 1;
+}
+
