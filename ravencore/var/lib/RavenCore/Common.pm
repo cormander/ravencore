@@ -31,7 +31,7 @@ use SEM;
 
 use vars qw(@ISA @EXPORT);
 @ISA     = qw(Exporter);
-@EXPORT  = qw(file_get_contents file_touch file_move file_get_array file_write file_append file_move file_delete file_copy file_chown file_chown_r file_chmod_r file_diff mkdir_p dir_list find_in_path in_array pidof is_ip gen_random_id make_passwd_hash verify_passwd_by_hash _ );
+@EXPORT  = qw(file_get_contents file_touch file_move file_get_array file_write file_append file_move file_delete file_copy file_chown file_chown_r file_chmod_r file_diff mkdir_p dir_list find_in_path in_array pidof is_ip gen_random_id make_passwd_hash verify_passwd_by_hash is_email _ );
 
 # constants
 use constant SALT_LENGTH => 24;
@@ -401,6 +401,16 @@ sub verify_passwd_by_hash {
 	my $sha1sum = substr $hash, SALT_LENGTH;
 
 	return 1 if $sha1sum eq sha1_hex($salt.$passwd);
+}
+
+# email address regular expression
+
+sub is_email {
+	my ($email) = @_;
+
+	return 1 if $email =~ /^([a-zA-Z\d]+((\.||\-||_)[a-zA-Z\d]?)?)*[a-zA-Z\d]@([a-zA-Z\d]+((\.||\-)[a-zA-Z\d]?)?)*[a-zA-Z\d]\.[a-zA-Z]+$/;
+
+	return 0;
 }
 
 # an alias for the gettext function
