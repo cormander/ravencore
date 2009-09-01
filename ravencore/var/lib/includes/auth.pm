@@ -334,10 +334,7 @@ sub is_admin {
 sub passwd {
 	my ($self, $input) = @_;
 
-	if ($self->{DEMO}) {
-		$self->do_error("Can't change the password in the demo!");
-		return;
-	}
+	return $self->do_error("Can't change the password in the demo!") if $self->{DEMO};
 
 	my $old = $input->{old};
 	my $new = $input->{new};
