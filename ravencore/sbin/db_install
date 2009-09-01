@@ -146,6 +146,13 @@ if [ -f $MYSQL_CFG ]; then
 
 	# if success, we're done; remove the mysql stuff
 	if [ $? -eq 0 ]; then
+
+		# save connect into in sqlite settings table
+		$_echo "insert into settings (setting, value) values ('MYSQL_ADMIN_HOST','$MYSQL_ADMIN_HOST');" | $_sqlite3 $RC_ROOT/var/ravencore.sqlite
+		$_echo "insert into settings (setting, value) values ('MYSQL_ADMIN_PORT','$MYSQL_ADMIN_PORT');" | $_sqlite3 $RC_ROOT/var/ravencore.sqlite
+		$_echo "insert into settings (setting, value) values ('MYSQL_ADMIN_USER','$MYSQL_ADMIN_USER');" | $_sqlite3 $RC_ROOT/var/ravencore.sqlite
+		$_echo "insert into settings (setting, value) values ('MYSQL_ADMIN_PASS','$MYSQL_ADMIN_PASS');" | $_sqlite3 $RC_ROOT/var/ravencore.sqlite
+
 		rm -f $RC_ROOT/.shadow.save $MYSQL_CFG
 	else
 		$_echo "Something went wrong with the mysqldump, exiting"
