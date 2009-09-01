@@ -26,6 +26,8 @@ if ($action) {
 	$ret = $db->run("push_mail", Array(
 		action => $action,
 		did => $did,
+		mid => $mid,
+		mail => $_POST[mail],
 		catchall => $_POST[catchall],
 		catchall_addr => $_POST[catchall_addr],
 		relay_host => $_POST[relay_host],
