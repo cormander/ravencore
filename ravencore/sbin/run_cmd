@@ -64,6 +64,7 @@ if ($cmd eq "passwd") {
 	do {
 
 		$error = 0;
+		my $msg = "";
 		my $passwd = "";
 		my $passwd_again = "";
 
@@ -83,6 +84,10 @@ if ($cmd eq "passwd") {
 		if ($passwd ne $passwd_again) {
 			print "The passwords must match!\n\n";
 			$error = 1;
+		} else {
+			($error, $msg) = is_ok_password($passwd);
+
+			print "$msg\n\n" if (0 != $error);
 		}
 
 		if ($error == 0) {
