@@ -8,3 +8,6 @@ DEFAULT_LOGIN_SHELL=/bin/false
 # FTP log file
 FTP_LOG=/var/log/vsftpd.log
 
+# the IP address domains with no IP address get set up on
+VHOST_WILDCARD_IP=&ip_list_just_ips()
+

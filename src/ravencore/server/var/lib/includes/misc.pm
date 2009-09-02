@@ -1658,6 +1658,22 @@ sub ip_list {
 	return $ips;
 }
 
+# call ip_list and return a hash where each IP is the key and the value
+
+sub ip_list_just_ips {
+	my ($self) = @_;
+
+	my $ret = {};
+
+	my $ips = $self->ip_list;
+
+	foreach my $ip (keys %{$ips}) {
+		$ret->{$ip} = $ip;
+	}
+
+	return $ret;
+}
+
 # very handy for debugging
 
 sub dump_vars {
