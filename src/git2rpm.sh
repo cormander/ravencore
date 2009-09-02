@@ -27,8 +27,9 @@ RPM_SOURCES=$(rpm --eval '%{_sourcedir}' 2> /dev/null)
 reinstall=$1
 
 # simple check to make sure we're in the right directory....
+git log &> /dev/null
 
-if [ ! -f GPL ] || [ ! -f LICENSE ] || [ ! -f Makefile ] || [ ! -f README.install ] || [ ! -d  src ] || [ ! -d .git ]; then
+if [ $? -ne 0 ]; then
 	echo "Don't appear to be in the git directory..."
 	exit 1
 fi
