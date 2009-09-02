@@ -351,6 +351,10 @@ install:
 
 	cp -rp -f src/ravencore/server/* $(DESTDIR)$(RC_ROOT)
 
+	# Install LICENSE, README, etc
+	cp -a LICENSE README $(DESTDIR)$(RC_ROOT)
+	cp -a GPL $(DESTDIR)$(RC_ROOT)/httpdocs
+
 	# create symlinks
 	rm -f $(DESTDIR)/etc/cron.hourly/ravencore $(DESTDIR)/etc/cron.daily/ravencore $(DESTDIR)/etc/init.d/ravencore
 

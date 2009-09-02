@@ -116,7 +116,7 @@ rm -rf $RPM_BUILD_ROOT
 
 # hell, one day I was so bored I alphabatized each group of files here :P
 %{rc_root}/LICENSE
-%{rc_root}/README.install
+%{rc_root}/README
 
 %{rc_root}/sbin/data_query
 %{rc_root}/sbin/db_install
