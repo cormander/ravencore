@@ -126,11 +126,11 @@ distclean:
 
 
 rpm:
-	./scripts/git2rpm.sh
+	./src/git2rpm.sh
 
 
 release:
-	DO_RELEASE=1 ./scripts/git2rpm.sh
+	DO_RELEASE=1 ./src/git2rpm.sh
 
 
 bare:
@@ -143,7 +143,7 @@ getsrc:
 	@for target in \
 		$(URL_YAA) $(URL_PERL_NET_SERVER) $(URL_PERL_PHP_SERIALIZATION) $(URL_PERL_SHA_PUREPERL) \
 		$(URL_PERL_TEMPLATE_TOOLKIT); do \
-		./scripts/get3rdparty.sh $$target; \
+		./src/get3rdparty.sh $$target; \
 	done
 
 	# only download GPL 3rd party applications if the bare target is not specified
@@ -154,7 +154,7 @@ getsrc:
 			$(URL_SQUIRREL_PLUGIN_TIMEOUT) $(URL_SQUIRREL_PLUGIN_VLOGIN) $(URL_SQUIRREL_PLUGIN_CHANGE_PASS) \
 			$(URL_SQUIRREL_PLUGIN_SHOW_SSL) $(URL_SQUIRREL_PLUGIN_SHOW_IP) $(URL_SQUIRREL_PLUGIN_LOGGER) \
 			$(URL_SQUIRREL_PLUGIN_UNSAFE_IMG) $(URL_SQUIRREL_PLUGIN_VIEW_HTML); do \
-			./scripts/get3rdparty.sh $$target; \
+			./src/get3rdparty.sh $$target; \
 		done \
 	fi
 
@@ -166,38 +166,38 @@ dobuild: clean getsrc
 	@if [ ! -f /bin/bash ]; then exit 1; fi
 
 	# Make our target directories
-	mkdir -p ravencore/var/apps ravencore/var/log ravencore/var/run ravencore/var/tmp
+	mkdir -p src/ravencore/server/var/apps src/ravencore/server/var/log src/ravencore/server/var/run src/ravencore/server/var/tmp
 
 	# Tell us what version of RavenCore this is
-	echo $(VERSION) > ravencore/etc/version
+	echo $(VERSION) > src/ravencore/server/etc/version
 
-	# Touch and chmod the ravencore.httpd file
-	touch ravencore/sbin/ravencore.httpd
-	chmod 755 ravencore/sbin/ravencore.httpd
+	# Touch and chmod the src/ravencore/server.httpd file
+	touch src/ravencore/server/sbin/ravencore.httpd
+	chmod 755 src/ravencore/server/sbin/ravencore.httpd
 
 	# Net::Server install
-	tar zxf src/$(PERL_NET_SERVER).tar.gz
+	tar zxf src/3rdparty/$(PERL_NET_SERVER).tar.gz
 	cd $(PERL_NET_SERVER) && perl Makefile.PL && make
-	cp -a $(PERL_NET_SERVER)/blib/lib/Net ravencore/var/lib
+	cp -a $(PERL_NET_SERVER)/blib/lib/Net src/ravencore/server/var/lib
 
 	# PHP::Serialization install
-	tar zxf src/$(PERL_PHP_SERIALIZATION).tar.gz
+	tar zxf src/3rdparty/$(PERL_PHP_SERIALIZATION).tar.gz
 	cd $(PERL_PHP_SERIALIZATION) && perl Makefile.PL && make
-	cp -a $(PERL_PHP_SERIALIZATION)/blib/lib/PHP ravencore/var/lib
+	cp -a $(PERL_PHP_SERIALIZATION)/blib/lib/PHP src/ravencore/server/var/lib
 
 	# Digest::SHA::PurePerl install
-	tar zxf src/$(PERL_SHA_PUREPERL).tar.gz
+	tar zxf src/3rdparty/$(PERL_SHA_PUREPERL).tar.gz
 	cd $(PERL_SHA_PUREPERL) && perl Makefile.PL && make
-	cp -a $(PERL_SHA_PUREPERL)/blib/lib/Digest ravencore/var/lib
+	cp -a $(PERL_SHA_PUREPERL)/blib/lib/Digest src/ravencore/server/var/lib
 
 	# Template::Toolkit install
-	tar zxf src/$(PERL_TEMPLATE_TOOLKIT).tar.gz
+	tar zxf src/3rdparty/$(PERL_TEMPLATE_TOOLKIT).tar.gz
 	cd $(PERL_TEMPLATE_TOOLKIT) && perl Makefile.PL TT_XS_ENABLE=n TT_ACCEPT=y && make
-	cp -a $(PERL_TEMPLATE_TOOLKIT)/blib/lib/Template ravencore/var/lib
-	cp -a $(PERL_TEMPLATE_TOOLKIT)/blib/lib/Template.pm ravencore/var/lib
+	cp -a $(PERL_TEMPLATE_TOOLKIT)/blib/lib/Template src/ravencore/server/var/lib
+	cp -a $(PERL_TEMPLATE_TOOLKIT)/blib/lib/Template.pm src/ravencore/server/var/lib
 
 	# remove perl .exists files
-	rm -f ravencore/var/lib/PHP/.exists ravencore/var/lib/Digest/SHA/.exists ravencore/var/lib/Net/.exists
+	rm -f src/ravencore/server/var/lib/PHP/.exists src/ravencore/server/var/lib/Digest/SHA/.exists src/ravencore/server/var/lib/Net/.exists
 
 	@if [ ! -f bare.info ]; then \
 		$(MAKE) gplbuild; \
@@ -207,74 +207,74 @@ dobuild: clean getsrc
 gplbuild:
 
 	# yaa install
-	tar -C ravencore/var/apps -jxf src/$(YAA).tar.bz2; \
-	mv ravencore/var/apps/$(YAA) ravencore/var/apps/yaa
+	tar -C src/ravencore/server/var/apps -jxf src/3rdparty/$(YAA).tar.bz2; \
+	mv src/ravencore/server/var/apps/$(YAA) src/ravencore/server/var/apps/yaa
 
 	# awstats install
-	tar -C ravencore/var/apps -zxf src/$(AWSTATS).tar.gz; \
-	mv ravencore/var/apps/$(AWSTATS) ravencore/var/apps/awstats
+	tar -C src/ravencore/server/var/apps -zxf src/3rdparty/$(AWSTATS).tar.gz; \
+	mv src/ravencore/server/var/apps/$(AWSTATS) src/ravencore/server/var/apps/awstats
 
 	# phpsysinfo install
-	tar -C ravencore/var/apps -zxf src/$(PHPSYSINFO).tar.gz
+	tar -C src/ravencore/server/var/apps -zxf src/3rdparty/$(PHPSYSINFO).tar.gz
 
 	# add ravencore auth to phpsyinfo's index page
-	echo -e '<?php\n\nchdir("../../../httpdocs");\n\ninclude "auth.php";\n\nreq_admin();\n\nchdir("../var/apps/phpsysinfo");\n\n' > ravencore/var/apps/phpsysinfo/index.php.new
+	echo -e '<?php\n\nchdir("../../../httpdocs");\n\ninclude "auth.php";\n\nreq_admin();\n\nchdir("../var/apps/phpsysinfo");\n\n' > src/ravencore/server/var/apps/phpsysinfo/index.php.new
 
 	# append index.php to the new one, removeing the first line: <?php
-	cat ravencore/var/apps/phpsysinfo/index.php | sed '1d' >> ravencore/var/apps/phpsysinfo/index.php.new
-	cp -f ravencore/var/apps/phpsysinfo/index.php.new ravencore/var/apps/phpsysinfo/index.php
+	cat src/ravencore/server/var/apps/phpsysinfo/index.php | sed '1d' >> src/ravencore/server/var/apps/phpsysinfo/index.php.new
+	cp -f src/ravencore/server/var/apps/phpsysinfo/index.php.new src/ravencore/server/var/apps/phpsysinfo/index.php
 
 	# move the conf file into place
-	mv -f ravencore/var/apps/phpsysinfo/config.php.new ravencore/var/apps/phpsysinfo/config.php
+	mv -f src/ravencore/server/var/apps/phpsysinfo/config.php.new src/ravencore/server/var/apps/phpsysinfo/config.php
 
 	# phpmyadmin install
-	tar -C ravencore/var/apps -jxf src/$(PHPMYADMIN).tar.bz2
-	mv ravencore/var/apps/$(PHPMYADMIN) ravencore/var/apps/phpmyadmin
+	tar -C src/ravencore/server/var/apps -jxf src/3rdparty/$(PHPMYADMIN).tar.bz2
+	mv src/ravencore/server/var/apps/$(PHPMYADMIN) src/ravencore/server/var/apps/phpmyadmin
 
 	# lang / user / pass / db are bassed off of a session set by phpmyadmin.php
-	cat ravencore/var/apps/phpmyadmin/libraries/config.default.php | \
+	cat src/ravencore/server/var/apps/phpmyadmin/libraries/config.default.php | \
 		sed "s/= 'config';/= 'http';/" > \
-		ravencore/var/apps/phpmyadmin/config.inc.php
+		src/ravencore/server/var/apps/phpmyadmin/config.inc.php
 
 	# phpwebftp install
-	unzip -qd ravencore/var/apps src/$(PHPWEBFTP).zip
+	unzip -qd src/ravencore/server/var/apps src/3rdparty/$(PHPWEBFTP).zip
 
-	mv ravencore/var/apps/phpWebFTP ravencore/var/apps/phpwebftp
+	mv src/ravencore/server/var/apps/phpWebFTP src/ravencore/server/var/apps/phpwebftp
 
-	echo -e '<?php\n\nchdir("../../../httpdocs");\ninclude("auth.php");\nchdir("../var/apps/phpwebftp");\n\n' > ravencore/var/apps/phpwebftp/config.inc.php.new
+	echo -e '<?php\n\nchdir("../../../httpdocs");\ninclude("auth.php");\nchdir("../var/apps/phpwebftp");\n\n' > src/ravencore/server/var/apps/phpwebftp/config.inc.php.new
 
 	# append to the new one, removeing the first line: <?php
-	cat ravencore/var/apps/phpwebftp/config.inc.php | sed '1d' >> ravencore/var/apps/phpwebftp/config.inc.php.new
-	mv -f ravencore/var/apps/phpwebftp/config.inc.php.new ravencore/var/apps/phpwebftp/config.inc.php
-	rm -rf ravencore/var/apps/phpwebftp/CVS ravencore/var/apps/phpwebftp/*/CVS ravencore/var/apps/phpwebftp/*/*/CSV ravencore/var/apps/phpwebftp/tmp
+	cat src/ravencore/server/var/apps/phpwebftp/config.inc.php | sed '1d' >> src/ravencore/server/var/apps/phpwebftp/config.inc.php.new
+	mv -f src/ravencore/server/var/apps/phpwebftp/config.inc.php.new src/ravencore/server/var/apps/phpwebftp/config.inc.php
+	rm -rf src/ravencore/server/var/apps/phpwebftp/CVS src/ravencore/server/var/apps/phpwebftp/*/CVS src/ravencore/server/var/apps/phpwebftp/*/*/CSV src/ravencore/server/var/apps/phpwebftp/tmp
 
 	# link the tmp directory to our tmp
-	ln -s ../../tmp ravencore/var/apps/phpwebftp/tmp
+	ln -s ../../tmp src/ravencore/server/var/apps/phpwebftp/tmp
 
 	# change the default language to english
-	perl -pi -e 's|defaultLanguage = "nl"|defaultLanguage = "en"|g' ravencore/var/apps/phpwebftp/config.inc.php
+	perl -pi -e 's|defaultLanguage = "nl"|defaultLanguage = "en"|g' src/ravencore/server/var/apps/phpwebftp/config.inc.php
 
 	# change maxFileSize
-	perl -pi -e 's|maxFileSize = 2000000|maxFileSize = 104857600|g' ravencore/var/apps/phpwebftp/config.inc.php
+	perl -pi -e 's|maxFileSize = 2000000|maxFileSize = 104857600|g' src/ravencore/server/var/apps/phpwebftp/config.inc.php
 
 	# add the locale charset to the filemanager
-	perl -pi -e "s|\</HEAD\>|<meta http-equiv=\"Content-Type\" content=\"text/html; charset='<?php print locale_getcharset(); ?>'\"></HEAD>|gi" ravencore/var/apps/phpwebftp/index.php
+	perl -pi -e "s|\</HEAD\>|<meta http-equiv=\"Content-Type\" content=\"text/html; charset='<?php print locale_getcharset(); ?>'\"></HEAD>|gi" src/ravencore/server/var/apps/phpwebftp/index.php
 
 	# squirrelmail install
-	tar -C ravencore/var/apps -jxf src/$(SQUIRRELMAIL).tar.bz2
-	mv ravencore/var/apps/$(SQUIRRELMAIL) ravencore/var/apps/squirrelmail
+	tar -C src/ravencore/server/var/apps -jxf src/3rdparty/$(SQUIRRELMAIL).tar.bz2
+	mv src/ravencore/server/var/apps/$(SQUIRRELMAIL) src/ravencore/server/var/apps/squirrelmail
 
 	# rearrange docs
-	mv ravencore/var/apps/squirrelmail/doc/ReleaseNotes ravencore/var/apps/squirrelmail/doc/ReleaseNotes.txt
+	mv src/ravencore/server/var/apps/squirrelmail/doc/ReleaseNotes src/ravencore/server/var/apps/squirrelmail/doc/ReleaseNotes.txt
 
 	# webmail config
-	cp -f src/webmail_config.php ravencore/var/apps/squirrelmail/config/config.php
+	cp -f src/3rdparty/webmail_config.php src/ravencore/server/var/apps/squirrelmail/config/config.php
 
 	# get rid of the config_local.php file so we don't overwrite theirs
-	rm -f ravencore/var/apps/squirrelmail/config/config_local.php
+	rm -f src/ravencore/server/var/apps/squirrelmail/config/config_local.php
 
 	# default webmail user prefs
-	cp -f src/webmail_default_pref ravencore/var/apps/squirrelmail/data/default_pref
+	cp -f src/3rdparty/webmail_default_pref src/ravencore/server/var/apps/squirrelmail/data/default_pref
 
 	# install squirrelmail plugins
 	for plugin in \
@@ -288,33 +288,33 @@ gplbuild:
 			$(SQUIRREL_PLUGIN_LOGGER) \
 			$(SQUIRREL_PLUGIN_UNSAFE_IMG) \
 			$(SQUIRREL_PLUGIN_VIEW_HTML); do \
-		tar -C ravencore/var/apps/squirrelmail/plugins -zxf src/$$plugin.tar.gz; \
+		tar -C src/ravencore/server/var/apps/squirrelmail/plugins -zxf src/3rdparty/$$plugin.tar.gz; \
 	done
 
 	# vlogin plugin configuration file
-	cp ravencore/var/apps/squirrelmail/plugins/vlogin/data/config_default.php \
-		ravencore/var/apps/squirrelmail/plugins/vlogin/data/config.php
+	cp src/ravencore/server/var/apps/squirrelmail/plugins/vlogin/data/config_default.php \
+		src/ravencore/server/var/apps/squirrelmail/plugins/vlogin/data/config.php
 
 	# sent_confirmation config file
-	cp -f src/webmail_sc_config.php ravencore/var/apps/squirrelmail/plugins/sent_confirmation/config.php
+	cp -f src/3rdparty/webmail_sc_config.php src/ravencore/server/var/apps/squirrelmail/plugins/sent_confirmation/config.php
 
 	# change_pass script replacement, add patch, and config setup
-	cp -f src/webmail_chgsaslpasswd.pl ravencore/var/apps/squirrelmail/plugins/chg_sasl_passwd/chgsaslpasswd
-	chmod +x ravencore/var/apps/squirrelmail/plugins/chg_sasl_passwd/chgsaslpasswd
-	rm -f ravencore/var/apps/squirrelmail/plugins/chg_sasl_passwd/chgsaslpasswd.c
-	cp -f src/webmail_pw_config.php ravencore/var/apps/squirrelmail/plugins/chg_sasl_passwd/config.php 
-	patch -p1 -i src/webmail_pw_options.patch
+	cp -f src/misc/webmail_chgsaslpasswd.pl src/ravencore/server/var/apps/squirrelmail/plugins/chg_sasl_passwd/chgsaslpasswd
+	chmod +x src/ravencore/server/var/apps/squirrelmail/plugins/chg_sasl_passwd/chgsaslpasswd
+	rm -f src/ravencore/server/var/apps/squirrelmail/plugins/chg_sasl_passwd/chgsaslpasswd.c
+	cp -f src/3rdparty/webmail_pw_config.php src/ravencore/server/var/apps/squirrelmail/plugins/chg_sasl_passwd/config.php 
+	patch -p1 -i src/3rdparty/webmail_pw_options.patch
 
 	# various squirrel configuration files
-	cp -f src/webmail_logger_config.php ravencore/var/apps/squirrelmail/plugins/squirrel_logger/config.php
-	cp -f ravencore/var/apps/squirrelmail/plugins/show_user_and_ip/config.php.sample ravencore/var/apps/squirrelmail/plugins/show_user_and_ip/config.php
-	cp -f ravencore/var/apps/squirrelmail/plugins/show_ssl_link/config.php.sample ravencore/var/apps/squirrelmail/plugins/show_ssl_link/config.php
+	cp -f src/3rdparty/webmail_logger_config.php src/ravencore/server/var/apps/squirrelmail/plugins/squirrel_logger/config.php
+	cp -f src/ravencore/server/var/apps/squirrelmail/plugins/show_user_and_ip/config.php.sample src/ravencore/server/var/apps/squirrelmail/plugins/show_user_and_ip/config.php
+	cp -f src/ravencore/server/var/apps/squirrelmail/plugins/show_ssl_link/config.php.sample src/ravencore/server/var/apps/squirrelmail/plugins/show_ssl_link/config.php
 
 	# install jta
-	mkdir -p ravencore/var/apps/jta
-	cp src/$(JTA).jar ravencore/var/apps/jta/jta.jar
-	cp src/jta.config.php ravencore/var/apps/jta/config.php
-	cp src/jta.index.php ravencore/var/apps/jta/index.php
+	mkdir -p src/ravencore/server/var/apps/jta
+	cp src/3rdparty/$(JTA).jar src/ravencore/server/var/apps/jta/jta.jar
+	cp src/3rdparty/jta.config.php src/ravencore/server/var/apps/jta/config.php
+	cp src/3rdparty/jta.index.php src/ravencore/server/var/apps/jta/index.php
 
 
 build: dobuild
@@ -329,7 +329,7 @@ build: dobuild
 install:
 
 	# check to make sure the "make build" ran
-	@if [ ! -f ravencore/LICENSE ]; then \
+	@if [ ! -f src/ravencore/server/LICENSE ]; then \
 		echo "You need to run \"make build\" before you install"; \
 		exit 1; \
 	fi
@@ -348,7 +348,7 @@ install:
 	# Install all the files
 	mkdir -p $(DESTDIR)$(RC_ROOT)
 
-	cp -rp -f ravencore/* $(DESTDIR)$(RC_ROOT)
+	cp -rp -f src/ravencore/server/* $(DESTDIR)$(RC_ROOT)
 
 	# create symlinks
 	rm -f $(DESTDIR)/etc/cron.hourly/ravencore $(DESTDIR)/etc/cron.daily/ravencore $(DESTDIR)/etc/init.d/ravencore

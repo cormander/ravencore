@@ -1,5 +1,5 @@
---- a/ravencore/var/apps/squirrelmail/plugins/chg_sasl_passwd/options.php	2005-03-02 20:49:31.000000000 -0500
-+++ b/ravencore/var/apps/squirrelmail/plugins/chg_sasl_passwd/options.php	2009-03-21 21:35:08.000000000 -0400
+--- a/src/ravencore/server/var/apps/squirrelmail/plugins/chg_sasl_passwd/options.php	2005-03-02 20:49:31.000000000 -0500
++++ b/src/ravencore/server/var/apps/squirrelmail/plugins/chg_sasl_passwd/options.php	2009-03-21 21:35:08.000000000 -0400
 @@ -57,9 +57,7 @@
          show_error('6');
      } else {
