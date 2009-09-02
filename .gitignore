@@ -28,6 +28,8 @@ src/3rdparty/vlogin*tar.gz
 src/3rdparty/yaa*tar.bz2
 src/3rdparty/*.broken
 src/ravencore/server/.shadow
+src/ravencore/server/LICENSE
+src/ravencore/server/httpdocs/GPL
 src/ravencore/server/etc/docroot.conf
 src/ravencore/server/etc/httpd_modules
 src/ravencore/server/etc/logrotate.conf
