@@ -316,6 +316,8 @@ gplbuild:
 	cp src/3rdparty/jta.config.php src/ravencore/server/var/apps/jta/config.php
 	cp src/3rdparty/jta.index.php src/ravencore/server/var/apps/jta/index.php
 
+	@touch build.info
+
 
 build: dobuild
 
@@ -329,9 +331,8 @@ build: dobuild
 install:
 
 	# check to make sure the "make build" ran
-	@if [ ! -f src/ravencore/server/LICENSE ]; then \
-		echo "You need to run \"make build\" before you install"; \
-		exit 1; \
+	@if [ ! -f build.info ]; then \
+		$(MAKE) build; \
 	fi
 
 	@echo "RavenCore root directory set to: $(RC_ROOT)"

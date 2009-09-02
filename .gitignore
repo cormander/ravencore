@@ -1,5 +1,6 @@
 *.swp
 bare.info
+build.info
 Digest-SHA-PurePerl*
 Net-Server*
 PHP-Serialization*
