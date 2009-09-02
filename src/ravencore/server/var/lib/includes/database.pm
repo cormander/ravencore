@@ -143,8 +143,20 @@ sub get_db_conf {
 			if ( ! exists $self->{CONF}{$key} ) {
 				# our configuration is not complete
 				$self->{config_complete} = 0;
+
+				my $val = $data{$key};
+
+				# if value is a function call, call that function
+				if ($val =~ /^&(.*?)\((.*?)\)$/) {
+					# TODO: wrap this in an eval
+					my $ref = $self->$1($2);
+
+					$val = $ref;
+				}
+
 				# cache this in a list of uninitilized keys, with their default values
-				$self->{UNINIT_CONF}{$key} = $data{$key};
+				$self->{UNINIT_CONF}{$key} = $val;
+
 				# TODO: this should only show up on a higher debugging level
 				$self->debug("Missing CONF var: " . $key);
 			}
