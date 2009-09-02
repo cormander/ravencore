@@ -28,7 +28,6 @@ src/3rdparty/vlogin*tar.gz
 src/3rdparty/yaa*tar.bz2
 src/3rdparty/*.broken
 src/ravencore/server/.shadow
-src/ravencore/server/database.cfg
 src/ravencore/server/etc/docroot.conf
 src/ravencore/server/etc/httpd_modules
 src/ravencore/server/etc/logrotate.conf
@@ -36,7 +35,6 @@ src/ravencore/server/etc/modules/*/disabled
 src/ravencore/server/etc/modules/*/installed
 src/ravencore/server/etc/port.conf
 src/ravencore/server/etc/port_ssl.conf
-src/ravencore/server/etc/postfix/main.cf/content_filter
 src/ravencore/server/etc/server-id
 src/ravencore/server/etc/server.crt
 src/ravencore/server/etc/server.key
