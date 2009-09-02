@@ -42,8 +42,8 @@ fi
 make distclean
 
 # copy each file, ignoring ones with a wildcard match
-for file in $(cat .gitignore | grep -v '*' | sed 's|^ravencore/||'); do
-	mv $RC_ROOT/$file ravencore/$file
+for file in $(cat .gitignore | grep -v '*' | sed 's|^src/ravencore/server/||' | grep -v '.info$'); do
+	mv $RC_ROOT/$file src/ravencore/server/$file
 done
 
 rm -rf $RC_ROOT
@@ -56,7 +56,7 @@ else
 fi
 
 # link it
-ln -s $destdir/ravencore $RC_ROOT
+ln -s $destdir/src/ravencore/server $RC_ROOT
 
 # the socket gets blown aways, so we have to restart
 /etc/init.d/ravencore restart
