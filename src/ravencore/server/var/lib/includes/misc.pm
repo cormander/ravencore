@@ -422,33 +422,27 @@ sub rehash_httpd {
 			}
 		}
 
+		# if this is the IP address wildcards get setup on, add them
+		if ($self->{CONF}{VHOST_WILDCARD_IP} eq $ip_addr) {
+
+			foreach $dom (@{$self->get_domains_with_no_ip}) {
+				next unless "on" eq $dom->{'hosting'};
+
+				$self->make_virtual_host($dom);
+				push @{$ref->{ports}{80}}, $self->domain_to_tt_ref($dom);
+				push @{$ref->{ports}{443}}, $self->domain_to_tt_ref($dom) if "true" eq $dom->{host_ssl};
+			}
+
+		}
+
 		push @{$hosts->{ip_addresses}}, $ref;
-
 	}
-
-	# wildcards are identical to ip_addresses, except the ip_addr is a *, and there is only one
-	my $ref = {
-		ip_addr => '*',
-		ports => {
-			80 => [],
-			443 => [],
-		},
-	};
-
-	# look for domains that don't have an IP, and build them here
-	foreach $dom (@{$self->get_domains_with_no_ip}) {
-		next unless "on" eq $dom->{'hosting'};
-
-		$self->make_virtual_host($dom);
-		push @{$ref->{ports}{80}}, $self->domain_to_tt_ref($dom);
-		push @{$ref->{ports}{443}}, $self->domain_to_tt_ref($dom) if "true" eq $dom->{host_ssl};
-	}
-
-	push @{$hosts->{wildcard}}, $ref;
 
 	# template toolkit
 	my $tt = Template->new({ INCLUDE_PATH => [ $self->{RC_ROOT}."/etc/tt2/httpd" ] });
 	my $data;
+
+	
 
 	# process the template
 	$tt->process('vhosts.tpl', $hosts, \$data);
