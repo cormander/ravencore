@@ -174,9 +174,16 @@ if ( ! $status['config_complete'] and $_SERVER['PHP_SELF'] != '/logout.php' ) {
 
 	foreach ( $status['UNINIT_CONF'] as $key => $val ) {
 
-		 print '<tr><td>' . $key . ':</td>' .
-			'<td><input type="text" name="CONF_UPDATE[' . $key . ']" value="' . $val . '"></td></tr>';
+		print '<tr><td>' . $key . ':</td>' .
+			'<td>';
 
+		if (is_array($val)) {
+			print selection_array("CONF_UPDATE[" . $key . "]", "", "", "", $val);
+		} else {
+			print '<input type="text" name="CONF_UPDATE[' . $key . ']" value="' . $val . '">';
+		}
+
+		print "</td></tr>";
 	}
 
 	print '<tr><td colspan=2 align=right><input type="submit" value="' . __('Submit') . '"></td></tr></table></div>';
