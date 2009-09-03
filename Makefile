@@ -204,7 +204,7 @@ dobuild: clean getsrc
 	cp -a $(PERL_TEMPLATE_TOOLKIT)/blib/lib/Template.pm src/ravencore/server/lib
 
 	# remove perl .exists files
-	rm -f src/ravencore/server/lib/PHP/.exists src/ravencore/server/lib/Digest/SHA/.exists src/ravencore/server/lib/Net/.exists
+	find src/ravencore/server/lib -type f | grep '\.exists$$' | xargs rm -rf
 
 	@if [ ! -f bare.info ]; then \
 		$(MAKE) gplbuild; \
