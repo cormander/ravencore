@@ -22,6 +22,7 @@ PHPWEBFTP=phpwebftp40
 AWSTATS=awstats-6.95
 SQUIRRELMAIL=squirrelmail-1.4.20-RC2
 YAA=yaa-0.3.1
+PERL_CONFIG_ABSTRACT=Config-Abstract-0.16
 PERL_NET_SERVER=Net-Server-0.97
 PERL_PHP_SERIALIZATION=PHP-Serialization-0.33
 PERL_SHA_PUREPERL=Digest-SHA-PurePerl-5.47
@@ -49,6 +50,7 @@ URL_PHPWEBFTP=http://www.phpwebftp.com/download/$(PHPWEBFTP).zip
 URL_AWSTATS=http://awstats.sourceforge.net/files/$(AWSTATS).tar.gz
 URL_SQUIRRELMAIL=http://downloads.sourceforge.net/squirrelmail/$(SQUIRRELMAIL).tar.bz2
 URL_YAA=http://www.sourcefiles.org/Internet/Mail/Utilities/Autoresponders/$(YAA).tar.bz2
+URL_PERL_CONFIG_ABSTRACT=http://search.cpan.org/CPAN/authors/id/A/AV/AVAJADI/$(PERL_CONFIG_ABSTRACT).tar.gz
 URL_PERL_NET_SERVER=http://search.cpan.org/CPAN/authors/id/R/RH/RHANDOM/$(PERL_NET_SERVER).tar.gz
 URL_PERL_PHP_SERIALIZATION=http://search.cpan.org/CPAN/authors/id/B/BO/BOBTFISH/$(PERL_PHP_SERIALIZATION).tar.gz
 URL_PERL_SHA_PUREPERL=http://search.cpan.org/CPAN/authors/id/M/MS/MSHELOR/$(PERL_SHA_PUREPERL).tar.gz
@@ -142,7 +144,7 @@ getsrc:
 	# Download anything that we don't have
 	@for target in \
 		$(URL_YAA) $(URL_PERL_NET_SERVER) $(URL_PERL_PHP_SERIALIZATION) $(URL_PERL_SHA_PUREPERL) \
-		$(URL_PERL_TEMPLATE_TOOLKIT); do \
+		$(URL_PERL_TEMPLATE_TOOLKIT) $(URL_PERL_CONFIG_ABSTRACT); do \
 		./src/get3rdparty.sh $$target; \
 	done
 
@@ -174,6 +176,11 @@ dobuild: clean getsrc
 	# Touch and chmod the src/ravencore/server.httpd file
 	touch src/ravencore/server/sbin/ravencore.httpd
 	chmod 755 src/ravencore/server/sbin/ravencore.httpd
+
+	# Config::Abstract install
+	tar zxf src/3rdparty/$(PERL_CONFIG_ABSTRACT).tar.gz
+	cd $(PERL_CONFIG_ABSTRACT) && perl Makefile.PL && make
+	cp -a $(PERL_CONFIG_ABSTRACT)/blib/lib/Config src/ravencore/server/lib
 
 	# Net::Server install
 	tar zxf src/3rdparty/$(PERL_NET_SERVER).tar.gz

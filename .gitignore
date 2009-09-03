@@ -1,10 +1,12 @@
 *.swp
 bare.info
 build.info
+Config-Abstract*
 Digest-SHA-PurePerl*
 Net-Server*
 PHP-Serialization*
 Template-Toolkit*
+src/3rdparty/Config-Abstract*tar.gz
 src/3rdparty/Digest-SHA-PurePerl*tar.gz
 src/3rdparty/Net-Server*tar.gz
 src/3rdparty/PHP-Serialization*tar.gz
