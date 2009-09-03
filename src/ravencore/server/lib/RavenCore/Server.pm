@@ -29,6 +29,7 @@ use warnings;
 # if these don't exist, you've got one funky installation
 use RavenCore::Common;
 use RavenCore::Shadow;
+use Config::Abstract::Ini;
 use PHP::Serialization qw(serialize unserialize);
 use Template;
 

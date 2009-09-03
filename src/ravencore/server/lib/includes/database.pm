@@ -135,16 +135,18 @@ sub get_db_conf {
 	foreach my $dep (@modules) {
 
 		# parse the conf file to get all the variable names needed for this module
-		my %data = $self->parse_conf_file($self->{RC_ROOT} . '/etc/modules/' . $dep . '/default_settings');
+		my $ini = Config::Abstract::Ini->new($self->{RC_ROOT} . '/etc/modules/' . $dep . '/settings.ini');
 
-		foreach my $key (keys %data) {
+		my $settings = $ini->get_all_settings;
+
+		foreach my $key (keys %{$settings}) {
 
 			# if we are missing this variable
 			if ( ! exists $self->{CONF}{$key} ) {
 				# our configuration is not complete
 				$self->{config_complete} = 0;
 
-				my $val = $data{$key};
+				my $val = $settings->{$key}{value};
 
 				# if value is a function call, call that function
 				if ($val =~ /^&(.*?)\((.*?)\)$/) {
