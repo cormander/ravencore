@@ -178,26 +178,26 @@ dobuild: clean getsrc
 	# Net::Server install
 	tar zxf src/3rdparty/$(PERL_NET_SERVER).tar.gz
 	cd $(PERL_NET_SERVER) && perl Makefile.PL && make
-	cp -a $(PERL_NET_SERVER)/blib/lib/Net src/ravencore/server/var/lib
+	cp -a $(PERL_NET_SERVER)/blib/lib/Net src/ravencore/server/lib
 
 	# PHP::Serialization install
 	tar zxf src/3rdparty/$(PERL_PHP_SERIALIZATION).tar.gz
 	cd $(PERL_PHP_SERIALIZATION) && perl Makefile.PL && make
-	cp -a $(PERL_PHP_SERIALIZATION)/blib/lib/PHP src/ravencore/server/var/lib
+	cp -a $(PERL_PHP_SERIALIZATION)/blib/lib/PHP src/ravencore/server/lib
 
 	# Digest::SHA::PurePerl install
 	tar zxf src/3rdparty/$(PERL_SHA_PUREPERL).tar.gz
 	cd $(PERL_SHA_PUREPERL) && perl Makefile.PL && make
-	cp -a $(PERL_SHA_PUREPERL)/blib/lib/Digest src/ravencore/server/var/lib
+	cp -a $(PERL_SHA_PUREPERL)/blib/lib/Digest src/ravencore/server/lib
 
 	# Template::Toolkit install
 	tar zxf src/3rdparty/$(PERL_TEMPLATE_TOOLKIT).tar.gz
 	cd $(PERL_TEMPLATE_TOOLKIT) && perl Makefile.PL TT_XS_ENABLE=n TT_ACCEPT=y && make
-	cp -a $(PERL_TEMPLATE_TOOLKIT)/blib/lib/Template src/ravencore/server/var/lib
-	cp -a $(PERL_TEMPLATE_TOOLKIT)/blib/lib/Template.pm src/ravencore/server/var/lib
+	cp -a $(PERL_TEMPLATE_TOOLKIT)/blib/lib/Template src/ravencore/server/lib
+	cp -a $(PERL_TEMPLATE_TOOLKIT)/blib/lib/Template.pm src/ravencore/server/lib
 
 	# remove perl .exists files
-	rm -f src/ravencore/server/var/lib/PHP/.exists src/ravencore/server/var/lib/Digest/SHA/.exists src/ravencore/server/var/lib/Net/.exists
+	rm -f src/ravencore/server/lib/PHP/.exists src/ravencore/server/lib/Digest/SHA/.exists src/ravencore/server/lib/Net/.exists
 
 	@if [ ! -f bare.info ]; then \
 		$(MAKE) gplbuild; \
@@ -350,6 +350,7 @@ install:
 	mkdir -p $(DESTDIR)$(RC_ROOT)
 
 	cp -rp -f src/ravencore/server/* $(DESTDIR)$(RC_ROOT)
+	cp -rp -f src/ravencore/common/* $(DESTDIR)$(RC_ROOT)
 
 	# Install LICENSE, README, etc
 	cp -a LICENSE README $(DESTDIR)$(RC_ROOT)
