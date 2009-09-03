@@ -373,7 +373,7 @@ install:
 	@if [ -d $(DESTDIR)/etc/profile.d ]; then ln -s $(RC_ROOT)/etc/bash-profile.sh $(DESTDIR)/etc/profile.d/ravencore.sh; fi
 
 	# logrotation, only install if the directory exists
-	@if [ -d $(DESTDIR)/etc/logrotate.d ]; then cat src/logrotate-ravencore | sed "s|\$$RC_ROOT|$(RC_ROOT)|" > $(DESTDIR)/etc/logrotate.d/ravencore; fi
+	@if [ -d $(DESTDIR)/etc/logrotate.d ]; then cat src/misc/logrotate-ravencore | sed "s|\$$RC_ROOT|$(RC_ROOT)|" > $(DESTDIR)/etc/logrotate.d/ravencore; fi
 
 	# we're done
 	@echo "make install done. Start RavenCore with:"
