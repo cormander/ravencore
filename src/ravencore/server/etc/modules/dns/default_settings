@@ -1,5 +1,0 @@
-# NameD Root directory
-NAMED_ROOT=/var/named
-
-# NameD Conf File
-NAMED_CONF_FILE=/etc/named.conf

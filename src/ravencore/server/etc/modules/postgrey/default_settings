@@ -1,4 +1,0 @@
-# either inset address or unix socket path
-
-POSTGREY_SOCKET=unix:/var/spool/postfix/postgrey/socket
-

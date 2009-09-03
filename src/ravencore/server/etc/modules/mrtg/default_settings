@@ -1,5 +1,0 @@
-# location of the mrtg conf file
-MRTG_CONF_FILE=/etc/mrtg/mrtg.cfg
-
-# default snmp daemon conf file
-SNMPD_CONF_FILE=/etc/snmp/snmpd.conf
