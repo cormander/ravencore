@@ -423,7 +423,7 @@ sub rehash_httpd {
 		}
 
 		# if this is the IP address wildcards get setup on, add them
-		if ($self->{CONF}{VHOST_WILDCARD_IP} eq $ip_addr) {
+		if ($self->{CONF}{VHOST_DEFAULT_IP} eq $ip_addr) {
 
 			foreach $dom (@{$self->get_domains_with_no_ip}) {
 				next unless "on" eq $dom->{'hosting'};
