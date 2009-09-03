@@ -456,7 +456,7 @@ sub checkconf {
 
 	# directory permissions
 	chmod 0700, $self->{RC_ROOT} . '/sbin';
-	chmod 0755, $self->{RC_ROOT} . '/var/lib';
+	chmod 0755, $self->{RC_ROOT} . '/lib';
 	chmod 0700, $self->{RC_ROOT} . '/var/log';
 	chmod 0701, $self->{RC_ROOT} . '/etc';
 	chmod 0701, $self->{RC_ROOT} . '/var';
@@ -516,7 +516,7 @@ sub checkconf {
 	# remove the legacy socket
 	file_delete($self->{RC_ROOT} . '/db.sock');
 
-	file_chown('root:rcadmin', $self->{RC_ROOT} . '/var/lib');
+	file_chown('root:rcadmin', $self->{RC_ROOT} . '/lib');
 
 	# permissions on the socket
 	file_chown('root:rcadmin', $self->{RC_ROOT} . '/var/rc.sock');

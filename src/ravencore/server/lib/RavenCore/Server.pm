@@ -121,7 +121,7 @@ sub new
 	# load required modules that we need from our own lib; they may not nessisarily exist with a standard perl install
 	#
 
-	unshift @INC, $self->{RC_ROOT} . '/var/lib';
+	unshift @INC, $self->{RC_ROOT} . '/lib';
 
 	# import the Net::Server module included with RavenCore, and make RavenCore::Server inherit it
 	require base;
@@ -156,7 +156,7 @@ sub new
 	# load more internal functions from seperate files
 	#
 
-	my @pms = dir_list($self->{RC_ROOT} . '/var/lib/includes');
+	my @pms = dir_list($self->{RC_ROOT} . '/lib/includes');
 
 	foreach my $pm (@pms) {
 
@@ -164,8 +164,8 @@ sub new
 		# TODO: check file ownership/permissions, should be 0600 root:root
 		next unless $pm =~ /\.pm$/;
 
-		$self->debug("Including " . $self->{RC_ROOT} . '/var/lib/includes/' . $pm);
-		do $self->{RC_ROOT} . '/var/lib/includes/' . $pm;
+		$self->debug("Including " . $self->{RC_ROOT} . '/lib/includes/' . $pm);
+		do $self->{RC_ROOT} . '/lib/includes/' . $pm;
 
 		# check for errors on the do statement, if there is a syntax error, it'll show up as a "Bad file
 		# descriptor", but that's confusing and scary, so say something more optimistic
@@ -549,7 +549,7 @@ sub configure_hook {
 
 	# a hack; replace commandline with our correct startup procedure, so we can survive a sig HUP
 	# Net::Server's default is $0, which is changed to 'rcserver', this changes the internal var back to the full path
-	$self->{server}{commandline} = [ 'perl', '-I' . $self->{RC_ROOT} . '/var/lib', $self->{RC_ROOT} . '/sbin/rcserver' ];
+	$self->{server}{commandline} = [ 'perl', '-I' . $self->{RC_ROOT} . '/lib', $self->{RC_ROOT} . '/sbin/rcserver' ];
 }
 
 # post_configure_hook

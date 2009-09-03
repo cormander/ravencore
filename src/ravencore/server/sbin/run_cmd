@@ -22,7 +22,7 @@ BEGIN {
 	$RC_ROOT = ( $ENV{'RC_ROOT'} ? $ENV{'RC_ROOT'} : '/usr/local/ravencore' );
 
 	# add the ravencore lib directory to the search path for perl modules
-	unshift @INC, $RC_ROOT . '/var/lib';
+	unshift @INC, $RC_ROOT . '/lib';
 };
 
 use RavenCore::Client;

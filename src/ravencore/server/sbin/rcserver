@@ -19,7 +19,7 @@
 #
 
 #
-# This script needs to be ran with the perl -I switch of the RC_ROOT/var/lib
+# This script needs to be ran with the perl -I switch of the RC_ROOT/lib
 #
 
 use RavenCore::Server;
