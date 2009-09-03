@@ -69,8 +69,7 @@ sub set_conf_var {
 	$key = uc($key);
 
 	# simple error checking
-	return $self->do_error("set_conf_var requires 2 arguments, a key and a value") if $key eq "";
-	return $self->do_error("set_conf_var requires 2 arguments, a key and a value") if $val eq "";
+	return $self->do_error("set_conf_var a key") if ! $key;
 
 	# check to see if it's already in the database
 	my $sql = "select count(*) from settings where setting = " . $self->{dbi}->quote($key) . 
