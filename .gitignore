@@ -43,11 +43,14 @@ src/ravencore/server/etc/server.key
 src/ravencore/server/etc/version
 src/ravencore/server/etc/vhosts.conf
 src/ravencore/server/sbin/ravencore.httpd
+src/ravencore/server/sbin/restore_orig_conf.sh
 src/ravencore/server/lib/Digest
 src/ravencore/server/lib/Net
 src/ravencore/server/lib/PHP
 src/ravencore/server/lib/Template
 src/ravencore/server/lib/Template.pm
+src/ravencore/server/lib/RavenCore/Common.pm
+src/ravencore/server/lib/RavenCore/Shadow.pm
 src/ravencore/server/var/apps
 src/ravencore/server/var/log
 src/ravencore/server/var/ravencore.sqlite
