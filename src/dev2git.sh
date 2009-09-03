@@ -62,6 +62,9 @@ ln -s $destdir/src/ravencore/server $RC_ROOT
 cp -a LICENSE $RC_ROOT
 cp -a GPL $RC_ROOT/httpdocs
 
+# copy common stuff to server
+/bin/cp -a src/ravencore/common/* src/ravencore/server
+
 # the socket gets blown aways, so we have to restart
 /etc/init.d/ravencore restart
 
