@@ -135,6 +135,7 @@ rm -rf $RPM_BUILD_ROOT
 %{rc_root}/etc
 %{rc_root}/httpdocs
 %{rc_root}/var
+%{rc_root}/lib
 
 %changelog
 * Wed Mar 11 2009 Corey Henderson <corman@cormander.com>
