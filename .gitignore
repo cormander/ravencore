@@ -46,6 +46,7 @@ src/ravencore/server/etc/version
 src/ravencore/server/etc/vhosts.conf
 src/ravencore/server/sbin/ravencore.httpd
 src/ravencore/server/sbin/restore_orig_conf.sh
+src/ravencore/server/lib/Config
 src/ravencore/server/lib/Digest
 src/ravencore/server/lib/Net
 src/ravencore/server/lib/PHP
