@@ -94,7 +94,6 @@ fi
 
 if [ "$1" = "0" ] ; then # we are being completly uninstalled
 
-
 	[ -x %{rc_root}/sbin/restore_orig_conf.sh ] && %{rc_root}/sbin/restore_orig_conf.sh
 
 fi
@@ -112,7 +111,6 @@ rm -rf $RPM_BUILD_ROOT
 /etc/cron.hourly/ravencore
 /etc/profile.d/ravencore.sh
 
-# hell, one day I was so bored I alphabatized each group of files here :P
 %{rc_root}/LICENSE
 %{rc_root}/README
 
@@ -137,7 +135,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %changelog
 * Wed Mar 11 2009 Corey Henderson <corman@cormander.com>
-- see http://git.ravencore.com/ for changelog.
+- see http://github.com/cormander/ravencore for changelog.
 
 * Sat Jul 15 2005 cormander <admin@ravencore.com>
 - version 0.0.1
