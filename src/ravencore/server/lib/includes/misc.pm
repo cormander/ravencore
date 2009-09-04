@@ -141,11 +141,11 @@ sub module_list {
 
 	my @modules, $mod;
 
-	my @confs = dir_list($self->{RC_ROOT} . '/etc/modules/*/default_settings');
+	my @confs = dir_list($self->{RC_ROOT} . '/etc/modules/*/settings.ini');
 
 	foreach my $conf (@confs) {
 		$mod = $conf;
-		$mod =~ s|.*/etc/modules/(\w*?)/default_settings$|$1|;
+		$mod =~ s|.*/etc/modules/(\w*?)/settings.ini$|$1|;
 		push @modules, $mod;
 	}
 
