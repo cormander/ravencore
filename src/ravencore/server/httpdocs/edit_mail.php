@@ -34,63 +34,26 @@ if ($page_type == "add" and $row_email_user) goto("edit_mail.php");
 if (!user_can_add($uid, "email") and !is_admin() and $page_type == "add") goto("users.php?uid=$uid");
 
 if ($action) {
-	$mails = $db->run("get_mail_user_by_name_and_domain_id", Array(name => $_POST[name], did => $did));
 
-	if (0 != count($mails) and $page_type == "add") alert(__("That email address already exists"));
-	else {
-		// Make sure that the passwords match
-		if ($_POST[confirm_passwd] != $_POST[passwd]) {
-			alert(__("Your passwords do not match"));
-			$_POST[confirm_passwd] = "";
-			$_POST[passwd] = "";
-		} else {
-			// Make sure the given mailname is valid
-			if (preg_match('/^' . REGEX_MAIL_NAME . '$/', $_POST[name])) {
-				if ($_POST[redirect] and !$_POST[redirect_addr]) {
-					alert(__("You selected you wanted a redirect, but left the address blank"));
-					$select = "redirect_addr";
-				} else {
-					$_POST[redirect_addr] = trim(ereg_replace(' ', '', $_POST[redirect_addr]));
+	$ret = $db->run("push_mail_user", Array(
+		action => $action,
+		mid => $mid,
+		did => $did,
+		name => $_POST[name],
+		passwd => $_POST[passwd],
+		confirm_passwd => $_POST[confirm_passwd],
+		redirect_addr => $_POST[redirect_addr],
+		redirect => $_POST[redirect_addr],
+		autoreply => $_POST[autoreply],
+		autoreply_subject => $_POST[autoreply_subject],
+		autoreply_body => $_POST[autoreply_body],
+		mailbox => $_POST[mailbox],
+		spam_folder => $_POST[spam_folder]
+	));
 
-					$redir_error = 0;
+	if (1 == $ret)
+		goto("mail.php?did=$did");
 
-					if ($_POST[redirect_addr]) {
-						$addrs = explode(',', $_POST[redirect_addr]);
-
-						foreach($addrs as $email) {
-							if (!preg_match('/^' . REGEX_MAIL_NAME . '@' . REGEX_DOMAIN_NAME . '$/', $email)) $redir_error = 1;
-						}
-					}
-
-					if ($redir_error == 0) {
-						if (preg_match('/^' . REGEX_PASSWORD . '$/', $_POST[passwd])) {
-			  if ($page_type == "add") $sql = "insert into mail_users set mail_name = '$_POST[name]', did = '$did', passwd = '$_POST[passwd]', spam_folder = '$_POST[spam_folder]', mailbox = '$_POST[mailbox]', redirect = '$_POST[redirect]', redirect_addr = '$_POST[redirect_addr]', autoreply = '$_POST[autoreply]', autoreply_subject = '$_POST[autoreply_subject]', autoreply_body = '$_POST[autoreply_body]'";
-			  else $sql = "update mail_users set passwd = '$_POST[passwd]', mailbox = '$_POST[mailbox]', spam_folder = '$_POST[spam_folder]', redirect = '$_POST[redirect]', redirect_addr = '$_POST[redirect_addr]', autoreply = '$_POST[autoreply]', autoreply_subject = '$_POST[autoreply_subject]', autoreply_body = '$_POST[autoreply_body]' where id = '$mid'";
-
-							$db->data_query($sql);
-
-							$db->run("rehash_mail");
-
-							goto("mail.php?did=$did");
-						} else {
-							alert(__("Invalid password. Must only contain letters and numbers."));
-							$_POST[passwd] = "";
-							$select = "passwd";
-						}
-					} else {
-						alert(__("The redirect list contains an invalid email address."));
-						$_POST[redirect_addr] = "";
-						$select = "redirect_addr";
-					}
-				}
-			} else {
-				// We failed to pass the mailname regex
-				alert(__("Invalid mailname. It may only contain letters, number, dashes, dots, and underscores. Must both start and end with either a letter or number."));
-				$_POST[name] = "";
-				$select = "name";
-			}
-		}
-	}
 }
 
 nav_top();
