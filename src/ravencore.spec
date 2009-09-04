@@ -74,9 +74,7 @@ if [ -x /sbin/chkconfig ]; then
 # not listed as a service, add it
         /sbin/chkconfig --add ravencore
 # set ravencore to startup on boot
-        /sbin/chkconfig --level 3 ravencore on
-        /sbin/chkconfig --level 4 ravencore on
-        /sbin/chkconfig --level 5 ravencore on
+        /sbin/chkconfig ravencore on
 
     fi
 
