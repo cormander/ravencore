@@ -141,6 +141,9 @@ sub get_db_conf {
 
 		foreach my $key (keys %{$settings}) {
 
+			# every module has an INFO, and it's for other things, so skip it here
+			next if "INFO" eq $key;
+
 			# if we are missing this variable
 			if ( ! exists $self->{CONF}{$key} ) {
 				# our configuration is not complete
