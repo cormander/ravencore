@@ -38,6 +38,14 @@ if [ ! -f .gitignore ]; then
 	exit 1
 fi
 
+echo -n "Only run this script if you know what are you doing. Are you sure? yes/no: "
+read answer
+
+if [ "$answer" != "yes" ]; then
+	echo "Exiting."
+	exit 1
+fi
+
 # remove files in .gitignore
 make distclean
 
