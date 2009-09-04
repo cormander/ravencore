@@ -48,7 +48,7 @@ sub checkconf {
 	if ( ! -f $httpd_path || ! -d $httpd_modules_path ) {
 
 		# define our directories to search in
-		my @httpd_search_dir = file_get_array($self->{RC_ROOT} . '/etc/modules/web/paths');
+		my @httpd_search_dir = split /:/, Config::Abstract::Ini->new($self->{RC_ROOT} . '/etc/modules/web/settings.ini')->get_entry_setting('INFO', 'searchpath');
 
 		my @httpd_search_bin = (
 			'apache2',
@@ -183,29 +183,16 @@ sub checkconf {
 
 		my $module_dir = $self->{RC_ROOT} . '/etc/modules/' . $dep;
 
-		my @reqs = file_get_array($module_dir . '/dependencies');
+		my $ini = Config::Abstract::Ini->new($module_dir . '/settings.ini');
 
-		my @cmd_map = file_get_array($module_dir . '/cmd_maps');
+		my @cmds = split /,/, $ini->get_entry_setting('INFO', 'dependencies');
 
 		# unset our dep_check flag
 		my $dep_check_failed = 0;
 
-		foreach my $req (@reqs) {
+		foreach my $cmd (@cmds) {
 
-			my $cmd = "";
-
-			# find the line for the command name/path of this command.. in format: _name=name
-			foreach (@cmd_map) {
-				if (/_$req=/) {
-					$cmd = $_;
-					# parse out the _name= part to get the value
-					$cmd =~ s/_$req=//;
-
-					last;
-				}
-			}
-
-			# make sure it exists when it gets here. if not, we don't have it anyway, so why bother checking
+			# make sure it exists
 			if ($cmd ne "") {
 
 				# make sure we have the basename of the command of this dependency
