@@ -590,3 +590,60 @@ sub push_mail {
 	return 1;
 }
 
+sub push_mail_user {
+	my ($self, $ref) = @_;
+
+	my $action =	$ref->{action};
+	my $did =	$ref->{did};
+	my $mid =	$ref->{mid};
+	my $passwd =	$ref->{passwd};
+	my $confirm_passwd = $ref->{confirm_passwd};
+	my $redirect =	$ref->{redirect};
+	my $redirect_addr = $ref->{redirect_addr};
+	my $autoreply = $ref->{autoreply};
+	my $autoreply_subject = $ref->{autoreply_subject};
+	my $autoreply_body = $ref->{autoreply_body};
+	my $mailbox = $ref->{mailbox};
+	my $spam_folder = $ref->{spam_folder};
+
+	my $mails = $self->get_mail_user_by_name_and_domain_id({name => $name, did => $did});
+
+	if (0 != scalar($mails) and "add" eq $action) {
+		return $self->do_error("That email address already exists");
+	}
+
+	# make sure that the passwords match
+	return $self->do_error("Your passwords do not match") if $passwd ne $confirm_passwd;
+
+	# make sure it's a valid password
+	return $self->do_error("Invalid password") if !is_ok_password($passwd);
+
+	# make sure the given mailname is valid
+	return $self->do_error("Invalid mailname") if !is_username($name);
+
+	# sanity check redirect
+	if ($redirect) {
+		return $self->do_error("You selected you wanted a redirect, but left the address blank") unless $redirect_addr;
+	
+		$redirect_addr =~ s/\w//g;
+
+		map { return $self->do_error("The redirect list contains an invalid email address") if !is_email($_) } split /,/, $redirect_addr;
+	}
+
+	my $ra;
+
+	if ("add" eq $action) {
+		($ra, $mid) = $self->xsql("insert into mail_users (mail_name, did, passwd, spam_folder, mailbox, redirect, redirect_addr, autoreply, autoreply_subject, autoreply_body)" .
+			" values (?,?,?,?,?,?,?,?,?,?)",
+			[$name, $did, $passwd, $spam_folder, $mailbox, $redirect, $redirect_addr, $autoreply, $autoreply_subject, $autoreply_body]);
+	} else {
+		($ra) = $self->xsql("update mail_users set passwd = ?, mailbox = ?, spam_folder = ?, redirect = ?, redirect_addr = ?, autoreply = ?, autoreply_subject = ?, autoreply_body = ?" .
+			" where id = ?",
+			[$passwd, $mailbox, $spam_folder, $redirect, $redirect_addr, $autoreply, $autoreply_subject, $autoreply_body, $mid]);
+	}
+
+	$self->rehash_mail if $ra > 0;
+
+	return 1;
+}
+
