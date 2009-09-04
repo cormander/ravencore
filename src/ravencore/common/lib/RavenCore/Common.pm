@@ -418,6 +418,8 @@ sub is_email {
 sub is_ok_password {
 	my ($passwd) = @_;
 
+	return (1, "You must enter a password") unless $passwd;
+
 	my $error;
 	my $msg;
 
