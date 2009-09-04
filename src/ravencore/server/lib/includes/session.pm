@@ -47,6 +47,7 @@ sub session_status {
 
 	# enabled modules
 	my @modules = $self->module_list_enabled;
+	my @installed = $self->module_list_installed;
 
 	@{$data->{services}} = ();
 
@@ -66,6 +67,7 @@ sub session_status {
 
 	# remember, have to pass things as a reference to the client
 	$data->{modules_enabled} = \@modules;
+	$data->{modules_installed} = \@installed;
 
 	# configuration
 	$data->{CONF} = \%{$self->{CONF}};

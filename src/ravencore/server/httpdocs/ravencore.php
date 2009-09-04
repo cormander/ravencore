@@ -23,6 +23,18 @@ include "auth.php";
 
 req_admin();
 
+if ($_REQUEST['disable']) {
+	$db->run("disable_module", Array(module => $_REQUEST['disable']));
+
+	goto($_SERVER['PHP_SELF']);
+}
+
+if ($_REQUEST['enable']) {
+	$db->run("enable_module", Array(module => $_REQUEST['enable']));
+
+	goto($_SERVER['PHP_SELF']);
+}
+
 nav_top();
 
 $info = $db->run('ravencore_info');
@@ -44,12 +56,21 @@ if ($info['release'] != "1") print $info['release'] . '<br />';
 
 <table class="listpad">
 <tr>
-<th class="listpad">Module</th><th class="listpad">Enabled</th>
+<th class="listpad">Module</th>
+<th class="listpad">Installed</th>
+<th class="listpad">Enabled</th>
+<th class="listpad">&nbsp;</th>
 </tr>
 <?php
 
+$installed = $status[modules_installed];
+
 foreach (Array('web', 'mysql', 'mail', 'amavisd', 'postgrey', 'mrtg') as $service) {
-	print '<tr><td class="listpad">' .$service . '</td><td class="listpad">' . ( have_service($service) ? "Yes" : "No" ) . '</td></tr>';
+	print '<tr><td class="listpad">' .$service . '</td>' .
+		'<td class="listpad">' . ( in_array($service, $installed) ? "Yes" : "No" ) . '</td>' .
+		'<td class="listpad">' . ( have_service($service) ? "Yes" : "No" ) . '</td>' .
+		'<td class="listpad">' . ( in_array($service, $installed) ? ( have_service($service) ? '<a href="ravencore.php?disable=' . $service . '">disable</a>' : '<a href="ravencore.php?enable=' . $service . '">enable</a>' ) : "" ) . '</td>' .
+		'</tr>';
 }
 
 ?>

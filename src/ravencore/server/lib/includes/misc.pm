@@ -152,26 +152,80 @@ sub module_list {
 	return @modules;
 }
 
-# just like module_list, but only returns modules that are enabled
+# just like module_list, but only returns modules that are installed
+
+sub module_list_installed {
+	my ($self) = @_;
+
+	my @installed;
+
+	my @modules = $self->module_list;
+
+	foreach my $mod (@modules) {
+		# if there is not an "installed" file for this module, skip it
+		next unless -f $self->{RC_ROOT} . '/etc/modules/' . $mod . '/installed';
+
+		push @installed, $mod;
+	}
+
+	return @installed;
+}
+
+# just like module_list_installed, but only returns modules that are enabled
 
 sub module_list_enabled {
 	my ($self) = @_;
 
 	my @enabled;
 
-	my @modules = $self->module_list;
+	my @modules = $self->module_list_installed;
 
 	foreach my $mod (@modules) {
 		# if there is a "disable" file for this module, skip it
 		next if -f $self->{RC_ROOT} . '/etc/modules/' . $mod . '/disabled';
 
-		# if there is not an "installed" file for this module, skip it
-		next unless -f $self->{RC_ROOT} . '/etc/modules/' . $mod . '/installed';
-
 		push @enabled, $mod;
 	}
 
 	return @enabled;
+}
+
+# disable a module
+
+sub disable_module {
+	my ($self, $ref) = @_;
+
+	my $mod = $ref->{module};
+
+	return $self->do_error("Illegal module name") if $mod !~ /^[a-z0-9_]*$/;
+	return $self->do_error("Module does not exist") unless -d $self->{RC_ROOT} . '/etc/modules/' . $mod;
+
+	file_touch($self->{RC_ROOT} . '/etc/modules/' . $mod . '/disabled');
+
+	my $msg = "$mod has been disabled";
+
+	$self->do_error($msg);
+
+	$self->reload({message => $msg});
+}
+
+# enable a module
+
+sub enable_module {
+	my ($self, $ref) = @_;
+
+	my $mod = $ref->{module};
+
+	return $self->do_error("Illegal module name") if $mod !~ /^[a-z0-9_]*$/;
+	return $self->do_error("Module does not exist") unless -d $self->{RC_ROOT} . '/etc/modules/' . $mod;
+
+	file_delete($self->{RC_ROOT} . '/etc/modules/' . $mod . '/disabled');
+
+	my $msg = "$mod has been enabled";
+
+	$self->do_error($msg);
+
+	$self->reload({message => $msg});
 }
 
 #
