@@ -56,7 +56,9 @@ sub session_status {
 	foreach my $mod (@enabled) {
 
 		# also add services
-		my @services = file_get_array($self->{RC_ROOT} . '/etc/modules/' . $mod . '/services');
+		my $ini = Config::Abstract::Ini->new($self->{RC_ROOT} . '/etc/modules/' . $mod . '/settings.ini');
+
+		my @services = split /,/, $ini->get_entry_setting('INFO', 'services');
 
 		foreach (@services) {
 			if (-f $self->{INITD} . '/' . $_ && ! in_array($_, @{$data->{services}})) {
