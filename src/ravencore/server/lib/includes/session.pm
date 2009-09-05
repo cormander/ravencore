@@ -45,14 +45,15 @@ sub session_status {
 	# are we an admin?
 	$data->{is_admin} = $self->is_admin;
 
-	# enabled modules
-	my @modules = $self->module_list_enabled;
+	# the different status of the modules
+	my @modules = $self->module_list;
+	my @enabled = $self->module_list_enabled;
 	my @installed = $self->module_list_installed;
 
 	@{$data->{services}} = ();
 
 	# we don't want the conf files, just the names of the modules, so replace them
-	foreach my $mod (@modules) {
+	foreach my $mod (@enabled) {
 
 		# also add services
 		my @services = file_get_array($self->{RC_ROOT} . '/etc/modules/' . $mod . '/services');
@@ -66,7 +67,8 @@ sub session_status {
 	}
 
 	# remember, have to pass things as a reference to the client
-	$data->{modules_enabled} = \@modules;
+	$data->{modules} = \@modules;
+	$data->{modules_enabled} = \@enabled;
 	$data->{modules_installed} = \@installed;
 
 	# configuration
