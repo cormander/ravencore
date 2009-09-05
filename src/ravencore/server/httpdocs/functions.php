@@ -26,18 +26,6 @@ function rc_exit() {
 	exit;
 }
 
-//
-function update_parameter($type_id, $param, $value) {
-
-	global $db;
-
-	$sql = "delete form parameters where type_id = '$type_id' and param = '$param'";
-	$db->data_query($sql);
-
-	$sql = "insert into parameters set type_id = '$type_id', param = '$param', value = '$value'";
-	$db->data_query($sql);
-}
-
 // a basic password validation function
 function valid_passwd($passwd) {
 	if (function_exists("pspell_new")) {
