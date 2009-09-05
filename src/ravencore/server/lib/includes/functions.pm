@@ -655,7 +655,7 @@ sub push_dns_rec {
 	my $name =	$ref->{name};
 	my $type =	$ref->{type};
 	my $target =	$ref->{target};
-	my $preference = $ref->{referenc};
+	my $preference = $ref->{preference};
 
 	my $domain = $self->get_domain_by_id({id => $did});
 
