@@ -230,11 +230,6 @@ if (!$did) {
 				// print '<p><a href="log_manager.php?did=' . $did . '" onmouseover="show_help(\'' . __('Go to the Log Manager for this domain') . '\');" onmouseout="help_rst();">' . __('Log Manager') . '</a><p>';
 			}
 
-			if ($domain[host_type] == "physical") print '<p><a href="error_docs.php?did=' . $did . '" onmouseover="show_help(\'' . __('View/Edit Custom Error Documents for this domain') . '\');" onmouseout="help_rst();">' . __('Error Documents') . '</a></p>';
-			else {
-				$sql = "delete from error_docs where did = '$did'";
-				$db->data_query($sql);
-			}
 		}
 
 		if (have_service("mail")) {
