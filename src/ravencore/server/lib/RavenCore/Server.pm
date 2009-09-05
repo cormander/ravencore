@@ -180,35 +180,6 @@ sub new
 	return $self;
 }
 
-
-# function to tell the client some basic information on what they can do
-
-sub help {
-	my ($self, $query) = @_;
-
-	my $data;
-
-	if ($query eq "") {
-		$data = "RavenCore server help. You have permission to run the following commands:\n\n";
-
-		foreach my $cmd ( @{$self->{cmd_privs}} ) {
-			$data .= $cmd . "\n";
-		}
-
-		$data .= "\nFor more information about a command, run: help <command>\n";
-	} else {
-
-		$data = file_get_contents($self->{RC_ROOT} . '/docs/commands/' . basename($query));
-
-		if ($data eq "") {
-			$data = "Sorry, there is currently no help for that command.";
-		}
-
-	}
-
-	return $data;
-}
-
 # reload rcserver
 
 sub reload {

@@ -82,14 +82,6 @@ print '<a href="change_password.php" onmouseover="show_help(\'' . __('Change the
 
 ?>
 
-<p>
-
-<?php
-
-print '<a href="/debug.php">Debugging</a>';
-
-?>
-
 </td><td valign=top class="listpad">
 
 <p>

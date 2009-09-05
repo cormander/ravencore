@@ -1,4 +1,0 @@
-
-get_default_locale
-
-This command simply returns what the admin set as the default language of the server. If it isn't set, it returns what the default LANG of the OS is, which is always set.
