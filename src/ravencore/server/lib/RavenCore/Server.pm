@@ -639,7 +639,11 @@ sub close_children { return; }
 # TODO: accept various debug verboseness
 
 sub debug {
-	my ($self, $msg) = @_;
+	my ($self, $msg, @args) = @_;
+
+	if (0 != scalar @args) {
+		$msg = sprintf($msg, @args);
+	}
 
 	# only log in debug mode
 	if ($self->{DEBUG}) {
