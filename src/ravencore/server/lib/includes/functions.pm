@@ -647,3 +647,83 @@ sub push_mail_user {
 	return 1;
 }
 
+sub push_dns_rec {
+	my ($self, $ref) = @_;
+
+	my $action =	$ref->{action};
+	my $did =	$ref->{did};
+	my $name =	$ref->{name};
+	my $type =	$ref->{type};
+	my $target =	$ref->{target};
+	my $preference = $ref->{referenc};
+
+	my $domain = $self->get_domain_by_id({id => $did});
+
+	return $self->do_error("Domain with id %s does not exist", $did) unless scalar keys %{$domain};
+
+	my $recs = $self->get_dns_recs_by_domain_id({did => $did});
+
+	my $count = 0;
+
+	foreach my $rec (@{$recs}) {
+		if ($rec->{name} eq $name and $rec->{type} eq $type and $rec->{target} eq $target) {
+			$count = 1;
+		}
+	}
+
+	#
+	# sanity checks on new record
+	#
+
+	if (0 != $count) {
+		return $self->do_error("You already have a %s record for %s pointing to %s", $type, $name, $target);
+	}
+
+	if ($name eq $target and "MX" ne $type) {
+		return $self->do_error("Your record name and target cannot be the same")
+	}
+
+	if (is_ip($target) and ("SOA" eq $type or "MX" eq $type or "CNAME" eq $type)) {
+		return $self->do_error("A %s record can not point to an IP address");
+	}
+
+	if ($name =~ /\.$/) {
+		return $self->do_error("You can not enter in a full domain as the record name");
+	}
+
+	if ("MX" eq $type and !$preference) {
+		return $self->do_error("MX records must have a preference");
+	}
+
+	#
+	# if we get here, we're good to create the record
+	#
+
+	# this domain is aliased as "@" in bind
+	if ($domain->{name} eq $name) {
+		$name = '@';
+	}
+
+	if ($domain->{name} eq $target) {
+		$arget = '@';
+	}
+
+	# MX records have preference
+	if ("MX" eq $type) {
+		$type .= '-' . $preference;
+	}
+
+	my $ra;
+	my $rid;
+
+	# start of authority records are stored in the domains table
+	if ("SOA" eq $type) {
+		($ra) = $self->xsql("update domains set soa = ? where id = ?", [$target, $did]);
+	} else {
+		($ra, $rid) = $self->xsql("insert into dns_rec (did, name, type, target) values (?,?,?,?)", [$did, $name, $type, $target]);
+	}
+
+	$self->rehash_named if $ra > 0;
+
+	return 1;
+}
