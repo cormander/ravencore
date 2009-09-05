@@ -69,7 +69,7 @@ $modules = $status[modules];
 foreach ($modules as $service) {
 	print '<tr><td class="listpad">' .$service . '</td>' .
 		'<td class="listpad">' . ( in_array($service, $installed) ? "Yes" : "No" ) . '</td>' .
-		'<td class="listpad">' . ( have_service($service) ? "Yes" : "N/A" ) . '</td>' .
+		'<td class="listpad">' . ( have_service($service) ? "Yes" : "No" ) . '</td>' .
 		'<td class="listpad">' . ( in_array($service, $installed) ? ( have_service($service) ? '<a href="ravencore.php?disable=' . $service . '">disable</a>' : '<a href="ravencore.php?enable=' . $service . '">enable</a>' ) : "" ) . '</td>' .
 		'</tr>';
 }

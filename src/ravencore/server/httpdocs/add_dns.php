@@ -28,39 +28,17 @@ if (!user_can_add($uid, "dns_rec") and !is_admin()) goto("users.php?uid=$uid");
 $domain = $db->run("get_domain_by_id", Array(id => $did));
 
 if ($action == "add") {
-	$recs = $db->run("get_dns_recs_by_domain_id", Array(did => $did));
+	$ret = $db->run("push_dns_rec", Array(
+		action => $action,
+		did => $did,
+		name => $_POST[name],
+		type => $_POST[type],
+		target => $_POST[target],
+		preference => $_POST[preference]
+	));
 
-	$count = 0;
-
-	foreach ($recs as $rec) {
-		if ($rec[name] == $_POST[name] and $rec[type] == $_POST[type] and $rec[target] == $_POST[target]) $count = 1;
-	}
-
-	if (0 != $count) alert(__("You already have a $_POST[type] record for $_POST[name] pointing to $_POST[target]"));
-	else {
-		if ($_POST[name] == $_POST[target] and $_POST[type] != "MX") alert(__("Your record name and target cannot be the same."));
-		else {
-			if (($_POST[type] == "SOA" or $_POST[type] == "MX" or $_POST[type] == "CNAME") and is_ip($_POST[target])) alert(__("A $_POST[type] record cannot point to an IP address!"));
-			else {
-				if ($_POST[name] == $domain[name]) $_POST[name] = "@";
-				if ($_POST[target] == $domain[name]) $_POST[target] = "@";
-
-				if (ereg('\.$', $_POST[name])) alert(__("You cannot enter in a full domain as the record name."));
-				else {
-					if ($_POST[type] == "MX") $_POST[type] .= '-' . $_POST[preference];
-
-					if ($_POST[type] == "SOA") $sql = "update domains set soa = '$_POST[target]' where id = '$did'";
-					else $sql = "insert into dns_rec set did = '$did', name = '$_POST[name]', type = '$_POST[type]', target = '$_POST[target]'";
-
-					$db->data_query($sql);
-
-					$db->run("rehash_named");
-
-					goto("dns.php?did=$did");
-				}
-			}
-		}
-	}
+	if (1 == $ret)
+		goto("dns.php?did=$did");
 }
 
 if (0 == count($domain)) goto("domains.php");
