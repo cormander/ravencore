@@ -51,10 +51,10 @@ if ($action == "update" and is_admin()) {
 		$db->data_query($sql);
 	}
 
-	goto("users.php?uid=$uid");
+	openfile("users.php?uid=$uid");
 }
 
-if (!$uid) goto("users.php");
+if (!$uid) openfile("users.php");
 
 nav_top();
 

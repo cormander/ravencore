@@ -41,7 +41,7 @@ if ($action) {
 		did => $did,
 	));
 
-	if (1 == $ret) goto("domains.php?did=$did");
+	if (1 == $ret) openfile("domains.php?did=$did");
 
 }
 

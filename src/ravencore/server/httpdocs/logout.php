@@ -25,6 +25,6 @@ $lang = $_SESSION['lang'];
 
 session_destroy();
 
-goto($_SERVER['HTTP_REFERER'] . '?lang=' . $lang);
+openfile($_SERVER['HTTP_REFERER'] . '?lang=' . $lang);
 
 ?>

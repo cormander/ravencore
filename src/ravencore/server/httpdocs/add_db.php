@@ -21,9 +21,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 include "auth.php";
 
-if (!$did) goto("users.php?uid=$uid");
+if (!$did) openfile("users.php?uid=$uid");
 
-if (!user_can_add($uid, "database") and !is_admin()) goto("users.php?user=$uid");
+if (!user_can_add($uid, "database") and !is_admin()) openfile("users.php?user=$uid");
 
 if ($action == "add") {
 	$sql = "create database $_POST[name]";
@@ -33,7 +33,7 @@ if ($action == "add") {
 	$sql = "insert into data_bases set name = '$_POST[name]', did = '$did'";
 	$db->data_query($sql);
 
-	goto("databases.php?did=$did");
+	openfile("databases.php?did=$did");
 
 }
 

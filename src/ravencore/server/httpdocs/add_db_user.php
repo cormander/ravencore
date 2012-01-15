@@ -21,7 +21,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 include "auth.php";
 
-if (!$dbid or !$did) goto("users.php?user=$uid");
+if (!$dbid or !$did) openfile("users.php?user=$uid");
 
 if ($action == "add") {
 	// does user already exist?
@@ -44,7 +44,7 @@ if ($action == "add") {
 			$sql = "insert into data_base_users set login = '$_POST[login]', db_id = '$dbid', passwd = '$_POST[passwd]'";
 			$db->data_query($sql);
 
-			goto("databases.php?did=$did&dbid=$dbid");
+			openfile("databases.php?did=$did&dbid=$dbid");
 
 		} else {
 			alert(__("Invalid password. Must only contain letters and numbers, must be atleast 5 characters, and not a dictionary word"));

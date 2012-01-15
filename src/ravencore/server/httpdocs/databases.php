@@ -39,7 +39,7 @@ if ($action == "userdel") {
 	$sql = "delete from data_base_users where id = '$dbu'";
 	$db->data_query($sql);
 
-	goto("databases.php?did=$did&dbid=$dbid");
+	openfile("databases.php?did=$did&dbid=$dbid");
 
 } else if ($action == "dbdel") {
 	$dd = $db->run("get_database_by_id", Array(id => $dbid));
@@ -60,7 +60,7 @@ if ($action == "userdel") {
 			$db->data_query($sql);
 		}
 
-		goto("databases.php?did=$did");
+		openfile("databases.php?did=$did");
 
 	}
 

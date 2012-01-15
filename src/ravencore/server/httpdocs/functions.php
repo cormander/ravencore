@@ -125,7 +125,7 @@ function alert($message) {
 
 // A function to do a header to the given location. Must be called before output
 // goes to the browser. This function is used just about everywhere.
-function goto($url) {
+function openfile($url) {
 	global $db;
 
 	// if we have a status_mesg, store it in the session

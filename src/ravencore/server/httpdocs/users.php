@@ -28,7 +28,7 @@ if ($action) {
 		login => $_REQUEST[login],
 	));
 
-	if ($ret) goto("users.php" . ("delete" == $action ? "" : "?uid=$uid"));
+	if ($ret) openfile("users.php" . ("delete" == $action ? "" : "?uid=$uid"));
 }
 
 nav_top();

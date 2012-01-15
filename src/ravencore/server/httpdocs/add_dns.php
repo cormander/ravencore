@@ -21,9 +21,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 include "auth.php";
 
-if (!$did) goto("domains.php");
+if (!$did) openfile("domains.php");
 
-if (!user_can_add($uid, "dns_rec") and !is_admin()) goto("users.php?uid=$uid");
+if (!user_can_add($uid, "dns_rec") and !is_admin()) openfile("users.php?uid=$uid");
 
 $domain = $db->run("get_domain_by_id", Array(id => $did));
 
@@ -38,10 +38,10 @@ if ($action == "add") {
 	));
 
 	if (1 == $ret)
-		goto("dns.php?did=$did");
+		openfile("dns.php?did=$did");
 }
 
-if (0 == count($domain)) goto("domains.php");
+if (0 == count($domain)) openfile("domains.php");
 
 nav_top();
 

@@ -21,7 +21,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 include "auth.php";
 
-if (!$did) goto("users.php");
+if (!$did) openfile("users.php");
 
 $suser = $db->run("get_sys_user_by_domain_id", Array(did => $did));
 
@@ -32,6 +32,6 @@ $_SESSION[server] = "127.0.0.1";
 $_SESSION[language] = $locales[$current_locale][filemanager];
 $_SESSION[port] = 21;
 
-goto("filemanager/");
+openfile("filemanager/");
 
 ?>

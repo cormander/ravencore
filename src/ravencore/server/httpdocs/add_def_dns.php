@@ -49,7 +49,7 @@ if ($action == "add") {
 
 					$db->data_query($sql);
 
-					goto("dns_def.php");
+					openfile("dns_def.php");
 				}
 			}
 		}

@@ -35,7 +35,7 @@ if ($action) {
 		alias_addr => $_POST[alias_addr],
 	));
 
-	if (1 == $ret) goto("mail.php?did=$did");
+	if (1 == $ret) openfile("mail.php?did=$did");
 }
 
 if ($did) {

@@ -29,9 +29,9 @@ if (!$mid) $page_type = "add";
 // if there isn't a page type, we assume edit
 if (!$page_type) $page_type = "edit";
 // A mail user can't add another mail user
-if ($page_type == "add" and $row_email_user) goto("edit_mail.php");
+if ($page_type == "add" and $row_email_user) openfile("edit_mail.php");
 
-if (!user_can_add($uid, "email") and !is_admin() and $page_type == "add") goto("users.php?uid=$uid");
+if (!user_can_add($uid, "email") and !is_admin() and $page_type == "add") openfile("users.php?uid=$uid");
 
 if ($action) {
 
@@ -52,7 +52,7 @@ if ($action) {
 	));
 
 	if (1 == $ret)
-		goto("mail.php?did=$did");
+		openfile("mail.php?did=$did");
 
 }
 
