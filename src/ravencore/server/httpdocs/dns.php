@@ -34,7 +34,7 @@ if ($action == "delete") {
 
 	$db->run("rehash_named");
 
-	goto("dns.php?did=$did");
+	send_to_url("dns.php?did=$did");
 }
 
 if (!$did) {

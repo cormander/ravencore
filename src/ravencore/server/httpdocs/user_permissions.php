@@ -51,10 +51,10 @@ if ($action == "update" and is_admin()) {
 		$db->data_query($sql);
 	}
 
-	goto("users.php?uid=$uid");
+	send_to_url("users.php?uid=$uid");
 }
 
-if (!$uid) goto("users.php");
+if (!$uid) send_to_url("users.php");
 
 nav_top();
 
