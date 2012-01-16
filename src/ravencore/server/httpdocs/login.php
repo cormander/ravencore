@@ -19,7 +19,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 */
 // We shouldn't call this script directly from the web
-if($_SERVER['PHP_SELF'] == "/login.php") openfile("users.php");
+if($_SERVER['PHP_SELF'] == "/login.php") send_to_url("users.php");
 
 if($_SERVER['PHP_SELF'] == "/ajax.php")  {
   print 'hi
@@ -30,9 +30,9 @@ if($_SERVER['PHP_SELF'] == "/ajax.php")  {
   exit;
 }
 // We should never be logout.php
-if ($_SERVER['PHP_SELF'] == "/logout.php") openfile("users.php");
+if ($_SERVER['PHP_SELF'] == "/logout.php") send_to_url("users.php");
 // If we're in a subdirectory, send us back to the web root
-if (preg_match('/^\/.*\//', $_SERVER[PHP_SELF])) openfile("/users.php");
+if (preg_match('/^\/.*\//', $_SERVER[PHP_SELF])) send_to_url("/users.php");
 
 if ($_GET[form_action]) $form_action = $_GET[form_action];
 

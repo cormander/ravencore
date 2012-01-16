@@ -29,7 +29,7 @@ if ($action == "delete") {
 	$sql = "delete from dns_def where id = '$_POST[delete]'";
 	$db->data_query($sql);
 
-	openfile("$_SERVER[PHP_SELF]");
+	send_to_url("$_SERVER[PHP_SELF]");
 }
 
 nav_top();

@@ -89,7 +89,7 @@ $logged_in = 1;
 // if we're posting the gpl_agree, tell the server so
 if($action == "gpl_agree" && $_REQUEST['gpl_agree'] == "yes") {
 	$db->run('gpl_agree');
-	openfile($_SERVER['PHP_SELF']);
+	send_to_url($_SERVER['PHP_SELF']);
 }
 
 // if we're posting the update_conf, update conf with the incoming array
@@ -105,7 +105,7 @@ if($action == "update_conf" and is_array($_REQUEST['CONF_UPDATE'])) {
 	$db->run('reload', Array('message' => 'I called set_conf_var at least once'));
 	sleep(2);
 
-	openfile($_SERVER['PHP_SELF']);
+	send_to_url($_SERVER['PHP_SELF']);
 }
 
 // ask for the current state of things. this needs to be done AFTER all post actions for this file
@@ -194,7 +194,7 @@ if ( ! $status['config_complete'] and $_SERVER['PHP_SELF'] != '/logout.php' ) {
 
 // send the admin user to the system page if the database is in panic mode
 if ($_SERVER['PHP_SELF'] != '/system.php' and $status['db_panic'] and $action == 'login') {
-	openfile("/system.php");
+	send_to_url("/system.php");
 }
 
 // if the config is complete, GPL accepted, and install_complete is zero, complete the install
@@ -204,7 +204,7 @@ if ($status['config_complete'] and $status['gpl_check'] and ! $status['install_c
 
 // logging in - redirect to pick up any session variables
 if ($action == 'login') {
-	openfile($_SERVER['PHP_SELF']);
+	send_to_url($_SERVER['PHP_SELF']);
 }
 
 if( ! $status['db_panic'] ) {

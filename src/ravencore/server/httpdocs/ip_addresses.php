@@ -37,13 +37,13 @@ if ($action == "update") {
 		)
 	);
 
-	openfile($_SERVER['PHP_SELF']);
+	send_to_url($_SERVER['PHP_SELF']);
 }
 
 if ($action == "delete") {
 	$ip = $_REQUEST['ip'];
 	$db->run('ip_delete', Array('ip' => $ip));
-	openfile($_SERVER['PHP_SELF']);
+	send_to_url($_SERVER['PHP_SELF']);
 }
 
 nav_top();

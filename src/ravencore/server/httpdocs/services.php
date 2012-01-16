@@ -34,7 +34,7 @@ if ($action == "run") {
 
   if (!$_SESSION['status_mesg']) $_SESSION['status_mesg'] = $_GET['service_cmd'] . ' command sucessfull for ' . $_GET['service'];
 
-  openfile($_SERVER[PHP_SELF] . ( $_GET['showall'] ? '?showall=1' : '' ) );
+  send_to_url($_SERVER[PHP_SELF] . ( $_GET['showall'] ? '?showall=1' : '' ) );
 
 }
 

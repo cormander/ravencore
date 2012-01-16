@@ -38,9 +38,9 @@ if ($action) {
 			$uid = $user[id];
 		}
 
-		if ($_POST[permissions]) openfile("user_permissions.php?uid=$uid");
+		if ($_POST[permissions]) send_to_url("user_permissions.php?uid=$uid");
 
-		openfile("users.php?uid=$uid");
+		send_to_url("users.php?uid=$uid");
 	}
 }
 

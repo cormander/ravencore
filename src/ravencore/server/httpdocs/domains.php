@@ -35,11 +35,11 @@ if ($action) {
 			break;
 		case "change":
 			// only an admin can do this
-			if (!is_admin()) openfile("users.php");
+			if (!is_admin()) send_to_url("users.php");
 			break;
 		default:
 			// ????
-			openfile("users.php");
+			send_to_url("users.php");
 			break;
 	}
 
@@ -52,7 +52,7 @@ if ($action) {
 
 
 	if (1 == $ret)
-		openfile($dest);
+		send_to_url($dest);
 
 }
 

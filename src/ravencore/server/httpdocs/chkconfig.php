@@ -30,7 +30,7 @@ if ($_GET[service] and $_GET[status]) {
 		)
 	);
 
-	openfile("$_SERVER[PHP_SELF]");
+	send_to_url("$_SERVER[PHP_SELF]");
 }
 
 nav_top();

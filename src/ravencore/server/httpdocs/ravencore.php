@@ -26,13 +26,13 @@ req_admin();
 if ($_REQUEST['disable']) {
 	$db->run("disable_module", Array(module => $_REQUEST['disable']));
 
-	openfile($_SERVER['PHP_SELF']);
+	send_to_url($_SERVER['PHP_SELF']);
 }
 
 if ($_REQUEST['enable']) {
 	$db->run("enable_module", Array(module => $_REQUEST['enable']));
 
-	openfile($_SERVER['PHP_SELF']);
+	send_to_url($_SERVER['PHP_SELF']);
 }
 
 nav_top();

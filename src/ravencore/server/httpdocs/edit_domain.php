@@ -34,7 +34,7 @@ if ($action) {
 		if ($_POST[hosting]) $url = "hosting.php?did=" . $domain[id];
 		else $url = "domains.php?did=" . $domain[id];
 
-		openfile($url);
+		send_to_url($url);
 	}
 }
 

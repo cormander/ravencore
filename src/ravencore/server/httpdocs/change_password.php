@@ -28,7 +28,7 @@ if ($action == "change") {
 	if( $db->change_passwd($_POST['old_pass'], $_POST['new_pass']) ) {
 		$_SESSION['status_mesg'] = 'Password change successful.';
 
-		openfile("system.php");
+		send_to_url("system.php");
 	}
 
 }
